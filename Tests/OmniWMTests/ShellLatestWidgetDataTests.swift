@@ -8,6 +8,7 @@ import XCTest
 
 private struct ShellLatestDataOutput: Sendable {
     let width: Float
+    let demand: UInt64
     let action: UInt32
     let sequence: Int
 }
@@ -22,7 +23,13 @@ private extension ShellWidgetPackage {
             fromByteOffset: MemoryLayout<omni_wire_header>.stride,
             as: omni_wire_node.self
         )
-        return ShellLatestDataOutput(width: node.width, action: node.action, sequence: state.sequences[view.rawValue])
+        let header = UnsafeRawPointer(pointer).loadUnaligned(as: omni_wire_header.self)
+        return ShellLatestDataOutput(
+            width: node.width,
+            demand: header.deps,
+            action: node.action,
+            sequence: state.sequences[view.rawValue]
+        )
     }
 }
 
@@ -91,6 +98,88 @@ final class ShellLatestWidgetDataTests: XCTestCase {
         _ = await countDataMessages(clockMessages)
         await fixed.package?.close()
         await clock.package?.close()
+    }
+
+    func testMenuAppChangesWakeOnlySubscribedPackages() async {
+        let host = host()
+        let (menu, menuMessages) = attach("app-menu", deps: ShellDataKey.menuApp.bit, to: host)
+        let (active, activeMessages) = attach(
+            "active-window", deps: ShellDataKey.app.bit | ShellDataKey.bundle.bit, to: host
+        )
+        var data = ShellWidgetData()
+        data.world.menuApp = ShellMenuApp(pid: 42, name: "Editor", bundle: "com.example.editor")
+        host.broadcast(data)
+        data.world.menuApp = ShellMenuApp(pid: 43, name: "Terminal", bundle: "com.example.terminal")
+        host.broadcast(data)
+        host.broadcast(data)
+        menu.mailbox?.finish()
+        active.mailbox?.finish()
+        let menuCount = await countDataMessages(menuMessages)
+        let activeCount = await countDataMessages(activeMessages)
+        XCTAssertEqual(menuCount, 2)
+        XCTAssertEqual(activeCount, 0)
+        XCTAssertEqual(host.latestData.read(after: 0)?.data.world.menuApp, data.world.menuApp)
+        await menu.package?.close()
+        await active.package?.close()
+    }
+
+    func testMenuAppMapHydratesAndDemandsOnlyItsOwnKey() async throws {
+        let package = ShellWidgetPackage(name: "menu-map", generation: 1, outbox: ShellWidgetOutbox { _ in })
+        let failure = await package.load(source: """
+        function render(ctx)
+            local app = ctx.data.menuApp
+            if app then
+                assert(app.name == "Editor" and app.bundle == "com.example.editor")
+            end
+            return ui.box{w=app and app.pid or 1,h=10}
+        end
+        """)
+        XCTAssertNil(failure)
+        await package.receive(.bars([key: ShellBarData()]))
+        let empty = await package.latestDataOutput(key)
+        XCTAssertEqual(empty?.width, 1)
+        XCTAssertEqual(empty?.demand, ShellDataKey.menuApp.bit)
+        var data = ShellWidgetData()
+        data.world.menuApp = ShellMenuApp(pid: 42, name: "Editor", bundle: "com.example.editor")
+        await package.receive(.update(data))
+        let app = await package.latestDataOutput(key)
+        XCTAssertEqual(app?.width, 42)
+        XCTAssertEqual(app?.demand, ShellDataKey.menuApp.bit)
+        data.world.menuApp = nil
+        await package.receive(.update(data))
+        let cleared = await package.latestDataOutput(key)
+        XCTAssertEqual(cleared?.width, 1)
+        XCTAssertEqual(cleared?.demand, ShellDataKey.menuApp.bit)
+        await package.close()
+    }
+
+    func testClickHandlerReadsLatestMenuAppBeforeItsFirstSubscription() async throws {
+        let latest = ShellLatestWidgetData()
+        let package = ShellWidgetPackage(
+            name: "latest-menu", generation: 1, outbox: ShellWidgetOutbox { _ in }, latestData: latest
+        )
+        let failure = await package.load(source: """
+        function render(ctx)
+            return ui.box{w=ctx.state.seen or 1,h=10,onClick=function(next)
+                local app = next.data.menuApp
+                assert(app.name == "Terminal" and app.bundle == "com.example.terminal")
+                next.state.seen = app.pid
+            end}
+        end
+        """)
+        XCTAssertNil(failure)
+        await package.receive(.bars([key: ShellBarData()]))
+        let beforeValue = await package.latestDataOutput(key)
+        let before = try XCTUnwrap(beforeValue)
+        var data = ShellWidgetData()
+        data.world.menuApp = ShellMenuApp(pid: 42, name: "Editor", bundle: "com.example.editor")
+        latest.publish(data)
+        data.world.menuApp = ShellMenuApp(pid: 43, name: "Terminal", bundle: "com.example.terminal")
+        latest.publish(data)
+        await package.receive(.invoke(key, .bar, action: before.action, sequence: before.sequence, event: ShellEvent()))
+        let after = await package.latestDataOutput(key)
+        XCTAssertEqual(after?.width, 43)
+        await package.close()
     }
 
     func testLaterHandlerReadsLatestUnobservedDataBeforeTheFirstNewSubscription() async throws {

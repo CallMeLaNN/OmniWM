@@ -429,6 +429,7 @@ export type Data = {
     settingsSchema: { [string]: ComponentOption }?,
     reminders: Reminders?,
     badges: { [string]: string },
+    menuApp: { pid: number, name: string, bundle: string }?,
 }
 
 export type Format = {

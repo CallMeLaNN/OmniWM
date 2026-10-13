@@ -115,6 +115,8 @@ struct ShellBarLayout: Equatable {
 
     static func title(of name: String) -> String {
         switch name {
+        case "apple-menu": String(localized: "Apple Menu")
+        case "app-menu": String(localized: "App Menu")
         case "omniwm": "OmniWM"
         case "workspaces": String(localized: "Workspaces")
         case "scratchpads": String(localized: "Scratchpads")

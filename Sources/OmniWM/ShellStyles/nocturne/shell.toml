@@ -2,7 +2,7 @@
 # Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
 
 theme = "nocturne"
-leading = ["omniwm", "workspaces", "scratchpads"]
+leading = ["apple-menu", "app-menu", "omniwm", "workspaces", "scratchpads"]
 trailing = ["calendar", "media", "weather", "volume", "battery", "system-stats", "clock"]
 
 [workspaceBar]

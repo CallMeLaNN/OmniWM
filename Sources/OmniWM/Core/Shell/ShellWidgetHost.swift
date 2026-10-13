@@ -31,12 +31,17 @@ enum ShellRequest: Equatable, Sendable {
     case command(IPCCommandRequest)
     case window(IPCWindowRequest)
     case statusMenu
+    case menu(MenuContent)
     case moveFocusedWindow(target: String)
     case hiddenBarActivate(item: String)
 
     init?(words: [String]) {
         if words == ["shell", "menu"] {
             self = .statusMenu
+        } else if words == ["menu", "apple"] {
+            self = .menu(.apple)
+        } else if words == ["menu", "app"] {
+            self = .menu(.application)
         } else if words.count == 3, words[0] == "hidden-bar", words[1] == "activate" {
             self = .hiddenBarActivate(item: words[2])
         } else if words.first == "window" {

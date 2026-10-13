@@ -195,6 +195,7 @@ final class WorkspaceBarManager {
 
     private func removeBarForMonitor(_ monitorId: Monitor.ID) {
         if let instance = barsByMonitor[monitorId] {
+            if menuMonitorId == monitorId { MenuAnywhereController.shared.cancelTracking() }
             dragController.cancel()
             closeShellSystemStats(on: monitorId)
             removeSecondaryPanel(from: instance)
@@ -214,6 +215,7 @@ final class WorkspaceBarManager {
         notificationBadgeTargetsByMonitor.removeAll()
         hoverPreview?.dismiss()
         dragController.cancel()
+        if menuMonitorId != nil { MenuAnywhereController.shared.cancelTracking() }
         menuPresenter.cancel()
         renamePanel?.dismiss()
         menuMonitorId = nil

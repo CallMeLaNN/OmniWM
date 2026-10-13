@@ -575,7 +575,13 @@ final class ShellBundledWidgetTests: XCTestCase {
         }
     }
 
-    static func writeSnapshot(_ surface: ShellWidgetSurface, name: String, dark: Bool, directory: String) throws {
+    static func writeSnapshot(
+        _ surface: ShellWidgetSurface,
+        name: String,
+        dark: Bool,
+        directory: String,
+        background: CGColor? = nil
+    ) throws {
         ShellLayerScene.engineQueue.sync {}
         let inset: CGFloat = 12
         let size = surface.size
@@ -584,7 +590,7 @@ final class ShellBundledWidgetTests: XCTestCase {
             height: Int(ceil((size.height + inset * 2) * 2)), bitsPerComponent: 8, bytesPerRow: 0,
             space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         ))
-        context.setFillColor(CGColor(gray: dark ? 0.12 : 0.96, alpha: 1))
+        context.setFillColor(background ?? CGColor(gray: dark ? 0.12 : 0.96, alpha: 1))
         context.fill(CGRect(x: 0, y: 0, width: CGFloat(context.width), height: CGFloat(context.height)))
         context.translateBy(x: inset * 2, y: CGFloat(context.height) - inset * 2)
         context.scaleBy(x: 2, y: -2)

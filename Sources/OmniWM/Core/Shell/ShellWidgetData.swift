@@ -49,6 +49,7 @@ enum ShellDataKey: String, CaseIterable, Sendable {
     case settingsSchema
     case reminders
     case badges
+    case menuApp
 
     private static let order = allCases
     static let table = order.map(\.rawValue).joined(separator: "\n")
@@ -178,6 +179,7 @@ extension ShellWidgetData {
             | Self.changed(.bundle, when: world.bundle != previous.world.bundle)
             | Self.changed(.title, when: world.title != previous.world.title)
             | Self.changed(.workspaces, when: world.workspaces != previous.world.workspaces)
+            | Self.changed(.menuApp, when: world.menuApp != previous.world.menuApp)
     }
 
     private static func changed(_ key: ShellDataKey, when differs: Bool) -> UInt64 {

@@ -1,5 +1,5 @@
 theme = "matrix"
-leading = ["omniwm", "workspaces", "scratchpads", "active-window"]
+leading = ["apple-menu", "app-menu", "omniwm", "workspaces", "scratchpads", "active-window"]
 center = ["clock"]
 trailing = ["privacy", "media", "wifi", "battery-details", "control-center"]
 hiddenBarWidget = "hidden-bar"

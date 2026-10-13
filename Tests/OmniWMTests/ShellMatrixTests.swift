@@ -31,7 +31,10 @@ final class ShellMatrixTests: XCTestCase {
     func testProfileInstallsTheRainBarAndInheritsTheEffectsGallery() throws {
         XCTAssertEqual(config.profile, "matrix")
         XCTAssertEqual(config.themeName, "matrix")
-        XCTAssertEqual(config.leading, ["omniwm", "workspaces", "scratchpads", "active-window"])
+        XCTAssertEqual(
+            config.leading,
+            ["apple-menu", "app-menu", "omniwm", "workspaces", "scratchpads", "active-window"]
+        )
         XCTAssertEqual(config.center, ["clock"])
         XCTAssertEqual(config.trailing, ["privacy", "media", "wifi", "battery-details", "control-center"])
         XCTAssertEqual(config.barOverride?.settings.height, 40)
@@ -271,6 +274,9 @@ final class ShellMatrixTests: XCTestCase {
             ("bundle", "com.apple.Terminal")
         ] {
             rendered.set(key) { $0.string(value) }
+        }
+        rendered.set("menuApp") {
+            ShellMenuApp(pid: 42, name: "Terminal", bundle: "com.apple.Terminal").write(into: &$0)
         }
         for (key, value) in [("seconds", 1_000_030.0), ("battery", 82), ("volume", 40), ("cpu", 23), ("memory", 41)] {
             rendered.set(key) { $0.number(value) }

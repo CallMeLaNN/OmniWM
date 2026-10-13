@@ -352,6 +352,9 @@ extension WorkspaceBarManager {
         case .statusMenu:
             openStatusMenu(from: origin, controller: controller)
             return
+        case let .menu(content):
+            openApplicationMenu(content, from: origin, controller: controller)
+            return
         case let .moveFocusedWindow(target):
             moveFocusedWindow(to: target, on: origin.monitor, controller: controller)
             return
@@ -401,6 +404,35 @@ extension WorkspaceBarManager {
         case nil:
             break
         }
+    }
+
+    private func openApplicationMenu(
+        _ content: MenuContent,
+        from origin: ShellCommandOrigin,
+        controller: WMController
+    ) {
+        guard let anchor = origin.anchor,
+              let monitor = controller.workspaceManager.monitor(byId: origin.monitor)
+        else { return }
+        let app: NSRunningApplication? = switch content {
+        case .apple,
+             .all: NSWorkspace.shared.frontmostApplication
+        case .application: controller.shellMenuApp().flatMap { NSRunningApplication(processIdentifier: $0.pid) }
+        }
+        guard let app, !app.isTerminated else { return }
+        menuMonitorId = origin.monitor
+        refreshAutoHide()
+        defer {
+            menuMonitorId = nil
+            refreshAutoHide()
+        }
+        MenuAnywhereController.shared.showNativeMenu(
+            for: app,
+            content: content,
+            anchor: anchor.frame,
+            edge: controller.settings.workspaceBar.resolved(for: monitor).position.popupEdge,
+            visibleFrame: monitor.visibleFrame
+        )
     }
 
     private func openStatusMenu(from origin: ShellCommandOrigin, controller: WMController) {

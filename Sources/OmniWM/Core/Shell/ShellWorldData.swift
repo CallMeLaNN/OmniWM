@@ -11,15 +11,49 @@ struct ShellWorkspace: Equatable, Sendable {
     let windows: Int
 }
 
+struct ShellMenuApp: Equatable, Sendable, ShellValueWritable {
+    let pid: pid_t
+    let name: String
+    let bundle: String
+
+    func write(into writer: inout ShellValueWriter) {
+        writer.map(3)
+        writer.key("pid")
+        writer.number(Double(pid))
+        writer.key("name")
+        writer.string(name)
+        writer.key("bundle")
+        writer.string(bundle)
+    }
+}
+
 struct ShellWorldData: Equatable, Sendable {
     var workspace = ""
     var app = ""
     var bundle = ""
     var title = ""
     var workspaces: [ShellWorkspace] = []
+    var menuApp: ShellMenuApp?
 }
 
 extension WMController {
+    func shellMenuApp(
+        frontmost: @autoclosure () -> NSRunningApplication? = NSWorkspace.shared.frontmostApplication
+    ) -> ShellMenuApp? {
+        if let token = workspaceManager.selectedManagedToken,
+           let entry = workspaceManager.entry(for: token)
+        {
+            let info = appInfoCache.info(for: entry.pid)
+            return ShellMenuApp(pid: entry.pid, name: info?.name ?? "", bundle: info?.bundleId ?? "")
+        }
+        guard let app = frontmost(), !app.isTerminated else { return nil }
+        return ShellMenuApp(
+            pid: app.processIdentifier,
+            name: app.localizedName ?? "",
+            bundle: app.bundleIdentifier ?? ""
+        )
+    }
+
     func shellWorld() -> ShellWorldData {
         let focused = activeWorkspace()?.id
         let visible = workspaceManager.visibleWorkspaceIds()
@@ -41,7 +75,8 @@ extension WMController {
             app: info?.name ?? frontmost?.localizedName ?? "",
             bundle: info?.bundleId ?? frontmost?.bundleIdentifier ?? "",
             title: entry.flatMap { AXWindowService.titlePreferFast(windowId: UInt32($0.windowId)) } ?? "",
-            workspaces: workspaces
+            workspaces: workspaces,
+            menuApp: shellMenuApp()
         )
     }
 }

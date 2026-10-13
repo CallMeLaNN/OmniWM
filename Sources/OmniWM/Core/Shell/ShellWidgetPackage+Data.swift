@@ -215,6 +215,11 @@ extension ShellWidgetPackage {
     }
 
     private func update(_ instance: OpaquePointer, world: borrowing ShellWorldData, changed: UInt64) {
+        if changed & ShellDataKey.menuApp.bit != 0 {
+            setValue(instance, .menuApp) { writer in
+                world.menuApp.map { $0.write(into: &writer) } ?? writer.null()
+            }
+        }
         if changed & ShellDataKey.workspace.bit != 0 {
             setString(instance, .workspace, world.workspace)
         }

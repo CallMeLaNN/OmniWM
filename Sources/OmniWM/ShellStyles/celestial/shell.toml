@@ -2,7 +2,7 @@
 # Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
 
 theme = "celestial"
-leading = ["omniwm", "workspaces", "scratchpads"]
+leading = ["apple-menu", "app-menu", "omniwm", "workspaces", "scratchpads"]
 center = ["active-window"]
 trailing = ["hidden-bar", "clock", "status", "system-stats", "power"]
 

@@ -2,7 +2,7 @@
 # Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
 
 theme = "sakura"
-leading = ["omniwm", "workspaces", "scratchpads", "active-window"]
+leading = ["apple-menu", "app-menu", "omniwm", "workspaces", "scratchpads", "active-window"]
 center = ["clock"]
 trailing = ["privacy", "media", "wifi", "battery-details", "control-center"]
 hiddenBarWidget = "hidden-bar"

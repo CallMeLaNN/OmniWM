@@ -195,6 +195,12 @@ final class ShellWidgetBarLifecycleTests: XCTestCase {
         executionTimeAllowance = 60
         let shell = ShellWidgetHost.shellDirectory(in: controller.settings.settingsFileURL.deletingLastPathComponent())
         try FileManager.default.removeItem(at: shell)
+        let workspace = try XCTUnwrap(controller.workspaceManager.workspaceId(for: "1", createIfMissing: true))
+        let token = WindowToken(pid: NSRunningApplication.current.processIdentifier, windowId: 92_305)
+        _ = WindowAdmissionTestSupport.track(token, in: workspace, controller: controller)
+        XCTAssertTrue(controller.workspaceManager.confirmManagedFocus(
+            token, in: workspace, activateWorkspaceOnMonitor: false
+        ))
         let manager = makeManager()
         defer { manager.cleanup() }
 
@@ -206,8 +212,15 @@ final class ShellWidgetBarLifecycleTests: XCTestCase {
             try Data(contentsOf: XCTUnwrap(ShellConfig.bundledWidget("clock")))
         )
         XCTAssertTrue(FileManager.default.fileExists(atPath: shell.appendingPathComponent("widgets").path))
-        await waitForShellWidgets(manager)
-        XCTAssertEqual(manager.barsByMonitor[monitor.id]?.model.snapshot.shellWidgets.map(\.id), ["omniwm"])
+        let expected = ["apple-menu", "app-menu", "omniwm"]
+        await until {
+            let ids = manager.barsByMonitor[monitor.id]?.model.snapshot.shellWidgets.map(\.id) ?? []
+            return Set(ids).isSuperset(of: expected)
+        }
+        XCTAssertEqual(
+            manager.barsByMonitor[monitor.id].map { Array($0.model.snapshot.shellWidgets.prefix(3).map(\.id)) },
+            expected
+        )
     }
 
     func testWakeCleanupKeepsTheShellHostAndItsWidgets() async {
@@ -2162,6 +2175,39 @@ final class ShellWidgetClickTests: XCTestCase {
         while widths() != ["test": 10, "clock": 17] {
             try await layoutChanges.change()
         }
+    }
+
+    func testApplicationMenuCommandsKeepTheirOwnWidgetAnchors() async throws {
+        executionTimeAllowance = 60
+        let harness = try harness("""
+        function render(ctx)
+            return ui.row{
+                ui.box{w=10,h=10,onClick="menu apple"},
+                ui.box{w=20,h=10,onClick="menu app"},
+            }
+        end
+        """)
+        defer { harness.close() }
+        var layoutChanges = harness.layoutChanges.makeAsyncIterator()
+        try await layoutChanges.change()
+        let surface = try harness.barSurface()
+
+        surface.press(at: CGPoint(x: 5, y: 5))
+        surface.release(at: CGPoint(x: 5, y: 5))
+        surface.press(at: CGPoint(x: 20, y: 5))
+        surface.release(at: CGPoint(x: 20, y: 5))
+
+        XCTAssertEqual(harness.sink.commands, [.menu(.apple), .menu(.application)])
+        XCTAssertEqual(harness.sink.origins.map(\.monitor), [Harness.monitor, Harness.monitor])
+        XCTAssertEqual(harness.sink.origins.map(\.command), ["menu apple", "menu app"])
+        XCTAssertEqual(harness.sink.origins.map { $0.anchor?.frame.size }, [
+            CGSize(width: 10, height: 10), CGSize(width: 20, height: 10)
+        ])
+        XCTAssertNotEqual(harness.sink.origins[0].anchor?.frame, harness.sink.origins[1].anchor?.frame)
+        XCTAssertEqual(ShellAction("menu apple"), .wm(.menu(.apple)))
+        XCTAssertEqual(ShellAction("menu app"), .wm(.menu(.application)))
+        XCTAssertNil(ShellAction("menu all"))
+        XCTAssertNil(ShellAction("menu app extra"))
     }
 
     func testTheMenuCommandCarriesTheClickAndMarksItsElementAsTheMenuButton() async throws {

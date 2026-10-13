@@ -137,6 +137,31 @@ final class ShellDefaultsTests: XCTestCase {
         }
     }
 
+    func testBundledProfilesStartWithTheSharedAppleAndAppMenus() throws {
+        let shell = root.appendingPathComponent("shell", isDirectory: true)
+        XCTAssertEqual(ShellDefaults.sync(into: shell), [])
+        for profile in ShellProfiles.names(in: shell) {
+            _ = try ShellProfiles.select(profile, in: shell)
+            var problems: [String] = []
+            let config = try XCTUnwrap(ShellConfig.load(shellDirectory: shell, problems: &problems))
+            XCTAssertEqual(problems, [], profile)
+            XCTAssertEqual(Array(config.leading.prefix(3)), ["apple-menu", "app-menu", "omniwm"], profile)
+            for name in ["apple-menu", "app-menu"] {
+                XCTAssertEqual(config.widget(name), shell.appendingPathComponent("default/widgets/\(name)/init.luau"))
+                XCTAssertEqual(config.leading.filter { $0 == name }.count, 1, profile)
+                XCTAssertFalse(config.center.contains(name), profile)
+                XCTAssertFalse(config.trailing.contains(name), profile)
+            }
+        }
+        try write("profile = \"system\"\nprofiles.system.leading = [\"workspaces\"]\n", to: "shell.toml", in: shell)
+        XCTAssertEqual(ShellConfig.resolve(shellDirectory: shell).leading, ["workspaces"])
+        try ShellBarLayout.reset(shellDirectory: shell)
+        XCTAssertEqual(
+            Array(ShellConfig.resolve(shellDirectory: shell).leading.prefix(3)),
+            ["apple-menu", "app-menu", "omniwm"]
+        )
+    }
+
     func testSystemInstallsNativeMaterialBarAndInheritsTheSharedEffectsGallery() throws {
         let shell = root.appendingPathComponent("shell", isDirectory: true)
         XCTAssertEqual(ShellDefaults.sync(into: shell), [])
@@ -146,7 +171,7 @@ final class ShellDefaultsTests: XCTestCase {
         XCTAssertEqual(problems, [])
         XCTAssertEqual(config.themeName, "native")
         XCTAssertEqual(config.theme, .native)
-        XCTAssertEqual(config.leading, ["omniwm", "workspaces", "scratchpads"])
+        XCTAssertEqual(config.leading, ["apple-menu", "app-menu", "omniwm", "workspaces", "scratchpads"])
         XCTAssertEqual(config.center, ["active-window"])
         XCTAssertEqual(config.trailing, ["privacy", "wifi", "battery-details", "control-center", "clock"])
         XCTAssertEqual(config.hiddenBarWidget, "hidden-bar")
@@ -174,11 +199,14 @@ final class ShellDefaultsTests: XCTestCase {
         let system = shell.appendingPathComponent("system/widgets", isDirectory: true)
         let widgets = try FileManager.default.contentsOfDirectory(atPath: defaults.path).sorted()
         let systemWidgets = try FileManager.default.contentsOfDirectory(atPath: system.path).sorted()
-        let styledWidgets = widgets.filter { $0 != "effects-lab" }
+        let sharedWidgets = ["effects-lab", "apple-menu", "app-menu"]
+        let styledWidgets = widgets.filter { !sharedWidgets.contains($0) }
         XCTAssertEqual(systemWidgets, (styledWidgets + ["focus-ribbon"]).sorted())
         XCTAssertEqual(config.widget("focus-ribbon"), system.appendingPathComponent("focus-ribbon/init.luau"))
-        XCTAssertTrue(widgets.contains("effects-lab"))
-        XCTAssertEqual(config.widget("effects-lab"), defaults.appendingPathComponent("effects-lab/init.luau"))
+        for widget in sharedWidgets {
+            XCTAssertTrue(widgets.contains(widget))
+            XCTAssertEqual(config.widget(widget), defaults.appendingPathComponent("\(widget)/init.luau"))
+        }
         for widget in styledWidgets {
             XCTAssertEqual(config.widget(widget), system.appendingPathComponent("\(widget)/init.luau"))
         }

@@ -166065,7 +166065,9 @@
     "Customize widgets in the selected profile. Updates back up edits to bundled profiles; your own profiles are left alone." : {},
     "Reset to Style Defaults" : {},
     "Settings are saved for the “%@” shell profile." : {},
-    "Unable to Save Shell Settings" : {}
+    "Unable to Save Shell Settings" : {},
+    "Apple Menu" : {},
+    "App Menu" : {}
   },
   "version" : "1.0"
 }

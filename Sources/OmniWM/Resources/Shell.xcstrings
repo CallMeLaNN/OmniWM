@@ -19410,6 +19410,17 @@
           }
         }
       }
+    },
+    "Apple Menu" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Menu"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
