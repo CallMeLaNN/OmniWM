@@ -4,7 +4,7 @@
 import Foundation
 
 public enum OmniWMIPCProtocol {
-    public static let version = 19
+    public static let version = 20
 }
 
 public struct IPCNoPayload: Codable, Equatable, Sendable {
@@ -21,6 +21,7 @@ public enum IPCRequestKind: String, Codable, Equatable, Sendable {
     case workspace
     case window
     case windowMark = "window-mark"
+    case shell
     case subscribe
 }
 
@@ -34,6 +35,7 @@ public enum IPCResponseKind: String, Codable, Equatable, Sendable {
     case workspace
     case window
     case windowMark = "window-mark"
+    case shell
     case subscribe
     case error
 
@@ -57,6 +59,8 @@ public enum IPCResponseKind: String, Codable, Equatable, Sendable {
             self = .window
         case .windowMark:
             self = .windowMark
+        case .shell:
+            self = .shell
         case .subscribe:
             self = .subscribe
         }
@@ -225,6 +229,30 @@ public struct IPCSize: Codable, Equatable, Sendable {
     public init(width: Double, height: Double) {
         self.width = width
         self.height = height
+    }
+}
+
+public struct IPCSpan: Codable, Equatable, Sendable {
+    public let start: Double
+    public let end: Double
+
+    public init(start: Double, end: Double) {
+        self.start = start
+        self.end = end
+    }
+}
+
+public struct IPCInsets: Codable, Equatable, Sendable {
+    public let top: Double
+    public let left: Double
+    public let bottom: Double
+    public let right: Double
+
+    public init(top: Double, left: Double, bottom: Double, right: Double) {
+        self.top = top
+        self.left = left
+        self.bottom = bottom
+        self.right = right
     }
 }
 

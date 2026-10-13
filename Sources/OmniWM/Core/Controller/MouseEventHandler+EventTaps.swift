@@ -32,6 +32,7 @@ extension MouseEventHandler {
         guard let controller else { return true }
         return controller.focusFollowsMouseEnabled
             || controller.workspaceBarManager.needsAutoHideMouseMoves
+            || controller.workspaceBarManager.needsShellEdgeMouseMoves
             || (controller.settings.pointer.enabled && controller.workspaceManager.monitors.count > 1)
     }
 

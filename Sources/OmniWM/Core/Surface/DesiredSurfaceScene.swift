@@ -19,6 +19,16 @@ struct DesiredBarSurface: Equatable {
     var visible: Bool
     var snapshot: WorkspaceBarSnapshot
     var retainWhileHidden = false
+
+    var isRetained: Bool {
+        visible || retainWhileHidden
+    }
+}
+
+struct DesiredIslandSurface: Equatable {
+    var monitor: Monitor
+    var fullscreen: Bool
+    var navigation: IslandNavigationSnapshot? = nil
 }
 
 struct ParkingEdgeMaskKey: Hashable {
@@ -42,6 +52,7 @@ struct DesiredSurfaceScene: Equatable {
     var tabRailStyle: TabRailStyle = .compact
     var placeholders: [NativeFullscreenPlaceholderUpdate] = []
     var bars: [DesiredBarSurface] = []
+    var islands: [DesiredIslandSurface] = []
     var parkingEdgeMasks: [DesiredParkingEdgeMask] = []
     var niriColumns: [WorkspaceDescriptor.ID: NiriColumnSummary] = [:]
 

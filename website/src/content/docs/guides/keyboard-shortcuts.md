@@ -69,6 +69,15 @@ Creating workspace 10 or higher adds its Switch, Move, and Move Column actions t
 | Toggle Quake Terminal | `` Option + ` `` | `Shared` |
 | Toggle Overview | `Option + Shift + O` | `Shared` |
 | Toggle System Stats | `Unassigned` | `Shared` |
+| Volume Up | `Unassigned` | `Shared` |
+| Volume Down | `Unassigned` | `Shared` |
+| Mute or Unmute Volume | `Unassigned` | `Shared` |
+| Play or Pause Media | `Unassigned` | `Shared` |
+| Next Track | `Unassigned` | `Shared` |
+| Previous Track | `Unassigned` | `Shared` |
+| Toggle `<drawer or widget>` | `Unassigned` | `Shared` |
+
+Settings > Hotkeys lists a Toggle action for every shell drawer and every shell widget with a popout. A bound Toggle stays in the list even while its drawer or widget is missing. The volume, media and Toggle actions are Unreleased: available when building from `main`.
 
 The Set Mark and Remove Mark global actions and the Command Palette mark shortcuts below are available.
 

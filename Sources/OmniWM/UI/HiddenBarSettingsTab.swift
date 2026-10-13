@@ -47,10 +47,30 @@ struct HiddenBarSettingsTab: View {
     @Bindable var controller: WMController
 
     @State private var rows: [HiddenBarAppRow] = []
+    @State private var editError: String?
 
     var body: some View {
         Form {
+            if let override = settings.hiddenBar.profileOverride {
+                Section {
+                    Label(
+                        String(
+                            localized: "Settings are saved for the “\(override.profile)” shell profile."
+                        ),
+                        systemImage: "paintbrush"
+                    )
+                    .foregroundStyle(.secondary)
+                }
+            }
+
             Section("Hidden Bar") {
+                Button("Reset to Style Defaults") {
+                    do {
+                        try ShellSettingsEdits.reset(table: "hiddenBar", settings: settings, controller: controller)
+                    } catch {
+                        editError = error.localizedDescription
+                    }
+                }
                 Toggle("Enable Hidden Bar", isOn: enabledBinding)
                     .disabled(!controller.isHiddenBarHidingAvailable)
 
@@ -66,7 +86,7 @@ struct HiddenBarSettingsTab: View {
                 }
             }
 
-            if settings.hiddenBar.enabled {
+            if settings.hiddenBar.resolvedEnabled {
                 appsSection
                     .disabled(!controller.isHiddenBarHidingAvailable)
                 panelSection
@@ -74,9 +94,10 @@ struct HiddenBarSettingsTab: View {
             }
         }
         .formStyle(.grouped)
-        .task(id: settings.hiddenBar.enabled) {
+        .shellSettingsError($editError)
+        .task(id: settings.hiddenBar.resolvedEnabled) {
             let allowance = controller.hiddenBarSystemSettingsAllowance()
-            rows = settings.hiddenBar.enabled
+            rows = settings.hiddenBar.resolvedEnabled
                 ? HiddenBarAppRow.rows(allowance: allowance, selected: settings.hiddenBar.hiddenBundleIDs)
                 : []
         }
@@ -117,7 +138,7 @@ struct HiddenBarSettingsTab: View {
                 value: rehideIntervalBinding,
                 range: 2 ... 30,
                 step: 1,
-                valueText: String(localized: "\(Int(settings.hiddenBar.rehideIntervalSeconds)) s")
+                valueText: String(localized: "\(Int(settings.hiddenBar.resolvedRehideIntervalSeconds)) s")
             )
             SettingsCaption(
                 localized: "How long a clicked icon stays revealed. The countdown pauses while its menu is open."
@@ -127,20 +148,27 @@ struct HiddenBarSettingsTab: View {
 
     private var enabledBinding: Binding<Bool> {
         Binding(
-            get: { [settings] in settings.hiddenBar.enabled },
-            set: { [controller] enabled in
-                HiddenBarSettingsEdits.setEnabled(enabled) {
-                    controller.setHiddenBarEnabled($0)
-                }
-            }
+            get: { settings.hiddenBar.resolvedEnabled },
+            set: { setProfileValue($0, key: "enabled") }
         )
     }
 
     private var rehideIntervalBinding: Binding<Double> {
         Binding(
-            get: { [settings] in settings.hiddenBar.rehideIntervalSeconds },
-            set: { [settings] in HiddenBarSettingsEdits.setRehideInterval($0, settings: settings) }
+            get: { settings.hiddenBar.resolvedRehideIntervalSeconds },
+            set: { setProfileValue(
+                HiddenBarSettingsPolicy.validatedRehideIntervalSeconds($0),
+                key: "rehideIntervalSeconds"
+            ) }
         )
+    }
+
+    private func setProfileValue(_ value: some Encodable, key: String) {
+        do {
+            try ShellSettingsEdits.set(value, key: key, table: "hiddenBar", settings: settings, controller: controller)
+        } catch {
+            editError = error.localizedDescription
+        }
     }
 
     private func binding(for bundleID: String) -> Binding<Bool> {

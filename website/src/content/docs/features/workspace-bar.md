@@ -1,11 +1,13 @@
 ---
 title: Workspace Bar
-description: A floating per-display island that shows your workspaces and their windows at a glance.
+description: A per-display bar that shows your workspaces and their windows at a glance.
 sidebar:
   order: 4
 ---
 
-The workspace bar is a floating island centered along the selected edge of each display. It shows a chip per workspace — with the workspace's name, emoji-friendly — and the icons of the apps open there.
+The workspace bar runs along the selected edge of each display, as a floating island or, with **Full Width**, across the whole edge. It shows a chip per workspace — with the workspace's name, emoji-friendly — and the icons of the apps open there.
+
+When building from `main`, the bar is drawn by [Luau shell](/features/luau-shell/) widgets that you can restyle or replace.
 
 Window hover previews can be turned off separately. Turning off the global Workspace Bar hides it on every monitor, while saved monitor overrides take effect again when it is re-enabled.
 
@@ -19,7 +21,7 @@ Window hover previews can be turned off separately. Turning off the global Works
 
 ## System Stats
 
-Optionally show a System Stats button that opens a CPU, memory, GPU, disk, and uptime popup. The `Toggle System Stats` hotkey and `omniwmctl command toggle-system-stats` drive the same popup, and both do nothing unless a monitor currently shows that workspace-bar button. See the [CLI reference](/reference/cli/overview/).
+Optionally show a System Stats button that opens a CPU, memory, GPU, disk, and uptime popup. The `Toggle System Stats` hotkey and `omniwmctl command toggle-system-stats` drive the same popup, and both do nothing unless a monitor currently shows that workspace-bar button. See the [CLI reference](/reference/cli/overview/). When building from `main`, the button is the shell's `system-stats` widget, so it must stay in one of the bar's groups (`trailing` by default).
 
 ## Notification badges
 
@@ -40,6 +42,7 @@ notificationBadgeRefreshIntervalSeconds = 5
 Configure position, height, and appearance in Settings:
 
 - **Position** — overlap the menu bar, sit below it, or dock at **Bottom**, **Left**, or **Right**. Available globally and per display.
+- **Full Width** — span the whole edge, with the shell's `leading`, `center` and `trailing` widgets at its start, middle and end. Over the menu bar it sets macOS's **Automatically hide and show the menu bar** to Always while it is enabled on a display, including while the bar itself is hidden, and puts your choice back afterwards. Unreleased: available when building from `main`.
 - **Notch handling** — `Off`, `Move Below Menu Bar`, or a split layout (`Split — Active Left` / `Split — Active Right`) that flows the bar around the notch with your chosen side for the active workspace.
 - **Automatically hide and show** — reveal at the bar's edge and hide when the pointer moves inward past the bar and interactions end. See [Automatic hiding](#automatic-hiding).
 - **Reveal on modifier hold** — keep the bar hidden until you hold a chosen modifier; with automatic hiding enabled, either trigger can reveal it.

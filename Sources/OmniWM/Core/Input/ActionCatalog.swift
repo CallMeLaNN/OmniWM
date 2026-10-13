@@ -72,15 +72,22 @@ enum ActionCatalog {
     }
 
     static func spec(for id: String) -> ActionSpec? {
-        specsByID[id] ?? workspaceNumberSpec(for: id)
+        specsByID[id] ?? dynamicSpec(for: id)
     }
 
     static func spec(for command: HotkeyCommand) -> ActionSpec? {
-        specsByCommand[command] ?? workspaceNumberSpec(for: command)
+        if case let .shellToggle(name) = command {
+            return shellToggleSpec(name: name)
+        }
+        return specsByCommand[command] ?? workspaceNumberSpec(for: command)
+    }
+
+    static func dynamicSpec(for id: String) -> ActionSpec? {
+        workspaceNumberSpec(for: id) ?? shellToggleSpec(for: id)
     }
 
     static func normalizedSearchTerms(for id: String) -> [String]? {
-        normalizedSearchTermsByID[id] ?? workspaceNumberSpec(for: id)?.searchTerms.map(normalizedSearchTerm)
+        normalizedSearchTermsByID[id] ?? dynamicSpec(for: id)?.searchTerms.map(normalizedSearchTerm)
     }
 
     static func title(for command: HotkeyCommand) -> String? {
@@ -180,6 +187,7 @@ enum ActionCatalog {
         appendAxisResizeBindings(&specs)
         appendFocusedResizeBindings(&specs)
         appendPreselectionBindings(&specs)
+        specs.append(contentsOf: IPCMediaCommand.allCases.map { $0.actionSpec() })
         appendPresentationBindings(&specs)
 
         return specs
@@ -228,7 +236,9 @@ enum ActionCatalog {
              .windowState,
              .openMenuAnywhere,
              .windowMark,
-             .presentation:
+             .presentation,
+             .media,
+             .shellToggle:
             .shared
         case let .focusNavigation(action):
             action.compatibility
@@ -282,20 +292,17 @@ enum ActionCatalog {
                 bundle: .omniWM
             )
         case let .presentation(command): command.actionDisplayName()
-        case let .focusNavigation(action):
-            action.actionDisplayName()
-        case let .windowMovement(action):
-            action.actionDisplayName()
-        case let .column(action):
-            action.actionDisplayName()
-        case let .workspace(action):
-            action.actionDisplayName()
-        case let .sizing(action):
-            action.actionDisplayName()
-        case let .dwindle(action):
-            action.actionDisplayName()
-        case let .scratchpad(action):
-            action.actionDisplayName()
+        case let .media(command): command.actionDisplayName()
+        case let .shellToggle(name): LocalizedStringResource(
+                "command.shell.toggle", defaultValue: "Toggle \(name)", table: "Commands", bundle: .omniWM
+            )
+        case let .focusNavigation(action): action.actionDisplayName()
+        case let .windowMovement(action): action.actionDisplayName()
+        case let .column(action): action.actionDisplayName()
+        case let .workspace(action): action.actionDisplayName()
+        case let .sizing(action): action.actionDisplayName()
+        case let .dwindle(action): action.actionDisplayName()
+        case let .scratchpad(action): action.actionDisplayName()
         }
     }
 
@@ -321,6 +328,10 @@ enum ActionCatalog {
             .fullscreen(command)
         case let .presentation(command):
             .presentation(command)
+        case let .media(command):
+            .media(command)
+        case .shellToggle:
+            nil
         case let .windowState(command):
             .windowState(command)
         case .openMenuAnywhere:

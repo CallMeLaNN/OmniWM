@@ -63,3 +63,33 @@ Monitor direction is resolved relative to the named workspace's current monitor.
 If the moved workspace owns the exact focused managed-window token and no incompatible focus transition is pending, that token follows the workspace without a new AX focus request. Otherwise, OmniWM preserves the interaction monitor and any non-managed focus. OmniWM rejects the move when native-fullscreen, macOS-hidden app, scratchpad, or pending focus state cannot be transferred safely.
 
 Configured monitor assignment remains enforced unless `--force` is present. A forced move changes runtime placement without rewriting the workspace's persisted monitor configuration. The override lasts for the current OmniWM process and survives a transient disconnect and reconnect of the same output ID. It clears when the workspace returns to its configured home monitor, when configuration is reapplied, or when OmniWM restarts. If native fullscreen, a macOS-hidden app, a visible scratchpad, or an in-flight managed-focus transition makes rehoming unsafe, configuration reapply defers the clear until that state resolves. Configured workspace restore snapshots continue to prefer the Home Monitor. The flag may appear anywhere after `move-to-monitor`, although help and completion render the canonical trailing form.
+
+---
+
+## Shell Widgets
+
+Push values from any script to Luau bar widgets, open a widget's popout, switch the shell profile or theme, or copy a widget into your shell folder to edit it. Widgets read values as `ctx.data.vars[key]` and re-render when they change. Values last until OmniWM quits; they are not saved. Unreleased: available when building from `main`.
+
+```
+omniwmctl shell set <key> <value...>
+omniwmctl shell unset <key>
+omniwmctl shell toggle <widget-or-drawer>
+omniwmctl shell profile <name>
+omniwmctl shell theme <name> [scheme]
+omniwmctl shell eject <widget>
+omniwmctl shell init <widget>
+omniwmctl shell trigger <widget> <name> [value...]
+```
+
+| Action | Description |
+|--------|-------------|
+| `shell set <key> <value...>` | Set a string value; extra words are joined with spaces |
+| `shell unset <key>` | Remove a value; a missing key returns `no_change` |
+| `shell toggle <widget-or-drawer>` | Open or close the drawer of that name from `[drawer.<id>]` in `shell.toml`, or else the widget's popout on the focused display, under its bar slot, or at the top-right edge when the widget draws nothing in the bar. An unknown name returns `not_found` |
+| `shell profile <name>` | Set `profile` in `~/.config/omniwm/shell/shell.toml`. The name is `default` or a folder inside the shell folder. A missing folder returns `not_found`; the current profile returns `no_change`. The profile keeps its own settings and theme |
+| `shell theme <name> [scheme]` | Set the active profile's `profiles.<profile>.theme` in `~/.config/omniwm/shell/shell.toml`, or remove it when `<name>` is the profile's own theme. The name is `native` or a theme file in a `themes` folder of the shell folder, the active profile, `default/` or OmniWM's bundled themes. An unknown theme returns `not_found`; the current theme returns `no_change`. With `wallpaper`, a `scheme` such as `vibrant` also sets `profiles.<profile>.scheme`; a scheme with any other theme, or an unknown one, returns `invalid_arguments` |
+| `shell eject <widget>` | Copy the widget the active profile uses into `~/.config/omniwm/shell/widgets`, where it overrides the profile and OmniWM updates no longer replace it. A widget already there returns `no_change` |
+| `shell init <widget>` | Create a starter widget in `~/.config/omniwm/shell/widgets/<widget>`. Names use letters, digits, `-` and `_`; an existing folder returns `no_change` |
+| `shell trigger <widget> <name> [value...]` | Call the widget's `trigger(ctx, event)` with `event.name` and `event.value` on each instance it shows, then redraw it. A widget without a `trigger` function returns `not_found` |
+
+Keys use ASCII letters, digits, `_`, `-` and `.`, up to 64 bytes. Values are limited to 4096 bytes and 64 keys; anything else returns `invalid_arguments`.

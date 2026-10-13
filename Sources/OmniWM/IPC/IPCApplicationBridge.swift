@@ -87,17 +87,22 @@ actor IPCApplicationBridge {
             return Self.response(for: result, id: request.id, kind: .window)
         case let .windowMark(windowMark):
             return await Self.windowMarkResponse(for: windowMark, id: request.id, controller: controller)
+        case let .shell(shell):
+            return await Self.shellResponse(for: shell, id: request.id, controller: controller)
         case let .subscribe(subscribe):
-            return await MainActor.run {
-                let channels = IPCAutomationManifest.expandedChannels(for: subscribe)
-                return .success(
-                    id: request.id,
-                    kind: .subscribe,
-                    status: .subscribed,
-                    result: IPCResult(subscribed: IPCSubscribeResult(channels: channels))
-                )
-            }
+            return await MainActor.run { Self.subscribeResponse(for: subscribe, id: request.id) }
         }
+    }
+
+    @MainActor
+    private static func subscribeResponse(for subscribe: IPCSubscribeRequest, id: String) -> IPCResponse {
+        let channels = IPCAutomationManifest.expandedChannels(for: subscribe)
+        return .success(
+            id: id,
+            kind: .subscribe,
+            status: .subscribed,
+            result: IPCResult(subscribed: IPCSubscribeResult(channels: channels))
+        )
     }
 
     private func protocolMismatchResponse(for request: IPCRequest, versionResult: IPCResult) -> IPCResponse? {
@@ -128,6 +133,7 @@ actor IPCApplicationBridge {
              .workspace,
              .window,
              .windowMark,
+             .shell,
              .subscribe:
             return IPCResponse(failing: request, code: .invalidRequest)
         }

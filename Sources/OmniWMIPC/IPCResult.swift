@@ -24,6 +24,7 @@ public enum IPCResultKind: String, Codable, Equatable, Sendable {
     case subscribed
     case windowMarks = "window-marks"
     case metrics
+    case shellWidgets = "shell-widgets"
 }
 
 public struct IPCPingResult: Codable, Equatable, Sendable {
@@ -78,6 +79,7 @@ public struct IPCResult: Codable, Equatable, Sendable {
         case subscribed(IPCSubscribeResult)
         case windowMarks(IPCWindowMarksResult)
         case metrics(IPCMetricsQueryResult)
+        case shellWidgets(IPCShellWidgetsQueryResult)
     }
 
     public let kind: IPCResultKind
@@ -98,6 +100,10 @@ public struct IPCResult: Codable, Equatable, Sendable {
 
     public init(capture: IPCCaptureResult) {
         self.init(kind: .capture, payload: .capture(capture))
+    }
+
+    public init(shellWidgets: IPCShellWidgetsQueryResult) {
+        self.init(kind: .shellWidgets, payload: .shellWidgets(shellWidgets))
     }
 
     public init(workspaceBar: IPCWorkspaceBarQueryResult) {
@@ -186,6 +192,8 @@ public struct IPCResult: Codable, Equatable, Sendable {
             payload = .capture(try container.decode(IPCCaptureResult.self, forKey: .payload))
         case .workspaceBar:
             payload = .workspaceBar(try container.decode(IPCWorkspaceBarQueryResult.self, forKey: .payload))
+        case .shellWidgets:
+            payload = .shellWidgets(try container.decode(IPCShellWidgetsQueryResult.self, forKey: .payload))
         case .activeWorkspace:
             payload = .activeWorkspace(try container.decode(IPCActiveWorkspaceQueryResult.self, forKey: .payload))
         case .focusedMonitor:
@@ -233,6 +241,8 @@ public struct IPCResult: Codable, Equatable, Sendable {
         case let .capture(payload):
             try container.encode(payload, forKey: .payload)
         case let .workspaceBar(payload):
+            try container.encode(payload, forKey: .payload)
+        case let .shellWidgets(payload):
             try container.encode(payload, forKey: .payload)
         case let .activeWorkspace(payload):
             try container.encode(payload, forKey: .payload)

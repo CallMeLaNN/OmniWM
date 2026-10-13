@@ -226,6 +226,23 @@ extension CommandHandler {
         }
     }
 
+    func perform(_ action: IPCMediaCommand, controller: WMController) {
+        switch action {
+        case .volumeUp:
+            ShellAudio.perform(.change(percent: ShellVolumeCommand.step), appVolumes: controller.appVolumeMixer)
+        case .volumeDown:
+            ShellAudio.perform(.change(percent: -ShellVolumeCommand.step), appVolumes: controller.appVolumeMixer)
+        case .volumeMute:
+            ShellAudio.perform(.toggleMute, appVolumes: controller.appVolumeMixer)
+        case .playPause:
+            controller.mediaController.perform(.toggle)
+        case .next:
+            controller.mediaController.perform(.next)
+        case .previous:
+            controller.mediaController.perform(.previous)
+        }
+    }
+
     func perform(_ action: IPCPresentationCommand, controller: WMController) -> ExternalCommandResult {
         switch action {
         case .workspaceBar:

@@ -654,6 +654,7 @@ OmniWM is built for high responsiveness and smooth, crisp animations.
 - Accessibility and Input Monitoring permissions (required at launch)
 - Screen Recording permission for Overview thumbnails, drag previews, and captured Hidden Bar glyphs (optional)
 - Full Disk Access permission for Hidden Bar concealment (optional)
+- System Audio Recording permission for per-app volume, Calendars access for the calendar widget, Location for the Wi-Fi widget's network name and Bluetooth for the Bluetooth widget in the Luau shell (optional; when building from `main`)
 - Displays have separate spaces **ON** (the macOS default; OmniWM pauses window management until it is enabled)
 
 ## Installation
@@ -872,6 +873,15 @@ When you create workspace 10 or higher, Settings > Hotkeys adds its Switch, Move
 | Toggle Quake Terminal | `` Option + ` `` | `Shared` |
 | Toggle Overview | `Option + Shift + O` | `Shared` |
 | Toggle System Stats | `Unassigned` | `Shared` |
+| Volume Up | `Unassigned` | `Shared` |
+| Volume Down | `Unassigned` | `Shared` |
+| Mute or Unmute Volume | `Unassigned` | `Shared` |
+| Play or Pause Media | `Unassigned` | `Shared` |
+| Next Track | `Unassigned` | `Shared` |
+| Previous Track | `Unassigned` | `Shared` |
+| Toggle `<drawer or widget>` | `Unassigned` | `Shared` |
+
+The volume, media and Toggle actions are available when building from `main`. Settings > Hotkeys lists a Toggle action for every shell drawer and every shell widget with a popout.
 
 #### Move Window
 
@@ -1074,6 +1084,8 @@ A visual indicator showing your workspaces:
 - Optionally show a System Stats button that opens a CPU, memory, GPU, disk, and uptime popup. `Toggle System Stats` and `omniwmctl command toggle-system-stats` drive the same popup, and both do nothing unless a monitor currently shows that workspace-bar button
 - Optionally hide the bar on a monitor while that monitor shows a macOS native fullscreen window, and bring it back on exit (`Hide in Native Fullscreen`); reserved tiled layout space is left untouched so windows do not shuffle around the fullscreen session
 - Exclude individual apps or choose alternate app icons across all monitors in Settings
+- When building from `main`, the bar is drawn by Luau widgets in `~/.config/omniwm/shell/` that you can restyle or replace, with the Wayline, Nocturne, Celestial and System styles and twelve colour themes bundled; see [Luau Shell](website/src/content/docs/features/luau-shell.md)
+- The editable effects library includes native motion presets, Metal lighting and reveal masks. Add **Effects Lab** from **Bar Widgets** to explore them with blur and glass materials; see [Effects library](website/src/content/docs/features/luau-shell.md#editable-effects-library).
 
 Workspace-bar appearance controls are optional and also support per-monitor overrides:
 
@@ -1266,4 +1278,4 @@ The similarly named files under `docs/` are compatibility stubs that direct old 
 
 OmniWM is licensed under the [GNU General Public License v2.0-only](LICENSE). Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM.
 
-Every source file carries an SPDX license header. Forks and redistributions must retain these notices and the `LICENSE` file, and remain GPL-2.0-only with source available.
+Every OmniWM source file carries an SPDX license header. The vendored Luau runtime in `Sources/OmniWMLuau` keeps its MIT license (`LICENSE.txt` and `lua_LICENSE.txt`), and app builds ship both texts in `Contents/Resources/Licenses`. The Nocturne and Wayline shell themes use colours from [Noctalia](https://github.com/noctalia-dev/noctalia) and [Wayle](https://github.com/wayle-rs/wayle), both MIT. The Catppuccin, Dracula, Everforest, Gruvbox, Kanagawa, Nord and Rosé Pine shell themes adapt those MIT colour schemes through the same two projects. The bundled fonts Google Sans Flex and Rubik (SIL Open Font License) and Material Symbols Rounded (Apache 2.0) keep their licenses, as does Google's Material Color Utilities (Apache 2.0), vendored in `Sources/OmniWMMaterialColor`. All of these notices are in `Resources/Licenses` and ship there too. Forks and redistributions must retain these notices and the `LICENSE` file, and remain GPL-2.0-only with source available.

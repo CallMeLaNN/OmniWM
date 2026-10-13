@@ -71,6 +71,7 @@ final class RuntimeTraceCaptureCoordinator {
     private var reportProvider: (() -> String)?
     private var automaticEvidenceProvider: (() async -> String)?
     private var performanceMetricsEnd: (() -> Void)?
+    private var traceMetricsEnd: (() async -> Void)?
     private var captureTask: Task<Void, Never>?
     private var captureGeneration: UInt64 = 0
     private(set) var lastArtifact: TraceCaptureArtifact?
@@ -116,6 +117,8 @@ final class RuntimeTraceCaptureCoordinator {
         reportProvider: @escaping () -> String,
         performanceMetricsBegin: @escaping () -> Void = {},
         performanceMetricsEnd: @escaping () -> Void = {},
+        traceMetricsBegin: @escaping () async -> Void = {},
+        traceMetricsEnd: @escaping () async -> Void = {},
         automaticEvidenceProvider: @escaping () async -> String = { "none" }
     ) async -> TraceCaptureOutcome {
         switch desiredState {
@@ -133,6 +136,8 @@ final class RuntimeTraceCaptureCoordinator {
             reportProvider: reportProvider,
             performanceMetricsBegin: performanceMetricsBegin,
             performanceMetricsEnd: performanceMetricsEnd,
+            traceMetricsBegin: traceMetricsBegin,
+            traceMetricsEnd: traceMetricsEnd,
             automaticEvidenceProvider: automaticEvidenceProvider
         )
     }
@@ -142,6 +147,8 @@ final class RuntimeTraceCaptureCoordinator {
         reportProvider: @escaping () -> String,
         performanceMetricsBegin: @escaping () -> Void,
         performanceMetricsEnd: @escaping () -> Void,
+        traceMetricsBegin: @escaping () async -> Void,
+        traceMetricsEnd: @escaping () async -> Void,
         automaticEvidenceProvider: @escaping () async -> String
     ) async -> TraceCaptureOutcome {
         guard phase == .idle else { return .noChange }
@@ -153,6 +160,10 @@ final class RuntimeTraceCaptureCoordinator {
         let startedAt = Date()
         resources.begin(for: profile, generation: generation)
         do {
+            if profile == .problem {
+                self.traceMetricsEnd = traceMetricsEnd
+                await traceMetricsBegin()
+            }
             if profile == .performance {
                 try await resources.writer.preparePerformanceCapture()
             }
@@ -184,8 +195,11 @@ final class RuntimeTraceCaptureCoordinator {
                 onStateChange?()
             }
         } catch {
-            guard captureGeneration == generation else { return .noChange }
-            abandonStart(profile: profile)
+            guard captureGeneration == generation,
+                  phase == .starting && startingProfile == profile
+                  || phase == .recording && self.session?.profile == profile
+            else { return .noChange }
+            await abandonStart(profile: profile, generation: generation)
             return .writeFailed(error.localizedDescription)
         }
 
@@ -220,8 +234,11 @@ final class RuntimeTraceCaptureCoordinator {
         )
     }
 
-    private func abandonStart(profile: TraceCaptureProfile) {
+    private func abandonStart(profile: TraceCaptureProfile, generation: UInt64) async {
+        phase = .finalizing
         if profile == .problem {
+            await finishTraceMetrics()
+            guard captureGeneration == generation, phase == .finalizing else { return }
             resources.end(for: profile)
             resources.releaseStorage(for: profile)
         }
@@ -232,6 +249,12 @@ final class RuntimeTraceCaptureCoordinator {
         self.performanceMetricsEnd = nil
         phase = .idle
         onStateChange?()
+    }
+
+    private func finishTraceMetrics() async {
+        let end = traceMetricsEnd
+        traceMetricsEnd = nil
+        await end?()
     }
 
     private func startCaptureTask(profile: TraceCaptureProfile, generation: UInt64) {
@@ -279,10 +302,15 @@ final class RuntimeTraceCaptureCoordinator {
         } else {
             processResourceEnd = nil
         }
-        let endedAt = Date()
+        var endedAt = Date()
         phase = .finalizing
         onStateChange?()
 
+        if session.profile == .problem {
+            await finishTraceMetrics()
+            guard captureGeneration == generation, phase == .finalizing else { return .noChange }
+            endedAt = Date()
+        }
         resources.end(for: session.profile)
         let endReport = RuntimeTraceLimits.boundedString(
             reportProvider?() ?? "report unavailable",

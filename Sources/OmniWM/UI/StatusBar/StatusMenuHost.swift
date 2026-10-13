@@ -70,13 +70,12 @@ final class StatusMenuHost {
         self.sleep = sleep
     }
 
-    func toggle(from anchor: NSView, edge: PopupAttachment.Edge = .below) {
+    func toggle(anchorFrame: CGRect, screen: NSScreen?, edge: PopupAttachment.Edge = .below) {
         if isVisible {
             dismiss()
             return
         }
-        guard let window = anchor.window, let screen = window.screen else { return }
-        let anchorFrame = window.convertToScreen(anchor.convert(anchor.bounds, to: nil))
+        guard let screen else { return }
         show(
             attachment: PopupAttachment(sourceFrame: anchorFrame, edge: edge),
             visibleFrame: screen.visibleFrame

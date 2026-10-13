@@ -144,12 +144,18 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             persistence: SettingsFilePersistence(directory: storagePaths.configDirectory),
             runtimeState: runtimeState
         )
-        let hiddenBarController = HiddenBarController(settings: settings, hider: .live(in: storagePaths.stateDirectory))
+        let menuBarHold = MenuBarAutohideHold(runtimeState: runtimeState)
+        let hiddenBarController = HiddenBarController(
+            settings: settings,
+            hider: .live(in: storagePaths.stateDirectory),
+            setMenuAccess: { menuBarHold.setMenuAccess($0) }
+        )
         let controller = WMController(
             settings: settings,
             hiddenBarController: hiddenBarController,
             clipboardHistoryDirectory: storagePaths.stateDirectory
         )
+        controller.workspaceBarManager.menuBarHold = menuBarHold
         controller.applyPersistedSettings(settings)
         startSystemMotionPreferenceObservation(controller)
         let cliManager = AppCLIManager()
@@ -244,17 +250,6 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private func stopIPCServer() {
         ipcServer?.stop()
         ipcServer = nil
-    }
-
-    private func startSystemMotionPreferenceObservation(_ controller: WMController) {
-        controller.motionPolicy.systemReducesMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-        _ = NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil, queue: .main
-        ) { [weak controller] _ in
-            Task { @MainActor [weak controller] in
-                controller?.motionPolicy.systemReducesMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-            }
-        }
     }
 
     private func startMonitorSetupPresentationObservation() {
@@ -388,6 +383,17 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 extension AppDelegate {
+    private func startSystemMotionPreferenceObservation(_ controller: WMController) {
+        controller.motionPolicy.systemReducesMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        _ = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil, queue: .main
+        ) { [weak controller] _ in
+            Task { @MainActor [weak controller] in
+                controller?.motionPolicy.systemReducesMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+            }
+        }
+    }
+
     public func applicationShouldTerminate(_ application: NSApplication) -> NSApplication.TerminateReply {
         guard let controller = AppDelegate.sharedBootstrap?.controller else { return .terminateNow }
         return deferTermination(
@@ -403,6 +409,7 @@ extension AppDelegate {
                             return
                         }
                     }
+                    await controller.workspaceBarManager.flushShellForQuit()
                     controller.serviceLifecycleManager.stopRestoringWindows(forQuit: true, completion: completion)
                 }
             },

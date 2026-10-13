@@ -222,7 +222,7 @@ Zoom and colors for the Overview.
 
 ## workspaceBar
 
-The per-monitor workspace bar. Per-monitor exceptions live in [`monitorBarOverrides`](#per-monitor-overrides).
+The per-monitor workspace bar. Per-monitor exceptions live in [`monitorBarOverrides`](#per-monitor-overrides). A [shell profile or theme](/features/luau-shell/#shelltoml) can override most of these keys in its own `[workspaceBar]`. Unreleased: available when building from `main`.
 
 | Key | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -236,7 +236,9 @@ The per-monitor workspace bar. Per-monitor exceptions live in [`monitorBarOverri
 | `position` | string | `"overlappingMenuBar"` | `overlappingMenuBar`, `belowMenuBar`, `bottom`, `left`, or `right`. Bottom and side placements follow the usable display edge, avoiding a visible Dock. |
 | `notchMode` | string | `"moveBelowMenuBar"` | Notch handling: `off`, `moveBelowMenuBar`, `splitActiveLeft`, `splitActiveRight`, or `fillLeftOfNotch`. The last fills the menu-bar area left of the notch and covers app menus; without a notch it uses the left half of the menu bar. At top positions, this mode overrides `position`, `xOffset`, `yOffset`, `height`, and `reserveLayoutSpace`: the bar uses the menu-bar height and reserves no layout space. Bottom/left/right ignore notch modes without changing the saved preference. |
 | `notchActiveZoneWidth` | float | `180.0` | Width in points of the active zone around the notch. |
-| `systemStatsButton` | boolean | `false` | Adds a system stats button to the bar. |
+| `fullWidth` *(optional)* | boolean | `false` | Spans the whole screen edge, with the shell's `leading`, `center` and `trailing` widgets at its start, middle and end (top, middle and bottom on a side bar). `notchMode`, `notchActiveZoneWidth` and the offset along the bar don't apply. Over the menu bar it sits at the top of the screen, above the native menu bar, and sets macOS's **Automatically hide and show the menu bar** to Always, on every display, unless it already is. Your previous choice comes back when the last full-width bar leaves the menu bar or turns off, or OmniWM quits (after a crash, at the next launch). Unreleased: available when building from `main`. |
+| `fullWidthNotchMode` *(optional)* | string | `"rightOfNotch"` | Where a full-width bar's `center` widgets go on a display with a notch: `off` (centered under the notch), `moveBelowMenuBar` (the whole bar moves below the menu bar), `rightOfNotch`, `leftOfNotch`, or `splitAroundNotch` (the first half left of the notch, the rest right of it). Bottom/left/right ignore it. Unreleased: available when building from `main`. |
+| `systemStatsButton` | boolean | `false` | Adds a system stats button to the bar. When building from `main`, the button and the `Toggle System Stats` hotkey need the shell's `system-stats` widget in one of the bar's groups. |
 | `deduplicateAppIcons` | boolean | `false` | Collapses repeated icons of the same app within a pill. |
 | `hideEmptyWorkspaces` | boolean | `false` | Hides inactive empty workspaces in the bar and Overview; next/previous navigation skips them. |
 | `excludedBundleIDs` | string array | `[]` | Bundle IDs whose windows never contribute icons to the bar. |
@@ -320,6 +322,8 @@ Menu-bar icon concealment (requires macOS 27+ and Full Disk Access).
 | `hiddenBundleIDs` | string array | `[]` | Bundle IDs of menu-bar apps whose icons are concealed. |
 | `rehideIntervalSeconds` | float | `5.0` | Seconds before revealed icons re-hide automatically. |
 
+A [shell profile](/features/luau-shell/#shelltoml) can override `enabled` and `rehideIntervalSeconds` in its own `[hiddenBar]`. Unreleased: available when building from `main`.
+
 ## clipboard
 
 Clipboard history limits. History content itself is stored in the state directory, not in the config file.
@@ -397,6 +401,7 @@ id = "toggleScratchpad.1"
 - `binding` is a human-readable chord: `+`-joined modifiers (`Control`, `Option`, `Shift`, `Command`, or the `Hyper` shorthand for the full [`hyperKeyModifiers`](#general) set) followed by a key name — or `"Unassigned"`. A `Left `/`Right ` prefix pins a modifier to one side (e.g. `"Left Option+H"`). A binding can instead be an extra mouse button, `MouseButton2`–`MouseButton31`, alone or after modifiers without side prefixes (e.g. `"Option+MouseButton3"`); a button used by `systemHyperTrigger` or Overview cannot also be a hotkey.
 - The array is validated strictly: each action may appear **only once**, and an action that is left out is unassigned. Workspace `10+` action IDs are optional and appear while those workspaces exist. An unknown, unassignable, or duplicate action id rejects the whole file, so rebind by editing `binding` values in place.
 - The numeric suffix is zero-based for `switchWorkspace.N`, `moveToWorkspace.N`, `focusColumn.N`, and `moveColumnToWorkspace.N` — `switchWorkspace.0` is *Switch to Workspace 1* (`Option + 1` by default) — and one-based for `switchWorkspaceSlot.N`, `moveToWorkspaceSlot.N`, `focusWindowInColumn.N`, `moveColumnToIndex.N`, `toggleScratchpad.N`, and `assignFocusedWindowToScratchpad.N`.
+- `toggleShellWidget.<name>` toggles the shell drawer or widget popout named `<name>`. Settings lists one for every drawer and every widget with a popout, and a bound one stays while its drawer or widget is missing. Unreleased: available when building from `main`.
 
 The default bindings are listed in the [keyboard shortcuts guide](/guides/keyboard-shortcuts/); assignable actions appear in **Settings > Hotkeys**.
 
@@ -464,7 +469,7 @@ When `workspaceBar.enabled = false`, no monitor can show its bar. Saved `monitor
 
 | Array | Overridable keys |
 | --- | --- |
-| `monitorBarOverrides` | `enabled`, `showLabels`, `showFloatingWindows`, `deduplicateAppIcons`, `hideEmptyWorkspaces`, `reserveLayoutSpace`, `autoHide`, `notchMode`, `notchActiveZoneWidth`, `position`, `windowLevel`, `height`, `backgroundOpacity`, `inactiveIconOpacity`, `transparentBackground`, `solidBlackBackground`, `showItemBackgrounds`, `showAccentHighlights`, `xOffset`, `yOffset` — see [`workspaceBar`](#workspacebar) |
+| `monitorBarOverrides` | `enabled`, `showLabels`, `showFloatingWindows`, `deduplicateAppIcons`, `hideEmptyWorkspaces`, `reserveLayoutSpace`, `autoHide`, `notchMode`, `notchActiveZoneWidth`, `fullWidth`, `fullWidthNotchMode`, `position`, `windowLevel`, `height`, `backgroundOpacity`, `inactiveIconOpacity`, `transparentBackground`, `solidBlackBackground`, `showItemBackgrounds`, `showAccentHighlights`, `xOffset`, `yOffset` — see [`workspaceBar`](#workspacebar). `fullWidth` and `fullWidthNotchMode` are Unreleased: available when building from `main`. |
 | `monitorOrientationOverrides` | `orientation`: `horizontal` or `vertical` layout orientation for that monitor |
 | `monitorNiriOverrides` | `visibleContainerCount`, `centerFocusedColumn`, `alwaysCenterSingleColumn`, `singleWindowFit`, `infiniteLoop` — see [`niri`](#niri) |
 | `monitorDwindleOverrides` | `smartSplit`, `defaultSplitRatio`, `splitWidthMultiplier`, `singleWindowFit`, `useGlobalGaps`, `innerGap` — see [`dwindle`](#dwindle) |

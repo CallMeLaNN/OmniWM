@@ -24,7 +24,7 @@ final class CLIInvocationParsingTests: XCTestCase {
                 let parsed = try CLIParser.parse(arguments: ["omniwmctl"] + formatArguments + testCase.arguments)
 
                 XCTAssertEqual(parsed.request.kind, testCase.kind)
-                XCTAssertEqual(parsed.request.version, 19)
+                XCTAssertEqual(parsed.request.version, 20)
                 XCTAssertNotNil(UUID(uuidString: parsed.request.id))
                 XCTAssertEqual(parsed.outputFormat, !formatArguments.isEmpty || testCase.kind == .query ? .json : .text)
                 XCTAssertFalse(parsed.expectsEventStream)
@@ -52,6 +52,27 @@ final class CLIInvocationParsingTests: XCTestCase {
     func testPayloadFreeAndUnknownCommandsKeepUsageFailures() {
         for arguments in [["ping", "extra"], ["version", "extra"], ["unknown"], []] {
             XCTAssertThrowsError(try CLIParser.parse(arguments: ["omniwmctl"] + arguments)) { error in
+                XCTAssertEqual(error as? CLIParseError, .usage(CLIParser.usageText))
+            }
+        }
+    }
+
+    func testCommandPaletteModesParseThroughSharedCommandWords() throws {
+        let toggle = try IPCCommandRequest(name: .openCommandPalette, argumentValues: [])
+        XCTAssertEqual(IPCCommandRequest(commandWords: ["open-command-palette"]), toggle)
+        XCTAssertEqual(
+            try CLIParser.parse(arguments: ["omniwmctl", "command", "open-command-palette"]).request.payload,
+            .command(toggle)
+        )
+        for mode in IPCCommandPaletteMode.allCases {
+            let expected = try IPCCommandRequest(name: .openCommandPaletteMode, argumentValues: [.paletteMode(mode)])
+            XCTAssertEqual(IPCCommandRequest(commandWords: ["open-command-palette", mode.rawValue]), expected)
+            let parsed = try CLIParser.parse(arguments: ["omniwmctl", "command", "open-command-palette", mode.rawValue])
+            XCTAssertEqual(parsed.request.payload, .command(expected))
+        }
+        for arguments in [["open-command-palette", "bogus"], ["open-command-palette", "windows", "extra"]] {
+            XCTAssertNil(IPCCommandRequest(commandWords: arguments))
+            XCTAssertThrowsError(try CLIParser.parse(arguments: ["omniwmctl", "command"] + arguments)) { error in
                 XCTAssertEqual(error as? CLIParseError, .usage(CLIParser.usageText))
             }
         }

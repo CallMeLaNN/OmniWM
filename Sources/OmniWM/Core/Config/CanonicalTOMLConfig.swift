@@ -16,6 +16,7 @@ struct CanonicalTOMLConfig: Codable, Equatable {
     var borders: SettingsExport.Borders
     var overview: SettingsExport.Overview
     var workspaceBar: SettingsExport.WorkspaceBar
+    var island: SettingsExport.Island
     var gestures: SettingsExport.Gestures
     var statusBar: SettingsExport.StatusBar
     var hiddenBar: SettingsExport.HiddenBar
@@ -81,6 +82,7 @@ extension CanonicalTOMLConfig {
         borders = try container.decode(SettingsExport.Borders.self, forKey: .borders)
         overview = try container.decode(SettingsExport.Overview.self, forKey: .overview)
         workspaceBar = try container.decode(SettingsExport.WorkspaceBar.self, forKey: .workspaceBar)
+        island = try container.decodeIfPresent(SettingsExport.Island.self, forKey: .island) ?? .defaults()
         gestures = try container.decode(SettingsExport.Gestures.self, forKey: .gestures)
         statusBar = try container.decode(SettingsExport.StatusBar.self, forKey: .statusBar)
         hiddenBar = try container.decode(SettingsExport.HiddenBar.self, forKey: .hiddenBar)
@@ -128,6 +130,7 @@ extension CanonicalTOMLConfig {
         borders = export.borders
         overview = export.overview
         workspaceBar = export.workspaceBar
+        island = export.island
         gestures = export.gestures
         statusBar = export.statusBar
         hiddenBar = export.hiddenBar
@@ -162,6 +165,7 @@ extension CanonicalTOMLConfig {
             systemHyperTrigger: general.systemHyperTrigger,
             hyperKeyModifiers: general.hyperKeyModifiers,
             workspaceBar: workspaceBar,
+            island: island,
             scratchpads: scratchpads,
             monitorBarSettings: monitorBarOverrides,
             appRules: appRules,

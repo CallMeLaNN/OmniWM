@@ -31,12 +31,14 @@ final class OwnedWindowRegistry {
     func register(
         _ window: NSWindow,
         surfaceId: String,
-        policy: SurfacePolicy
+        policy: SurfacePolicy,
+        regionProvider: (@MainActor () -> [CGRect])? = nil
     ) {
         surfaceCoordinator.register(
             window: window,
             id: surfaceId,
-            policy: policy
+            policy: policy,
+            regionProvider: regionProvider
         )
     }
 
@@ -54,6 +56,11 @@ final class OwnedWindowRegistry {
             visibilityProvider: visibilityProvider,
             policy: policy
         )
+    }
+
+    @discardableResult
+    func setManagedFocusRecoverySuppressed(_ suppressed: Bool, for window: NSWindow) -> Bool? {
+        surfaceCoordinator.setManagedFocusRecoverySuppressed(suppressed, for: window)
     }
 
     func unregister(_ window: NSWindow) {

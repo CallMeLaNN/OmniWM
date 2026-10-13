@@ -24,17 +24,20 @@ public struct IPCCommandsQueryResult: Codable, Equatable, Sendable {
     public let workspaceActions: [IPCWorkspaceActionDescriptor]
     public let windowActions: [IPCWindowActionDescriptor]
     public let windowMarkActions: [IPCWindowMarkActionDescriptor]
+    public let shellActions: [IPCShellActionDescriptor]
 
     public init(
         commands: [IPCCommandDescriptor],
         workspaceActions: [IPCWorkspaceActionDescriptor],
         windowActions: [IPCWindowActionDescriptor],
-        windowMarkActions: [IPCWindowMarkActionDescriptor]
+        windowMarkActions: [IPCWindowMarkActionDescriptor],
+        shellActions: [IPCShellActionDescriptor]
     ) {
         self.commands = commands
         self.workspaceActions = workspaceActions
         self.windowActions = windowActions
         self.windowMarkActions = windowMarkActions
+        self.shellActions = shellActions
     }
 }
 
@@ -58,6 +61,7 @@ public struct IPCCapabilitiesQueryResult: Codable, Equatable, Sendable {
     public let workspaceActions: [IPCWorkspaceActionDescriptor]
     public let windowActions: [IPCWindowActionDescriptor]
     public let windowMarkActions: [IPCWindowMarkActionDescriptor]
+    public let shellActions: [IPCShellActionDescriptor]
     public let subscriptions: [IPCSubscriptionDescriptor]
 
     public init(
@@ -72,6 +76,7 @@ public struct IPCCapabilitiesQueryResult: Codable, Equatable, Sendable {
         workspaceActions: [IPCWorkspaceActionDescriptor],
         windowActions: [IPCWindowActionDescriptor],
         windowMarkActions: [IPCWindowMarkActionDescriptor],
+        shellActions: [IPCShellActionDescriptor],
         subscriptions: [IPCSubscriptionDescriptor]
     ) {
         self.protocolVersion = protocolVersion
@@ -85,6 +90,7 @@ public struct IPCCapabilitiesQueryResult: Codable, Equatable, Sendable {
         self.workspaceActions = workspaceActions
         self.windowActions = windowActions
         self.windowMarkActions = windowMarkActions
+        self.shellActions = shellActions
         self.subscriptions = subscriptions
     }
 }

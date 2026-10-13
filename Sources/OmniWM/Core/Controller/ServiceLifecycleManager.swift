@@ -110,6 +110,7 @@ final class ServiceLifecycleManager {
             controller.syncMonitorsToNiriEngine()
         }
         controller.hasStartedServices = true
+        controller.appVolumeMixer.start()
         controller.updateWorkspaceBarNotificationBadgeSettings()
         controller.reconcileEnabledAndHotkeysState()
         controller.eventIntake.open(sink: controller.eventInterpreter)
@@ -258,7 +259,7 @@ final class ServiceLifecycleManager {
         guard let controller else { return }
         _ = controller.workspaceManager.recordReconcileEvent(.systemWake(source: .service))
         controller.axEventHandler.reconcileHiddenApplications()
-        controller.workspaceBarManager.cleanup()
+        controller.workspaceBarManager.cleanup(keepingShell: true)
         topologyInventory.schedule(reason: .unlock)
         controller.mouseEventHandler.requestMultitouchRevalidation(.wake)
     }

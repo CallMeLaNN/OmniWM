@@ -8,6 +8,7 @@ enum SurfaceKind: String, CaseIterable, Hashable, Sendable {
     case border
     case parkingEdgeMask
     case workspaceBar
+    case shellIsland
     case overview
     case workspaceSwipe
     case nativeFullscreenPlaceholder
@@ -18,7 +19,6 @@ enum SurfaceKind: String, CaseIterable, Hashable, Sendable {
     case quake
     case launchOverlay
     case secureInputIndicator
-    case systemStats
     case hiddenBarPanel
     case statusPanel
 }
@@ -72,12 +72,13 @@ struct SurfaceSceneRuntimeSnapshot: Equatable, Sendable {
 final class SurfaceScene {
     struct SurfaceNode {
         let id: String
-        let policy: SurfacePolicy
+        var policy: SurfacePolicy
         weak var window: NSWindow?
         var windowObjectIdentifier: ObjectIdentifier?
         var windowNumber: Int?
         var frameProvider: (@MainActor () -> CGRect?)?
         var visibilityProvider: (@MainActor () -> Bool)?
+        var regionProvider: (@MainActor () -> [CGRect])? = nil
     }
 
     private var nodesByID: [String: SurfaceNode] = [:]
@@ -121,6 +122,22 @@ final class SurfaceScene {
             surfaceIDsByWindowNumber[windowNumber, default: []].insert(node.id)
         }
         recordRuntimeHighWater()
+    }
+
+    @discardableResult
+    func setManagedFocusRecoverySuppressed(_ suppressed: Bool, for window: NSWindow) -> Bool? {
+        guard let id = windowIDByObject[ObjectIdentifier(window)], var node = nodesByID[id],
+              node.window === window else { return nil }
+        let previous = node.policy.suppressesManagedFocusRecovery
+        guard previous != suppressed else { return previous }
+        node.policy = SurfacePolicy(
+            kind: node.policy.kind,
+            hitTestPolicy: node.policy.hitTestPolicy,
+            capturePolicy: node.policy.capturePolicy,
+            suppressesManagedFocusRecovery: suppressed
+        )
+        nodesByID[id] = node
+        return previous
     }
 
     func unregister(window: NSWindow) {
@@ -247,7 +264,7 @@ final class SurfaceScene {
             case .passthrough:
                 break
             }
-            return resolvedFrame(for: node)?.contains(point) == true
+            return contains(point, in: node)
         }
     }
 
@@ -362,6 +379,13 @@ final class SurfaceScene {
         return node.window?.frame
     }
 
+    private func contains(_ point: CGPoint, in node: SurfaceNode) -> Bool {
+        if let regionProvider = node.regionProvider {
+            return regionProvider().contains { $0.contains(point) }
+        }
+        return resolvedFrame(for: node)?.contains(point) == true
+    }
+
     struct VisibleSurfaceInfo {
         let id: String
         let kind: SurfaceKind
@@ -393,7 +417,7 @@ final class SurfaceScene {
             else {
                 return false
             }
-            return resolvedFrame(for: node)?.contains(point) == true
+            return contains(point, in: node)
         }
     }
 }

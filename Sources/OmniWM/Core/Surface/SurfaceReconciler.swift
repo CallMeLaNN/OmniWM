@@ -307,6 +307,7 @@ final class SurfaceReconciler {
         refreshCornerRadii: Bool
     ) -> BorderSurfaceApplyResult {
         controller.workspaceBarManager.apply(desired.bars)
+        controller.workspaceBarManager.applyIslands(desired.islands)
         controller.publishWorkspaceDataChanges(from: appliedScene, to: desired)
         let borderOutcome = borderApplier.apply(
             desired.border,

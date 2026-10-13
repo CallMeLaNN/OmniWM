@@ -47,6 +47,7 @@ final class WMController {
     var isLockScreenActive: Bool = false {
         didSet {
             guard oldValue != isLockScreenActive else { return }
+            workspaceBarManager.setShellLocked(isLockScreenActive)
             if isLockScreenActive {
                 layoutRefreshController.suspendForLockScreen()
                 resetWorkspaceBarReveal()
@@ -118,6 +119,12 @@ final class WMController {
     @ObservationIgnored
     let hiddenBarController: HiddenBarController
     @ObservationIgnored
+    let appVolumeMixer: AppVolumeMixer
+    @ObservationIgnored
+    let mediaController = MediaController()
+    @ObservationIgnored
+    let calendarController = CalendarController()
+    @ObservationIgnored
     private(set) lazy var quakeTerminalController: QuakeTerminalController = .init(
         settings: settings,
         motionPolicy: motionPolicy,
@@ -134,15 +141,6 @@ final class WMController {
     )
     @ObservationIgnored
     private(set) lazy var commandPaletteController: CommandPaletteController = .init(motionPolicy: motionPolicy)
-
-    @ObservationIgnored
-    private(set) lazy var systemStatsPopupController: SystemStatsPopupController = {
-        let controller = SystemStatsPopupController()
-        controller.isToggleSourceWindow = { [weak self] window in
-            self?.workspaceBarManager.isWorkspaceBarWindow(window) ?? false
-        }
-        return controller
-    }()
 
     @ObservationIgnored
     private(set) lazy var sponsorsWindowController: SponsorsWindowController = .init(
@@ -243,6 +241,7 @@ final class WMController {
             animationSpeed: settings.animationSpeed
         )
         self.hiddenBarController = hiddenBarController ?? HiddenBarController(settings: settings)
+        appVolumeMixer = AppVolumeMixer(settings: settings)
         self.clipboardHistoryDirectory = clipboardHistoryDirectory
         self.diagnosticsDirectory = diagnosticsDirectory
         traceCaptureCoordinator = RuntimeTraceCaptureCoordinator(diagnosticsDirectory: diagnosticsDirectory)
@@ -368,6 +367,7 @@ extension WMController {
             return false
         }
         workspaceBarIconResolutionRevision += 1
+        workspaceBarManager.refreshShellIcons()
         return true
     }
 
@@ -389,7 +389,7 @@ extension WMController {
 
     func syncWorkspaceBarRevealMonitor() {
         guard hasStartedServices,
-              settings.workspaceBar.revealModifier != .off,
+              settings.workspaceBar.resolvedRevealModifier != .off,
               workspaceBarRefreshIsEnabled
         else {
             workspaceBarRevealMonitor.stop()
@@ -397,8 +397,8 @@ extension WMController {
         }
 
         workspaceBarRevealMonitor.start(
-            modifier: settings.workspaceBar.revealModifier,
-            holdMilliseconds: settings.workspaceBar.revealHoldMilliseconds
+            modifier: settings.workspaceBar.resolvedRevealModifier,
+            holdMilliseconds: settings.workspaceBar.resolvedRevealHoldMilliseconds
         )
     }
 

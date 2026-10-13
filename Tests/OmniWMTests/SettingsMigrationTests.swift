@@ -513,7 +513,10 @@ final class SettingsMigrationTests: XCTestCase {
         XCTAssertEqual(rule.minWidth, 720)
         XCTAssertEqual(rule.minHeight, 480)
 
-        let actionsAddedAfterVersionFour: Set<String> = ["toggleFloatingFocus"]
+        let actionsAddedAfterVersionFour: Set<String> = [
+            "toggleFloatingFocus", "volumeUp", "volumeDown", "volumeMute", "mediaPlayPause", "mediaNext",
+            "mediaPrevious"
+        ]
         XCTAssertEqual(
             hotkeyIDs(in: migratedData),
             HotkeyBindingRegistry.defaults().map(\.id).filter { !actionsAddedAfterVersionFour.contains($0) }

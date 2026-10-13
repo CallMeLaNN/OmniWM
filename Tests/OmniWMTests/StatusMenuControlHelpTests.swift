@@ -324,6 +324,59 @@ final class StatusMenuControlHelpTests: XCTestCase {
         XCTAssertEqual(hiddenBarTiles.count, fixture.controller.isHiddenBarHidingAvailable ? 1 : 0)
     }
 
+    func testHiddenBarTileReadsAndWritesTheActiveProfileEnabledValue() throws {
+        let fixture = makeStatusMenuModelFixture(hiddenBarAvailable: true)
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let settings = fixture.model.settings
+        let directory = ShellWidgetHost.shellDirectory(in: settings.settingsFileURL.deletingLastPathComponent())
+        try FileManager.default.createDirectory(
+            at: directory.appendingPathComponent("look"),
+            withIntermediateDirectories: true
+        )
+        try Data("profile = 'look'\n[profiles.look.hiddenBar]\nenabled = false\n".utf8)
+            .write(to: directory.appendingPathComponent("shell.toml"))
+        settings.hiddenBar.enabled = true
+        settings.hiddenBar.profileOverride = ShellConfig.resolve(shellDirectory: directory).hiddenBarOverride
+        fixture.model.infoAlertPresenter = { _, message in XCTFail(message) }
+        let tile = try XCTUnwrap(fixture.model.toggleTiles.first { $0.control == .hiddenBarEnabled })
+
+        XCTAssertFalse(tile.isOn.wrappedValue)
+        tile.isOn.wrappedValue = true
+
+        XCTAssertTrue(tile.isOn.wrappedValue)
+        XCTAssertEqual(ShellConfig.load(shellDirectory: directory)?.hiddenBarOverride?.enabled, true)
+
+        tile.isOn.wrappedValue = false
+
+        XCTAssertFalse(tile.isOn.wrappedValue)
+        XCTAssertTrue(settings.hiddenBar.enabled)
+        XCTAssertEqual(ShellConfig.load(shellDirectory: directory)?.hiddenBarOverride?.enabled, false)
+    }
+
+    func testHiddenBarTileSurfacesUnreadableProfileWithoutChangingEnabledValue() throws {
+        let fixture = makeStatusMenuModelFixture(hiddenBarAvailable: true)
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let settings = fixture.model.settings
+        let directory = ShellWidgetHost.shellDirectory(in: settings.settingsFileURL.deletingLastPathComponent())
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let invalid = Data("trailing = [".utf8)
+        let url = directory.appendingPathComponent("shell.toml")
+        try invalid.write(to: url)
+        settings.hiddenBar.enabled = false
+        var messages: [(String, String)] = []
+        fixture.model.infoAlertPresenter = { messages.append(($0, $1)) }
+        let tile = try XCTUnwrap(fixture.model.toggleTiles.first { $0.control == .hiddenBarEnabled })
+
+        tile.isOn.wrappedValue = true
+
+        XCTAssertFalse(tile.isOn.wrappedValue)
+        XCTAssertFalse(settings.hiddenBar.enabled)
+        XCTAssertEqual(try Data(contentsOf: url), invalid)
+        XCTAssertEqual(messages.count, 1)
+        XCTAssertEqual(messages.first?.0, String(localized: "Unable to Save Shell Settings"))
+        XCTAssertFalse(try XCTUnwrap(messages.first?.1).isEmpty)
+    }
+
     func testFocusFollowsMouseTileDoesNotChangeRaisePreference() throws {
         let fixture = makeStatusMenuModelFixture()
         defer { try? FileManager.default.removeItem(at: fixture.root) }
@@ -342,7 +395,7 @@ final class StatusMenuControlHelpTests: XCTestCase {
         let model: StatusMenuModel
     }
 
-    private func makeStatusMenuModelFixture() -> StatusMenuModelFixture {
+    private func makeStatusMenuModelFixture(hiddenBarAvailable: Bool = false) -> StatusMenuModelFixture {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("OmniWMStatusMenuHelpTests-\(UUID().uuidString)", isDirectory: true)
         let settings = SettingsStore(
@@ -359,6 +412,11 @@ final class StatusMenuControlHelpTests: XCTestCase {
         )
         let controller = WMController(
             settings: settings,
+            hiddenBarController: HiddenBarController(settings: settings, hider: NativeMenuBarHider(
+                preferences: hiddenBarAvailable ? NativeMenuBarPreferences(read: {
+                    try PropertyListSerialization.data(fromPropertyList: [[String: Any]](), format: .binary, options: 0)
+                }, write: { _ in XCTFail("The status-menu settings must not change native preferences") }) : nil
+            )),
             clipboardHistoryDirectory: root.appendingPathComponent("clipboard", isDirectory: true),
             diagnosticsDirectory: root.appendingPathComponent("diagnostics", isDirectory: true)
         )
