@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0-only
 // Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
 
+import AppKit
 @testable import OmniWM
 import XCTest
 
 @MainActor
 final class LockScreenObserverTests: XCTestCase {
-    func testStartReportsFrontmostLoginWindowAsLocked() {
+    func testStartReportsLockedSessionAsLocked() {
         let observer = LockScreenObserver()
-        observer.frontmostBundleIdProvider = { LockScreenObserver.lockScreenAppBundleId }
+        observer.screenLockedProvider = { true }
         var lockDetections = 0
         observer.onLockDetected = { lockDetections += 1 }
 
@@ -26,7 +27,7 @@ final class LockScreenObserverTests: XCTestCase {
     func testServiceRestartReconcilesUnlockMissedWhileObserverWasStopped() {
         let controller = WindowAdmissionTestSupport.controller()
         let observer = controller.lockScreenObserver
-        observer.frontmostBundleIdProvider = { LockScreenObserver.lockScreenAppBundleId }
+        observer.screenLockedProvider = { true }
         defer {
             observer.stop()
             controller.layoutRefreshController.resetState()
@@ -41,7 +42,7 @@ final class LockScreenObserverTests: XCTestCase {
         XCTAssertNotNil(controller.layoutRefreshController.layoutState.pendingRefresh)
 
         observer.stop()
-        observer.frontmostBundleIdProvider = { "com.example.unlocked" }
+        observer.screenLockedProvider = { false }
         controller.serviceLifecycleManager.startLockScreenObserver()
 
         XCTAssertFalse(controller.isLockScreenActive)
@@ -52,7 +53,7 @@ final class LockScreenObserverTests: XCTestCase {
     func testServiceRestartWhileStillLockedRestoresRefreshSuspension() {
         let controller = WindowAdmissionTestSupport.controller()
         let observer = controller.lockScreenObserver
-        observer.frontmostBundleIdProvider = { LockScreenObserver.lockScreenAppBundleId }
+        observer.screenLockedProvider = { true }
         defer {
             observer.stop()
             controller.layoutRefreshController.resetState()
@@ -72,9 +73,9 @@ final class LockScreenObserverTests: XCTestCase {
         XCTAssertTrue(controller.layoutRefreshController.layoutState.isRefreshSuspendedForLockScreen)
     }
 
-    func testAuthoritativeUnlockClearsCachedLoginWindowBeforeAppActivation() {
+    func testRepeatedUnlockReportsOnce() {
         let observer = LockScreenObserver()
-        observer.frontmostBundleIdProvider = { LockScreenObserver.lockScreenAppBundleId }
+        observer.screenLockedProvider = { true }
         var unlockDetections = 0
         observer.onUnlockDetected = { unlockDetections += 1 }
         observer.start()
@@ -92,7 +93,7 @@ final class LockScreenObserverTests: XCTestCase {
 
     func testQueuedLockFromStoppedGenerationCannotOverrideRestartSample() async {
         let observer = LockScreenObserver()
-        observer.frontmostBundleIdProvider = { "com.example.unlocked" }
+        observer.screenLockedProvider = { false }
         var lockDetections = 0
         observer.onLockDetected = { lockDetections += 1 }
         observer.start()
@@ -112,17 +113,45 @@ final class LockScreenObserverTests: XCTestCase {
         XCTAssertFalse(observer.isFrontmostAppLockScreen())
     }
 
-    func testUnknownFrontmostIdentityPreservesLockedStateOnRestart() {
+    func testUnknownSessionLockStatePreservesLockedStateOnRestart() {
         let observer = LockScreenObserver()
-        observer.frontmostBundleIdProvider = { LockScreenObserver.lockScreenAppBundleId }
+        observer.screenLockedProvider = { true }
         observer.start()
         observer.stop()
-        observer.frontmostBundleIdProvider = { nil }
+        observer.screenLockedProvider = { nil }
 
         observer.start()
         defer { observer.stop() }
-        observer.handleAppActivation(bundleId: nil)
 
+        guard case .locked = observer.state else {
+            return XCTFail("expected locked state")
+        }
+        XCTAssertTrue(observer.isFrontmostAppLockScreen())
+    }
+
+    func testAppActivationWhileLockedDoesNotUnlock() async throws {
+        guard let activatedApp = NSRunningApplication.runningApplications(
+            withBundleIdentifier: "com.apple.dock"
+        ).first else {
+            throw XCTSkip("needs a running app with a bundle identifier")
+        }
+        let observer = LockScreenObserver()
+        observer.screenLockedProvider = { false }
+        var unlockDetections = 0
+        observer.onUnlockDetected = { unlockDetections += 1 }
+        observer.start()
+        defer { observer.stop() }
+
+        observer.enqueueLockEventForTests()
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        NSWorkspace.shared.notificationCenter.post(
+            name: NSWorkspace.didActivateApplicationNotification,
+            object: NSWorkspace.shared,
+            userInfo: [NSWorkspace.applicationUserInfoKey: activatedApp]
+        )
+        try? await Task.sleep(nanoseconds: 50_000_000)
+
+        XCTAssertEqual(unlockDetections, 0)
         guard case .locked = observer.state else {
             return XCTFail("expected locked state")
         }
