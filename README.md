@@ -1084,8 +1084,8 @@ A visual indicator showing your workspaces:
 - Optionally show a System Stats button that opens a CPU, memory, GPU, disk, and uptime popup. `Toggle System Stats` and `omniwmctl command toggle-system-stats` drive the same popup, and both do nothing unless a monitor currently shows that workspace-bar button
 - Optionally hide the bar on a monitor while that monitor shows a macOS native fullscreen window, and bring it back on exit (`Hide in Native Fullscreen`); reserved tiled layout space is left untouched so windows do not shuffle around the fullscreen session
 - Exclude individual apps or choose alternate app icons across all monitors in Settings
-- When building from `main`, the bar is drawn by Luau widgets in `~/.config/omniwm/shell/` that you can restyle or replace, with the Wayline, Nocturne, Celestial and System styles and twelve colour themes bundled; see [Luau Shell](website/src/content/docs/features/luau-shell.md)
-- The editable effects library includes native motion presets, Metal lighting and reveal masks. Add **Effects Lab** from **Bar Widgets** to explore them with blur and glass materials; see [Effects library](website/src/content/docs/features/luau-shell.md#editable-effects-library).
+- When building from `main`, the bar is drawn by Luau widgets in `~/.config/omniwm/shell/` that you can restyle or replace, with the Wayline, Nocturne, Celestial and System styles and twelve colour themes bundled; see [OmniShell](https://omniwm.app/features/luau-shell/)
+- The editable effects library includes native motion presets, Metal lighting and reveal masks. Add **Effects Lab** from **Bar Widgets** to explore them with blur and glass materials; see [Effects library](https://omniwm.app/omnishell/reference/effects-shaders/).
 
 Workspace-bar appearance controls are optional and also support per-monitor overrides:
 

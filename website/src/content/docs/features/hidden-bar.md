@@ -15,7 +15,7 @@ Hidden Bar conceals selected menu-bar icons and lets you reach them from a panel
 - Menu checkmarks, shortcuts, disabled commands and submenus are preserved. Click a submenu to enter it and **Back** to return. Click outside or press Escape to dismiss the strip and menu. Unreleased: available when building from `main`.
 - Revealed icons re-hide automatically after a configurable interval — 5 seconds by default.
 - An optional global hotkey is available and starts unassigned.
-- When building from `main`, the panel is drawn by the `hidden-bar` [Luau shell](/features/luau-shell/) widget and can be navigated with Tab and the arrow keys.
+- When building from `main`, the panel is drawn by the `hidden-bar` [OmniShell](/omnishell/configuration/bars-drawers/#hidden-bar-menus) widget and can be navigated with Tab and the arrow keys.
 
 :::caution
 Concealment requires macOS 27 or later and Full Disk Access; core window management supports macOS 26. Turn on OmniWM in System Settings → Privacy & Security → Full Disk Access, then quit and reopen OmniWM.

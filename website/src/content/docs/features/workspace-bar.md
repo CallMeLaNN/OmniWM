@@ -7,7 +7,7 @@ sidebar:
 
 The workspace bar runs along the selected edge of each display, as a floating island or, with **Full Width**, across the whole edge. It shows a chip per workspace — with the workspace's name, emoji-friendly — and the icons of the apps open there.
 
-When building from `main`, the bar is drawn by [Luau shell](/features/luau-shell/) widgets that you can restyle or replace.
+When building from `main`, the bar is drawn by [OmniShell](/omnishell/configuration/bars-drawers/) widgets that you can restyle or replace.
 
 Window hover previews can be turned off separately. Turning off the global Workspace Bar hides it on every monitor, while saved monitor overrides take effect again when it is re-enabled.
 

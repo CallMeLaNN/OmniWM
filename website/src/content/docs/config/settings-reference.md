@@ -222,7 +222,7 @@ Zoom and colors for the Overview.
 
 ## workspaceBar
 
-The per-monitor workspace bar. Per-monitor exceptions live in [`monitorBarOverrides`](#per-monitor-overrides). A [shell profile or theme](/features/luau-shell/#shelltoml) can override most of these keys in its own `[workspaceBar]`. Unreleased: available when building from `main`.
+The per-monitor workspace bar. Per-monitor exceptions live in [`monitorBarOverrides`](#per-monitor-overrides). A [shell profile or theme](/omnishell/configuration/profiles-palettes/#profile-settings) can override most of these keys in its own `[workspaceBar]`. Unreleased: available when building from `main`.
 
 | Key | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -322,7 +322,7 @@ Menu-bar icon concealment (requires macOS 27+ and Full Disk Access).
 | `hiddenBundleIDs` | string array | `[]` | Bundle IDs of menu-bar apps whose icons are concealed. |
 | `rehideIntervalSeconds` | float | `5.0` | Seconds before revealed icons re-hide automatically. |
 
-A [shell profile](/features/luau-shell/#shelltoml) can override `enabled` and `rehideIntervalSeconds` in its own `[hiddenBar]`. Unreleased: available when building from `main`.
+A [shell profile](/omnishell/configuration/profiles-palettes/#profile-settings) can override `enabled` and `rehideIntervalSeconds` in its own `[hiddenBar]`. Unreleased: available when building from `main`.
 
 ## clipboard
 

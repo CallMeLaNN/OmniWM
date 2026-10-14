@@ -7,6 +7,8 @@
     "node": "24.x"
   },
   "scripts": {
+    "reference:generate": "node scripts/omnishell-api.mjs --write",
+    "reference:check": "node scripts/omnishell-api.mjs --check",
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
