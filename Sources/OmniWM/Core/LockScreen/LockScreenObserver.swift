@@ -18,6 +18,7 @@ final class LockScreenObserver {
     private enum ObserverEvent: Sendable {
         case locked
         case unlocked
+        case appActivated
     }
 
     private(set) var state: LockState = .unlocked
@@ -28,6 +29,7 @@ final class LockScreenObserver {
         LockScreenObserver.currentSessionScreenIsLocked()
     }
 
+    private var activationObserver: NSObjectProtocol?
     private var screenLockObserver: NSObjectProtocol?
     private var screenUnlockObserver: NSObjectProtocol?
     private var screenIsLocked = false
@@ -58,6 +60,14 @@ final class LockScreenObserver {
     }
 
     private func setupObservers(generation: Int) {
+        activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.enqueueObserverEvent(.appActivated, generation: generation)
+        }
+
         let dnc = DistributedNotificationCenter.default()
 
         screenLockObserver = dnc.addObserver(
@@ -85,12 +95,19 @@ final class LockScreenObserver {
                 handleLockEvent()
             case .unlocked:
                 handleUnlockEvent()
+            case .appActivated:
+                reconcileMissedUnlock()
             }
         }
     }
 
     func enqueueLockEventForTests() {
         enqueueObserverEvent(.locked, generation: observerGeneration)
+    }
+
+    private func reconcileMissedUnlock() {
+        guard screenIsLocked, screenLockedProvider() == false else { return }
+        handleUnlockEvent()
     }
 
     private func handleLockEvent() {
@@ -123,6 +140,10 @@ final class LockScreenObserver {
 
     func cleanup() {
         observerGeneration &+= 1
+        if let observer = activationObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(observer)
+            activationObserver = nil
+        }
         let dnc = DistributedNotificationCenter.default()
         if let observer = screenLockObserver {
             dnc.removeObserver(observer)
