@@ -37,7 +37,6 @@ extension WorkspaceManager {
         let removesNativeFullscreenFocusOwner = activeNativeFullscreenFocusOwnerToken == entry.token
         let removesNativeFocusOwner = removesNativeFullscreenFocusOwner
             || nativeFocusOwner.managedToken == entry.token
-            || nativeFocusOwner.externalToken == entry.token
         recordReconcileEvent(
             .windowRemoved(
                 token: entry.token,
