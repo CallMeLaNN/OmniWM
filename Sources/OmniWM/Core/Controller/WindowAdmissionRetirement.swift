@@ -258,6 +258,9 @@ extension AXEventHandler {
         }
         if policy.preservesLiveFocusAsExternal, ownsLiveFocus {
             _ = controller.workspaceManager.externalizeNativeFocus(matching: token)
+        } else if ownsLiveFocus {
+            _ = controller.workspaceManager.clearNativeFocusOwner()
+            controller.surfaceReconciler.noteBorderChanged()
         }
     }
 }
