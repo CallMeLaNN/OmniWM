@@ -47,7 +47,7 @@ final class BorderWindow {
     private var isVisible = false
     private var lastOrderedTargetToken: WindowToken?
     private var lastConfiguredScale: CGFloat = 0
-    private var currentCornerRadii = WindowCornerRadii(uniform: 9.0)
+    private var currentCornerRadii: WindowCornerRadii
     private var cachedScale: CGFloat = 0
     private var cachedScaleScreenFrame: CGRect = .null
     private var cachedTargetLevel: CachedTargetLevel?
@@ -60,11 +60,17 @@ final class BorderWindow {
     private(set) var needsWindowLevelRetry = false
     private(set) var appliedTargetLevel: Int32 = 0
 
-    private let defaultCornerRadii = WindowCornerRadii(uniform: 9.0)
+    private let defaultCornerRadii: WindowCornerRadii
 
-    init(config: BorderConfig, operations: Operations = .live) {
+    init(
+        config: BorderConfig,
+        operations: Operations = .live,
+        defaultCornerRadii: WindowCornerRadii = .systemDefault
+    ) {
         self.config = config
         self.operations = operations
+        self.defaultCornerRadii = defaultCornerRadii
+        self.currentCornerRadii = defaultCornerRadii
     }
 
     isolated deinit {
@@ -91,14 +97,14 @@ final class BorderWindow {
     func update(
         frame targetFrame: CGRect,
         targetToken: WindowToken,
-        cornerRadii: WindowCornerRadii = WindowCornerRadii(uniform: 9.0),
+        cornerRadii: WindowCornerRadii? = nil,
         forceOrdering: Bool = false
     ) -> Bool {
         BorderOpMetricsRecorder.shared.noteUpdate()
         needsWindowLevelRetry = false
         guard let targetWid = UInt32(exactly: targetToken.windowId), targetWid != 0 else { return false }
         let scale = backingScale(for: targetFrame)
-        let resolvedCornerRadii = cornerRadii.nonnegative
+        let resolvedCornerRadii = (cornerRadii ?? defaultCornerRadii).nonnegative
         let geometry = config.resolvedGeometry(for: targetFrame, scale: scale)
         let surfaceFrame = geometry.surfaceFrame
         appliedTargetFrame = geometry.targetFrame
