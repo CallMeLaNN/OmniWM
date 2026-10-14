@@ -39,6 +39,14 @@ final class WorkspaceBarManager {
     private let surfaceCoordinator = SurfaceCoordinator.shared
     private var hiddenBarJoin: HiddenBarPanelPlacement.Join?
     var shellHost: ShellWidgetHost?
+    private let configDirectory: URL
+    lazy var shellConfiguration = ShellConfigurationCoordinator(
+        shellDirectory: ShellWidgetHost.shellDirectory(in: configDirectory),
+        onDefaultsUpdated: Self.presentReplacedShellDefaults
+    ) { [weak self] config in
+        self?.shellConfigurationSaved(config)
+    }
+
     var shellEdgeHover = ShellEdgeHover()
     var shellVars: [String: String] = [:]
     var shellItemIcons: [String: NSImage] = [:]
@@ -52,7 +60,12 @@ final class WorkspaceBarManager {
     var retiredShellHiddenBarBitmaps: Set<String> = []
     var menuBarHold: MenuBarAutohideHold?
 
-    init(motionPolicy: MotionPolicy, notificationBadges: WorkspaceBarBadgeService = WorkspaceBarBadgeService()) {
+    init(
+        configDirectory: URL,
+        motionPolicy: MotionPolicy,
+        notificationBadges: WorkspaceBarBadgeService = WorkspaceBarBadgeService()
+    ) {
+        self.configDirectory = configDirectory
         self.motionPolicy = motionPolicy
         self.notificationBadges = notificationBadges
     }

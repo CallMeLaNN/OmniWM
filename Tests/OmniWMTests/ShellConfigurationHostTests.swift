@@ -599,6 +599,64 @@ final class ShellConfigurationHostTests: XCTestCase {
         await fixture.close()
     }
 
+    func testNativeAndAuthenticatedComponentEditsShareOneOrderedLayout() async throws {
+        let fixture = try Fixture("""
+        done = 1
+        function trigger(ctx,event)
+            if event.name ~= 'request' then return end
+            assert(omniwm.components.add('extra',{width=27},function(result)
+                assert(result.ok); done = 9
+            end))
+        end
+        function render(ctx) return ui.box{w=done,h=10} end
+        """)
+        defer { fixture.host.stop()
+            try? FileManager.default.removeItem(at: fixture.directory)
+        }
+        try fixture.component("box")
+        try fixture.component("extra")
+        let entered = expectation(description: "native persistence started")
+        let release = DispatchSemaphore(value: 0)
+        defer { release.signal() }
+        let attempts = Mutex(0)
+        fixture.host.configurationWriter = ShellIslandConfigWriter(
+            shellDirectory: fixture.shell,
+            writeFile: { data, url in
+                let first = attempts.withLock { value in value += 1
+                    return value == 1
+                }
+                if first { entered.fulfill()
+                    release.wait()
+                }
+                try SettingsFileAccess.writeAtomically(data, at: url)
+            },
+            reloadReady: {}
+        )
+        try await fixture.load()
+        let native = Task {
+            try await fixture.host.configurationCoordinator.island(.add(widget: "box", options: ["width": .number(21)]))
+        }
+        await fulfillment(of: [entered], timeout: 10)
+        let received = expectation(description: "Luau request reaches native owner")
+        fixture.sink.onRequests = { _ in fixture.sink.onRequests = nil
+            received.fulfill()
+        }
+        let completed = expectation(description: "Luau edit completes")
+        fixture.sink.watch(9, expectation: completed)
+        fixture.trigger()
+        await fulfillment(of: [received], timeout: 10)
+        release.signal()
+        _ = try await native.value
+        await fulfillment(of: [completed], timeout: 10)
+        let components = try XCTUnwrap(fixture.persisted().island).components
+        XCTAssertEqual(components.map(\.widget), ["box", "extra"])
+        XCTAssertEqual(components.map { $0.options["width"] }, [.number(21), .number(27)])
+        XCTAssertEqual(Set(components.map(\.id)).count, 2)
+        XCTAssertTrue(fixture.state.package === fixture.package)
+        XCTAssertEqual(fixture.package.services.activeCount, 0)
+        await fixture.close()
+    }
+
     func testCancelledCallbackKeepsAcceptedWriteCountedAndStopFlushesIt() async throws {
         let fixture = try Fixture("""
         cancelled = 0

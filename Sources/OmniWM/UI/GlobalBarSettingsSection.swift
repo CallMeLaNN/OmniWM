@@ -7,7 +7,8 @@ import SwiftUI
 struct GlobalBarSettingsSection: View {
     @Bindable var settings: SettingsStore
     @Bindable var controller: WMController
-    @State var editError: String?
+    @State private var editError: String?
+    var pane: WorkspaceBarSettingsPane = .behavior
 
     var style: WorkspaceBarProfileOverride? {
         settings.workspaceBar.profileOverride
@@ -15,10 +16,16 @@ struct GlobalBarSettingsSection: View {
 
     var body: some View {
         Group {
-            behaviorSection
-            if settings.workspaceBar.enabled {
+            switch pane {
+            case .layout:
                 positionSections
+                layoutBehaviorSection
+            case .appearance:
                 appearanceSection
+            case .behavior:
+                behaviorSection
+            case .apps:
+                EmptyView()
             }
         }
         .shellSettingsError($editError)
@@ -26,31 +33,31 @@ struct GlobalBarSettingsSection: View {
 
     func profileBinding<Value: Encodable>(_ key: String, value: Value) -> Binding<Value> {
         Binding(get: { value }, set: { next in
-            edit { try ShellSettingsEdits.set(next, key: key, settings: settings, controller: controller) }
+            edit { try await ShellSettingsEdits.set(next, key: key, settings: settings, controller: controller) }
         })
     }
 
-    func edit(_ change: () throws -> Void) {
-        do {
-            try change()
-        } catch {
-            editError = error.localizedDescription
+    func edit(_ change: @escaping @MainActor () async throws -> Void) {
+        Task {
+            do { try await change() } catch { editError = error.localizedDescription }
         }
     }
 
     private var systemStatsBinding: Binding<Bool> {
         Binding(
             get: {
-                guard let host = controller.workspaceBarManager.shellHost,
-                      let widget = host.config.systemStatsWidget else { return false }
+                let config = controller.workspaceBarManager.shellConfiguration.config
+                guard let widget = config.systemStatsWidget else { return false }
                 return (style?.systemStatsButton ?? settings.workspaceBar.systemStatsButton)
-                    && host.config.barLane(of: widget) != nil
+                    && config.barLane(of: widget) != nil
             },
             set: { enabled in
                 edit {
-                    try ShellSettingsEdits.apply(settings: settings, controller: controller) { directory, _ in
-                        try ShellBarLayout.setSystemStatsEnabled(enabled, in: directory)
-                    }
+                    try await ShellSettingsEdits.setSystemStatsEnabled(
+                        enabled,
+                        settings: settings,
+                        controller: controller
+                    )
                 }
             }
         )
@@ -60,230 +67,223 @@ struct GlobalBarSettingsSection: View {
 extension GlobalBarSettingsSection {
     private var behaviorSection: some View {
         Section("Workspace Bar") {
-            Toggle("Enable Workspace Bar", isOn: Bindable(settings.workspaceBar).enabled)
-                .onChange(of: settings.workspaceBar.enabled) { _, newValue in
-                    controller.setWorkspaceBarEnabled(newValue)
-                }
+            Toggle(
+                "Window Hover Previews",
+                isOn: profileBinding(
+                    "hoverPreviewsEnabled",
+                    value: style?.hoverPreviewsEnabled ?? settings.workspaceBar.hoverPreviewsEnabled
+                )
+            )
 
-            if settings.workspaceBar.enabled {
-                Button("Reset to Style Defaults") {
-                    edit { try ShellSettingsEdits.reset(settings: settings, controller: controller) }
-                }
+            Picker(
+                "Notification Badges",
+                selection: profileBinding(
+                    "notificationBadges",
+                    value: style?.notificationBadges ?? settings.workspaceBar.notificationBadges
+                )
+            ) {
+                Text("Off").tag(WorkspaceBarNotificationBadgeMode.off)
+                Text("Dot").tag(WorkspaceBarNotificationBadgeMode.dot)
+                Text("Text").tag(WorkspaceBarNotificationBadgeMode.text)
+            }
 
-                Toggle(
-                    "Window Hover Previews",
-                    isOn: profileBinding(
-                        "hoverPreviewsEnabled",
-                        value: style?.hoverPreviewsEnabled ?? settings.workspaceBar.hoverPreviewsEnabled
+            SettingsSliderRow(
+                label: String(localized: "Refresh Interval"),
+                value: profileBinding(
+                    "notificationBadgeRefreshIntervalSeconds",
+                    value: style?.notificationBadgeRefreshIntervalSeconds ?? settings.workspaceBar
+                        .notificationBadgeRefreshIntervalSeconds
+                ),
+                range: 1 ... 60,
+                step: 1,
+                valueText: String(
+                    localized: "\(Int(style?.notificationBadgeRefreshIntervalSeconds ?? settings.workspaceBar.notificationBadgeRefreshIntervalSeconds)) s"
+                )
+            )
+            .disabled(settings.workspaceBar.resolvedNotificationBadges == .off)
+
+            Toggle(
+                "Show Workspace Labels",
+                isOn: profileBinding(
+                    "showLabels",
+                    value: style?.settings.showLabels ?? settings.workspaceBar.showLabels
+                )
+            )
+
+            Toggle(
+                "Show Floating Windows",
+                isOn: profileBinding(
+                    "showFloatingWindows",
+                    value: style?.settings.showFloatingWindows ?? settings.workspaceBar.showFloatingWindows
+                )
+            )
+
+            Toggle(
+                "Deduplicate App Icons",
+                isOn: profileBinding(
+                    "deduplicateAppIcons",
+                    value: style?.settings.deduplicateAppIcons ?? settings.workspaceBar.deduplicateAppIcons
+                )
+            )
+            .help("Group workspace windows by app with badge counts; scratchpad pills always group by app")
+
+            Toggle(
+                "Hide Empty Workspaces",
+                isOn: profileBinding(
+                    "hideEmptyWorkspaces",
+                    value: style?.settings.hideEmptyWorkspaces ?? settings.workspaceBar.hideEmptyWorkspaces
+                )
+            )
+
+            Toggle(
+                "Automatically hide and show the workspace bar",
+                isOn: profileBinding("autoHide", value: style?.settings.autoHide ?? settings.workspaceBar.autoHide)
+            )
+            .help(
+                "Show at the bar edge; hide when the pointer moves inward past the bar and interactions end. Never reserves layout space."
+            )
+
+            if (style?.settings.autoHide ?? settings.workspaceBar.autoHide)
+                || style?.monitorOverrides.contains(where: { $0.autoHide == true }) == true
+                || settings.workspaceBar.monitorOverrides.contains(where: { $0.autoHide == true })
+            {
+                SettingsSliderRow(
+                    label: String(localized: "Auto-Hide Reveal Delay"),
+                    value: profileBinding(
+                        "autoHideRevealDelayMilliseconds",
+                        value: style?.autoHideRevealDelayMilliseconds ?? settings.workspaceBar
+                            .autoHideRevealDelayMilliseconds
+                    ),
+                    range: 0 ... 1000,
+                    step: 50,
+                    valueText: String(
+                        localized: "\(Int(style?.autoHideRevealDelayMilliseconds ?? settings.workspaceBar.autoHideRevealDelayMilliseconds)) ms"
                     )
                 )
-
-                Picker(
-                    "Notification Badges",
-                    selection: profileBinding(
-                        "notificationBadges",
-                        value: style?.notificationBadges ?? settings.workspaceBar.notificationBadges
-                    )
-                ) {
-                    Text("Off").tag(WorkspaceBarNotificationBadgeMode.off)
-                    Text("Dot").tag(WorkspaceBarNotificationBadgeMode.dot)
-                    Text("Text").tag(WorkspaceBarNotificationBadgeMode.text)
-                }
 
                 SettingsSliderRow(
-                    label: String(localized: "Refresh Interval"),
+                    label: String(localized: "Auto-Hide Hide Delay"),
                     value: profileBinding(
-                        "notificationBadgeRefreshIntervalSeconds",
-                        value: style?.notificationBadgeRefreshIntervalSeconds ?? settings.workspaceBar
-                            .notificationBadgeRefreshIntervalSeconds
+                        "autoHideHideDelayMilliseconds",
+                        value: style?.autoHideHideDelayMilliseconds ?? settings.workspaceBar
+                            .autoHideHideDelayMilliseconds
                     ),
-                    range: 1 ... 60,
-                    step: 1,
+                    range: 0 ... 1000,
+                    step: 50,
                     valueText: String(
-                        localized: "\(Int(style?.notificationBadgeRefreshIntervalSeconds ?? settings.workspaceBar.notificationBadgeRefreshIntervalSeconds)) s"
+                        localized: "\(Int(style?.autoHideHideDelayMilliseconds ?? settings.workspaceBar.autoHideHideDelayMilliseconds)) ms"
                     )
                 )
-                .disabled(settings.workspaceBar.resolvedNotificationBadges == .off)
+            }
 
-                Toggle(
-                    "Show Workspace Labels",
-                    isOn: profileBinding(
-                        "showLabels",
-                        value: style?.settings.showLabels ?? settings.workspaceBar.showLabels
-                    )
+            Picker(
+                "Reveal on Modifier Hold",
+                selection: profileBinding(
+                    "revealModifier",
+                    value: style?.revealModifier ?? settings.workspaceBar.revealModifier
                 )
-
-                Toggle(
-                    "Show Floating Windows",
-                    isOn: profileBinding(
-                        "showFloatingWindows",
-                        value: style?.settings.showFloatingWindows ?? settings.workspaceBar.showFloatingWindows
-                    )
-                )
-
-                Toggle(
-                    "Deduplicate App Icons",
-                    isOn: profileBinding(
-                        "deduplicateAppIcons",
-                        value: style?.settings.deduplicateAppIcons ?? settings.workspaceBar.deduplicateAppIcons
-                    )
-                )
-                .help("Group workspace windows by app with badge counts; scratchpad pills always group by app")
-
-                Toggle(
-                    "Hide Empty Workspaces",
-                    isOn: profileBinding(
-                        "hideEmptyWorkspaces",
-                        value: style?.settings.hideEmptyWorkspaces ?? settings.workspaceBar.hideEmptyWorkspaces
-                    )
-                )
-
-                Toggle(
-                    "Automatically hide and show the workspace bar",
-                    isOn: profileBinding("autoHide", value: style?.settings.autoHide ?? settings.workspaceBar.autoHide)
-                )
-                .help(
-                    "Show at the bar edge; hide when the pointer moves inward past the bar and interactions end. Never reserves layout space."
-                )
-
-                if (style?.settings.autoHide ?? settings.workspaceBar.autoHide)
-                    || style?.monitorOverrides.contains(where: { $0.autoHide == true }) == true
-                    || settings.workspaceBar.monitorOverrides.contains(where: { $0.autoHide == true })
-                {
-                    SettingsSliderRow(
-                        label: String(localized: "Auto-Hide Reveal Delay"),
-                        value: profileBinding(
-                            "autoHideRevealDelayMilliseconds",
-                            value: style?.autoHideRevealDelayMilliseconds ?? settings.workspaceBar
-                                .autoHideRevealDelayMilliseconds
-                        ),
-                        range: 0 ... 1000,
-                        step: 50,
-                        valueText: String(
-                            localized: "\(Int(style?.autoHideRevealDelayMilliseconds ?? settings.workspaceBar.autoHideRevealDelayMilliseconds)) ms"
-                        )
-                    )
-
-                    SettingsSliderRow(
-                        label: String(localized: "Auto-Hide Hide Delay"),
-                        value: profileBinding(
-                            "autoHideHideDelayMilliseconds",
-                            value: style?.autoHideHideDelayMilliseconds ?? settings.workspaceBar
-                                .autoHideHideDelayMilliseconds
-                        ),
-                        range: 0 ... 1000,
-                        step: 50,
-                        valueText: String(
-                            localized: "\(Int(style?.autoHideHideDelayMilliseconds ?? settings.workspaceBar.autoHideHideDelayMilliseconds)) ms"
-                        )
-                    )
+            ) {
+                ForEach(WorkspaceBarRevealModifier.allCases, id: \.self) { modifier in
+                    Text(modifier.localizedDisplayName).tag(modifier)
                 }
+            }
+            .help("Reveal the workspace bar while holding these modifiers. Can be combined with automatic hiding.")
 
-                Toggle(
-                    "Reserve Space for Workspace Bar",
-                    isOn: profileBinding(
-                        "reserveLayoutSpace",
-                        value: style?.settings.reserveLayoutSpace ?? settings.workspaceBar.reserveLayoutSpace
+            if settings.workspaceBar.resolvedRevealModifier != .off {
+                SettingsSliderRow(
+                    label: String(localized: "Reveal Hold Delay"),
+                    value: profileBinding(
+                        "revealHoldMilliseconds",
+                        value: style?.revealHoldMilliseconds ?? settings.workspaceBar.revealHoldMilliseconds
+                    ),
+                    range: 0 ... 1000,
+                    step: 50,
+                    valueText: String(
+                        localized: "\(Int(style?.revealHoldMilliseconds ?? settings.workspaceBar.revealHoldMilliseconds)) ms"
                     )
                 )
-                .help(
-                    "Reserve tiled layout space at the selected edge. Overlapping bars reserve only the portion below the menu bar."
-                )
+            }
 
+            Toggle(
+                "Hide in Native Fullscreen",
+                isOn: profileBinding(
+                    "hideInNativeFullscreen",
+                    value: style?.hideInNativeFullscreen ?? settings.workspaceBar.hideInNativeFullscreen
+                )
+            )
+            .help(
+                "Hide the bar on a monitor while it shows a native fullscreen window"
+            )
+
+            Toggle(
+                "System Stats Button",
+                isOn: systemStatsBinding
+            )
+            .help("Show a small workspace bar button that opens a system stats popup")
+        }
+    }
+
+    private var layoutBehaviorSection: some View {
+        Section("Screen Placement") {
+            Toggle(
+                "Reserve Space for Workspace Bar",
+                isOn: profileBinding(
+                    "reserveLayoutSpace",
+                    value: style?.settings.reserveLayoutSpace ?? settings.workspaceBar.reserveLayoutSpace
+                )
+            )
+            .help(
+                "Reserve tiled layout space at the selected edge. Overlapping bars reserve only the portion below the menu bar."
+            )
+
+            if style?.settings.fullWidth ?? settings.workspaceBar.fullWidth {
                 Picker(
-                    "Reveal on Modifier Hold",
+                    "Notch Mode",
                     selection: profileBinding(
-                        "revealModifier",
-                        value: style?.revealModifier ?? settings.workspaceBar.revealModifier
+                        "fullWidthNotchMode",
+                        value: style?.settings.fullWidthNotchMode ?? settings.workspaceBar.fullWidthNotchMode
                     )
                 ) {
-                    ForEach(WorkspaceBarRevealModifier.allCases, id: \.self) { modifier in
-                        Text(modifier.localizedDisplayName).tag(modifier)
+                    ForEach(WorkspaceBarFullWidthNotchMode.allCases) { mode in
+                        Text(mode.displayName).tag(mode)
                     }
                 }
-                .help("Reveal the workspace bar while holding these modifiers. Can be combined with automatic hiding.")
-
-                if settings.workspaceBar.resolvedRevealModifier != .off {
-                    SettingsSliderRow(
-                        label: String(localized: "Reveal Hold Delay"),
-                        value: profileBinding(
-                            "revealHoldMilliseconds",
-                            value: style?.revealHoldMilliseconds ?? settings.workspaceBar.revealHoldMilliseconds
-                        ),
-                        range: 0 ... 1000,
-                        step: 50,
-                        valueText: String(
-                            localized: "\(Int(style?.revealHoldMilliseconds ?? settings.workspaceBar.revealHoldMilliseconds)) ms"
-                        )
-                    )
-                }
-
-                Toggle(
-                    "Hide in Native Fullscreen",
-                    isOn: profileBinding(
-                        "hideInNativeFullscreen",
-                        value: style?.hideInNativeFullscreen ?? settings.workspaceBar.hideInNativeFullscreen
-                    )
-                )
                 .help(
-                    "Hide the bar on a monitor while it shows a native fullscreen window"
+                    "Where the Center widgets go on a display with a notch: centered under it (Off), with the whole bar below the menu bar, beside the notch, or split around it, with the first half on its left. Notch modes are ignored at Bottom, Left, and Right."
                 )
-
-                Toggle(
-                    "System Stats Button",
-                    isOn: systemStatsBinding
+            } else {
+                Picker(
+                    "Notch Mode",
+                    selection: profileBinding(
+                        "notchMode",
+                        value: style?.settings.notchMode ?? settings.workspaceBar.notchMode
+                    )
+                ) {
+                    ForEach(WorkspaceBarNotchMode.allCases) { mode in
+                        Text(mode.displayName).tag(mode)
+                    }
+                }
+                .help(
+                    "Move below the menu bar, place it to the right of the notch (centered on displays without a notch), split around it, or fill the area to its left, covering application menus. Without a notch, Fill Left covers the left half of the menu bar. Notch modes are ignored at Bottom, Left, and Right."
                 )
-                .help("Show a small workspace bar button that opens a system stats popup")
+            }
 
-                if style?.settings.fullWidth ?? settings.workspaceBar.fullWidth {
-                    Picker(
-                        "Notch Mode",
-                        selection: profileBinding(
-                            "fullWidthNotchMode",
-                            value: style?.settings.fullWidthNotchMode ?? settings.workspaceBar.fullWidthNotchMode
-                        )
-                    ) {
-                        ForEach(WorkspaceBarFullWidthNotchMode.allCases) { mode in
-                            Text(mode.displayName).tag(mode)
-                        }
-                    }
-                    .help(
-                        "Where the Center widgets go on a display with a notch: centered under it (Off), with the whole bar below the menu bar, beside the notch, or split around it, with the first half on its left. Notch modes are ignored at Bottom, Left, and Right."
+            if !(style?.settings.fullWidth ?? settings.workspaceBar.fullWidth),
+               (style?.settings.notchMode ?? settings.workspaceBar.notchMode).isSplit
+            {
+                SettingsSliderRow(
+                    label: String(localized: "Active Zone Width"),
+                    value: profileBinding(
+                        "notchActiveZoneWidth",
+                        value: style?.settings.notchActiveZoneWidth ?? settings.workspaceBar.notchActiveZoneWidth
+                    ),
+                    range: 100 ... 400,
+                    step: 10,
+                    valueText: String(
+                        localized: "\(Int(style?.settings.notchActiveZoneWidth ?? settings.workspaceBar.notchActiveZoneWidth)) px"
                     )
-                } else {
-                    Picker(
-                        "Notch Mode",
-                        selection: profileBinding(
-                            "notchMode",
-                            value: style?.settings.notchMode ?? settings.workspaceBar.notchMode
-                        )
-                    ) {
-                        ForEach(WorkspaceBarNotchMode.allCases) { mode in
-                            Text(mode.displayName).tag(mode)
-                        }
-                    }
-                    .help(
-                        "Move below the menu bar, place it to the right of the notch (centered on displays without a notch), split around it, or fill the area to its left, covering application menus. Without a notch, Fill Left covers the left half of the menu bar. Notch modes are ignored at Bottom, Left, and Right."
-                    )
-                }
-
-                if !(style?.settings.fullWidth ?? settings.workspaceBar.fullWidth),
-                   (style?.settings.notchMode ?? settings.workspaceBar.notchMode).isSplit
-                {
-                    SettingsSliderRow(
-                        label: String(localized: "Active Zone Width"),
-                        value: profileBinding(
-                            "notchActiveZoneWidth",
-                            value: style?.settings.notchActiveZoneWidth ?? settings.workspaceBar.notchActiveZoneWidth
-                        ),
-                        range: 100 ... 400,
-                        step: 10,
-                        valueText: String(
-                            localized: "\(Int(style?.settings.notchActiveZoneWidth ?? settings.workspaceBar.notchActiveZoneWidth)) px"
-                        )
-                    )
-                    .help("Width of the zone next to the notch that the focused workspace stays centered in")
-                }
+                )
+                .help("Width of the zone next to the notch that the focused workspace stays centered in")
             }
         }
     }
@@ -321,22 +321,24 @@ extension GlobalBarSettingsSection {
             }
         }
 
-        Section("Position Offset") {
-            SettingsNumberStepperRow(
-                label: String(localized: "X Offset"),
-                value: profileBinding("xOffset", value: style?.settings.xOffset ?? settings.workspaceBar.xOffset),
-                step: 10,
-                valueText: String(localized: "\(Int(style?.settings.xOffset ?? settings.workspaceBar.xOffset)) px")
-            )
-            .help("Horizontal offset (negative = left, positive = right)")
+        Section {
+            DisclosureGroup("Advanced Positioning") {
+                SettingsNumberStepperRow(
+                    label: String(localized: "X Offset"),
+                    value: profileBinding("xOffset", value: style?.settings.xOffset ?? settings.workspaceBar.xOffset),
+                    step: 10,
+                    valueText: String(localized: "\(Int(style?.settings.xOffset ?? settings.workspaceBar.xOffset)) px")
+                )
+                .help("Horizontal offset (negative = left, positive = right)")
 
-            SettingsNumberStepperRow(
-                label: String(localized: "Y Offset"),
-                value: profileBinding("yOffset", value: style?.settings.yOffset ?? settings.workspaceBar.yOffset),
-                step: 10,
-                valueText: String(localized: "\(Int(style?.settings.yOffset ?? settings.workspaceBar.yOffset)) px")
-            )
-            .help("Vertical offset (negative = down, positive = up)")
+                SettingsNumberStepperRow(
+                    label: String(localized: "Y Offset"),
+                    value: profileBinding("yOffset", value: style?.settings.yOffset ?? settings.workspaceBar.yOffset),
+                    step: 10,
+                    valueText: String(localized: "\(Int(style?.settings.yOffset ?? settings.workspaceBar.yOffset)) px")
+                )
+                .help("Vertical offset (negative = down, positive = up)")
+            }
         }
     }
 }

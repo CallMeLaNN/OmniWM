@@ -87,6 +87,11 @@ enum ShellProfiles {
         return try write(ShellTOMLText.settingNodes([(key, node)], in: original), over: original, in: shellDirectory)
     }
 
+    static func setNodes(_ entries: [(key: [String], value: TOMLNode?)], in shellDirectory: URL) throws -> Bool {
+        let original = try contents(in: shellDirectory)
+        return try write(ShellTOMLText.settingNodes(entries, in: original), over: original, in: shellDirectory)
+    }
+
     static func reset(_ key: [String], in shellDirectory: URL) throws -> Bool {
         try setTopLevel([(key, nil)], in: shellDirectory)
     }

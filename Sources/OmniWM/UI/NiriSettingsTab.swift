@@ -83,6 +83,7 @@ private struct GlobalNiriSettingsSection: View {
                 valueText: "\(settings.niri.visibleContainerCount)",
                 valueWidth: 32
             )
+            .id("Visible Containers")
             .onChange(of: settings.niri.visibleContainerCount) { _, newValue in
                 settings.niri.defaultContainerPrimarySpan = nil
                 controller.updateNiriConfig(
@@ -93,6 +94,7 @@ private struct GlobalNiriSettingsSection: View {
             }
 
             Toggle("Infinite Loop Navigation", isOn: Bindable(settings.niri).infiniteLoop)
+                .id("Infinite Loop Navigation")
                 .onChange(of: settings.niri.infiniteLoop) { _, newValue in
                     controller.updateNiriConfig(infiniteLoop: newValue)
                 }
@@ -102,16 +104,19 @@ private struct GlobalNiriSettingsSection: View {
                     Text(mode.localizedDisplayName).tag(mode)
                 }
             }
+            .id("Center Focused Column")
             .onChange(of: settings.niri.centerFocusedColumn) { _, newValue in
                 controller.updateNiriConfig(centerFocusedColumn: newValue)
             }
 
             Toggle("Always Center Single Column", isOn: Bindable(settings.niri).alwaysCenterSingleColumn)
+                .id("Always Center Single Column")
                 .onChange(of: settings.niri.alwaysCenterSingleColumn) { _, newValue in
                     controller.updateNiriConfig(alwaysCenterSingleColumn: newValue)
                 }
 
             Toggle("Gaps at Screen Edges", isOn: Bindable(settings.niri).edgeGaps)
+                .id("Gaps at Screen Edges")
                 .onChange(of: settings.niri.edgeGaps) { _, _ in
                     controller.updateMonitorGapSettings()
                 }
@@ -132,6 +137,7 @@ private struct GlobalNiriSettingsSection: View {
             LabeledContent("Resize Increment") {
                 HStack {
                     TextField("Resize Increment", value: Bindable(settings.niri).resizeStepPercent, format: .number)
+                        .id("Resize Increment")
                         .labelsHidden()
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 48)
@@ -141,12 +147,14 @@ private struct GlobalNiriSettingsSection: View {
                 }
             }
         }
+        .id("Niri Layout")
 
         Section("Default New Container Primary Span") {
             Picker("Span Mode", selection: useAutoDefaultContainerPrimarySpan) {
                 Text("Auto").tag(true)
                 Text("Custom").tag(false)
             }
+            .id("Span Mode")
             .pickerStyle(.segmented)
             .frame(maxWidth: 220)
 
@@ -154,6 +162,7 @@ private struct GlobalNiriSettingsSection: View {
                 LabeledContent("Custom Span") {
                     HStack {
                         TextField("Custom Span", value: defaultContainerPrimarySpanPercent, format: .number)
+                            .id("Custom Span")
                             .labelsHidden()
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 48)
@@ -170,6 +179,7 @@ private struct GlobalNiriSettingsSection: View {
                     : String(localized: "New or claimed containers start at this primary span until you resize them.")
             )
         }
+        .id("Default New Container Primary Span")
 
         Section("Container Primary Span Presets") {
             ForEach(presets.indices, id: \.self) { index in
@@ -218,10 +228,12 @@ private struct GlobalNiriSettingsSection: View {
                     settings.niri.containerPrimarySpanPresets = presets
                     controller.updateNiriConfig(containerPrimarySpanPresets: settings.niri.containerPrimarySpanPresets)
                 }
+                .id("Add Preset")
                 Button("Reset Cycle Presets") {
                     settings.niri.containerPrimarySpanPresets = NiriSettings.defaultContainerPrimarySpanPresets
                     controller.updateNiriConfig(containerPrimarySpanPresets: settings.niri.containerPrimarySpanPresets)
                 }
+                .id("Reset Cycle Presets")
             }
             SettingsCaption(localized: "Span-cycling commands use these presets in order. Duplicates are allowed.")
         }
@@ -302,5 +314,6 @@ private struct MonitorNiriSettingsSection: View {
                 onReset: { updateSetting { $0.singleWindowFit = nil } }
             )
         }
+        .id("Niri Layout")
     }
 }

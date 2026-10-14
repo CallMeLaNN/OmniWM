@@ -31,7 +31,7 @@ final class StatusMenuHost {
     private static let submenuSurfaceId = "status-submenu"
 
     let presentation = StatusMenuPresentation()
-    private let model: StatusMenuModel
+    let model: StatusMenuModel
     private let motionPolicy: MotionPolicy
     private let ownedWindowRegistry: OwnedWindowRegistry
     private let focusPolicyEngine: FocusPolicyEngine

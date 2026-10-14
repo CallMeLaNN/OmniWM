@@ -17,6 +17,10 @@ final class StatusBarController: NSObject {
     private let recordingPulseKey = "omniwm.recordingPulse"
     private weak var controller: WMController?
 
+    var settingsMenuModel: StatusMenuModel? {
+        menuHost?.model
+    }
+
     init(
         settings: SettingsStore,
         controller: WMController,

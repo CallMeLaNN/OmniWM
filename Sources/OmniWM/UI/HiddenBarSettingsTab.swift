@@ -64,14 +64,22 @@ struct HiddenBarSettingsTab: View {
             }
 
             Section("Hidden Bar") {
-                Button("Reset to Style Defaults") {
-                    do {
-                        try ShellSettingsEdits.reset(table: "hiddenBar", settings: settings, controller: controller)
-                    } catch {
-                        editError = error.localizedDescription
+                Button("Reset Hidden Bar to Style Defaults") {
+                    Task {
+                        do {
+                            try await ShellSettingsEdits.reset(
+                                table: "hiddenBar",
+                                settings: settings,
+                                controller: controller
+                            )
+                        } catch {
+                            editError = error.localizedDescription
+                        }
                     }
                 }
+                .id("Reset Hidden Bar to Style Defaults")
                 Toggle("Enable Hidden Bar", isOn: enabledBinding)
+                    .id("Enable Hidden Bar")
                     .disabled(!controller.isHiddenBarHidingAvailable)
 
                 if controller.isHiddenBarHidingAvailable {
@@ -83,8 +91,10 @@ struct HiddenBarSettingsTab: View {
                         localized: "Hidden Bar requires macOS 27 or later and Full Disk Access. After turning on OmniWM in Full Disk Access, quit and reopen OmniWM."
                     )
                     Button("Open Full Disk Access Settings", action: HiddenBarSettingsEdits.openFullDiskAccessSettings)
+                        .id("Open Full Disk Access Settings")
                 }
             }
+            .id("Hidden Bar")
 
             if settings.hiddenBar.resolvedEnabled {
                 appsSection
@@ -126,6 +136,7 @@ struct HiddenBarSettingsTab: View {
                 }
             }
         }
+        .id("Apps to Hide")
     }
 
     private var panelSection: some View {
@@ -140,10 +151,12 @@ struct HiddenBarSettingsTab: View {
                 step: 1,
                 valueText: String(localized: "\(Int(settings.hiddenBar.resolvedRehideIntervalSeconds)) s")
             )
+            .id("Rehide Delay")
             SettingsCaption(
                 localized: "How long a clicked icon stays revealed. The countdown pauses while its menu is open."
             )
         }
+        .id("Hidden Icons Bar")
     }
 
     private var enabledBinding: Binding<Bool> {
@@ -164,10 +177,18 @@ struct HiddenBarSettingsTab: View {
     }
 
     private func setProfileValue(_ value: some Encodable, key: String) {
-        do {
-            try ShellSettingsEdits.set(value, key: key, table: "hiddenBar", settings: settings, controller: controller)
-        } catch {
-            editError = error.localizedDescription
+        Task {
+            do {
+                try await ShellSettingsEdits.set(
+                    value,
+                    key: key,
+                    table: "hiddenBar",
+                    settings: settings,
+                    controller: controller
+                )
+            } catch {
+                editError = error.localizedDescription
+            }
         }
     }
 

@@ -152,6 +152,7 @@ enum HotkeySettingsDisplayModel {
 struct HotkeySettingsView: View {
     @Bindable var settings: SettingsStore
     @Bindable var controller: WMController
+    @Environment(SettingsNavigationModel.self) private var navigation
     @State private var recordingTarget: HotkeyRecordingTarget?
     @State private var conflictAlert: ConflictAlert?
     @State private var captureRejection: String?
@@ -185,6 +186,7 @@ struct HotkeySettingsView: View {
                                 )
                         }
                     }
+                    .id("System Hyper Trigger")
                     .labelsHidden()
                     .frame(minWidth: 160)
                     .onChange(of: settings.systemHyperTrigger) { _, _ in
@@ -226,6 +228,7 @@ struct HotkeySettingsView: View {
                         Button("Request Permission") {
                             refreshInputMonitoringStatus(requestIfNeeded: true)
                         }
+                        .id("Request Permission")
                     }
                 }
 
@@ -233,13 +236,16 @@ struct HotkeySettingsView: View {
                     Button("Reset to Defaults", role: .destructive) {
                         confirmsResetToDefaults = true
                     }
+                    .id("Reset to Defaults")
                 }
             }
+            .id("Controls")
 
             Section("Shortcuts") {
                 LabeledContent("Search") {
                     HStack(spacing: 8) {
                         TextField("Command, shortcut, or scope", text: $searchText)
+                            .id("Command, shortcut, or scope")
                             .textFieldStyle(.roundedBorder)
                             .accessibilityLabel("Search hotkeys")
 
@@ -267,6 +273,7 @@ struct HotkeySettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            .id("Shortcuts")
 
             ForEach(groups) { group in
                 Section(group.category.localizedDisplayName) {
@@ -293,6 +300,14 @@ struct HotkeySettingsView: View {
                         )
                     }
                 }
+            }
+        }
+        .onChange(of: navigation.route, initial: true) { _, route in
+            guard route.section == .hotkeys, let id = route.itemID else { return }
+            if let binding = settings.hotkeyBindings.first(where: { $0.id == id }) {
+                searchText = binding.command.localizedDisplayName
+            } else if let spec = ActionCatalog.spec(for: id) {
+                searchText = spec.localizedTitle
             }
         }
         .onAppear {
@@ -328,6 +343,7 @@ struct HotkeySettingsView: View {
             presenting: captureRejection
         ) { _ in
             Button("OK", role: .cancel) {}
+                .id("OK")
         } message: { message in
             Text(message)
         }
@@ -337,7 +353,9 @@ struct HotkeySettingsView: View {
                 controller.updateHotkeyBindings(settings.hotkeyBindings)
                 cancelRecording()
             }
+            .id("Reset Hotkeys")
             Button("Cancel", role: .cancel) {}
+                .id("Cancel")
         } message: {
             Text("All hotkey bindings will be restored to OmniWM defaults.")
         }

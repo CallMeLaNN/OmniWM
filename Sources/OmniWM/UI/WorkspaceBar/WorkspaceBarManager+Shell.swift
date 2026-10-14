@@ -48,6 +48,12 @@ extension WorkspaceBarManager {
         }
     }
 
+    func shellConfigurationSaved(_ config: ShellConfig) {
+        if let shellHost {
+            if shellHost.config != config { shellHost.reloadConfig() }
+        } else { applyShellProfile(config) }
+    }
+
     func toggleShellSystemStats(preferring monitors: [Monitor]) -> Bool {
         guard let host = shellHost, let widget = host.systemStatsWidget else { return false }
         if host.popout?.widget == widget {
@@ -82,6 +88,7 @@ extension WorkspaceBarManager {
 
     func flushShellForQuit() async {
         shellHost?.stop()
+        await shellConfiguration.flush()
         await ShellWidgetHost.flushRetiredWork()
     }
 
@@ -118,6 +125,7 @@ extension WorkspaceBarManager {
         }
         let host = ShellWidgetHost(
             configDirectory: configDirectory,
+            configurationCoordinator: shellConfiguration,
             resources: makeShellResources(),
             focusPolicyEngine: controller?.focusPolicyEngine,
             sessionToken: shellSessionToken,
@@ -193,6 +201,7 @@ extension WorkspaceBarManager {
             self?.showWidgetMenu(request)
         }
         host.onConfigChange = { [weak self] config in
+            self?.shellConfiguration.adopt(config)
             NotificationCenter.default.post(name: .shellConfigDidChange, object: nil)
             self?.applyShellProfile(config)
             self?.applyIslands(self?.lastIslands ?? [])
@@ -203,7 +212,7 @@ extension WorkspaceBarManager {
         }
     }
 
-    private static func presentReplacedShellDefaults(_ backups: [URL]) {
+    static func presentReplacedShellDefaults(_ backups: [URL]) {
         Log.shell.notice("Replaced edited default shell files; kept \(backups.map(\.lastPathComponent))")
         Task { @MainActor in
             let alert = NSAlert()
@@ -464,22 +473,11 @@ extension WorkspaceBarManager {
             guard shellVars.removeValue(forKey: key) != nil else { return .noChange }
         case let .toggle(widget):
             return toggleShell(widget) ? .executed : .notFound
-        case let .profile(name):
-            return shellFileResult { try ShellProfiles.select(name, in: $0) ? .executed : .noChange }
-        case let .theme(name, nil):
-            return shellFileResult { try ShellProfiles.selectTheme(name, in: $0) ? .executed : .noChange }
-        case let .theme(name, scheme?):
-            guard name == ShellWallpaperPalette.themeName, let scheme = ShellWallpaperScheme(rawValue: scheme) else {
-                return .invalidArguments
-            }
-            return shellFileResult { directory in
-                let theme = try ShellProfiles.selectTheme(name, in: directory)
-                return try ShellProfiles.selectScheme(scheme, in: directory) || theme ? .executed : .noChange
-            }
-        case let .eject(widget):
-            return shellFileResult { try ejectShellWidget(widget, in: $0) != nil ? .executed : .noChange }
-        case let .initialize(widget):
-            return shellFileResult { try ShellProfiles.create(widget, in: $0) ? .executed : .noChange }
+        case .profile,
+             .theme,
+             .eject,
+             .initialize:
+            return .invalidArguments
         case let .trigger(widget, name, value):
             return shellHost?.trigger(widget, name: name, value: value) == true ? .executed : .notFound
         }
@@ -496,10 +494,36 @@ extension WorkspaceBarManager {
         return try ShellProfiles.eject(widget, config: config, shellDirectory: shellDirectory)
     }
 
-    private func shellFileResult(_ body: (URL) throws -> ExternalCommandResult) -> ExternalCommandResult {
-        guard let shellDirectory else { return .notFound }
+    func applyShellFileRequest(_ request: IPCShellRequest) async -> ExternalCommandResult {
+        guard request.isValid, shellDirectory != nil else { return .invalidArguments }
         do {
-            return try body(shellDirectory)
+            let changed: Bool
+            switch request {
+            case let .profile(name): changed = try await shellConfiguration.selectProfile(name)
+            case let .theme(name, nil): changed = try await shellConfiguration.selectTheme(name)
+            case let .theme(name, scheme?):
+                guard name == ShellWallpaperPalette.themeName,
+                      let scheme = ShellWallpaperScheme(rawValue: scheme)
+                else {
+                    return .invalidArguments
+                }
+                changed = try await shellConfiguration.editFile { directory in
+                    let theme = try ShellProfiles.selectTheme(name, in: directory)
+                    return try ShellProfiles.selectScheme(scheme, in: directory) || theme
+                }
+            case let .eject(widget):
+                changed = try await shellConfiguration.editFile { directory in
+                    try ShellProfiles.eject(
+                        widget,
+                        config: ShellConfig.resolve(shellDirectory: directory),
+                        shellDirectory: directory
+                    ) != nil
+                }
+            case let .initialize(widget):
+                changed = try await shellConfiguration.editFile { try ShellProfiles.create(widget, in: $0) }
+            default: return applyShellRequest(request)
+            }
+            return changed ? .executed : .noChange
         } catch let error as CocoaError where error.code == .fileNoSuchFile {
             return .notFound
         } catch {

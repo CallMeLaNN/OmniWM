@@ -117,7 +117,7 @@ enum SettingsTOMLCodec {
     }
 }
 
-enum TOMLNode: Codable, Equatable {
+enum TOMLNode: Codable, Equatable, Sendable {
     case string(String)
     case integer(Int64)
     case float(Double)

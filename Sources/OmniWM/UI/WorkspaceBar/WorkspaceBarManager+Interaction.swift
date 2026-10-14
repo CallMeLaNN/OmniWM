@@ -182,18 +182,19 @@ extension WorkspaceBarManager {
     }
 
     private func editShellWidget(_ name: String, _ edit: ShellWidgetEdit) {
-        guard let shellDirectory = shellHost?.shellDirectory else { return }
-        do {
-            try ShellBarLayout.edit(shellDirectory: shellDirectory) { layout in
-                switch edit {
-                case .earlier: layout.shift(name, by: -1)
-                case .later: layout.shift(name, by: 1)
-                case let .lane(target): layout.move(name, to: target)
-                case .remove: layout.remove(name)
+        Task { [self] in
+            do {
+                try await shellConfiguration.editBar { layout in
+                    switch edit {
+                    case .earlier: layout.shift(name, by: -1)
+                    case .later: layout.shift(name, by: 1)
+                    case let .lane(target): layout.move(name, to: target)
+                    case .remove: layout.remove(name)
+                    }
                 }
+            } catch {
+                Log.shell.error("Failed to save the bar widget layout: \(error.localizedDescription)")
             }
-        } catch {
-            Log.shell.error("Failed to save the bar widget layout: \(error.localizedDescription)")
         }
     }
 

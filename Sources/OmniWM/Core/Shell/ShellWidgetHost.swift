@@ -252,12 +252,17 @@ final class ShellWidgetHost {
     let sessionToken: String
     var config = ShellConfig()
     let configurationCatalogLoader = ShellConfigurationCatalogLoader()
-    let configurationSourceLoader = ShellWidgetSourceLoader()
     var configurationCatalog: ShellConfigurationCatalog?
     var configurationCatalogError: String?
     var configurationCatalogRevision = 0
     var configurationCatalogLoading: Int?
-    var configurationWriter: ShellIslandConfigWriter?
+    let configurationCoordinator: ShellConfigurationCoordinator
+    let ownsConfigurationCoordinator: Bool
+    var configurationWriter: ShellIslandConfigWriter? {
+        get { configurationCoordinator.writer }
+        set { configurationCoordinator.writer = newValue }
+    }
+
     var pendingConfigurationEdits: [ConfigurationSubmission] = []
     var configurationProcessing = false
     var configurationWorkCount = 0
@@ -333,6 +338,7 @@ final class ShellWidgetHost {
 
     init(
         configDirectory: URL,
+        configurationCoordinator: ShellConfigurationCoordinator? = nil,
         resources: ShellResources,
         resourceStore: ShellResourceStore? = nil,
         focusPolicyEngine: FocusPolicyEngine? = nil,
@@ -349,6 +355,10 @@ final class ShellWidgetHost {
         onTitleDemandChange: @escaping @MainActor (Bool) -> Void
     ) {
         shellDirectory = Self.shellDirectory(in: configDirectory)
+        ownsConfigurationCoordinator = configurationCoordinator == nil
+        self.configurationCoordinator = configurationCoordinator ?? ShellConfigurationCoordinator(
+            shellDirectory: Self.shellDirectory(in: configDirectory)
+        )
         widgetsDirectory = shellDirectory.appendingPathComponent("widgets", isDirectory: true)
         self.resources = resources
         self

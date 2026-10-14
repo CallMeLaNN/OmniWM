@@ -4,213 +4,148 @@
 import SwiftUI
 
 struct WorkspaceBarWidgetsSection: View {
-    let shellDirectory: URL
+    let configuration: ShellConfigurationCoordinator
     let vertical: Bool?
-
+    @Environment(SettingsNavigationModel.self) private var navigation
     @State private var layout: ShellBarLayout?
     @State private var problem: String?
     @State private var selection: String?
     @State private var confirmingReset = false
-
-    private static let rowHeight: CGFloat = 24
-    private static let captionedRowHeight: CGFloat = 38
-    private static let chromeHeight: CGFloat = 85
-    private static let symbols: [String: String] = [
-        "omniwm": "command",
-        "workspaces": "rectangle.split.3x1",
-        "scratchpads": "rectangle.stack",
-        "system-stats": "cpu",
-        "stats": "chart.bar",
-        "clock": "clock",
-        "battery": "battery.75percent",
-        "volume": "speaker.wave.2",
-        "media": "music.note",
-        "calendar": "calendar",
-        "weather": "cloud.sun"
-    ]
+    @State private var adding = false
+    @State private var destination: ShellLane = .trailing
+    @State private var query = ""
 
     var body: some View {
-        Section {
+        Section("Bar Widgets") {
             if let layout {
-                Text(layout.customized
-                    ? String(localized: "Using your layout")
-                    : String(localized: "Using the “\(layout.profile)” profile’s layout"))
-                    .foregroundStyle(.secondary)
+                SettingsCaption(localized: "Arrange your widgets. The layout is shared by all displays in this style.")
                 List(selection: $selection) {
                     ForEach(ShellLane.allCases, id: \.self) { lane in
-                        self.lane(lane, of: layout)
-                    }
-                }
-                .listStyle(.bordered)
-                .frame(height: height(of: layout))
-                controls(layout)
-            } else if let problem {
-                Text("Fix shell.toml to edit the bar widgets: \(problem)")
-                    .foregroundStyle(.secondary)
-            }
-        } header: {
-            Text("Bar Widgets")
-        } footer: {
-            Text("Drag widgets to reorder them. Changes are saved to shell.toml in your shell folder.")
-        }
-        .onAppear(perform: reload)
-        .onReceive(NotificationCenter.default.publisher(for: .shellConfigDidChange)) { _ in
-            reload()
-        }
-        .confirmationDialog(
-            String(localized: "Use the “\(layout?.profile ?? ShellDefaults.profile)” profile’s widget layout?"),
-            isPresented: $confirmingReset
-        ) {
-            Button("Use Profile Layout", role: .destructive, action: reset)
-        }
-    }
-
-    private func lane(_ lane: ShellLane, of layout: ShellBarLayout) -> some View {
-        Section(side(lane)) {
-            let names = layout.names(in: lane)
-            if names.isEmpty {
-                Text("No widgets")
-                    .foregroundStyle(.secondary)
-                    .selectionDisabled()
-            }
-            ForEach(names, id: \.self) { name in
-                row(name, layout: layout)
-                    .tag(name)
-                    .contextMenu { menu(for: name, in: lane, of: layout) }
-            }
-            .onMove { offsets, destination in
-                update(unlessChanged: (lane, names)) { $0.move(in: lane, from: offsets, to: destination) }
-            }
-        }
-    }
-
-    private func row(_ name: String, layout: ShellBarLayout) -> some View {
-        Label {
-            VStack(alignment: .leading, spacing: 1) {
-                Text(ShellBarLayout.title(of: name))
-                if let caption = caption(of: name, layout: layout) {
-                    Text(caption)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        } icon: {
-            Image(systemName: layout.source(of: name) == nil
-                ? "exclamationmark.triangle"
-                : Self.symbols[name] ?? "puzzlepiece.extension")
-        }
-    }
-
-    @ViewBuilder
-    private func menu(for name: String, in lane: ShellLane, of layout: ShellBarLayout) -> some View {
-        let names = layout.names(in: lane)
-        Button("Move Up") { update { $0.shift(name, by: -1) } }
-            .disabled(names.first == name)
-        Button("Move Down") { update { $0.shift(name, by: 1) } }
-            .disabled(names.last == name)
-        ForEach(ShellLane.allCases.filter { $0 != lane }, id: \.self) { target in
-            Button("Move to \(side(target))") { update { $0.move(name, to: target) } }
-        }
-        Divider()
-        Button("Remove from Bar", role: .destructive) { remove(name) }
-    }
-
-    private func controls(_ layout: ShellBarLayout) -> some View {
-        HStack(spacing: 4) {
-            Menu {
-                ForEach(ShellLane.allCases, id: \.self) { lane in
-                    Menu("Add to \(side(lane))") {
-                        ForEach(layout.addable) { widget in
-                            Button(ShellBarLayout.title(of: widget.name)) {
-                                update { $0.add(widget.name, to: lane) }
-                                selection = widget.name
+                        Section(ShellBarLayout.side(lane, vertical: vertical)) {
+                            if layout.names(in: lane).isEmpty {
+                                Text("No widgets").foregroundStyle(.secondary).selectionDisabled()
                             }
+                            ForEach(layout.names(in: lane), id: \.self) { name in
+                                Label(
+                                    ShellBarLayout.title(of: name),
+                                    systemImage: layout.source(of: name) == nil
+                                        ? "exclamationmark.triangle" : "puzzlepiece.extension"
+                                )
+                                .tag(name)
+                            }
+                            .onMove { offsets, index in edit { $0.move(in: lane, from: offsets, to: index) } }
                         }
                     }
                 }
-            } label: {
-                Image(systemName: "plus")
-            }
-            .menuIndicator(.hidden)
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-            .disabled(layout.addable.isEmpty)
-            .help("Add a widget")
-            Button {
-                if let selection {
-                    remove(selection)
+                .listStyle(.bordered)
+                .frame(height: min(
+                    340,
+                    CGFloat(layout.leading.count + layout.center.count + layout.trailing.count + 3) * 30 + 45
+                ))
+                HStack {
+                    Button("Add Widget…", systemImage: "plus") { adding = true }
+                        .disabled(layout.addable.isEmpty)
+                    if let selection, let lane = layout.lane(of: selection) {
+                        Menu("Move") {
+                            Button("Move Earlier") { edit { $0.shift(selection, by: -1) } }
+                                .disabled(layout.names(in: lane).first == selection)
+                            Button("Move Later") { edit { $0.shift(selection, by: 1) } }
+                                .disabled(layout.names(in: lane).last == selection)
+                            Divider()
+                            ForEach(ShellLane.allCases.filter { $0 != lane }, id: \.self) { target in
+                                Button("Move to \(ShellBarLayout.side(target, vertical: vertical))") {
+                                    edit { $0.move(selection, to: target) }
+                                }
+                            }
+                        }
+                        Button("Options…") {
+                            navigation.request(SettingsRoute(section: .widgets, itemID: selection))
+                        }
+                        Button("Remove", role: .destructive) {
+                            edit { $0.remove(selection) }
+                            self.selection = nil
+                        }
+                    }
                 }
-            } label: {
-                Image(systemName: "minus")
-            }
-            .buttonStyle(.borderless)
-            .disabled(selection == nil)
-            .help("Remove the selected widget")
-            Spacer()
-            Button("Use Profile Layout") { confirmingReset = true }
-                .disabled(!layout.customized)
-        }
-    }
-
-    private func caption(of name: String, layout: ShellBarLayout) -> String? {
-        switch layout.source(of: name) {
-        case .none: String(localized: "Not found")
-        case .yours: String(localized: "Your widget")
-        case let .profile(profile): String(localized: "“\(profile)” profile")
-        case .builtIn: nil
-        }
-    }
-
-    private func side(_ lane: ShellLane) -> String {
-        ShellBarLayout.side(lane, vertical: vertical)
-    }
-
-    private func height(of layout: ShellBarLayout) -> CGFloat {
-        let rows = ShellLane.allCases.map(layout.names(in:)).map { names in
-            names.isEmpty ? Self.rowHeight : names.reduce(0) { height, name in
-                height + (caption(of: name, layout: layout) == nil ? Self.rowHeight : Self.captionedRowHeight)
+                Button("Use Style Layout…") { confirmingReset = true }
+                    .disabled(!layout.customized)
+            } else if let problem {
+                Label(problem, systemImage: "exclamationmark.triangle").foregroundStyle(.red)
+                Button("Try Again", action: reload)
+            } else {
+                ProgressView()
             }
         }
-        return rows.reduce(Self.chromeHeight, +)
+        .id("Bar Widgets")
+        .onAppear(perform: reload)
+        .onChange(of: configuration.config) { _, _ in reload() }
+        .confirmationDialog("Use this style’s widget layout?", isPresented: $confirmingReset) {
+            Button("Use Style Layout", role: .destructive) {
+                Task {
+                    do {
+                        try await configuration.resetBarLayout()
+                        selection = nil
+                        reload()
+                    } catch { problem = error.localizedDescription }
+                }
+            }
+        }
+        .sheet(isPresented: $adding) { addSheet }
     }
 
-    private func remove(_ name: String) {
-        update { $0.remove(name) }
-        if selection == name {
-            selection = nil
+    private var addSheet: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Add Bar Widget").font(.title2.bold())
+            TextField("Search widgets", text: $query).textFieldStyle(.roundedBorder)
+            Picker("Place in", selection: $destination) {
+                ForEach(ShellLane.allCases, id: \.self) { lane in
+                    Text(ShellBarLayout.side(lane, vertical: vertical)).tag(lane)
+                }
+            }
+            List {
+                ForEach((layout?.addable ?? []).filter {
+                    query.isEmpty || ShellBarLayout.title(of: $0.name).localizedStandardContains(query)
+                }) { widget in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(ShellBarLayout.title(of: widget.name)).fontWeight(.medium)
+                            Text(ShellWidgetSettingsModel.description(widget.name)).font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("Add") {
+                            edit { $0.add(widget.name, to: destination) }
+                            selection = widget.name
+                            adding = false
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+            .frame(minHeight: 240)
+            HStack { Spacer()
+                Button("Done") { adding = false }.keyboardShortcut(.cancelAction)
+            }
         }
+        .padding(20)
+        .frame(minWidth: 460, idealWidth: 560, minHeight: 400)
     }
 
-    private func update(
-        unlessChanged expected: (lane: ShellLane, names: [String])? = nil,
-        _ change: (inout ShellBarLayout) -> Void
-    ) {
-        do {
-            try ShellBarLayout.edit(shellDirectory: shellDirectory, unlessChanged: expected, change)
-        } catch {
-            Log.shell.error("Failed to save the bar widget layout: \(error.localizedDescription)")
+    private func edit(_ change: @escaping @MainActor (inout ShellBarLayout) -> Void) {
+        Task {
+            do { try await configuration.editBar(change)
+                reload()
+            } catch { problem = error.localizedDescription }
         }
-        reload()
-    }
-
-    private func reset() {
-        do {
-            try ShellBarLayout.reset(shellDirectory: shellDirectory)
-        } catch {
-            Log.shell.error("Failed to reset the bar widget layout: \(error.localizedDescription)")
-        }
-        selection = nil
-        reload()
     }
 
     private func reload() {
-        switch ShellBarLayout.load(shellDirectory: shellDirectory) {
-        case let .success(loaded):
-            layout = loaded
+        switch ShellBarLayout.load(shellDirectory: configuration.shellDirectory) {
+        case let .success(value): layout = value
             problem = nil
-        case let .failure(unreadable):
-            layout = nil
-            problem = unreadable.problem
+        case let .failure(error): layout = nil
+            problem = error.problem
         }
+        if let selection, layout?.lane(of: selection) == nil { self.selection = nil }
     }
 }

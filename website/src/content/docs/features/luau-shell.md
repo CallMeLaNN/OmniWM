@@ -1,6 +1,6 @@
 ---
 title: Luau Shell
-description: Customize the workspace bar, its popouts and edge drawers with small Luau widgets.
+description: Configure desktop styles, bars, widgets, drawers, and islands visually, or customize their Luau source.
 sidebar:
   order: 8
 ---
@@ -9,7 +9,25 @@ sidebar:
 The Luau shell is available when building from `main`.
 :::
 
-The [workspace bar](/features/workspace-bar/), the [Hidden Bar](/features/hidden-bar/) drawer and System Stats are drawn by Luau widgets. OmniWM supplies the data — workspaces, windows, audio, media, calendar, weather, system stats — and each widget decides how it looks. Settings keeps driving the bar; widgets only change what is drawn.
+The [workspace bar](/features/workspace-bar/), the [Hidden Bar](/features/hidden-bar/) drawer and System Stats are drawn by Luau widgets. OmniWM supplies the data — workspaces, windows, audio, media, calendar, weather, system stats — and each widget decides how it looks. Settings provides visual controls for styles, bars, widgets, drawers, and islands. Their Luau source remains editable in an external editor.
+
+## Configure it in Settings
+
+The **Desktop** group in Settings gives the shell its own destinations. Search Settings to jump to a feature or control.
+
+| Destination | What you can change |
+|---|---|
+| **Styles** | Browse previews, choose **Use Style**, then select a **Palette** or wallpaper colors for the active style. |
+| **Workspace Bar** | Use **Layout**, **Appearance**, **Behavior**, and **Apps** tabs to arrange widgets, choose placement and display overrides, adjust the bar’s look, and manage app exclusions and icon overrides. |
+| **Dynamic Island** | Preview compact and expanded states, choose displays and fullscreen behavior, and configure the selected style’s island. Lake exposes native widget, appearance, interaction, and placement editors. |
+| **Widgets** | Search the library, see Bar/Island availability and current placements, add widgets, open **Options…**, and configure edge drawers. |
+| **Menu Bar** | Change OmniWM’s status item and configure the **Hidden Bar** tab. |
+
+You can configure the bar and island while their enable switches are off. The switches are independent: either surface can run alone, or both can run together. A **style** is a profile that supplies layout, widgets, and appearance; a **palette** changes its colors. Browsing a style preview leaves your desktop unchanged until you choose **Use Style**. Visual options apply to the active style, and saved choices stay with that style when you switch away and return.
+
+The previews render the actual widget sources with sample data. System materials and motion are shown on the live desktop. Matrix Rain and Sakura Petals have named effect controls under **Workspace Bar > Appearance**; choosing a preset does not rewrite its source or change its menus and commands.
+
+For source customization, open **Settings > Advanced > Shell Development**, choose **Widget Source**, and select **Edit Widget Source…**. OmniWM opens a persistent copy in your external editor. **Open Shell Folder…** and the CLI remain available for creating widgets and profiles; Settings does not include a Luau editor.
 
 ## The shell folder
 
@@ -22,25 +40,26 @@ The [workspace bar](/features/workspace-bar/), the [Hidden Bar](/features/hidden
 ├── wayline/            # bundled styles, also managed by OmniWM
 ├── nocturne/
 ├── system/
+├── lake/
 ├── celestial/
 ├── matrix/
 ├── sakura/
 └── <profile>/          # your own profiles
 ```
 
-`default/` holds the bundled widgets and themes, and OmniWM updates it with each release. If you edit a file there, the next update keeps your copy beside it as `<file>.edited-<date>`. To change a widget, use **Settings > Workspace Bar > Customize Widget** or `omniwmctl shell eject <widget>`: that opens its copy in the selected profile, copying an inherited widget there first. Its shared libraries stay with that profile. Bundled profile edits are backed up when an update replaces them; widgets in your own profiles are left alone.
+`default/` holds the bundled widgets and themes, and OmniWM updates it with each release. If you edit a managed file, the next update keeps your copy beside it as `<file>.edited-<date>`. **Settings > Advanced > Shell Development > Edit Widget Source…** or `omniwmctl shell eject <widget>` creates a persistent user copy before you customize an inherited widget. User overrides in `widgets/` take precedence over the selected profile; widgets in your own profiles are left alone.
 
-A profile is any other folder in the shell folder. Choose it with `profile = "<name>"` in `shell.toml`, the **Profile** picker in Settings, or `omniwmctl shell profile <name>`. The **Theme** picker and `omniwmctl shell theme <name>` recolour whichever profile is active, and that profile keeps the choice. Anything a profile does not contain comes from `default/`.
+A profile is any other folder in the shell folder. Choose it in **Settings > Styles** with **Use Style**, with `profile = "<name>"` in `shell.toml`, or with `omniwmctl shell profile <name>`. The **Palette** picker and `omniwmctl shell theme <name>` recolor the active profile, and that profile keeps the choice. Anything a profile does not contain comes from `default/`.
 
 The bundled styles are profiles that restyle the whole bar and its popouts, on the same data and commands as the default widgets. **wayline** has a 40 pt bar with coloured icon blocks, **nocturne** has 40 pt capsules and panels that hang from the bar, and **celestial** follows Caelestia: a 60 pt bar with shaped workspaces and a status pill, and a dashboard that drops from the top centre on hover with Dashboard, Media, Performance and Weather tabs. Celestial starts on the left; all styles support top, bottom, left and right placement, and their bar contents scale with the thickness setting. OmniWM updates them like `default/`. A folder you made under one of these names is left alone, and the style is not installed.
 
-**matrix** is Rain Terminal: a dark green, monospace style with a continuous falling-code shader behind the full-width bar, compact numbered workspaces and matching square popouts. Select **matrix** in the profile picker or run `omniwmctl shell profile matrix`. Its palette stays dark in both system appearances. Widgets retain their ordinary controls, including media transport, volume, calendar, weather and system details.
+**matrix** is Rain Terminal: a dark green, monospace style with a continuous falling-code shader behind the full-width bar, compact numbered workspaces and matching square popouts. Choose **Matrix** in **Settings > Styles**, then **Use Style** or run `omniwmctl shell profile matrix`. Its palette stays dark in both system appearances. Widgets retain their ordinary controls, including media transport, volume, calendar, weather and system details.
 
-**sakura** is Sakura Glass: warm ivory, rose accents, rounded cards and gently falling cherry-blossom petals. The shader stays inside the bar and matching popouts, leaving the desktop and app windows clear. Select **sakura** in the profile picker or run `omniwmctl shell profile sakura`. Its palette stays light in both system appearances, and its widgets keep the usual media, audio, calendar, weather and system controls.
+**sakura** is Sakura Glass: warm ivory, rose accents, rounded cards and gently falling cherry-blossom petals. The shader stays inside the bar and matching popouts, leaving the desktop and app windows clear. Choose **Sakura** in **Settings > Styles**, then **Use Style** or run `omniwmctl shell profile sakura`. Its palette stays light in both system appearances, and its widgets keep the usual media, audio, calendar, weather and system controls.
 
-**system** uses macOS system colours, SF typography and native glass popouts across all bundled widgets. Its 32 pt full-width top bar groups compact workspace buttons on the left, the active window in the centre, and status controls on the right. Control Center opens to an overview, with detailed audio, media, calendar, weather and system views. Choose **system** in the Profile picker or run `omniwmctl shell profile system`. The profile uses the `native` theme, follows light/dark appearance and the system accent, and supports all four bar edges. To show app icons inside its workspace buttons, run `omniwmctl shell set widgets.workspaces.compact false`.
+**system** uses macOS system colours, SF typography and native glass popouts across all bundled widgets. Its 32 pt full-width top bar groups compact workspace buttons on the left, the active window in the centre, and status controls on the right. Control Center opens to an overview, with detailed audio, media, calendar, weather and system views. Choose **System** in **Settings > Styles**, then **Use Style** or run `omniwmctl shell profile system`. The profile uses the `native` theme, follows light/dark appearance and the system accent, and supports all four bar edges. To show app icons inside its workspace buttons, turn off **Compact workspace groups** in **Settings > Widgets > Workspaces > Options…**, or run `omniwmctl shell set widgets.workspaces.compact false`.
 
-System also includes **Focus Ribbon**. Turn on **Settings > Workspace Bar > Dynamic Island > Enable Island** to show its compact black island at the top of each display. Navigating Niri windows or switching workspaces expands the same island into a ribbon of that workspace’s window icons, in column order. Short ribbons stay centred; longer ribbons follow the focused window within the list’s edges. Each window has its own icon, including multiple windows from one app, with the focused window’s title beneath the ribbon or its app name when no title is available. The ribbon stays open while the pointer is inside and otherwise collapses 2.6 seconds after the last navigation or pointer exit; click the compact island to reopen it, click an icon to focus that window, or click outside to collapse. It does not take keyboard focus. The island hides in native fullscreen and works when the workspace bar is disabled.
+System also includes **Focus Ribbon**. Turn on **Settings > Dynamic Island > Enable Dynamic Island** to show its compact black island at the top of each display. Navigating Niri windows or switching workspaces expands the same island into a ribbon of that workspace’s window icons, in column order. Short ribbons stay centred; longer ribbons follow the focused window within the list’s edges. Each window has its own icon, including multiple windows from one app, with the focused window’s title beneath the ribbon or its app name when no title is available. The ribbon stays open while the pointer is inside and otherwise collapses 2.6 seconds after the last navigation or pointer exit; click the compact island to reopen it, click an icon to focus that window, or click outside to collapse. It does not take keyboard focus. The island hides in native fullscreen and works when the workspace bar is disabled.
 
 ## shell.toml
 
@@ -74,9 +93,9 @@ enabled = true                     # also rehideIntervalSeconds
 
 Everything except `profile` and `[weather]` belongs to one profile, under `profiles.<name>`, so changing one profile never changes another. A profile folder's own `shell.toml` takes the same keys without the prefix, and your `profiles.<name>` settings win over it. The Settings controls and **Bar Widgets** edit the active profile. Both dotted keys and TOML tables are supported. Display-specific choices are saved in `profiles.<name>.monitorBarOverrides`; they override that profile’s general bar settings. Resetting a control restores the profile default without changing another profile.
 
-`leading`, `center` and `trailing` are the bar's three groups, in order; widgets in a split bar's active island come from `leading` and `center`. With **Full Width** on, the bar spans the screen edge and the groups sit at its start, center and end; **Notch Mode** then picks where `center` goes on a notched display. An enabled full-width bar holds macOS menu-bar auto-hide on at every edge. Turning off the last full-width bar restores the previous macOS setting. At the top, the bar also stays above the native menu bar. The themed presets reserve their occupied space for tiled windows; **Reserve Space for Workspace Bar** controls this, and an automatically hidden workspace bar does not reserve space. **Settings > Workspace Bar > Bar Widgets** edits them for the active profile: drag widgets to reorder them, use + to add one to any group, and − or right-click to remove or move one. Right-click a widget on the bar to move it, take it off the bar or open these settings; when the widget uses right-click itself, Option + right-click opens the same menu. Your own widgets in `widgets/` are listed there to add.
+`leading`, `center` and `trailing` are the bar's three groups, in order; widgets in a split bar's active island come from `leading` and `center`. With **Full Width** on, the bar spans the screen edge and the groups sit at its start, center and end; **Notch Mode** then picks where `center` goes on a notched display. An enabled full-width bar holds macOS menu-bar auto-hide on at every edge. Turning off the last full-width bar restores the previous macOS setting. At the top, the bar also stays above the native menu bar. The themed presets reserve their occupied space for tiled windows; **Reserve Space for Workspace Bar** controls this, and an automatically hidden workspace bar does not reserve space. **Settings > Workspace Bar > Layout > Bar Widgets** edits them for the active profile: drag to reorder, select **Add Widget…** to choose a group, and select a widget for **Move**, **Options…**, or **Remove**. **Use Style Layout…** restores all three groups together. Right-click a widget on the bar to move it, take it off the bar or open these settings; when the widget uses right-click itself, Option + right-click opens the same menu. Your own widgets in `widgets/` are listed there to add.
 
-**Bar Widgets** also offers `launcher`, `active-window`, `input-source`, `wifi`, `bluetooth`, `battery-details`, `world-clock`, `privacy` and `control-center`. With **Transparent Background** and **Show Item Backgrounds** both on, the default widgets draw their own capsules and palette popouts. Some read settings from `[widgets.<name>]`:
+The **Widgets** library also offers `launcher`, `active-window`, `input-source`, `wifi`, `bluetooth`, `battery-details`, `world-clock`, `privacy` and `control-center`. With **Transparent Background** and **Show Item Backgrounds** both on, the default widgets draw their own capsules and palette popouts. Open **Options…** to change supported choices visually. Options follow the actual widget implementation in the selected style; a style that does not use an option does not show it. World Clock provides a location list, and Weather provides city or coordinates, units, and refresh interval. The default widgets also read these values from `profiles.<profile>.widgets.<name>` in `shell.toml`:
 
 | Widget | Settings |
 |---|---|
@@ -85,20 +104,24 @@ Everything except `profile` and `[weather]` belongs to one profile, under `profi
 | `world-clock` | `zones`: a list of `{ label = "Tokyo", zone = "Asia/Tokyo" }`; `bar`: how many to show on the bar |
 | `launcher` | `mode`: a command palette mode such as `"windows"`; `symbol`: an SF Symbol |
 | `active-window` | `display`: `"icon_and_text"`, `"icon_only"` or `"text_only"`; `maxWidth` |
-| `battery-details` | `percent`: `"beside"`, `"inside"` or `"none"` |
+| `battery-details` | `percent`: `"beside"`, `"inside"` or `"off"` |
 | `control-center` | `tab`: the tab it opens on |
 
 `hiddenBarWidget` and `systemStatsWidget` name the widgets that draw the Hidden Bar drawer and the System Stats popout. The profile supplies defaults; GUI changes are saved as that profile’s overrides. Workspace Bar’s master enable switch, excluded apps and icon overrides stay global. **Custom Accent Color** and **Custom Text Color** work with every palette; resetting a color restores the palette’s value. Enabling **System Stats Button** also places the configured stats widget on the bar if it was removed.
 
 Hidden Bar app menus use the `hidden-bar-menu` widget, which opens beneath the clicked icon while the icon strip stays visible. Its `ctx.data.hiddenBar.menu` contains the current menu's `title`, optional `backID`, and `rows` with `id`, `title`, `enabled`, `mark`, `shortcut`, `submenu`, and `separator`. The widget sends `hidden-bar-menu <id>` to enter a submenu, go back, or execute a command. IDs are valid only for the displayed page. OmniWM temporarily exposes the selected native status item while acquiring and using its menu, then conceals it again when the menu ends. Like other widgets, its appearance can be customized in the selected profile’s `widgets/hidden-bar-menu/init.luau`.
 
-OmniWM bundles the themes catppuccin, celestial, dracula, everforest, gruvbox, kanagawa, matrix, monolith, nocturne, nord, rose-pine, sakura, tokyo-night and wayline, each with light and dark colours. A theme in `themes/<name>.toml` sets palette roles under `[light]` and `[dark]` (for example `accent = "#FF9500"`) and may set the bar's look under its own `[workspaceBar]`. `theme = "wallpaper"` makes the palette from the main display's wallpaper, Material 3 style, and `scheme` picks how: `tonalSpot` (the default), `content`, `vibrant`, `expressive`, `fidelity`, `fruitSalad`, `rainbow`, `neutral` or `monochrome`; Settings and `omniwmctl shell theme wallpaper <scheme>` set both. OmniWM writes it to `themes/wallpaper.toml` and makes it again when the wallpaper, the Space or the displays change. Besides the base roles, the palette has Material 3 style `highestSurface`, `accentContainer`, `secondaryAccent`, `secondaryContainer`, `tertiaryAccent` and `tertiaryContainer`, each container with a `…Foreground` for text on it; a theme that leaves them out gets readable ones made from its own accent and surfaces. `shell.toml`'s `[workspaceBar]` wins over the theme's. There, `barFill = "surface"` paints the bar with a palette role instead of its Settings background, and `barBorder = "border"` adds a 1 pt edge to that fill; add `/0.8` to a role for 80% opacity.
+OmniWM bundles the themes catppuccin, celestial, dracula, everforest, gruvbox, kanagawa, matrix, monolith, nocturne, nord, rose-pine, sakura, tokyo-night and wayline, each with light and dark colours. A theme in `themes/<name>.toml` sets palette roles under `[light]` and `[dark]` (for example `accent = "#FF9500"`) and may set the bar's look under its own `[workspaceBar]`. `theme = "wallpaper"` makes the palette from the main display's wallpaper, Material 3 style, and `scheme` picks how: `tonalSpot` (the default), `content`, `vibrant`, `expressive`, `fidelity`, `fruitSalad`, `rainbow`, `neutral` or `monochrome`; **Settings > Styles > Palette** and `omniwmctl shell theme wallpaper <scheme>` set both. OmniWM writes it to `themes/wallpaper.toml` and makes it again when the wallpaper, the Space or the displays change. Besides the base roles, the palette has Material 3 style `highestSurface`, `accentContainer`, `secondaryAccent`, `secondaryContainer`, `tertiaryAccent` and `tertiaryContainer`, each container with a `…Foreground` for text on it; a theme that leaves them out gets readable ones made from its own accent and surfaces. `shell.toml`'s `[workspaceBar]` wins over the theme's. There, `barFill = "surface"` paints the bar with a palette role instead of its Settings background, and `barBorder = "border"` adds a 1 pt edge to that fill; add `/0.8` to a role for 80% opacity.
 
 `omniwmctl query shell-widgets` shows each widget's state and error, and lists mistakes in `shell.toml` and theme files, such as unknown keys and wrong values.
 
 ## Persistent island
 
-In **Settings > Workspace Bar > Dynamic Island**, choose **Use Lake Profile** if the selected profile has no island, then turn on **Enable Island**. Selecting Lake changes the shell profile for both the bar layout and island; it does not change either enable switch. **Customize Island Widgets…** opens the loaded island’s widget picker and layout controls. The island is disabled by default and can run with or without the Workspace Bar. The native settings file stores this as `[island] enabled = true`; placement belongs to the selected shell profile:
+Choose **Lake** or **System** in **Settings > Styles**, then open **Settings > Dynamic Island**. Selecting a style changes the shared profile for the bar and island without changing either enable switch.
+
+Lake’s **Widgets** tab provides **Add Widget…**, per-instance enable switches, **Move**, **Remove**, and **Options…**. The native options editor assigns an instance to Automatic, Main, Side, or Expanded Only placement and exposes its declared options. **Appearance** controls the island’s shape and colors; **Interaction** controls click, right-click, hover, and swipe behavior, with motion tuning under **Advanced Motion**. **Placement** chooses displays, native fullscreen behavior, and advanced surface dimensions.
+
+System’s Focus Ribbon builds its content automatically from the active workspace and focused window. Its Widgets tab explains that behavior; it does not use Lake’s component catalog. Both islands can be configured while disabled and run without the Workspace Bar. The native settings file stores the master switch as `[island] enabled = true`; placement belongs to the selected shell profile:
 
 ```toml
 # In a profile folder's shell.toml:
@@ -151,6 +174,19 @@ end
 A widget only receives the data it reads, and OmniWM only gathers what some widget reads.
 
 Use `ctx.select("media", "title")` when a view needs one field of an object. The view updates when that field changes, so playback-position updates can leave a title-only widget alone. Paths can contain strings and integer array indices, for example `ctx.select("bluetooth", "devices", 1, "battery")`; a missing path returns `nil`. Bar and popout dependencies are tracked separately. Reading the same object through `ctx.data.media`, or selecting a table rather than a scalar, subscribes to the whole object. Event handlers still receive current data and rerender after changing widget state.
+
+### Visual options for custom bar widgets
+
+A `settings.toml` beside a widget’s effective `init.luau` declares the options shown in **Settings > Widgets > Options…**:
+
+```toml
+[options.date]
+type = "boolean"
+title = "Show date"
+default = true
+```
+
+Supported types are `boolean`, `number`, `string`, `choice`, and `strings`. Numbers can declare `min`, `max`, and `step`; choices declare `choices`; text can declare `maxLength`. Keep metadata defaults consistent with the widget’s own defaults. Settings reads metadata beside the selected source, so a replacement widget does not inherit controls it ignores. Values remain in that profile’s `widgets.<name>` configuration and arrive as `ctx.data.settings`.
 
 ### Data
 
@@ -496,7 +532,9 @@ A custom island root can keep the native **Customize Island Widgets…** entry p
 
 ## Drawers
 
-A `[drawer.<id>]` stacks the popouts of its widgets in one panel on a screen edge, like a control center. Open it with `shell toggle <id>`, from a click, with **Settings > Hotkeys > Toggle \<id\>**, or by moving the pointer to that edge when `hover = true`. Only one drawer or popout is open at a time. `width = 900` limits the hover to that stretch of the edge's middle, and `reach = 10` lets the pointer open it from up to 10 points away from the edge. `close = "leave"` closes it as soon as the pointer leaves it; opened by a click or hotkey, it stays until the pointer has been inside and left. `chrome = false` drops the panel's own background, padding and slide, so the widget draws the whole panel flush against the edge, beside the bar, with room to overshoot.
+Configure drawers under **Settings > Widgets > Drawers**: add a drawer, choose its edge and widgets, arrange them, and adjust hover, close, width, and background behavior. **Configure Shortcut…** opens the registered Toggle action; enable the bar or island first if the drawer has not been loaded.
+
+A `[drawer.<id>]` stacks the popouts of its widgets in one panel on a screen edge, like a control center. Open it with `shell toggle <id>`, from a click, with **Settings > Keyboard Shortcuts > Toggle \<id\>**, or by moving the pointer to that edge when `hover = true`. Only one drawer or popout is open at a time. `width = 900` limits the hover to that stretch of the edge's middle, and `reach = 10` lets the pointer open it from up to 10 points away from the edge. `close = "leave"` closes it as soon as the pointer leaves it; opened by a click or hotkey, it stays until the pointer has been inside and left. `chrome = false` drops the panel's own background, padding and slide, so the widget draws the whole panel flush against the edge, beside the bar, with room to overshoot.
 
 ## Permissions
 

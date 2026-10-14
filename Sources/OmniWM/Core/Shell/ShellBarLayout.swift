@@ -8,14 +8,14 @@ extension Notification.Name {
     static let shellWidgetsDidChange = Notification.Name("com.barut.OmniWM.shellWidgetsDidChange")
 }
 
-struct ShellBarLayout: Equatable {
-    enum Source: Equatable {
+struct ShellBarLayout: Equatable, Sendable {
+    enum Source: Equatable, Sendable {
         case builtIn
         case profile(String)
         case yours
     }
 
-    struct Widget: Equatable, Identifiable {
+    struct Widget: Equatable, Identifiable, Sendable {
         let name: String
         let source: Source
 
@@ -35,9 +35,12 @@ struct ShellBarLayout: Equatable {
     let profile: String
     let customized: Bool
 
-    static func load(shellDirectory: URL) -> Result<ShellBarLayout, Unreadable> {
+    static func load(shellDirectory: URL, profile: String? = nil) -> Result<ShellBarLayout, Unreadable> {
         var problems: [String] = []
-        guard let config = ShellConfig.load(shellDirectory: shellDirectory, problems: &problems) else {
+        let loaded = if let profile {
+            ShellConfig.load(profile: profile, shellDirectory: shellDirectory, problems: &problems)
+        } else { ShellConfig.load(shellDirectory: shellDirectory, problems: &problems) }
+        guard let config = loaded else {
             return .failure(Unreadable(problem: problems.last ?? "shell.toml"))
         }
         return .success(ShellBarLayout(

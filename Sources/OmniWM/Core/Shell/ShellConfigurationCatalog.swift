@@ -33,4 +33,15 @@ actor ShellConfigurationCatalogLoader {
             schema: ShellComponentCatalog.settingsBytes(settings?.options ?? [:])
         )
     }
+
+    func settings(widgets: [String], directories: [URL]) throws -> [String: ShellRootSettings] {
+        var result: [String: ShellRootSettings] = [:]
+        for widget in Set(widgets) {
+            let source = directories.first {
+                FileManager.default.fileExists(atPath: $0.appendingPathComponent("widgets/\(widget)/init.luau").path)
+            }
+            if let source { result[widget] = try ShellRootSettings.load(widget, directories: [source]) }
+        }
+        return result
+    }
 }

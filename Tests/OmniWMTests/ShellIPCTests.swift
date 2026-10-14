@@ -67,7 +67,10 @@ final class ShellIPCTests: XCTestCase {
     }
 
     func testBarManagerValidatesAndStoresShellVars() {
-        let manager = WorkspaceBarManager(motionPolicy: MotionPolicy(animationsEnabled: false))
+        let manager = WorkspaceBarManager(
+            configDirectory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString),
+            motionPolicy: MotionPolicy(animationsEnabled: false)
+        )
         XCTAssertEqual(manager.applyShellRequest(.set(key: "weather.now", value: "12°")), .executed)
         XCTAssertEqual(manager.shellVars, ["weather.now": "12°"])
         XCTAssertEqual(manager.applyShellRequest(.unset(key: "weather.now")), .executed)

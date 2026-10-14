@@ -110,7 +110,7 @@ monitorDisplayUUID = "3EFD184C-D5D3-40EF-AF27-14C4222A467B"
 monitorName = "DELL U2720Q"
 ```
 
-For no saved arrangements, use `arrangements = []` inside `[routing]` and omit the array-of-table entries. The example UUIDs above are illustrative; use the identities recorded for your displays by **Settings > Monitors**.
+For no saved arrangements, use `arrangements = []` inside `[routing]` and omit the array-of-table entries. The example UUIDs above are illustrative; use the identities recorded for your displays by **Settings > Displays**.
 
 ## monitors
 
@@ -376,7 +376,7 @@ Appearance of OmniWM's own UI.
 | `mode` | string | `"dark"` | `automatic`, `light`, or `dark`. |
 | `tabRailAppIcons` *(optional)* | boolean | `false` | Replaces compact tab markers with app icons in Niri and Dwindle. Each tab group reserves a 28-point rail instead of 10 points; crowded rails scroll vertically. |
 
-The **Show app icons in tab rails** toggle in **Settings → General → Appearance** controls the same option. Changes apply live without restarting.
+The **Show app icons in tab rails** toggle in **Settings → Appearance → App & Motion** controls the same option. Changes apply live without restarting.
 
 ```toml
 [appearance]
@@ -403,7 +403,7 @@ id = "toggleScratchpad.1"
 - The numeric suffix is zero-based for `switchWorkspace.N`, `moveToWorkspace.N`, `focusColumn.N`, and `moveColumnToWorkspace.N` — `switchWorkspace.0` is *Switch to Workspace 1* (`Option + 1` by default) — and one-based for `switchWorkspaceSlot.N`, `moveToWorkspaceSlot.N`, `focusWindowInColumn.N`, `moveColumnToIndex.N`, `toggleScratchpad.N`, and `assignFocusedWindowToScratchpad.N`.
 - `toggleShellWidget.<name>` toggles the shell drawer or widget popout named `<name>`. Settings lists one for every drawer and every widget with a popout, and a bound one stays while its drawer or widget is missing. Unreleased: available when building from `main`.
 
-The default bindings are listed in the [keyboard shortcuts guide](/guides/keyboard-shortcuts/); assignable actions appear in **Settings > Hotkeys**.
+The default bindings are listed in the [keyboard shortcuts guide](/guides/keyboard-shortcuts/); assignable actions appear in **Settings > Keyboard Shortcuts**.
 
 ## workspaces
 
@@ -484,4 +484,4 @@ monitorName = "DELL U2720Q"
 outerGapTop = 4.0
 ```
 
-The example UUID is illustrative; replace it with the identity recorded for your display. These overrides are most easily managed from **Settings > Monitors** and the per-layout tabs, which record the display's UUID automatically so the override survives display reconnects.
+The example UUID is illustrative; replace it with the identity recorded for your display. These overrides are most easily managed from **Settings > Displays** and **Settings > Layouts** tabs, which record the display's UUID automatically so the override survives display reconnects.

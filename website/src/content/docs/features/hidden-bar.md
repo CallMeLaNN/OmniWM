@@ -9,7 +9,7 @@ sidebar:
 
 Hidden Bar conceals selected menu-bar icons and lets you reach them from a panel:
 
-- Pick the apps to hide in **Settings → Hidden Bar**.
+- Pick the apps to hide in **Settings → Menu Bar → Hidden Bar**.
 - Hidden Bar runs while the workspace bar is on; turning the bar off shows the hidden icons again.
 - Right-click (or Option-click) the OmniWM menu bar icon to open the Hidden Icons Bar. Click an app icon to open its menu in an OmniShell dropdown beneath that icon. The icon strip stays open; apps without a menu retain their native activation behavior. Unreleased: available when building from `main`.
 - Menu checkmarks, shortcuts, disabled commands and submenus are preserved. Click a submenu to enter it and **Back** to return. Click outside or press Escape to dismiss the strip and menu. Unreleased: available when building from `main`.

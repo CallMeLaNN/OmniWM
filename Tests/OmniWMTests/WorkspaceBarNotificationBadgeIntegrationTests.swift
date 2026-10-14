@@ -185,6 +185,7 @@ final class WorkspaceBarNotificationBadgeIntegrationTests: XCTestCase {
         controller.surfaceReconciler.cleanup()
         controller.hasStartedServices = true
         let manager = WorkspaceBarManager(
+            configDirectory: controller.settings.settingsFileURL.deletingLastPathComponent(),
             motionPolicy: MotionPolicy(animationsEnabled: false), notificationBadges: service
         )
         manager.screenProvider = { _ in nil }

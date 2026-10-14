@@ -26,7 +26,10 @@ struct ShellRootSettings: Equatable, Sendable {
         }
         return try ShellRootSettings(
             widget: widget,
-            options: ShellComponentCatalog.parseOptions(table["options"], place: widget),
+            options: ShellComponentCatalog.parseOptions(
+                table["options"], place: widget,
+                reservedNames: ShellComponentCatalog.reservedOptions.subtracting(["network"])
+            ),
             folder: folder
         )
     }

@@ -98,7 +98,10 @@ final class WMController {
     @ObservationIgnored
     private(set) lazy var surfaceReconciler = SurfaceReconciler(controller: self)
     @ObservationIgnored
-    private(set) lazy var workspaceBarManager: WorkspaceBarManager = .init(motionPolicy: motionPolicy)
+    private(set) lazy var workspaceBarManager: WorkspaceBarManager = .init(
+        configDirectory: settings.settingsFileURL.deletingLastPathComponent(),
+        motionPolicy: motionPolicy
+    )
     @ObservationIgnored
     private var runtimeFrameJobCancellationSuppressionDepth: Int = 0
     @ObservationIgnored

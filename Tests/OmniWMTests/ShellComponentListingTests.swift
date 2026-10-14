@@ -90,7 +90,16 @@ final class ShellComponentListingTests: XCTestCase {
                 rootOptions: schema.options
             ))
             try Data("[options.\(key)]\ntype = 'boolean'\n".utf8).write(to: file)
-            XCTAssertThrowsError(try ShellRootSettings.load("lake", directories: [root]))
+            if key == "network" {
+                let settings = try XCTUnwrap(ShellRootSettings.load("lake", directories: [root]))
+                XCTAssertEqual(try settings.values(applying: [key: .bool(true)]), [key: .bool(true)])
+                XCTAssertThrowsError(try settings.values(applying: [key: .string("example.com")]))
+                XCTAssertThrowsError(try ShellComponentCatalog.parseOptions(
+                    .table([key: .table(["type": .string("boolean")])]), place: "component"
+                ))
+            } else {
+                XCTAssertThrowsError(try ShellRootSettings.load("lake", directories: [root]))
+            }
         }
         XCTAssertNil(try ShellRootSettings.load("other", directories: [root]))
     }

@@ -293,12 +293,14 @@ enum ShellComponentCatalog {
         return writer.bytes
     }
 
-    static func parseOptions(_ node: TOMLNode?, place: String) throws -> [String: ShellComponentOption] {
+    static func parseOptions(
+        _ node: TOMLNode?, place: String, reservedNames: Set<String> = reservedOptions
+    ) throws -> [String: ShellComponentOption] {
         guard let node else { return [:] }
         guard case let .table(entries) = node else { throw Failure("\(place) options must be a table") }
         var options: [String: ShellComponentOption] = [:]
         for (key, node) in entries {
-            guard validName(key), !reservedOptions.contains(key) else {
+            guard validName(key), !reservedNames.contains(key) else {
                 throw Failure("\(place): reserved or invalid option name \(key)")
             }
             options[key] = try option(node, key: key, widget: place)

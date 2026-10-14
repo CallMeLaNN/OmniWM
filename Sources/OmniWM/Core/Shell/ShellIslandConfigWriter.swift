@@ -22,6 +22,7 @@ final class ShellIslandConfigWriter: Sendable {
         var submitted: UInt64 = 0
         var completed: UInt64 = 0
         var deferredReload = false
+        var reloadTask: Task<Void, Never>?
     }
 
     let shellDirectory: URL
@@ -29,14 +30,14 @@ final class ShellIslandConfigWriter: Sendable {
     private let state = Mutex(State())
     private let readFile: @Sendable (URL) throws -> Data
     private let writeFile: @Sendable (Data, URL) throws -> Void
-    private let reloadReady: @Sendable () -> Void
+    private let reloadReady: @Sendable () async -> Void
 
     init(
         shellDirectory: URL,
         readFile: @escaping @Sendable (URL) throws -> Data = { try SettingsFileAccess.readContents(at: $0).data },
         writeFile: @escaping @Sendable (Data, URL) throws
             -> Void = { try SettingsFileAccess.writeAtomically($0, at: $1) },
-        reloadReady: @escaping @Sendable () -> Void
+        reloadReady: @escaping @Sendable () async -> Void
     ) {
         self.shellDirectory = shellDirectory
         self.readFile = readFile
@@ -53,50 +54,84 @@ final class ShellIslandConfigWriter: Sendable {
     }
 
     func submit(_ write: Write, completion: @escaping @Sendable (Commit) -> Void) {
+        enqueue(islandOperation(write.change, profile: write.profile, root: write.root)) { revision, result in
+            completion(Commit(id: write.id, revision: revision, error: result.failureMessage))
+        }
+    }
+
+    func persist(_ change: ShellIslandLayout.Change, profile: String, root: String) async throws -> UInt64 {
+        try await withCheckedThrowingContinuation { continuation in
+            enqueue(islandOperation(change, profile: profile, root: root)) { revision, result in
+                continuation.resume(with: result.map { _ in revision })
+            }
+        }
+    }
+
+    private func islandOperation(
+        _ change: ShellIslandLayout.Change, profile: String, root: String
+    ) -> @Sendable (URL) throws -> Bool {
+        { [self] directory in
+            let url = directory.appendingPathComponent("shell.toml")
+            let original: String
+            do {
+                original = String(decoding: try readFile(url), as: UTF8.self)
+            } catch let error as CocoaError
+                where error.code == .fileReadNoSuchFile || error.code == .fileNoSuchFile
+            {
+                original = ""
+            }
+            let updated = try ShellIslandLayout.persisted(
+                change, profile: profile, root: root, in: original
+            )
+            guard updated != original else { return false }
+            try SettingsFileAccess.ensureDirectoryExists(at: directory)
+            try writeFile(Data(updated.utf8), url)
+            return true
+        }
+    }
+
+    func perform<Value: Sendable>(_ operation: @escaping @Sendable (URL) throws -> Value) async throws -> Value {
+        try await withCheckedThrowingContinuation { continuation in
+            enqueue(operation) { _, result in continuation.resume(with: result) }
+        }
+    }
+
+    private func enqueue<Value: Sendable>(
+        _ operation: @escaping @Sendable (URL) throws -> Value,
+        completion: @escaping @Sendable (UInt64, Result<Value, Error>) -> Void
+    ) {
         state.withLock { state in
             state.submitted += 1
             let revision = state.submitted
             queue.async { [self] in
-                let failure: String?
-                do {
-                    let url = shellDirectory.appendingPathComponent("shell.toml")
-                    let original: String
-                    do {
-                        original = String(decoding: try readFile(url), as: UTF8.self)
-                    } catch let error as CocoaError
-                        where error.code == .fileReadNoSuchFile || error.code == .fileNoSuchFile
-                    {
-                        original = ""
-                    }
-                    let updated = try ShellIslandLayout.persisted(
-                        write.change,
-                        profile: write.profile,
-                        root: write.root,
-                        in: original
-                    )
-                    if updated != original {
-                        try SettingsFileAccess.ensureDirectoryExists(at: shellDirectory)
-                        try writeFile(Data(updated.utf8), url)
-                    }
-                    failure = nil
-                } catch {
-                    failure = error.localizedDescription
-                }
-                completion(Commit(id: write.id, revision: revision, error: failure))
-                let reload = self.state.withLock { state in
+                let result = Result { try operation(shellDirectory) }
+                self.state.withLock { state in
                     state.completed = revision
-                    guard state.completed == state.submitted, state.deferredReload else { return false }
+                    guard state.completed == state.submitted, state.deferredReload else { return }
                     state.deferredReload = false
-                    return true
+                    let previous = state.reloadTask
+                    state.reloadTask = Task { [reloadReady] in
+                        await previous?.value
+                        await reloadReady()
+                    }
                 }
-                if reload { reloadReady() }
+                completion(revision, result)
             }
         }
     }
 
     func flush() async {
-        await withCheckedContinuation { continuation in
-            queue.async { continuation.resume() }
+        let reload = await withCheckedContinuation { continuation in
+            queue.async { [self] in
+                continuation.resume(returning: state.withLock { $0.reloadTask })
+            }
         }
+        await reload?.value
+    }
+}
+
+private extension Result where Success == Bool, Failure == Error {
+    var failureMessage: String? {
+        if case let .failure(error) = self { error.localizedDescription } else { nil }
     }
 }

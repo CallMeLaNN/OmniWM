@@ -37,7 +37,7 @@ extension GlobalBarSettingsSection {
                 valueText: "\(Int((style?.settings.inactiveIconOpacity ?? settings.workspaceBar.inactiveIconOpacity ?? 0.5) * 100))%",
                 resetAction: {
                     edit {
-                        try ShellSettingsEdits.set(
+                        try await ShellSettingsEdits.set(
                             Optional<Double>.none,
                             key: "inactiveIconOpacity",
                             settings: settings,
@@ -143,6 +143,6 @@ extension GlobalBarSettingsSection {
     }
 
     private func setColor(_ color: SettingsColor?, key: String) {
-        edit { try ShellSettingsEdits.set(color, key: key, settings: settings, controller: controller) }
+        edit { try await ShellSettingsEdits.set(color, key: key, settings: settings, controller: controller) }
     }
 }

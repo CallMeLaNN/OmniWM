@@ -771,7 +771,10 @@ final class ShellWidgetBarLifecycleTests: XCTestCase {
     }
 
     private func makeManager() -> WorkspaceBarManager {
-        let manager = WorkspaceBarManager(motionPolicy: MotionPolicy(animationsEnabled: false))
+        let manager = WorkspaceBarManager(
+            configDirectory: controller.settings.settingsFileURL.deletingLastPathComponent(),
+            motionPolicy: MotionPolicy(animationsEnabled: false)
+        )
         manager.setup(controller: controller, settings: controller.settings)
         manager.panelFactory = { WorkspaceBarPanel.defaultPanel() }
         manager.frameApplier = { _, _ in }

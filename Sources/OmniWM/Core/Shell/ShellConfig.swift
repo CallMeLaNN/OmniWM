@@ -4,7 +4,7 @@
 import Foundation
 import TOML
 
-enum ShellLane: String, Equatable, CaseIterable {
+enum ShellLane: String, Equatable, CaseIterable, Sendable {
     case leading
     case center
     case trailing
@@ -118,6 +118,10 @@ extension ShellConfig {
         load(shellDirectory, skippingBrokenLayers: false, problems: &problems)
     }
 
+    static func load(profile: String, shellDirectory: URL, problems: inout [String]) -> ShellConfig? {
+        load(shellDirectory, profile: profile, skippingBrokenLayers: false, problems: &problems)
+    }
+
     static func resolve(shellDirectory: URL) -> ShellConfig {
         var problems: [String] = []
         return resolve(shellDirectory: shellDirectory, problems: &problems)
@@ -138,11 +142,13 @@ extension ShellConfig {
 
     private static func load(
         _ shellDirectory: URL,
+        profile: String? = nil,
         skippingBrokenLayers: Bool,
         problems: inout [String]
     ) -> ShellConfig? {
         var config = ShellConfig()
-        guard let top = layer(in: shellDirectory, &problems) ?? (skippingBrokenLayers ? [:] : nil) else { return nil }
+        guard var top = layer(in: shellDirectory, &problems) ?? (skippingBrokenLayers ? [:] : nil) else { return nil }
+        if let profile { top["profile"] = .string(profile) }
         selectProfile(top, in: shellDirectory, for: &config, &problems)
         var table: [String: TOMLNode] = [:]
         for directory in config.directories.reversed() where directory != shellDirectory {

@@ -77,6 +77,10 @@ final class StatusMenuModel {
     func menuWillOpen() {
         menuPresentationGeneration += 1
         controller?.refreshDiagnosticsIssues()
+        refreshCLIStatus()
+    }
+
+    func refreshCLIStatus() {
         cliStatus = cliManager?.exposureStatus()
     }
 
@@ -175,19 +179,21 @@ final class StatusMenuModel {
                         get: { settings.hiddenBar.resolvedEnabled },
                         set: { [weak self] enabled in
                             guard let self, let controller else { return }
-                            do {
-                                try ShellSettingsEdits.set(
-                                    enabled,
-                                    key: "enabled",
-                                    table: "hiddenBar",
-                                    settings: settings,
-                                    controller: controller
-                                )
-                            } catch {
-                                infoAlertPresenter(
-                                    String(localized: "Unable to Save Shell Settings"),
-                                    error.localizedDescription
-                                )
+                            Task {
+                                do {
+                                    try await ShellSettingsEdits.set(
+                                        enabled,
+                                        key: "enabled",
+                                        table: "hiddenBar",
+                                        settings: settings,
+                                        controller: controller
+                                    )
+                                } catch {
+                                    infoAlertPresenter(
+                                        String(localized: "Unable to Save Shell Settings"),
+                                        error.localizedDescription
+                                    )
+                                }
                             }
                         }
                     )

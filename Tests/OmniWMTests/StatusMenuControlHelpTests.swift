@@ -324,7 +324,7 @@ final class StatusMenuControlHelpTests: XCTestCase {
         XCTAssertEqual(hiddenBarTiles.count, fixture.controller.isHiddenBarHidingAvailable ? 1 : 0)
     }
 
-    func testHiddenBarTileReadsAndWritesTheActiveProfileEnabledValue() throws {
+    func testHiddenBarTileReadsAndWritesTheActiveProfileEnabledValue() async throws {
         let fixture = makeStatusMenuModelFixture(hiddenBarAvailable: true)
         defer { try? FileManager.default.removeItem(at: fixture.root) }
         let settings = fixture.model.settings
@@ -339,21 +339,38 @@ final class StatusMenuControlHelpTests: XCTestCase {
         settings.hiddenBar.profileOverride = ShellConfig.resolve(shellDirectory: directory).hiddenBarOverride
         fixture.model.infoAlertPresenter = { _, message in XCTFail(message) }
         let tile = try XCTUnwrap(fixture.model.toggleTiles.first { $0.control == .hiddenBarEnabled })
+        let configuration = fixture.controller.workspaceBarManager.shellConfiguration
+        let applySavedConfiguration = configuration.onSave
+        defer { configuration.onSave = applySavedConfiguration }
+        let enabledSaved = expectation(description: "HiddenBar enabled value persisted")
+        configuration.onSave = { config in
+            applySavedConfiguration?(config)
+            enabledSaved.fulfill()
+        }
 
         XCTAssertFalse(tile.isOn.wrappedValue)
         tile.isOn.wrappedValue = true
+        await fulfillment(of: [enabledSaved], timeout: 1)
+        await configuration.flush()
 
         XCTAssertTrue(tile.isOn.wrappedValue)
         XCTAssertEqual(ShellConfig.load(shellDirectory: directory)?.hiddenBarOverride?.enabled, true)
 
+        let disabledSaved = expectation(description: "HiddenBar disabled value persisted")
+        configuration.onSave = { config in
+            applySavedConfiguration?(config)
+            disabledSaved.fulfill()
+        }
         tile.isOn.wrappedValue = false
+        await fulfillment(of: [disabledSaved], timeout: 1)
+        await configuration.flush()
 
         XCTAssertFalse(tile.isOn.wrappedValue)
         XCTAssertTrue(settings.hiddenBar.enabled)
         XCTAssertEqual(ShellConfig.load(shellDirectory: directory)?.hiddenBarOverride?.enabled, false)
     }
 
-    func testHiddenBarTileSurfacesUnreadableProfileWithoutChangingEnabledValue() throws {
+    func testHiddenBarTileSurfacesUnreadableProfileWithoutChangingEnabledValue() async throws {
         let fixture = makeStatusMenuModelFixture(hiddenBarAvailable: true)
         defer { try? FileManager.default.removeItem(at: fixture.root) }
         let settings = fixture.model.settings
@@ -364,10 +381,16 @@ final class StatusMenuControlHelpTests: XCTestCase {
         try invalid.write(to: url)
         settings.hiddenBar.enabled = false
         var messages: [(String, String)] = []
-        fixture.model.infoAlertPresenter = { messages.append(($0, $1)) }
+        let errorPresented = expectation(description: "Unreadable HiddenBar profile error presented")
+        fixture.model.infoAlertPresenter = { title, message in
+            messages.append((title, message))
+            errorPresented.fulfill()
+        }
         let tile = try XCTUnwrap(fixture.model.toggleTiles.first { $0.control == .hiddenBarEnabled })
 
         tile.isOn.wrappedValue = true
+        await fulfillment(of: [errorPresented], timeout: 1)
+        await fixture.controller.workspaceBarManager.shellConfiguration.flush()
 
         XCTAssertFalse(tile.isOn.wrappedValue)
         XCTAssertFalse(settings.hiddenBar.enabled)
@@ -420,6 +443,7 @@ final class StatusMenuControlHelpTests: XCTestCase {
             clipboardHistoryDirectory: root.appendingPathComponent("clipboard", isDirectory: true),
             diagnosticsDirectory: root.appendingPathComponent("diagnostics", isDirectory: true)
         )
+        controller.workspaceBarManager.setup(controller: controller, settings: settings)
         return StatusMenuModelFixture(
             root: root,
             controller: controller,

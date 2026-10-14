@@ -1,37 +1,7 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Customize Island Widgets…" : {
-
-    },
     "Dynamic Island" : {
-
-    },
-    "Enable Island to add, arrange, and customize its widgets." : {
-
-    },
-    "Island Profile" : {
-
-    },
-    "Selects the Lake shell profile for both the bar layout and island. Your Workspace Bar enable setting stays the same." : {
-
-    },
-    "The island and Workspace Bar can run together or separately." : {
-
-    },
-    "The island profile is not ready to open its customization controls." : {
-
-    },
-    "The selected shell profile has no island." : {
-
-    },
-    "This island profile has no customization action. Its layout can be edited in the shell folder." : {
-
-    },
-    "Use Lake Profile" : {
-
-    },
-    "Waiting for the island profile to load." : {
 
     },
     "Enable Island" : {
@@ -1154,6 +1124,7 @@
       }
     },
     "Add a widget" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1278,6 +1249,7 @@
       }
     },
     "Add to %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1526,6 +1498,7 @@
       }
     },
     "Drag widgets to reorder them. Changes are saved to shell.toml in your shell folder." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2022,6 +1995,7 @@
       }
     },
     "Not found" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2270,6 +2244,7 @@
       }
     },
     "Remove the selected widget" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2394,6 +2369,7 @@
       }
     },
     "Use Profile Layout" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2518,6 +2494,7 @@
       }
     },
     "Use the “%@” profile’s widget layout?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2642,6 +2619,7 @@
       }
     },
     "Using the “%@” profile’s layout" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2766,6 +2744,7 @@
       }
     },
     "Using your layout" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2890,6 +2869,7 @@
       }
     },
     "Your widget" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3014,6 +2994,7 @@
       }
     },
     "“%@” profile" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -5004,113 +4985,12 @@
       }
     },
     "Enable the global Workspace Bar to use monitor settings." : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "モニターごとの設定を使用するには、グローバルのワークスペースバーを有効にしてください。"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aktivieren Sie die globale Workspace-Leiste, um die Monitoreinstellungen zu verwenden."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aktiver den globale arbeidsområdelinjen for å bruke skjerminnstillingene."
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aktivera arbetsytans bar globalt för att använda skärminställningarna."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Activa la barra de espacios de trabajo global para usar los ajustes de cada monitor."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "要使用显示器设置，请启用全局工作区栏。"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "मॉनिटर सेटिंग्स का उपयोग करने के लिए वैश्विक कार्यस्थल बार सक्षम करें।"
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "فعّل شريط مساحات العمل العام لاستخدام إعدادات الشاشات."
-          }
-        },
-        "sr-Latn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Uključite globalnu traku radnih prostora da biste koristili podešavanja monitora."
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ενεργοποιήστε την καθολική γραμμή χώρων εργασίας για να χρησιμοποιήσετε τις ρυθμίσεις οθονών."
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "יש להפעיל את סרגל מרחבי העבודה הגלובלי כדי להשתמש בהגדרות הצגים."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Включите общую панель рабочих пространств, чтобы использовать настройки мониторов."
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Włącz globalny pasek przestrzeni roboczych, aby korzystać z ustawień monitorów."
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Увімкніть глобальну смугу робочих просторів, щоб користуватися налаштуваннями моніторів."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Activez la barre globale des espaces de travail pour utiliser les réglages des moniteurs."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Schakel de globale werkruimtebalk in om de monitorinstellingen te gebruiken."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abilita la barra globale degli spazi di lavoro per usare le impostazioni dei monitor."
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ota yleinen työtilapalkki käyttöön, jotta voit käyttää näyttökohtaisia asetuksia."
           }
         },
         "da" : {
@@ -5119,10 +4999,112 @@
             "value" : "Aktivér den globale arbejdsområdelinje for at bruge skærmindstillingerne."
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktivieren Sie die globale Workspace-Leiste, um die Monitoreinstellungen zu verwenden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ενεργοποιήστε την καθολική γραμμή χώρων εργασίας για να χρησιμοποιήσετε τις ρυθμίσεις οθονών."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activa la barra de espacios de trabajo global para usar los ajustes de cada monitor."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ota yleinen työtilapalkki käyttöön, jotta voit käyttää näyttökohtaisia asetuksia."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activez la barre globale des espaces de travail pour utiliser les réglages des moniteurs."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "יש להפעיל את סרגל מרחבי העבודה הגלובלי כדי להשתמש בהגדרות הצגים."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मॉनिटर सेटिंग्स का उपयोग करने के लिए वैश्विक कार्यस्थल बार सक्षम करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abilita la barra globale degli spazi di lavoro per usare le impostazioni dei monitor."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "モニターごとの設定を使用するには、グローバルのワークスペースバーを有効にしてください。"
+          }
+        },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "모니터별 설정을 사용하려면 전역 워크스페이스 바를 활성화하세요."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktiver den globale arbeidsområdelinjen for å bruke skjerminnstillingene."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schakel de globale werkruimtebalk in om de monitorinstellingen te gebruiken."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Włącz globalny pasek przestrzeni roboczych, aby korzystać z ustawień monitorów."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Включите общую панель рабочих пространств, чтобы использовать настройки мониторов."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uključite globalnu traku radnih prostora da biste koristili podešavanja monitora."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktivera arbetsytans bar globalt för att använda skärminställningarna."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Увімкніть глобальну смугу робочих просторів, щоб користуватися налаштуваннями моніторів."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "要使用显示器设置，请启用全局工作区栏。"
           }
         }
       }
@@ -16426,113 +16408,12 @@
       }
     },
     "Add app rule" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "アプリルールを追加する"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "App-Regel hinzufügen"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Legg til appregel"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lägg till appregel"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Añadir regla de aplicación"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "添加应用程序规则"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ऐप नियम जोड़ें"
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "إضافة قاعدة التطبيق"
-          }
-        },
-        "sr-Latn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dodaj pravilo aplikacije"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Προσθήκη κανόνα εφαρμογής"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "הוסף כלל אפליקציה"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Добавить правило приложения"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dodaj regułę aplikacji"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Додати правило для програми"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ajouter une règle d'application"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "App-regel toevoegen"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aggiungi regola app"
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lisää sovellussääntö"
           }
         },
         "da" : {
@@ -16541,10 +16422,112 @@
             "value" : "Tilføj appregel"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App-Regel hinzufügen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Προσθήκη κανόνα εφαρμογής"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añadir regla de aplicación"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lisää sovellussääntö"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajouter une règle d'application"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "הוסף כלל אפליקציה"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ऐप नियम जोड़ें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi regola app"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アプリルールを追加する"
+          }
+        },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "앱 규칙 추가"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til appregel"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App-regel toevoegen"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dodaj regułę aplikacji"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Добавить правило приложения"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dodaj pravilo aplikacije"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lägg till appregel"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Додати правило для програми"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加应用程序规则"
           }
         }
       }
@@ -24861,113 +24844,12 @@
     },
     "Bar Thickness" : {},
     "Basics" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "基本"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Grundlagen"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Grunnleggende"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Grundläggande"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Básicos"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "基本"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "मूल बातें"
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "الأساسيات"
-          }
-        },
-        "sr-Latn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Osnovno"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Βασικά"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "יסודות"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Базовые настройки"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Podstawy"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Базові налаштування"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Notions de base"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Basis"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fondamenti"
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Perusasiat"
           }
         },
         "da" : {
@@ -24976,10 +24858,112 @@
             "value" : "Grundlæggende"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grundlagen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Βασικά"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Básicos"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Perusasiat"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notions de base"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "יסודות"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मूल बातें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fondamenti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "基本"
+          }
+        },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "기본"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grunnleggende"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Basis"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Podstawy"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Базовые настройки"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Osnovno"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grundläggande"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Базові налаштування"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "基本"
           }
         }
       }
@@ -33305,113 +33289,12 @@
       }
     },
     "Configuration Scope" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "構成範囲"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Konfigurationsbereich"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Konfigurasjonsomfang"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Konfigurationsomfång"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alcance de la configuración"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "配置范围"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "कॉन्फ़िगरेशन स्कोप"
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "نطاق التكوين"
-          }
-        },
-        "sr-Latn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Opseg konfiguracije"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Πεδίο εφαρμογής ρύθμισης"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "תחום הגדרות"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Область конфигурации"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zakres konfiguracji"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Область дії налаштувань"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Portée de la configuration"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Configuratiebereik"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ambito di configurazione"
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Määritysten laajuus"
           }
         },
         "da" : {
@@ -33420,10 +33303,112 @@
             "value" : "Konfigurationsanvendelsesområde"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konfigurationsbereich"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Πεδίο εφαρμογής ρύθμισης"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alcance de la configuración"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Määritysten laajuus"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Portée de la configuration"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "תחום הגדרות"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "कॉन्फ़िगरेशन स्कोप"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ambito di configurazione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "構成範囲"
+          }
+        },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "구성 범위"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konfigurasjonsomfang"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configuratiebereik"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zakres konfiguracji"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Область конфигурации"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opseg konfiguracije"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konfigurationsomfång"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Область дії налаштувань"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "配置范围"
           }
         }
       }
@@ -36157,113 +36142,12 @@
       }
     },
     "Controls the appearance of menus and workspace bar" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "メニューとワークスペースバーの外観を制御します"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Steuert das Aussehen von Menüs und der Workspace-Leiste"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Styrer utseendet på menyer og arbeidsområdelinjen"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Styr utseendet på menyer och arbetsytans bar"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Controla la apariencia de los menús y la barra de espacios de trabajo"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "控制菜单和工作区栏的显示效果"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "मेनू और वर्कस्पेस बार की दिखावट को नियंत्रित करता है"
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "يتحكم في مظهر القوائم وشريط مساحات العمل"
-          }
-        },
-        "sr-Latn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Upravlja izgledom menija i trake radnih prostora"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ελέγχει την εμφάνιση των μενού και της γραμμής χώρου εργασίας"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "שולט במראה של התפריטים ושל סרגל מרחבי העבודה"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Управляет внешним видом меню и панели рабочих пространств"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zarządza wyglądem menu i paska przestrzeni roboczej"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Керує виглядом меню та смуги робочих просторів"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Contrôle l'apparence des menus et de la barre des espaces de travail"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bepaalt het uiterlijk van menu's en de werkruimtebalk"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Controlla l'aspetto dei menu e della barra degli spazi di lavoro"
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ohjaa valikkojen ja työtilapalkin ulkonäköä"
           }
         },
         "da" : {
@@ -36272,10 +36156,112 @@
             "value" : "Styrer udseendet af menuer og arbejdsområdelinjen"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steuert das Aussehen von Menüs und der Workspace-Leiste"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ελέγχει την εμφάνιση των μενού και της γραμμής χώρου εργασίας"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controla la apariencia de los menús y la barra de espacios de trabajo"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ohjaa valikkojen ja työtilapalkin ulkonäköä"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contrôle l'apparence des menus et de la barre des espaces de travail"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "שולט במראה של התפריטים ושל סרגל מרחבי העבודה"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मेनू और वर्कस्पेस बार की दिखावट को नियंत्रित करता है"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controlla l'aspetto dei menu e della barra degli spazi di lavoro"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メニューとワークスペースバーの外観を制御します"
+          }
+        },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "메뉴와 워크스페이스 바의 모양을 제어합니다"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Styrer utseendet på menyer og arbeidsområdelinjen"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bepaalt het uiterlijk van menu's en de werkruimtebalk"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zarządza wyglądem menu i paska przestrzeni roboczej"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Управляет внешним видом меню и панели рабочих пространств"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upravlja izgledom menija i trake radnih prostora"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Styr utseendet på menyer och arbetsytans bar"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Керує виглядом меню та смуги робочих просторів"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "控制菜单和工作区栏的显示效果"
           }
         }
       }
@@ -58618,113 +58604,12 @@
       }
     },
     "Global Defaults" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "グローバルデフォルト"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Globale Standardeinstellungen"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Globale standardinnstillinger"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Globala standardinställningar"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Valores predeterminados globales"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "全局默认值"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "वैश्विक डिफ़ॉल्ट्स"
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "الإعدادات الافتراضية العالمية"
-          }
-        },
-        "sr-Latn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Globalne podrazumevane vrednosti"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Γενικές προεπιλογές"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ברירת מחדל גלובלית"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Глобальные настройки по умолчанию"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Globalne ustawienia domyślne"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Глобальні параметри за замовчуванням"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Valeurs globales par défaut"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Globale standaardwaarden"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Predefiniti globali"
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Yleiset oletukset"
           }
         },
         "da" : {
@@ -58733,10 +58618,112 @@
             "value" : "Globale standardværdier"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Globale Standardeinstellungen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Γενικές προεπιλογές"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valores predeterminados globales"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yleiset oletukset"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valeurs globales par défaut"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ברירת מחדל גלובלית"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "वैश्विक डिफ़ॉल्ट्स"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Predefiniti globali"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "グローバルデフォルト"
+          }
+        },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "글로벌 기본값"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Globale standardinnstillinger"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Globale standaardwaarden"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Globalne ustawienia domyślne"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Глобальные настройки по умолчанию"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Globalne podrazumevane vrednosti"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Globala standardinställningar"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Глобальні параметри за замовчуванням"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全局默认值"
           }
         }
       }
@@ -61222,113 +61209,12 @@
       }
     },
     "Help" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ヘルプ"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hilfe"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hjelp"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hjälp"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ayuda"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "帮助"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "मदद"
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "مساعدة"
-          }
-        },
-        "sr-Latn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pomoć"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Βοήθεια"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "עזרה"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Помощь"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pomoc"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Допомога"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aide"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hulp"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aiuto"
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ohje"
           }
         },
         "da" : {
@@ -61337,10 +61223,112 @@
             "value" : "Hjælp"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hilfe"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Βοήθεια"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayuda"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ohje"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aide"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "עזרה"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मदद"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aiuto"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ヘルプ"
+          }
+        },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "도움말"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hjelp"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hulp"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pomoc"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Помощь"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pomoć"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hjälp"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Допомога"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "帮助"
           }
         }
       }
@@ -65067,113 +65055,12 @@
       }
     },
     "Hotkeys" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ホットキー"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hotkeys"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hurtigtaster"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kortkommandon"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Teclas de acceso rápido"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "快捷键"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "हॉटकीज"
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "مفاتيح الاختصار"
-          }
-        },
-        "sr-Latn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prečice"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Συντομεύσεις"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "קיצורי מקשים"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Горячие клавиши"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skróty klawiszowe"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Комбінації клавіш"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Raccourcis clavier"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sneltoetsen"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tasti di scelta rapida"
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pikanäppäimet"
           }
         },
         "da" : {
@@ -65182,10 +65069,112 @@
             "value" : "Genvejstaster"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hotkeys"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Συντομεύσεις"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teclas de acceso rápido"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikanäppäimet"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Raccourcis clavier"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "קיצורי מקשים"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "हॉटकीज"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tasti di scelta rapida"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ホットキー"
+          }
+        },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "핫키"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hurtigtaster"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sneltoetsen"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skróty klawiszowe"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Горячие клавиши"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prečice"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kortkommandon"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Комбінації клавіш"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "快捷键"
           }
         }
       }
@@ -79215,113 +79204,12 @@
       }
     },
     "Monitors" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "モニター"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Monitore"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skjermer"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Monitorer"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Monitores"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "显示器"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "मॉनिटर"
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "الشاشات"
-          }
-        },
-        "sr-Latn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Monitori"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Οθόνες"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "צגים"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Мониторы"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Monitory"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Монітори"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Moniteurs"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Monitoren"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Monitor"
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Monitorit"
           }
         },
         "da" : {
@@ -79330,10 +79218,112 @@
             "value" : "Monitorer"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monitore"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Οθόνες"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monitores"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monitorit"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moniteurs"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "צגים"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मॉनिटर"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monitor"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "モニター"
+          }
+        },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "모니터"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skjermer"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monitoren"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monitory"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Мониторы"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monitori"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monitorer"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Монітори"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示器"
           }
         }
       }
@@ -115113,113 +115103,12 @@
       }
     },
     "Reset to Global" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "グローバルにリセットする"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Auf Global zurücksetzen"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tilbakestill til global"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Återställ till global"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Restablecer al valor global"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重置为全局设置"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ग्लोबल पर रीसेट करें"
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "إعادة الضبط إلى العالمي"
-          }
-        },
-        "sr-Latn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vrati na globalno"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Επαναφορά στις καθολικές ρυθμίσεις"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "אפס לגלובלי"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Сбросить на глобальный уровень"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zresetuj do globalnego"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Скинути до глобального значення"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rétablir la valeur globale"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Terugzetten naar globaal"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reimposta a globale"
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nollaa yleiseen"
           }
         },
         "da" : {
@@ -115228,10 +115117,112 @@
             "value" : "Nulstil til globalt"
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf Global zurücksetzen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Επαναφορά στις καθολικές ρυθμίσεις"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restablecer al valor global"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nollaa yleiseen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rétablir la valeur globale"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "אפס לגלובלי"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ग्लोबल पर रीसेट करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reimposta a globale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "グローバルにリセットする"
+          }
+        },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "전역 설정으로 초기화"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilbakestill til global"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terugzetten naar globaal"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zresetuj do globalnego"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сбросить на глобальный уровень"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrati na globalno"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Återställ till global"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скинути до глобального значення"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重置为全局设置"
           }
         }
       }
@@ -139464,11 +139455,18 @@
       }
     },
     "Theme" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ja" : {
+        "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "テーマ"
+            "value" : "السمة"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tema"
           }
         },
         "de" : {
@@ -139477,91 +139475,13 @@
             "value" : "Thema"
           }
         },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tema"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tema"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tema"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "主题"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "थीम"
-          }
-        },
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "السمة"
-          }
-        },
-        "sr-Latn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tema"
-          }
-        },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Θέμα"
           }
         },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ערכת נושא"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Тема"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Motyw"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Тема"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Thème"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Thema"
-          }
-        },
-        "it" : {
+        "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tema"
@@ -139573,16 +139493,88 @@
             "value" : "Teema"
           }
         },
-        "da" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thème"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ערכת נושא"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "थीम"
+          }
+        },
+        "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tema"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "テーマ"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "테마"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tema"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thema"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Motyw"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Тема"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tema"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tema"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Тема"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "主题"
           }
         }
       }
@@ -156288,113 +156280,12 @@
       }
     },
     "macOS controls where windows are placed. OmniWM can use a separate map that matches how your displays are actually arranged on your desk." : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOSはウィンドウの位置を制御します。OmniWMは、机の上のディスプレイが実際にどのように配置されているかに一致する別のマップを使用できます。"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS steuert, wo die Fenster platziert werden. OmniWM kann eine separate Karte verwenden, die mit der Art und Weise übereinstimmt, wie Ihre Anzeigen tatsächlich auf Ihrem Schreibtisch angeordnet sind."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS kontrollerer hvor vinduer plasseres. OmniWM kan bruke et separat kart som samsvarer med hvordan skjermene dine faktisk er arrangert på skrivebordet ditt."
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS styr var fönstren placeras. OmniWM kan använda en separat karta som matchar hur dina skärmar faktiskt är arrangerade på ditt skrivbord."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS controla dónde se colocan las ventanas. OmniWM puede utilizar un mapa separado que coincida con la forma en que se disponen realmente tus pantallas en tu escritorio."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS 控制窗口的位置。OmniWM 可以使用一个单独的地图，它与您桌上实际显示器的排列方式相匹配。"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS यह नियंत्रित करता है कि विंडो कहाँ रखी जाती हैं। OmniWM एक अलग मानचित्र का उपयोग कर सकता है जो आपके डेस्क पर आपके डिस्प्ले वास्तव में कैसे व्यवस्थित किए गए हैं, इसका मिलान करता है।"
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "macOS يتحكم في مكان وضع النوافذ. OmniWM يمكنه استخدام خريطة منفصلة تتطابق مع كيفية ترتيب شاشاتك فعليًا على مكتبك."
-          }
-        },
-        "sr-Latn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS određuje gde se postavljaju prozori. OmniWM može da koristi zasebnu mapu koja odgovara stvarnom rasporedu vaših ekrana na stolu."
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Το macOS ελέγχει πού τοποθετούνται τα παράθυρα. Το OmniWM μπορεί να χρησιμοποιήσει έναν ξεχωριστό χάρτη που ταιριάζει με το πώς οι οθόνες σας είναι στην πραγματικότητα οργανωμένες στο γραφείο σας."
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS קובע היכן החלונות ממוקמים. OmniWM יכול להשתמש במפה נפרדת שתואמת את האופן שבו הצגים שלך מסודרים בפועל על השולחן."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS контролирует расположение окон. OmniWM может использовать отдельную карту, которая соответствует тому, как ваши экраны действительно расположены на вашем столе."
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS decyduje o położeniu okien. OmniWM może używać osobnej mapy odpowiadającej rzeczywistemu rozmieszczeniu monitorów na biurku."
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS керує розташуванням вікон. OmniWM може використовувати окрему схему, що відповідає фактичному розташуванню дисплеїв на вашому столі."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS contrôle l'emplacement des fenêtres. OmniWM peut utiliser une carte distincte qui correspond à la façon dont vos écrans sont réellement disposés sur votre bureau."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS bepaalt waar vensters worden geplaatst. OmniWM kan een aparte kaart gebruiken die overeenkomt met hoe uw displays daadwerkelijk op uw bureau zijn gerangschikt."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS controlla dove sono posizionate le finestre. OmniWM può utilizzare una mappa separata che corrisponde a come i tuoi display sono effettivamente disposti sulla scrivania."
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS määrittää, mihin ikkunat sijoitetaan. OmniWM voi käyttää erillistä karttaa, joka vastaa näyttöjesi todellista sijoittelua pöydälläsi."
           }
         },
         "da" : {
@@ -156403,10 +156294,112 @@
             "value" : "macOS styrer, hvor vinduerne er placeret. OmniWM kan bruge et separat kort, der matcher, hvordan dine skærme faktisk er arrangeret på dit skrivebord."
           }
         },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS steuert, wo die Fenster platziert werden. OmniWM kann eine separate Karte verwenden, die mit der Art und Weise übereinstimmt, wie Ihre Anzeigen tatsächlich auf Ihrem Schreibtisch angeordnet sind."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Το macOS ελέγχει πού τοποθετούνται τα παράθυρα. Το OmniWM μπορεί να χρησιμοποιήσει έναν ξεχωριστό χάρτη που ταιριάζει με το πώς οι οθόνες σας είναι στην πραγματικότητα οργανωμένες στο γραφείο σας."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS controla dónde se colocan las ventanas. OmniWM puede utilizar un mapa separado que coincida con la forma en que se disponen realmente tus pantallas en tu escritorio."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS määrittää, mihin ikkunat sijoitetaan. OmniWM voi käyttää erillistä karttaa, joka vastaa näyttöjesi todellista sijoittelua pöydälläsi."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS contrôle l'emplacement des fenêtres. OmniWM peut utiliser une carte distincte qui correspond à la façon dont vos écrans sont réellement disposés sur votre bureau."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS קובע היכן החלונות ממוקמים. OmniWM יכול להשתמש במפה נפרדת שתואמת את האופן שבו הצגים שלך מסודרים בפועל על השולחן."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS यह नियंत्रित करता है कि विंडो कहाँ रखी जाती हैं। OmniWM एक अलग मानचित्र का उपयोग कर सकता है जो आपके डेस्क पर आपके डिस्प्ले वास्तव में कैसे व्यवस्थित किए गए हैं, इसका मिलान करता है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS controlla dove sono posizionate le finestre. OmniWM può utilizzare una mappa separata che corrisponde a come i tuoi display sono effettivamente disposti sulla scrivania."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOSはウィンドウの位置を制御します。OmniWMは、机の上のディスプレイが実際にどのように配置されているかに一致する別のマップを使用できます。"
+          }
+        },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "macOS는 창이 어디에 배치되는지 제어합니다. OmniWM은 책상에서 실제로 디스플레이가 어떻게 배열되어 있는지와 일치하는 별도의 지도를 사용할 수 있습니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS kontrollerer hvor vinduer plasseres. OmniWM kan bruke et separat kart som samsvarer med hvordan skjermene dine faktisk er arrangert på skrivebordet ditt."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS bepaalt waar vensters worden geplaatst. OmniWM kan een aparte kaart gebruiken die overeenkomt met hoe uw displays daadwerkelijk op uw bureau zijn gerangschikt."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS decyduje o położeniu okien. OmniWM może używać osobnej mapy odpowiadającej rzeczywistemu rozmieszczeniu monitorów na biurku."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS контролирует расположение окон. OmniWM может использовать отдельную карту, которая соответствует тому, как ваши экраны действительно расположены на вашем столе."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS određuje gde se postavljaju prozori. OmniWM može da koristi zasebnu mapu koja odgovara stvarnom rasporedu vaših ekrana na stolu."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS styr var fönstren placeras. OmniWM kan använda en separat karta som matchar hur dina skärmar faktiskt är arrangerade på ditt skrivbord."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS керує розташуванням вікон. OmniWM може використовувати окрему схему, що відповідає фактичному розташуванню дисплеїв на вашому столі."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS 控制窗口的位置。OmniWM 可以使用一个单独的地图，它与您桌上实际显示器的排列方式相匹配。"
           }
         }
       }
@@ -161472,6 +161465,7 @@
       "extractionState" : "stale"
     },
     "Shell" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -161596,6 +161590,7 @@
       }
     },
     "Profile" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -161844,6 +161839,7 @@
       }
     },
     "Customize Widget" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -162217,6 +162213,7 @@
       "extractionState" : "stale"
     },
     "Fix shell.toml to edit the bar widgets: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -164822,6 +164819,7 @@
       }
     },
     "Scheme" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -165194,6 +165192,7 @@
       }
     },
     "Vibrant" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -165318,6 +165317,7 @@
       }
     },
     "Expressive" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -165442,6 +165442,7 @@
       }
     },
     "Fidelity" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -165690,6 +165691,7 @@
       }
     },
     "Rainbow" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -165814,6 +165816,7 @@
       }
     },
     "Neutral" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -165938,6 +165941,7 @@
       }
     },
     "Monochrome" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -166062,12 +166066,782 @@
       }
     },
     "%lld pt" : {},
-    "Customize widgets in the selected profile. Updates back up edits to bundled profiles; your own profiles are left alone." : {},
     "Reset to Style Defaults" : {},
     "Settings are saved for the “%@” shell profile." : {},
     "Unable to Save Shell Settings" : {},
     "Apple Menu" : {},
-    "App Menu" : {}
+    "App Menu" : {},
+    "%lld fps" : {
+
+    },
+    "%lld min" : {
+
+    },
+    "A compact bar with workspace and app controls." : {
+
+    },
+    "A custom style you added." : {
+
+    },
+    "A light bar with soft pink accents and a drifting-petal shader." : {
+
+    },
+    "A minimal bar and a customizable island for media, calendar, and more." : {
+
+    },
+    "A rounded bar with rich status widgets and deep colors." : {
+
+    },
+    "A structured bar with labeled workspaces and quick status controls." : {
+
+    },
+    "A terminal-inspired bar with green accents and a rain shader." : {
+
+    },
+    "A vertical bar with spacious app and workspace tiles." : {
+
+    },
+    "A widget from the selected style or your shell folder." : {
+
+    },
+    "Actions" : {
+
+    },
+    "Active Style" : {
+
+    },
+    "Add Bar Widget" : {
+
+    },
+    "Add Clock" : {
+
+    },
+    "Add Drawer" : {
+
+    },
+    "Add Drawer…" : {
+
+    },
+    "Add Island Widget" : {
+
+    },
+    "Add Widget" : {
+
+    },
+    "Add Widget…" : {
+
+    },
+    "Add a rule to choose how an app’s windows are managed." : {
+
+    },
+    "Add a widget to begin." : {
+
+    },
+    "Add the CLI directory to your PATH to use omniwmctl in Terminal." : {
+
+    },
+    "Add to Bar" : {
+
+    },
+    "Add to Island" : {
+
+    },
+    "Advanced Motion" : {
+
+    },
+    "Advanced Positioning" : {
+
+    },
+    "Advanced Surface Size" : {
+
+    },
+    "All Displays" : {
+
+    },
+    "All Rules" : {
+
+    },
+    "All Widgets" : {
+
+    },
+    "Allows local commands and scripts to control OmniWM." : {
+
+    },
+    "Animation Phase" : {
+
+    },
+    "Another file occupies %@." : {
+
+    },
+    "App" : {
+
+    },
+    "App & Motion" : {
+
+    },
+    "App Appearance" : {
+
+    },
+    "Apply Locations" : {
+
+    },
+    "Apply Weather Location" : {
+
+    },
+    "Apps" : {
+
+    },
+    "Arrange widgets and customize the bar on your displays." : {
+
+    },
+    "Arrange your widgets. The layout is shared by all displays in this style." : {
+
+    },
+    "Audio, media, calendar, weather, and system controls." : {
+
+    },
+    "Auto-Hide" : {
+
+    },
+    "Automatic Content" : {
+
+    },
+    "Automation" : {
+
+    },
+    "Bar" : {
+
+    },
+    "Bar and Island" : {
+
+    },
+    "Battery charge and power information." : {
+
+    },
+    "Beside Icon" : {
+
+    },
+    "Browsing previews leaves your active style unchanged. Use Style preserves settings saved for both styles." : {
+
+    },
+    "Build Your Island" : {
+
+    },
+    "CLI Location" : {
+
+    },
+    "CPU, memory, and system activity." : {
+
+    },
+    "Celsius" : {
+
+    },
+    "Changes to this style’s controls apply immediately." : {
+
+    },
+    "Character Size" : {
+
+    },
+    "Check app health and record a problem or performance capture." : {
+
+    },
+    "Choose System for Focus Ribbon or Lake for an island with customizable widgets." : {
+
+    },
+    "Choose a Style…" : {
+
+    },
+    "Choose a look for your desktop. Preview a style, then use it when you are ready." : {
+
+    },
+    "Choose a widget" : {
+
+    },
+    "Choose how OmniWM looks and moves." : {
+
+    },
+    "Choose how particular apps and windows are managed." : {
+
+    },
+    "City" : {
+
+    },
+    "Click the ribbon to expand or collapse it. Hover keeps the expanded ribbon open." : {
+
+    },
+    "Close When Pointer Leaves" : {
+
+    },
+    "Collapse" : {
+
+    },
+    "Color Palette" : {
+
+    },
+    "Color Scheme" : {
+
+    },
+    "Command-Line Tools" : {
+
+    },
+    "Compact" : {
+
+    },
+    "Component Regions" : {
+
+    },
+    "Configuration Files" : {
+
+    },
+    "Configuration files, scripting, and command-line tools." : {
+
+    },
+    "Configure Display" : {
+
+    },
+    "Configure Shortcut…" : {
+
+    },
+    "Configure gestures, window manipulation, and pointer focus." : {
+
+    },
+    "Configure your drop-down terminal’s placement and appearance." : {
+
+    },
+    "Configure your island before turning it on. The Workspace Bar has its own switch." : {
+
+    },
+    "Coordinates" : {
+
+    },
+    "Current weather and the forecast for your location." : {
+
+    },
+    "Custom Bar" : {
+
+    },
+    "Custom Width" : {
+
+    },
+    "Customize the workspace overview and its controls." : {
+
+    },
+    "Customize your island, with or without a workspace bar." : {
+
+    },
+    "Desktop" : {
+
+    },
+    "Discover widgets, choose where they appear, and edit their options." : {
+
+    },
+    "Display" : {
+
+    },
+    "Display Surfaces" : {
+
+    },
+    "Display settings are saved while the global Workspace Bar is off." : {
+
+    },
+    "Displays" : {
+
+    },
+    "Displays with a Notch" : {
+
+    },
+    "Done" : {
+
+    },
+    "Drawer" : {
+
+    },
+    "Drawer name" : {
+
+    },
+    "Drawers" : {
+
+    },
+    "Dwindle" : {
+
+    },
+    "Edge Activation Area" : {
+
+    },
+    "Edit Settings File…" : {
+
+    },
+    "Edit Widget Source…" : {
+
+    },
+    "Edit Workspaces…" : {
+
+    },
+    "Enable Background Effect" : {
+
+    },
+    "Enable Dynamic Island" : {
+
+    },
+    "Enable the Workspace Bar or Dynamic Island to load this drawer and register its shortcut." : {
+
+    },
+    "Enabled" : {
+
+    },
+    "Excluded Apps" : {
+
+    },
+    "Expand" : {
+
+    },
+    "Expanded Only" : {
+
+    },
+    "Fahrenheit" : {
+
+    },
+    "Familiar Mac controls with Focus Ribbon for window navigation." : {
+
+    },
+    "Find commands and assign keyboard or mouse shortcuts." : {
+
+    },
+    "First Widget" : {
+
+    },
+    "Focus Ribbon" : {
+
+    },
+    "Focus Ribbon uses your existing workspaces and window navigation. It does not use Lake’s component catalog." : {
+
+    },
+    "Follows macOS appearance or uses the selected light or dark appearance." : {
+
+    },
+    "Frame Rate" : {
+
+    },
+    "Gauges" : {
+
+    },
+    "Graphs" : {
+
+    },
+    "Group widgets in a panel at a screen edge. Drawers can open on hover or with a shortcut." : {
+
+    },
+    "Hide Island" : {
+
+    },
+    "IPC" : {
+
+    },
+    "Icon Only" : {
+
+    },
+    "Icon Overrides" : {
+
+    },
+    "Icon and Title" : {
+
+    },
+    "Inside Icon" : {
+
+    },
+    "Installed CLI" : {
+
+    },
+    "Interaction" : {
+
+    },
+    "Island" : {
+
+    },
+    "Island Appearance" : {
+
+    },
+    "Island Instance: %@" : {
+
+    },
+    "Island Interaction" : {
+
+    },
+    "Island Motion" : {
+
+    },
+    "Island Preview" : {
+
+    },
+    "Island Widgets" : {
+
+    },
+    "Keyboard Shortcuts" : {
+
+    },
+    "Label" : {
+
+    },
+    "Language, startup, and updates." : {
+
+    },
+    "Last Used Palette Mode" : {
+
+    },
+    "Latitude" : {
+
+    },
+    "Latitude −90 to 90; longitude −180 to 180." : {
+
+    },
+    "Local time and an optional date." : {
+
+    },
+    "Location" : {
+
+    },
+    "Longitude" : {
+
+    },
+    "Lower frame rates reduce effect rendering. Zero keeps a still background." : {
+
+    },
+    "Main Display" : {
+
+    },
+    "Manage OmniWM’s status item and hidden menu-bar apps." : {
+
+    },
+    "Managed by Homebrew" : {
+
+    },
+    "Matrix Rain" : {
+
+    },
+    "Menu Bar" : {
+
+    },
+    "Menus for the focused app." : {
+
+    },
+    "Meters" : {
+
+    },
+    "Microphone and camera activity." : {
+
+    },
+    "Mouse & Focus" : {
+
+    },
+    "Move" : {
+
+    },
+    "Move Earlier" : {
+
+    },
+    "Move Later" : {
+
+    },
+    "Native Apple menu commands." : {
+
+    },
+    "Native Fullscreen" : {
+
+    },
+    "Next Widget" : {
+
+    },
+    "Niri" : {
+
+    },
+    "No App Rules" : {
+
+    },
+    "No Island in This Style" : {
+
+    },
+    "No additional options." : {
+
+    },
+    "No matching settings" : {
+
+    },
+    "Now Playing and playback controls." : {
+
+    },
+    "OmniWM Status Item" : {
+
+    },
+    "On Bar · %@" : {
+
+    },
+    "Open on Hover" : {
+
+    },
+    "Open the command palette." : {
+
+    },
+    "Opens a persistent copy in your external editor. Visual options are available in Widgets." : {
+
+    },
+    "Options" : {
+
+    },
+    "Options…" : {
+
+    },
+    "Order and placement are saved for this style. Each instance has its own options." : {
+
+    },
+    "Organize workspaces and choose their layouts and home displays." : {
+
+    },
+    "Palette" : {
+
+    },
+    "Palettes change colors while keeping the style’s layout and widgets." : {
+
+    },
+    "Petal Size" : {
+
+    },
+    "Place in" : {
+
+    },
+    "Placement" : {
+
+    },
+    "Prepare a report and choose the evidence you want to share." : {
+
+    },
+    "Preview Unavailable" : {
+
+    },
+    "Preview a desktop style and choose its color palette." : {
+
+    },
+    "Previous Widget" : {
+
+    },
+    "Remove Clock" : {
+
+    },
+    "Reset Bar Settings" : {
+
+    },
+    "Reset Bar Settings to Style Defaults…" : {
+
+    },
+    "Reset Display Overrides" : {
+
+    },
+    "Reset Drawer to Style Defaults" : {
+
+    },
+    "Reset Effect to Style Defaults" : {
+
+    },
+    "Reset Hidden Bar to Style Defaults" : {
+
+    },
+    "Reset Options to Style Defaults" : {
+
+    },
+    "Reset this style’s bar settings?" : {
+
+    },
+    "Sakura Petals" : {
+
+    },
+    "Sample data. Your desktop uses live information and system material effects." : {
+
+    },
+    "Screen Edge" : {
+
+    },
+    "Screen Placement" : {
+
+    },
+    "Search settings" : {
+
+    },
+    "Search widgets" : {
+
+    },
+    "Set display arrangement, routing, and cross-display behavior." : {
+
+    },
+    "Set up your bar now. It appears when you turn it on." : {
+
+    },
+    "Settings File" : {
+
+    },
+    "Shared weather data for bar widgets, the calendar, and the island." : {
+
+    },
+    "Shell Development" : {
+
+    },
+    "Shell Folder" : {
+
+    },
+    "Show Dynamic Island" : {
+
+    },
+    "Show Island" : {
+
+    },
+    "Show Panel Background" : {
+
+    },
+    "Show Workspace Bar" : {
+
+    },
+    "Show the menu-bar items you have hidden." : {
+
+    },
+    "Shows the focused app, workspace, and windows automatically. It expands as you switch workspaces or focus Niri windows." : {
+
+    },
+    "Side" : {
+
+    },
+    "Spacing" : {
+
+    },
+    "Still" : {
+
+    },
+    "Style" : {
+
+    },
+    "Style Profile" : {
+
+    },
+    "Styles" : {
+
+    },
+    "Support" : {
+
+    },
+    "Surface" : {
+
+    },
+    "Sweep Glow" : {
+
+    },
+    "Temperature" : {
+
+    },
+    "The bar and island have independent switches. System includes Focus Ribbon; Lake includes configurable island widgets." : {
+
+    },
+    "The focused app and window title." : {
+
+    },
+    "The order here is the order in the bar and popup. Locations are saved for the selected style." : {
+
+    },
+    "The style defines its interaction and motion." : {
+
+    },
+    "The style lays out its content inside this surface. These limits do not change the notch." : {
+
+    },
+    "This island’s content is defined by its style." : {
+
+    },
+    "This style defines its appearance." : {
+
+    },
+    "This style does not declare visual widget options." : {
+
+    },
+    "This widget has no additional visual options." : {
+
+    },
+    "Time Zone" : {
+
+    },
+    "Time in the places you choose." : {
+
+    },
+    "Title Only" : {
+
+    },
+    "Toggle Expansion" : {
+
+    },
+    "Tools" : {
+
+    },
+    "Trackpad" : {
+
+    },
+    "Try Again" : {
+
+    },
+    "Tune window spacing, scrolling columns, and split layouts." : {
+
+    },
+    "Unable to Refresh Shell Settings" : {
+
+    },
+    "Upcoming events and your calendar." : {
+
+    },
+    "Use Style" : {
+
+    },
+    "Use Style Layout" : {
+
+    },
+    "Use Style Layout…" : {
+
+    },
+    "Use at most %lld characters." : {
+
+    },
+    "Use this style’s widget layout?" : {
+
+    },
+    "Volume, audio devices, and per-app levels." : {
+
+    },
+    "Wallpaper Colors" : {
+
+    },
+    "Weather Location" : {
+
+    },
+    "Widget Library" : {
+
+    },
+    "Widget Removed" : {
+
+    },
+    "Widget Source" : {
+
+    },
+    "Widgets" : {
+
+    },
+    "Workspaces, app icons, and window navigation." : {
+
+    },
+    "World Clock Locations" : {
+
+    },
+    "Your Widgets" : {
+
+    },
+    "Your scratchpad windows." : {
+
+    },
+    "Your widget layout, excluded apps, and icon overrides are kept." : {
+
+    }
   },
   "version" : "1.0"
 }

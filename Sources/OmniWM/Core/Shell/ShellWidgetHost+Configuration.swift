@@ -80,7 +80,7 @@ extension ShellWidgetHost {
         configurationProcessing = false
         configurationWorkCount = 0
         pendingConfigurationEdits.removeAll()
-        if let writer = configurationWriter {
+        if ownsConfigurationCoordinator, let writer = configurationWriter {
             configurationWriter = nil
             let id = ObjectIdentifier(writer)
             Self.retiringTasks[id] = Task {
@@ -146,71 +146,24 @@ extension ShellWidgetHost {
                     throw ShellComponentCatalog
                         .Failure(configurationCatalogError ?? "Island configuration is not available")
                 }
-                let snapshot = config
-                let fingerprint = state.fingerprint
-                let layout = ShellIslandLayout(
-                    profile: config.profile,
-                    root: island.root,
-                    components: island.components
-                )
-                let edit = try layout.applying(
-                    request.operation,
-                    catalog: catalog.descriptors,
-                    rootOptions: catalog.settings?.options ?? [:]
-                )
-                switch edit.change {
-                case let .components(components):
-                    let prepared = try await configurationSourceLoader.prepare(.init(
-                        name: state.name, shellDirectory: shellDirectory, sourceURL: state.sourceURL,
-                        directories: snapshot.directories, profile: snapshot.profile, components: components
-                    ))
-                    guard started, configurationEpoch == epoch, widgets[state.name] === state,
-                          state.generation == submission.generation, state.package === package,
-                          config == snapshot, configurationCatalog == catalog, state.fingerprint == fingerprint
-                    else { throw ShellComponentCatalog.Failure("configuration_changed") }
-                    config.island?.components = components
-                    applyComponentSource(prepared.source, fingerprint: prepared.fingerprint, to: state)
-                case let .rootSetting(key, value):
-                    var fields: [String: ShellServiceValue] = [:]
-                    if let bytes = config.widgetSettings[state.name], !bytes.isEmpty {
-                        guard let current = try ShellServiceValue.decode(bytes).fields
-                        else { throw ShellServiceValue.Failure() }
-                        fields = current
+                var fingerprint: [String: SettingsFileAccess.Fingerprint]?
+                let profile = config.profile
+                let commit = try await configurationCoordinator
+                    .islandCommit(request.operation) { [weak self] snapshot in
+                        guard let self, started, configurationEpoch == epoch, widgets[state.name] === state,
+                              state.generation == submission.generation, state.package === package,
+                              snapshot.profile == profile, snapshot.island?.root == island.root,
+                              config.profile == profile, config.island?.root == island.root,
+                              config.directories == catalog.directories,
+                              fingerprint.map({ state.fingerprint == $0 }) != false
+                        else { throw ShellComponentCatalog.Failure("configuration_changed") }
+                        fingerprint = state.fingerprint
                     }
-                    var encodedValue = ShellValueWriter()
-                    value.write(to: &encodedValue)
-                    fields[key] = try ShellServiceValue.decode(encodedValue.bytes)
-                    var writer = ShellValueWriter()
-                    ShellServiceValue.object(fields).write(to: &writer)
-                    config.widgetSettings[state.name] = writer.bytes
-                    state.mailbox?.yield(.settings(writer.bytes))
-                    if key == "interval" {
-                        config.widgetIntervals[state.name] = if case let .number(number) = value {
-                            ShellWidgetDeclaration.validInterval(number)
-                        } else { nil }
-                        state.mailbox?.yield(.interval(interval(of: state)))
-                        publishDemand()
-                    }
-                }
-                let write = ShellIslandConfigWriter.Write(
-                    id: request.id,
-                    profile: layout.profile,
-                    root: layout.root,
-                    change: edit.change
-                )
-                configurationPersistence().submit(write) { [
-                    weak self,
-                    services = package.services,
-                    instance = edit.instanceID
-                ] result in
-                    Task { @MainActor [weak self] in
-                        if let self, configurationEpoch == epoch { configurationWorkCount -= 1 }
-                        services.complete(ShellConfigurationRequest.completion(
-                            id: result.id, instance: instance, revision: result.revision, error: result.error
-                        ))
-                    }
-                }
-                onConfigChange?(config)
+                if started, configurationEpoch == epoch { reloadConfig() }
+                if configurationEpoch == epoch { configurationWorkCount -= 1 }
+                package.services.complete(ShellConfigurationRequest.completion(
+                    id: request.id, instance: commit.instanceID, revision: commit.revision
+                ))
             } catch {
                 if configurationEpoch == epoch { configurationWorkCount -= 1 }
                 package.services.complete(ShellConfigurationRequest.completion(
@@ -219,17 +172,5 @@ extension ShellWidgetHost {
                 ))
             }
         }
-    }
-
-    private func configurationPersistence() -> ShellIslandConfigWriter {
-        if let configurationWriter { return configurationWriter }
-        let writer = ShellIslandConfigWriter(shellDirectory: shellDirectory) { [weak self] in
-            Task { @MainActor [weak self] in
-                guard let self, started else { return }
-                reloadConfig()
-            }
-        }
-        configurationWriter = writer
-        return writer
     }
 }

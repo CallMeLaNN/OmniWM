@@ -11,6 +11,10 @@ When building from `main`, the bar is drawn by [Luau shell](/features/luau-shell
 
 Window hover previews can be turned off separately. Turning off the global Workspace Bar hides it on every monitor, while saved monitor overrides take effect again when it is re-enabled.
 
+## Settings
+
+Open **Settings > Workspace Bar**. **Layout** contains placement, display scope, and Bar Widgets; **Appearance** contains colors, thickness, and effect controls; **Behavior** contains visibility and workspace options; **Apps** contains exclusions and icon overrides. Choose a preset under **Settings > Styles**, or browse and configure widgets under **Settings > Widgets**. The bar’s controls remain editable while its enable switch is off.
+
 ## Clicking the bar
 
 - Click a workspace chip to switch to that workspace.
@@ -91,7 +95,7 @@ Auto-hidden bars never reserve layout space, even while visible. Manual hiding, 
 - **Fill Left of Notch** — an additional notch mode that fills the menu-bar area left of the notch, covering application menus. Without a notch it uses the left half of the menu bar. When effective at a top position, this mode always hides in native fullscreen, regardless of **Hide in Native Fullscreen**.
 - **Inactive Icon Opacity** — adjust unfocused app icons from 0–100%; **Reset to System Default** clears the override.
 - **Transparent Background** — hide the bar material, tint, and border while keeping its contents interactive.
-- **Solid Black Background** — use an opaque black bar; **Transparent Background** takes precedence when both are enabled.
+- **Solid Black Background** — use an opaque black bar; it takes precedence over **Transparent Background** when both are enabled.
 - **Show Item Backgrounds** — show or hide backgrounds behind workspace groups, floating windows, scratchpads, and stats.
 - **Show Accent Highlights** — show or hide the focused-workspace outline and focused-icon glow.
 
