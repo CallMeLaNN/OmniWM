@@ -196,20 +196,20 @@ final class ShellHTTPService: Sendable {
         return true
     }
 
-    private final class Transfer: Sendable {
-        struct State {
-            var task: URLSessionDataTask?
-            var deadline: (any DispatchSourceTimer)?
-            var body = Data()
-            var status = 0
-            var headers: [String: String] = [:]
-            var finished = false
-        }
+    struct TransferState {
+        var task: URLSessionDataTask?
+        var deadline: (any DispatchSourceTimer)?
+        var body = Data()
+        var status = 0
+        var headers: [String: String] = [:]
+        var finished = false
+    }
 
+    private final class Transfer: Sendable {
         let id: ShellServiceID
         let request: ShellHTTPRequest
         let policy: ShellHTTPPolicy
-        let state = Mutex(State())
+        let state = Mutex(TransferState())
 
         init(id: ShellServiceID, request: ShellHTTPRequest, policy: ShellHTTPPolicy) {
             self.id = id
@@ -218,15 +218,15 @@ final class ShellHTTPService: Sendable {
         }
     }
 
-    private final class Driver: NSObject, URLSessionDataDelegate, Sendable {
-        private struct State {
-            var transfers: [ShellServiceID: Transfer] = [:]
-            var tasks: [Int: ShellServiceID] = [:]
-            var capture = Capture()
-        }
+    private struct DriverState {
+        var transfers: [ShellServiceID: Transfer] = [:]
+        var tasks: [Int: ShellServiceID] = [:]
+        var capture = Capture()
+    }
 
+    private final class Driver: NSObject, URLSessionDataDelegate, Sendable {
         let queue = DispatchSerialQueue(label: "com.barut.OmniWM.shell.http", qos: .utility)
-        private let state = Mutex(State())
+        private let state = Mutex(DriverState())
         private let ledger: ShellServiceLedger
         private let decodeJSON: @Sendable (Data) throws -> [UInt8]
 

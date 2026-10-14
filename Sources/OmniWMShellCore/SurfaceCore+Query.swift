@@ -1,8 +1,20 @@
 // SPDX-License-Identifier: GPL-2.0-only
 // Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
 
+public struct ElementPathStep: Equatable, Sendable, BitwiseCopyable {
+    public var kind: ElementKind
+    public var key: UInt64
+    public var child: Int
+
+    public init(kind: ElementKind, key: UInt64, child: Int) {
+        self.kind = kind
+        self.key = key
+        self.child = child
+    }
+}
+
 extension SurfaceCore {
-    public func resolve(path: [(kind: ElementKind, key: UInt64, child: Int)]) -> ElementHandle {
+    public func resolve(path: [ElementPathStep]) -> ElementHandle {
         guard !path.isEmpty, path.count <= 65, path[0].child == 0, root >= 0 else { return .none }
         var slot = root
         for (depth, step) in path.enumerated() {

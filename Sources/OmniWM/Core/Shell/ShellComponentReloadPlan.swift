@@ -7,21 +7,25 @@ struct ShellComponentReloadPlan {
         let source: String?
     }
 
+    struct LoadedSource {
+        let chunk: String
+        let main: String
+        let modules: Set<String>
+    }
+
     let widgets: [String]
     let modules: [Module]
 
     static func make(
         source: ShellWidgetSource,
-        loadedChunk: String,
-        loadedMain: String,
-        loadedModules: Set<String>,
+        loaded: LoadedSource,
         previousDescriptors: [ShellComponentDescriptor],
         matches: (ShellWidgetSource.Module) -> Bool
     ) -> ShellComponentReloadPlan? {
-        guard source.chunk == loadedChunk, source.main == loadedMain else { return nil }
+        guard source.chunk == loaded.chunk, source.main == loaded.main else { return nil }
         let parts = source.chunk.dropFirst().split(separator: "/")
         guard source.chunk.hasPrefix("@"), parts.count >= 3 else {
-            return source.modules.isEmpty && loadedModules.isEmpty
+            return source.modules.isEmpty && loaded.modules.isEmpty
                 ? ShellComponentReloadPlan(widgets: [], modules: []) : nil
         }
         let root = String(parts[parts.count - 2])
@@ -37,12 +41,12 @@ struct ShellComponentReloadPlan {
         let paths = Set(source.modules.map(\.path))
         var modules: [Module] = []
         var widgets: Set<String> = []
-        for module in source.modules where !loadedModules.contains(module.path) || !matches(module) {
+        for module in source.modules where !loaded.modules.contains(module.path) || !matches(module) {
             guard let owner = widget(for: module.path) else { return nil }
             widgets.insert(owner)
             modules.append(Module(path: module.path, source: module.source))
         }
-        for path in loadedModules where !paths.contains(path) {
+        for path in loaded.modules where !paths.contains(path) {
             guard let owner = widget(for: path) else { return nil }
             widgets.insert(owner)
             modules.append(Module(path: path, source: nil))
@@ -53,7 +57,11 @@ struct ShellComponentReloadPlan {
                 widgets.insert(descriptor.widget)
             }
         }
-        let dependencies = previousDescriptors + source.componentDescriptors
+        expand(&widgets, dependencies: previousDescriptors + source.componentDescriptors)
+        return ShellComponentReloadPlan(widgets: widgets.sorted(), modules: modules.sorted { $0.path < $1.path })
+    }
+
+    private static func expand(_ widgets: inout Set<String>, dependencies: [ShellComponentDescriptor]) {
         var expanded = true
         while expanded {
             expanded = false
@@ -64,6 +72,5 @@ struct ShellComponentReloadPlan {
                 }
             }
         }
-        return ShellComponentReloadPlan(widgets: widgets.sorted(), modules: modules.sorted { $0.path < $1.path })
     }
 }

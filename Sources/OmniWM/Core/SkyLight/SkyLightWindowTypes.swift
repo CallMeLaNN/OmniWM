@@ -94,7 +94,7 @@ struct WindowCornerSample: Equatable, Sendable {
     let radii: WindowCornerRadii
     let observedSize: CGSize
     let source: WindowCornerSource
-    var contour: WindowCornerContour? = nil
+    var contour: WindowCornerContour?
 }
 
 struct ManagedDisplaySpaces: Sendable {

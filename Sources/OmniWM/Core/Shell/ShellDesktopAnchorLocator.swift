@@ -26,7 +26,7 @@ struct ShellDesktopAnchorLocator: Equatable, Sendable {
 
 struct ShellDesktopAnchorResolution: Sendable {
     let sequence: Int
-    let path: [(kind: ElementKind, key: UInt64, child: Int)]
+    let path: [ElementPathStep]
 }
 
 extension ShellWidgetPackage {
@@ -61,7 +61,7 @@ extension ShellWidgetPackage {
             guard let kind = ElementKind(rawValue: UInt8(exactly: step.kind) ?? .max) else {
                 throw ShellResourceFailure("invalid_anchor")
             }
-            return (kind: kind, key: step.key, child: Int(step.child))
+            return ElementPathStep(kind: kind, key: step.key, child: Int(step.child))
         }
         return ShellDesktopAnchorResolution(sequence: state.sequences[origin.key.view.rawValue], path: path)
     }

@@ -78,7 +78,7 @@ final class SurfaceScene {
         var windowNumber: Int?
         var frameProvider: (@MainActor () -> CGRect?)?
         var visibilityProvider: (@MainActor () -> Bool)?
-        var regionProvider: (@MainActor () -> [CGRect])? = nil
+        var regionProvider: (@MainActor () -> [CGRect])?
     }
 
     private var nodesByID: [String: SurfaceNode] = [:]
@@ -160,52 +160,6 @@ final class SurfaceScene {
                 surfaceIDsByWindowNumber[windowNumber] = ids
             }
         }
-    }
-
-    func beginRuntimeCapture() {
-        runtimeHighWater = nodesByID.count
-        runtimeMetricsActive = true
-    }
-
-    func endRuntimeCapture() {
-        runtimeMetricsActive = false
-    }
-
-    func runtimeSnapshot() -> SurfaceSceneRuntimeSnapshot {
-        let nodeIds = Set(nodesByID.keys)
-        let numberReverseEntries = surfaceIDsByWindowNumber.values.reduce(0) { $0 + $1.count }
-        let live = nodesByID.values.count(where: {
-            $0.window != nil && $0.windowObjectIdentifier != nil
-        })
-        let dead = nodesByID.values.count(where: {
-            $0.window == nil && $0.windowObjectIdentifier != nil
-        })
-        let numberBacked = nodesByID.values.count(where: {
-            $0.windowObjectIdentifier == nil
-        })
-        var byKind: [SurfaceKind: Int] = [:]
-        for node in nodesByID.values {
-            byKind[node.policy.kind, default: 0] += 1
-        }
-        let orphanObjectEntries = windowIDByObject.values.count(where: { !nodeIds.contains($0) })
-        let orphanNumberEntries = surfaceIDsByWindowNumber.values.reduce(0) { count, ids in
-            count + ids.count(where: { !nodeIds.contains($0) })
-        }
-        return SurfaceSceneRuntimeSnapshot(
-            total: nodesByID.count,
-            live: live,
-            dead: dead,
-            numberBacked: numberBacked,
-            reverseEntries: windowIDByObject.count + numberReverseEntries,
-            orphanReverseEntries: orphanObjectEntries + orphanNumberEntries,
-            highWater: max(runtimeHighWater, nodesByID.count),
-            byKind: byKind
-        )
-    }
-
-    private func recordRuntimeHighWater() {
-        guard runtimeMetricsActive else { return }
-        runtimeHighWater = max(runtimeHighWater, nodesByID.count)
     }
 
     func contains(window: NSWindow?) -> Bool {
@@ -419,5 +373,53 @@ final class SurfaceScene {
             }
             return contains(point, in: node)
         }
+    }
+}
+
+extension SurfaceScene {
+    func beginRuntimeCapture() {
+        runtimeHighWater = nodesByID.count
+        runtimeMetricsActive = true
+    }
+
+    func endRuntimeCapture() {
+        runtimeMetricsActive = false
+    }
+
+    func runtimeSnapshot() -> SurfaceSceneRuntimeSnapshot {
+        let nodeIds = Set(nodesByID.keys)
+        let numberReverseEntries = surfaceIDsByWindowNumber.values.reduce(0) { $0 + $1.count }
+        let live = nodesByID.values.count(where: {
+            $0.window != nil && $0.windowObjectIdentifier != nil
+        })
+        let dead = nodesByID.values.count(where: {
+            $0.window == nil && $0.windowObjectIdentifier != nil
+        })
+        let numberBacked = nodesByID.values.count(where: {
+            $0.windowObjectIdentifier == nil
+        })
+        var byKind: [SurfaceKind: Int] = [:]
+        for node in nodesByID.values {
+            byKind[node.policy.kind, default: 0] += 1
+        }
+        let orphanObjectEntries = windowIDByObject.values.count(where: { !nodeIds.contains($0) })
+        let orphanNumberEntries = surfaceIDsByWindowNumber.values.reduce(0) { count, ids in
+            count + ids.count(where: { !nodeIds.contains($0) })
+        }
+        return SurfaceSceneRuntimeSnapshot(
+            total: nodesByID.count,
+            live: live,
+            dead: dead,
+            numberBacked: numberBacked,
+            reverseEntries: windowIDByObject.count + numberReverseEntries,
+            orphanReverseEntries: orphanObjectEntries + orphanNumberEntries,
+            highWater: max(runtimeHighWater, nodesByID.count),
+            byKind: byKind
+        )
+    }
+
+    private func recordRuntimeHighWater() {
+        guard runtimeMetricsActive else { return }
+        runtimeHighWater = max(runtimeHighWater, nodesByID.count)
     }
 }

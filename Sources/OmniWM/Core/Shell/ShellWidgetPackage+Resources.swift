@@ -38,12 +38,40 @@ extension ShellWidgetPackage {
         }
         guard !closing, self.script === script else { return }
         if !validateOnly { preparedResources[namespace] = snapshot }
+        let status = seedResourceTokens(snapshot, component: component, in: script)
+        if status != OMNI_OK {
+            let owner = component ?? ""
+            let problem = Self.resourceError(lastError())
+            if !validateOnly { preparedResources[namespace] = ShellResourceStore.PreparedTokens(
+                namespace: namespace,
+                tokens: [:],
+                error: problem
+            ) }
+            _ = omni_vm_seed_resource_tokens(
+                script.vm,
+                owner,
+                owner.utf8.count,
+                nil,
+                0,
+                problem,
+                problem.utf8.count,
+                &errorBuffer,
+                errorBuffer.count
+            )
+        }
+    }
+
+    private func seedResourceTokens(
+        _ snapshot: ShellResourceStore.PreparedTokens,
+        component: String?,
+        in script: ShellScript
+    ) -> omni_status {
         let entries = Array(snapshot.tokens)
         let descriptors = entries
             .map { ShellPickedResource(name: $0.value.name, kind: $0.value.kind, uti: $0.value.uti) }
         let owner = component ?? ""
         let problem = Self.resourceError(snapshot.error)
-        let status = Self.withResourceDescriptors(descriptors) { descriptors in
+        return Self.withResourceDescriptors(descriptors) { descriptors in
             let tokens = entries.enumerated().map { index, entry in
                 omni_resource_token_descriptor(
                     token: omni_resource_id(bytes: entry.key.value.uuid),
@@ -63,25 +91,6 @@ extension ShellWidgetPackage {
                     errorBuffer.count
                 )
             }
-        }
-        if status != OMNI_OK {
-            let problem = Self.resourceError(lastError())
-            if !validateOnly { preparedResources[namespace] = ShellResourceStore.PreparedTokens(
-                namespace: namespace,
-                tokens: [:],
-                error: problem
-            ) }
-            _ = omni_vm_seed_resource_tokens(
-                script.vm,
-                owner,
-                owner.utf8.count,
-                nil,
-                0,
-                problem,
-                problem.utf8.count,
-                &errorBuffer,
-                errorBuffer.count
-            )
         }
     }
 

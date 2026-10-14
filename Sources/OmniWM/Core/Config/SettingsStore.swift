@@ -444,6 +444,10 @@ extension SettingsStore {
         dwindle.monitorOverrides = export.monitorDwindleSettings
         gaps.monitorOverrides = export.monitorGapSettings.filter(\.hasOverrides)
 
+        applyServiceSettings(export)
+    }
+
+    private func applyServiceSettings(_ export: SettingsExport) {
         preventSleepEnabled = export.preventSleepEnabled
         updateChecksEnabled = export.updateChecksEnabled
         ipcEnabled = export.ipcEnabled

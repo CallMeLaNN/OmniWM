@@ -41,15 +41,10 @@ extension ShellWidgetSurface {
                 commands.append(paintCommand(handle, paint))
             case let .setText(handle, id, style, color, maxWidth, lines):
                 if layout.core.kind(of: handle) == .input { continue }
-                let string = text.string(id)
-                commands.append(imageCommand(handle, string, color: color, style: style, text: text) ?? .text(
-                    slot: handle.slot,
-                    text: string,
-                    style: style,
-                    color: palette.color(color, default: .foreground),
-                    maxWidth: CGFloat(maxWidth),
-                    lines: Int(lines),
-                    animation: animation(for: handle)
+                commands.append(textCommand(
+                    handle,
+                    text: text,
+                    content: .init(id: id, style: style, color: color, maxWidth: maxWidth, lines: lines)
                 ))
             case let .setScroll(handle, offset, vertical):
                 commands.append(.scroll(slot: handle.slot, origin: Self.scrollOrigin(offset, vertical: vertical)))
@@ -72,6 +67,27 @@ extension ShellWidgetSurface {
         }
         updateTextInputs()
         return commands
+    }
+
+    private struct TextPatch {
+        let id: UInt32
+        let style: UInt32
+        let color: Color
+        let maxWidth: Float
+        let lines: UInt8
+    }
+
+    private func textCommand(_ handle: ElementHandle, text: ShellTextStore, content: TextPatch) -> ShellLayerCommand {
+        let string = text.string(content.id)
+        return imageCommand(handle, string, color: content.color, style: content.style, text: text) ?? .text(
+            slot: handle.slot,
+            text: string,
+            style: content.style,
+            color: palette.color(content.color, default: .foreground),
+            maxWidth: CGFloat(content.maxWidth),
+            lines: Int(content.lines),
+            animation: animation(for: handle)
+        )
     }
 
     private func forget(_ handle: ElementHandle) {

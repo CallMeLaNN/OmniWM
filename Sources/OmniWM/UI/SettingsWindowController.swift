@@ -38,16 +38,17 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
             contentSize: NSSize(width: 1040, height: 760),
             minSize: NSSize(width: 760, height: 560),
             configure: { [weak self] window in window.delegate = self },
-            onWillClose: { [weak self] in self?.navigation.ruleEditorState.isDirty = false }
-        ) {
-            SettingsView(
-                settings: settings,
-                controller: controller,
-                windowCornerPreferences: windowCornerPreferences,
-                updateCoordinator: updateCoordinator,
-                navigation: navigation
-            )
-        }
+            onWillClose: { [weak self] in self?.navigation.ruleEditorState.isDirty = false },
+            content: {
+                SettingsView(
+                    settings: settings,
+                    controller: controller,
+                    windowCornerPreferences: windowCornerPreferences,
+                    updateCoordinator: updateCoordinator,
+                    navigation: navigation
+                )
+            }
+        )
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {

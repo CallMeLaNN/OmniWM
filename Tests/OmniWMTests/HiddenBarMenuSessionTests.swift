@@ -315,8 +315,7 @@ final class HiddenBarMenuSessionTests: XCTestCase {
         var result: HiddenBarMenuSession.OpenResult?
         var releases = 0
         session.acquire(
-            key: fixture.target().key, ownerPID: fixture.target().pid,
-            cachedItems: [fixture.target()],
+            target: .init(key: fixture.target().key, ownerPID: fixture.target().pid, cachedItems: [fixture.target()]),
             resolve: {
                 for await _ in ready.stream { break }
                 fixture.extrasAvailable = true
@@ -354,8 +353,7 @@ final class HiddenBarMenuSessionTests: XCTestCase {
         var continuation: CheckedContinuation<[ResolvedMenuBarItem]?, Never>?
         var releases = 0
         session.acquire(
-            key: fixture.target().key, ownerPID: fixture.target().pid,
-            cachedItems: [fixture.target()],
+            target: .init(key: fixture.target().key, ownerPID: fixture.target().pid, cachedItems: [fixture.target()]),
             resolve: {
                 let items = await withCheckedContinuation {
                     continuation = $0
@@ -385,7 +383,11 @@ final class HiddenBarMenuSessionTests: XCTestCase {
             var releases = 0
             var result: HiddenBarMenuSession.OpenResult?
             session.acquire(
-                key: fixture.target().key, ownerPID: fixture.target().pid, cachedItems: [fixture.target()],
+                target: .init(
+                    key: fixture.target().key,
+                    ownerPID: fixture.target().pid,
+                    cachedItems: [fixture.target()]
+                ),
                 resolve: { replacement },
                 release: { _ in releases += 1 },
                 onOpen: { result = $0 }
@@ -416,7 +418,7 @@ final class HiddenBarMenuSessionTests: XCTestCase {
         var releases = 0
         var result: HiddenBarMenuSession.OpenResult?
         session.acquire(
-            key: fixture.target().key, ownerPID: fixture.target().pid, cachedItems: [fixture.target()],
+            target: .init(key: fixture.target().key, ownerPID: fixture.target().pid, cachedItems: [fixture.target()]),
             resolve: { [fixture.target()] },
             release: { disposition in
                 releases += 1
@@ -451,7 +453,7 @@ final class HiddenBarMenuSessionTests: XCTestCase {
             var result: HiddenBarMenuSession.OpenResult?
             var releases = 0
             session.acquire(
-                key: target.key, ownerPID: target.pid, cachedItems: nil,
+                target: .init(key: target.key, ownerPID: target.pid, cachedItems: nil),
                 resolve: { [target] },
                 onResolve: { cache.replaceResolvedItems([target.key.bundleID: $0]) },
                 release: { _ in releases += 1 },
@@ -482,7 +484,7 @@ final class HiddenBarMenuSessionTests: XCTestCase {
         var result: HiddenBarMenuSession.OpenResult?
         var releases = 0
         session.acquire(
-            key: fixture.target().key, ownerPID: fixture.target().pid, cachedItems: nil,
+            target: .init(key: fixture.target().key, ownerPID: fixture.target().pid, cachedItems: nil),
             resolve: { fresh },
             onResolve: { cache.replaceResolvedItems([fixture.target().key.bundleID: $0]) },
             release: { _ in releases += 1 },
@@ -498,8 +500,11 @@ final class HiddenBarMenuSessionTests: XCTestCase {
 
         result = nil
         session.acquire(
-            key: fixture.target().key, ownerPID: fixture.target().pid,
-            cachedItems: cache.resolvedSnapshot(for: fixture.target().key.bundleID),
+            target: .init(
+                key: fixture.target().key,
+                ownerPID: fixture.target().pid,
+                cachedItems: cache.resolvedSnapshot(for: fixture.target().key.bundleID)
+            ),
             resolve: { fresh },
             release: { _ in releases += 1 },
             onOpen: { result = $0 }
@@ -523,7 +528,7 @@ final class HiddenBarMenuSessionTests: XCTestCase {
             var result: HiddenBarMenuSession.OpenResult?
             var releases = 0
             session.acquire(
-                key: fixture.target().key, ownerPID: fixture.target().pid, cachedItems: nil,
+                target: .init(key: fixture.target().key, ownerPID: fixture.target().pid, cachedItems: nil),
                 resolve: { fresh },
                 onResolve: { _ in XCTFail("Unverified resolution must not be published") },
                 release: { _ in releases += 1 },
@@ -548,7 +553,7 @@ final class HiddenBarMenuSessionTests: XCTestCase {
             let session = fixture.session()
             var result: HiddenBarMenuSession.OpenResult?
             session.acquire(
-                key: key, ownerPID: fixture.target().pid, cachedItems: cachedItems,
+                target: .init(key: key, ownerPID: fixture.target().pid, cachedItems: cachedItems),
                 resolve: { [fixture.target()] },
                 release: { _ in }, onOpen: { result = $0 }
             )
@@ -565,7 +570,7 @@ final class HiddenBarMenuSessionTests: XCTestCase {
         var releases = 0
         var result: HiddenBarMenuSession.OpenResult?
         session.acquire(
-            key: fixture.target().key, ownerPID: fixture.target().pid, cachedItems: [fixture.target()],
+            target: .init(key: fixture.target().key, ownerPID: fixture.target().pid, cachedItems: [fixture.target()]),
             resolve: {
                 fixture.ownerCurrent = false
                 return [fixture.target()]

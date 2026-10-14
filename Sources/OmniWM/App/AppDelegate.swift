@@ -180,6 +180,14 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         controller.statusBarController = statusBarController
         observeSettings(settings, controller: controller)
         statusBarController?.setup()
+        startIPC(settings: settings, controller: controller)
+        updateCoordinator.startAutomaticChecks()
+
+        startMonitorSetupPresentationObservation()
+        playLaunchOverlay(runtimeState: runtimeState, animationsEnabled: controller.motionPolicy.animationsEnabled)
+    }
+
+    private func startIPC(settings: SettingsStore, controller: WMController) {
         do {
             try setIPCEnabled(settings.ipcEnabled, controller: controller)
         } catch {
@@ -189,10 +197,6 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             )
             settings.ipcEnabled = false
         }
-        updateCoordinator.startAutomaticChecks()
-
-        startMonitorSetupPresentationObservation()
-        playLaunchOverlay(runtimeState: runtimeState, animationsEnabled: controller.motionPolicy.animationsEnabled)
     }
 
     private func observeSettings(_ settings: SettingsStore, controller: WMController) {

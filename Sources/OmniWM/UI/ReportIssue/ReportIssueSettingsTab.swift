@@ -75,9 +75,9 @@ struct ReportIssueSettingsTab: View {
                 }
             }
             .id("Category")
-            labeledEditor("What happened", text: $model.actual)
-            labeledEditor("What did you expect? (optional)", text: $model.expected, minHeight: 70)
-            labeledEditor("Steps to reproduce (optional)", text: $model.repro, minHeight: 70)
+            IssueTextEditor("What happened", text: $model.actual)
+            IssueTextEditor("What did you expect? (optional)", text: $model.expected, minHeight: 70)
+            IssueTextEditor("Steps to reproduce (optional)", text: $model.repro, minHeight: 70)
             if let errorMessage = model.errorMessage {
                 Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
                     .font(.caption)
@@ -293,18 +293,6 @@ struct ReportIssueSettingsTab: View {
             Label(attachmentWarning, systemImage: "exclamationmark.triangle.fill")
                 .font(.caption)
                 .foregroundStyle(.orange)
-        }
-    }
-
-    @ViewBuilder
-    private func labeledEditor(_ label: String, text: Binding<String>, minHeight: CGFloat = 90) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label)
-                .font(.callout)
-            TextEditor(text: text)
-                .frame(minHeight: minHeight)
-                .font(.body)
-                .accessibilityLabel(label)
         }
     }
 }

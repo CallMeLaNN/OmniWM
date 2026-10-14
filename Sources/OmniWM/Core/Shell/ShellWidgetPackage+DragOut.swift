@@ -11,45 +11,19 @@ extension ShellWidgetPackage {
         else {
             throw ShellResourceFailure("drag_source_unavailable")
         }
-        var owner = omni_owner_token()
-        var request: UInt64 = 0
-        var count = 0
-        var values = [omni_resource_id](repeating: omni_resource_id(), count: ShellResourceStore.attachmentLimit)
-        let status = values.withUnsafeMutableBufferPointer {
-            omni_instance_reserve_drag(
-                instance,
-                key.view.wire,
-                authority.declaration,
-                authority.action,
-                authority.sourceID,
-                &owner,
-                &request,
-                $0.baseAddress,
-                $0.count,
-                &count,
-                &errorBuffer,
-                errorBuffer.count
-            )
-        }
-        guard status == OMNI_OK else { throw ShellResourceFailure(lastError()) }
-        let id = ShellServiceID(owner: ShellServiceOwner(owner), request: request)
+        let reservation = try reserveDrag(authority, key: key, instance: instance)
+        let id = reservation.id
         let operation = ShellResourceOperation()
         var pin: ShellResourceStore.Pin?
         do {
-            var component: String?
-            if id.owner.owner != 0 {
-                component = configuredComponents.keys.first { name in
-                    var candidate = omni_owner_token()
-                    return omni_vm_component_owner(script.vm, name, name.utf8.count, &candidate)
-                        && ShellServiceOwner(candidate) == id.owner
-                }
-                guard component != nil else { throw ShellResourceFailure("drag_owner_unavailable") }
-            }
+            let component = try dragComponent(id.owner, in: script)
             guard permitsFiles(id.owner, component: component) else { throw ShellResourceFailure("files_denied") }
-            guard count > 0, count <= values.count else { throw ShellResourceFailure("invalid_resources") }
+            guard reservation.resourceCount > 0,
+                  reservation.resourceCount <= reservation.values.count
+            else { throw ShellResourceFailure("invalid_resources") }
             guard services.register(id, cancel: { operation.cancel() })
             else { throw ShellResourceFailure("service_overload") }
-            let ids = values.prefix(count).map { ShellResourceID(UUID(uuid: $0.bytes)) }
+            let ids = reservation.values.prefix(reservation.resourceCount).map { ShellResourceID(UUID(uuid: $0.bytes)) }
             let prepared = try await resourceStore.retain(ids, owner: id.owner)
             pin = prepared
             guard !closing, self.script === script, operation.isActive else { throw ShellResourceFailure("cancelled") }
@@ -74,6 +48,58 @@ extension ShellWidgetPackage {
             services.cancel(id)
             throw error
         }
+    }
+
+    private struct DragReservation {
+        let id: ShellServiceID
+        let values: [omni_resource_id]
+        let resourceCount: Int
+    }
+
+    private func reserveDrag(
+        _ authority: ShellDragOutAuthority,
+        key: ShellTreeKey,
+        instance: OpaquePointer
+    ) throws -> DragReservation {
+        var owner = omni_owner_token()
+        var request: UInt64 = 0
+        var count = 0
+        var values = [omni_resource_id](repeating: omni_resource_id(), count: ShellResourceStore.attachmentLimit)
+        let status = values.withUnsafeMutableBufferPointer {
+            omni_instance_reserve_drag(
+                instance,
+                key.view.wire,
+                authority.declaration,
+                authority.action,
+                authority.sourceID,
+                &owner,
+                &request,
+                $0.baseAddress,
+                $0.count,
+                &count,
+                &errorBuffer,
+                errorBuffer.count
+            )
+        }
+        guard status == OMNI_OK else { throw ShellResourceFailure(lastError()) }
+        return DragReservation(
+            id: ShellServiceID(owner: ShellServiceOwner(owner), request: request),
+            values: values,
+            resourceCount: count
+        )
+    }
+
+    private func dragComponent(_ owner: ShellServiceOwner, in script: ShellScript) throws -> String? {
+        var component: String?
+        if owner.owner != 0 {
+            component = configuredComponents.keys.first { name in
+                var candidate = omni_owner_token()
+                return omni_vm_component_owner(script.vm, name, name.utf8.count, &candidate)
+                    && ShellServiceOwner(candidate) == owner
+            }
+            guard component != nil else { throw ShellResourceFailure("drag_owner_unavailable") }
+        }
+        return component
     }
 
     private func beginDragOut(_ id: ShellServiceID, operation: ShellResourceOperation) async {

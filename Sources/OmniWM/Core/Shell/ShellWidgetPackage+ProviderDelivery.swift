@@ -11,27 +11,6 @@ extension ShellWidgetPackage {
         in script: ShellScript
     ) -> Bool {
         guard providerInbox.binding(for: identity.owner)?.identity == identity else { return false }
-        struct Span {
-            let name: Int
-            let nameLength: Int
-            let json: Int
-            let jsonLength: Int
-            let removed: Bool
-        }
-        var storage: [UInt8] = []
-        let spans = snapshot.topics.map { topic in
-            let name = storage.count
-            storage.append(contentsOf: topic.name.utf8)
-            let json = storage.count
-            if let value = topic.value { storage.append(contentsOf: value) }
-            return Span(
-                name: name,
-                nameLength: json - name,
-                json: json,
-                jsonLength: storage.count - json,
-                removed: topic.value == nil
-            )
-        }
         let status: omni_provider_status
         var exitCode: Int32 = 0
         var failure = ""
@@ -45,7 +24,59 @@ extension ShellWidgetPackage {
         case nil: status = OMNI_PROVIDER_UNCHANGED
         }
         var applied = false
-        let outcome = storage.withUnsafeBytes { bytes in
+        let outcome = Self.withProviderTopics(snapshot.topics) { topics in
+            failure.withCString { error in
+                var snapshot = omni_provider_snapshot(
+                    incarnation: identity.incarnation,
+                    status: status,
+                    error: error,
+                    error_length: failure.utf8.count,
+                    exit_code: exitCode,
+                    topics: topics.baseAddress,
+                    topic_count: topics.count
+                )
+                return omni_vm_provider_update(
+                    script.vm,
+                    identity.owner.wire,
+                    &snapshot,
+                    Self.handlerBudget,
+                    &applied,
+                    &errorBuffer,
+                    errorBuffer.count
+                )
+            }
+        }
+        reportProviderStatus(outcome)
+        drainServices(in: script)
+        return applied
+    }
+
+    private static func withProviderTopics(
+        _ topics: [ShellProviderInbox.Topic],
+        _ body: (UnsafeBufferPointer<omni_provider_topic>) -> omni_status
+    ) -> omni_status {
+        struct Span {
+            let name: Int
+            let nameLength: Int
+            let json: Int
+            let jsonLength: Int
+            let removed: Bool
+        }
+        var storage: [UInt8] = []
+        let spans = topics.map { topic in
+            let name = storage.count
+            storage.append(contentsOf: topic.name.utf8)
+            let json = storage.count
+            if let value = topic.value { storage.append(contentsOf: value) }
+            return Span(
+                name: name,
+                nameLength: json - name,
+                json: json,
+                jsonLength: storage.count - json,
+                removed: topic.value == nil
+            )
+        }
+        return storage.withUnsafeBytes { bytes in
             let base = bytes.bindMemory(to: CChar.self).baseAddress
             let topics = spans.map {
                 omni_provider_topic(
@@ -56,32 +87,8 @@ extension ShellWidgetPackage {
                     removed: $0.removed
                 )
             }
-            return topics.withUnsafeBufferPointer { topics in
-                failure.withCString { error in
-                    var snapshot = omni_provider_snapshot(
-                        incarnation: identity.incarnation,
-                        status: status,
-                        error: error,
-                        error_length: failure.utf8.count,
-                        exit_code: exitCode,
-                        topics: topics.baseAddress,
-                        topic_count: topics.count
-                    )
-                    return omni_vm_provider_update(
-                        script.vm,
-                        identity.owner.wire,
-                        &snapshot,
-                        Self.handlerBudget,
-                        &applied,
-                        &errorBuffer,
-                        errorBuffer.count
-                    )
-                }
-            }
+            return topics.withUnsafeBufferPointer(body)
         }
-        reportProviderStatus(outcome)
-        drainServices(in: script)
-        return applied
     }
 
     func installProviderStateBeforeAction(
@@ -127,36 +134,53 @@ extension ShellWidgetPackage {
                     )
                 }
             case let .result(id, outcome):
-                let route = providerActions[id]
-                let key = route?.operation == nil ? nil : route?.key(id)
-                if let key, !providerInbox.beginResultDelivery(key) { return changed }
-                defer {
-                    if let key { providerInbox.finishResultDelivery(key) }
-                    else { providerActions.removeValue(forKey: id) }
-                }
-                guard services.takeRegistered(id) else {
-                    if case let .resources(_, ids) = outcome {
-                        disposeProviderOutputs(ids, owner: id.owner)
-                        providerActions[id]?.outputs = []
-                    }
-                    return changed
-                }
-                switch outcome {
-                case let .provider(ok, value, _):
-                    status = completeProvider(id, ok: ok, value: value, ids: [], in: script, handled: &handled)
-                case let .resources(value, ids):
-                    let metadata = ids.compactMap { resourceStore.catalog.metadata($0, owner: id.owner) }
-                    changed = applyResourceMetadata(metadata, owner: id.owner, in: script) || changed
-                    status = completeProvider(id, ok: true, value: value, ids: ids, in: script, handled: &handled)
-                case let .failure(error):
-                    status = completeProviderFailure(id, error: error, in: script, handled: &handled)
-                }
+                guard let result = deliverProviderResult(
+                    id,
+                    outcome: outcome,
+                    in: script,
+                    changed: &changed,
+                    handled: &handled
+                ) else { return changed }
+                status = result
             }
             reportProviderStatus(status)
             changed = changed || handled
             drainServices(in: script)
         }
         return changed
+    }
+
+    private func deliverProviderResult(
+        _ id: ShellServiceID,
+        outcome: consuming ShellProviderInbox.Outcome,
+        in script: ShellScript,
+        changed: inout Bool,
+        handled: inout Bool
+    ) -> omni_status? {
+        let route = providerActions[id]
+        let key = route?.operation == nil ? nil : route?.key(id)
+        if let key, !providerInbox.beginResultDelivery(key) { return nil }
+        defer {
+            if let key { providerInbox.finishResultDelivery(key) }
+            else { providerActions.removeValue(forKey: id) }
+        }
+        guard services.takeRegistered(id) else {
+            if case let .resources(_, ids) = outcome {
+                disposeProviderOutputs(ids, owner: id.owner)
+                providerActions[id]?.outputs = []
+            }
+            return nil
+        }
+        switch outcome {
+        case .provider:
+            return completeProvider(id, outcome: outcome, in: script, handled: &handled)
+        case let .resources(_, ids):
+            let metadata = ids.compactMap { resourceStore.catalog.metadata($0, owner: id.owner) }
+            changed = applyResourceMetadata(metadata, owner: id.owner, in: script) || changed
+            return completeProvider(id, outcome: outcome, in: script, handled: &handled)
+        case let .failure(error):
+            return completeProviderFailure(id, error: error, in: script, handled: &handled)
+        }
     }
 
     func deliverProviders(in script: ShellScript) async {
@@ -187,12 +211,25 @@ extension ShellWidgetPackage {
 
     private func completeProvider(
         _ id: ShellServiceID,
-        ok: Bool,
-        value: Data,
-        ids: [ShellResourceID],
+        outcome: borrowing ShellProviderInbox.Outcome,
         in script: ShellScript,
         handled: inout Bool
     ) -> omni_status {
+        let ok: Bool
+        let value: Data
+        let ids: [ShellResourceID]
+        switch outcome {
+        case let .provider(success, payload, _):
+            ok = success
+            value = payload
+            ids = []
+        case let .resources(payload, resources):
+            ok = true
+            value = payload
+            ids = resources
+        case let .failure(error):
+            return completeProviderFailure(id, error: error, in: script, handled: &handled)
+        }
         var transferred = false
         let resources = ids.map { omni_resource_id(bytes: $0.value.uuid) }
         let status = resources.withUnsafeBufferPointer { resources in

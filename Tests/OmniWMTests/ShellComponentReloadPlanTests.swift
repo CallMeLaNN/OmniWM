@@ -44,8 +44,8 @@ final class ShellComponentReloadPlanTests: XCTestCase {
             modules: source.modules
         )
         XCTAssertNil(ShellComponentReloadPlan.make(
-            source: source, loadedChunk: source.chunk, loadedMain: "old root", loadedModules: [],
-            previousDescriptors: [], matches: { _ in true }
+            source: source, loaded: .init(chunk: source.chunk, main: "old root", modules: []), previousDescriptors: [],
+            matches: { _ in true }
         ))
     }
 
@@ -60,8 +60,8 @@ final class ShellComponentReloadPlanTests: XCTestCase {
         var source = source(modules)
         source.componentDescriptors = next
         let result = try XCTUnwrap(ShellComponentReloadPlan.make(
-            source: source, loadedChunk: source.chunk, loadedMain: source.main,
-            loadedModules: Set(modules.map(\.path)), previousDescriptors: previous, matches: { _ in true }
+            source: source, loaded: .init(chunk: source.chunk, main: source.main, modules: Set(modules.map(\.path))),
+            previousDescriptors: previous, matches: { _ in true }
         ))
         XCTAssertEqual(result.widgets, ["custom", "second"])
         XCTAssertTrue(result.modules.isEmpty)
@@ -72,9 +72,11 @@ final class ShellComponentReloadPlanTests: XCTestCase {
         var source = source(modules)
         source.componentDescriptors = [descriptor("custom", uses: ["b", "a"], title: "New title")]
         let result = try XCTUnwrap(ShellComponentReloadPlan.make(
-            source: source, loadedChunk: source.chunk, loadedMain: source.main,
-            loadedModules: Set(modules.map(\.path)),
-            previousDescriptors: [descriptor("custom", uses: ["a", "b"])], matches: { _ in true }
+            source: source, loaded: .init(chunk: source.chunk, main: source.main, modules: Set(modules.map(\.path))),
+            previousDescriptors: [descriptor(
+                "custom",
+                uses: ["a", "b"]
+            )], matches: { _ in true }
         ))
         XCTAssertTrue(result.widgets.isEmpty)
         XCTAssertTrue(result.modules.isEmpty)
@@ -89,8 +91,8 @@ final class ShellComponentReloadPlanTests: XCTestCase {
         var source = source(modules)
         source.componentDescriptors = descriptors
         return ShellComponentReloadPlan.make(
-            source: source, loadedChunk: source.chunk, loadedMain: source.main,
-            loadedModules: Set(previous.map(\.path)), previousDescriptors: descriptors, matches: matches
+            source: source, loaded: .init(chunk: source.chunk, main: source.main, modules: Set(previous.map(\.path))),
+            previousDescriptors: descriptors, matches: matches
         )
     }
 

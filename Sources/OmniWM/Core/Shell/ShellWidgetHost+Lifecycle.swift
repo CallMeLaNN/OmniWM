@@ -131,7 +131,7 @@ extension ShellWidgetHost {
         placedSlots = [:]
     }
 
-    private func updateWallpaperPalette() {
+    func updateWallpaperPalette() {
         guard config.themeName == ShellWallpaperPalette.themeName else {
             wallpaperPalette?.stop()
             wallpaperPalette = nil
@@ -197,22 +197,7 @@ extension ShellWidgetHost {
     func rescan(reloadConfiguration: Bool = true) {
         guard started else { return }
         let (found, directories) = discoverPackages()
-        for (name, state) in widgets where found[name] != state.sourceURL {
-            if popout?.widget == name {
-                closePopout()
-            }
-            if drawer?.sections.contains(where: { $0.widget == name }) == true {
-                closeDrawer()
-            }
-            if let removed = widgets.removeValue(forKey: name) { retire(removed) }
-        }
-        for (name, sourceURL) in found where widgets[name] == nil {
-            let state = WidgetState(name: name, sourceURL: sourceURL)
-            if let trip = trips[name], trip.source != sourceURL {
-                state.fallback = trip.failure
-            }
-            widgets[name] = state
-        }
+        syncDiscoveredPackages(found)
         updateBars()
         for (name, sourceURL) in found {
             guard let state = widgets[name] else { continue }
@@ -240,6 +225,25 @@ extension ShellWidgetHost {
         if reloadConfiguration { reloadConfig() }
         refreshConfigurationCatalog()
         publishToggleNames()
+    }
+
+    private func syncDiscoveredPackages(_ found: [String: URL]) {
+        for (name, state) in widgets where found[name] != state.sourceURL {
+            if popout?.widget == name {
+                closePopout()
+            }
+            if drawer?.sections.contains(where: { $0.widget == name }) == true {
+                closeDrawer()
+            }
+            if let removed = widgets.removeValue(forKey: name) { retire(removed) }
+        }
+        for (name, sourceURL) in found where widgets[name] == nil {
+            let state = WidgetState(name: name, sourceURL: sourceURL)
+            if let trip = trips[name], trip.source != sourceURL {
+                state.fallback = trip.failure
+            }
+            widgets[name] = state
+        }
     }
 
     func folders(of state: WidgetState) -> [URL] {
@@ -292,78 +296,6 @@ extension ShellWidgetHost {
                     "Failed to write widget authoring files in \(shellDirectory.path): \(error.localizedDescription)"
                 )
         }
-    }
-
-    func reloadConfig() {
-        guard configurationWriter?.deferReloadIfWriting() != true else { return }
-        var problems: [String] = []
-        let loaded = ShellConfig.load(shellDirectory: shellDirectory, problems: &problems)
-        configProblems = problems
-        guard let next = loaded else { return }
-        applyConfig(next, problems: problems)
-    }
-
-    func applyConfig(_ next: ShellConfig, problems: [String] = []) {
-        let problemsChanged = configProblems != problems
-        configProblems = problems
-        guard next != config else {
-            if problemsChanged { publishToggleNames() }
-            return
-        }
-        let previous = config
-        if next.profile != previous.profile { closeHiddenBarMenu() }
-        config = next
-        refreshBarShaders()
-        if next.island?.root != previous.island?.root || next.directories != previous.directories {
-            configurationCatalog = nil
-            for state in widgets.values { publishConfigurationCatalog(to: state) }
-            processConfigurationQueue()
-        }
-        if next.island?.root != previous.island?.root {
-            for name in Set([previous.island?.root, next.island?.root].compactMap { $0 }) {
-                guard let state = widgets[name] else { continue }
-                state.fingerprint = fingerprint(of: state.sourceURL)
-                load(state)
-            }
-        }
-        onConfigChange?(next)
-        if next.theme != previous.theme || next.barOverride?.accentColor != previous.barOverride?.accentColor
-            || next.barOverride?.textColor != previous.barOverride?.textColor
-        {
-            Log.shell.notice("Using theme \(next.themeName)")
-            appearanceDidChange()
-        }
-        if next.themeName != previous.themeName || next.wallpaperScheme != previous.wallpaperScheme {
-            updateWallpaperPalette()
-        }
-        feed?.setWeatherLocation(next.weather)
-        for state in widgets.values where next.widgetSettings[state.name] != previous.widgetSettings[state.name] {
-            state.mailbox?.yield(.settings(next.widgetSettings[state.name] ?? []))
-        }
-        if next.widgetIntervals != previous.widgetIntervals {
-            for state in widgets.values {
-                state.mailbox?.yield(.interval(interval(of: state)))
-            }
-            publishDemand()
-        }
-        if next.drawers != previous.drawers {
-            closeDrawer()
-        }
-        if next.directories == previous.directories, next.island?.root == previous.island?.root,
-           next.island?.components != previous.island?.components
-        {
-            syncComponents()
-        }
-        let lanesChanged = next.leading != previous.leading || next.center != previous.center
-            || next.trailing != previous.trailing || next.drawers != previous.drawers
-        if lanesChanged || next.directories != previous.directories || next.island != previous.island {
-            updateIslands(desiredIslands, level: islandLevel)
-            rescan(reloadConfiguration: false)
-            onLayoutChange()
-        } else if next.barShader != previous.barShader {
-            onLayoutChange()
-        }
-        publishToggleNames()
     }
 
     private func configPaths() -> [URL] {
@@ -431,10 +363,11 @@ extension ShellWidgetHost {
                 media: resources.media,
                 calendar: resources.calendar,
                 devices: resources.devices,
-                onBadgesDemandChange: { [weak self] in self?.onBadgesDemandChange?($0) }
-            ) { [weak self] data in
-                self?.broadcast(data)
-            }
+                onBadgesDemandChange: { [weak self] in self?.onBadgesDemandChange?($0) },
+                deliver: { [weak self] data in
+                    self?.broadcast(data)
+                }
+            )
             self.feed = feed
             feed.setWorld(world())
             feed.setVars(vars())

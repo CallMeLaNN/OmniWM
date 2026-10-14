@@ -18,13 +18,22 @@ extension ShellHTTPRequest {
             guard let method = value.string else { throw ShellHTTPFailure("invalid_request") }
             self.method = method
         }
-        if let value = fields["headers"] {
+        try decodeHeaders(fields["headers"])
+        try decodeBody(fields)
+        try decodeResponseOptions(fields)
+    }
+
+    private mutating func decodeHeaders(_ value: ShellServiceValue?) throws {
+        if let value {
             guard let fields = value.fields, fields.count <= 128 else { throw ShellHTTPFailure("invalid_request") }
             for (key, value) in fields {
                 guard let value = value.string else { throw ShellHTTPFailure("invalid_request") }
                 headers[key] = value
             }
         }
+    }
+
+    private mutating func decodeBody(_ fields: [String: ShellServiceValue]) throws {
         if let value = fields["body"] {
             guard case let .bytes(bytes) = value else { throw ShellHTTPFailure("invalid_request") }
             body = bytes
@@ -34,6 +43,9 @@ extension ShellHTTPRequest {
                   bytes.count == 16 else { throw ShellHTTPFailure("invalid_request") }
             bodyResource = ShellResourceID(bytes.withUnsafeBytes { UUID(uuid: $0.loadUnaligned(as: uuid_t.self)) })
         }
+    }
+
+    private mutating func decodeResponseOptions(_ fields: [String: ShellServiceValue]) throws {
         if let value = fields["response"] {
             guard let name = value.string,
                   let response = Response(rawValue: name) else { throw ShellHTTPFailure("invalid_request") }
@@ -69,20 +81,7 @@ extension ShellWidgetPackage {
                 )
             } else { policy = .hosts([]) }
             if request.bodyResource != nil {
-                guard permitsFiles(id.owner, component: component) else { throw ShellHTTPFailure("files_denied") }
-                guard let url = URL(string: request.url),
-                      policy.allows(url) else { throw ShellHTTPFailure("network_denied") }
-                guard resourceWork.count + (resourceWorker == nil ? 0 : 1) < ShellServiceLedger.capacity else {
-                    throw ShellHTTPFailure("resource_work_overloaded")
-                }
-                let operation = ShellResourceOperation()
-                guard services.register(id, cancel: { operation.cancel() }) else {
-                    _ = omni_vm_cancel_service(script.vm, id.owner.wire, id.request)
-                    log(1) { _ in "HTTP resource request was rejected by its native owner" }
-                    return
-                }
-                resourceWork.append(.httpBody(id, request, policy, operation))
-                startResourceWorker()
+                try dispatchHTTPBody(id, component: component, request: request, policy: policy, in: script)
                 return
             }
             if http == nil { http = ShellHTTPService(ledger: services, captureID: utilityCaptureID) }
@@ -102,6 +101,29 @@ extension ShellWidgetPackage {
                 payload: ShellHTTPResponse.failure((error as? ShellHTTPFailure)?.code ?? "invalid_request")
             ))
         }
+    }
+
+    private func dispatchHTTPBody(
+        _ id: ShellServiceID,
+        component: String?,
+        request: ShellHTTPRequest,
+        policy: ShellHTTPPolicy,
+        in script: ShellScript
+    ) throws {
+        guard permitsFiles(id.owner, component: component) else { throw ShellHTTPFailure("files_denied") }
+        guard let url = URL(string: request.url),
+              policy.allows(url) else { throw ShellHTTPFailure("network_denied") }
+        guard resourceWork.count + (resourceWorker == nil ? 0 : 1) < ShellServiceLedger.capacity else {
+            throw ShellHTTPFailure("resource_work_overloaded")
+        }
+        let operation = ShellResourceOperation()
+        guard services.register(id, cancel: { operation.cancel() }) else {
+            _ = omni_vm_cancel_service(script.vm, id.owner.wire, id.request)
+            log(1) { _ in "HTTP resource request was rejected by its native owner" }
+            return
+        }
+        resourceWork.append(.httpBody(id, request, policy, operation))
+        startResourceWorker()
     }
 
     func prepareHTTPBody(

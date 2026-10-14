@@ -127,24 +127,7 @@ extension ShellWidgetPackage {
         _ next: borrowing ShellWidgetData,
         _ changed: UInt64
     ) {
-        if changed & ShellDataKey.weather.bit != 0 {
-            setValue(instance, .weather) { writer in
-                guard let weather = next.weather else { return writer.null() }
-                weather.write(into: &writer)
-            }
-        }
-        if changed & ShellDataKey.reminders.bit != 0 {
-            setValue(instance, .reminders) { writer in
-                guard let reminders = next.reminders else { return writer.null() }
-                reminders.write(into: &writer)
-            }
-        }
-        if changed & ShellDataKey.calendar.bit != 0 {
-            setValue(instance, .calendar) { writer in
-                guard let calendar = next.calendar else { return writer.null() }
-                calendar.write(into: &writer)
-            }
-        }
+        updatePersonalServices(instance, next, changed)
         if changed & ShellDataKey.badges.bit != 0 {
             setValue(instance, .badges) { writer in
                 writer.map(next.badges.count)
@@ -167,6 +150,31 @@ extension ShellWidgetPackage {
                     writer.key(name)
                     writer.string(value)
                 }
+            }
+        }
+    }
+
+    private func updatePersonalServices(
+        _ instance: OpaquePointer,
+        _ next: borrowing ShellWidgetData,
+        _ changed: UInt64
+    ) {
+        if changed & ShellDataKey.weather.bit != 0 {
+            setValue(instance, .weather) { writer in
+                guard let weather = next.weather else { return writer.null() }
+                weather.write(into: &writer)
+            }
+        }
+        if changed & ShellDataKey.reminders.bit != 0 {
+            setValue(instance, .reminders) { writer in
+                guard let reminders = next.reminders else { return writer.null() }
+                reminders.write(into: &writer)
+            }
+        }
+        if changed & ShellDataKey.calendar.bit != 0 {
+            setValue(instance, .calendar) { writer in
+                guard let calendar = next.calendar else { return writer.null() }
+                calendar.write(into: &writer)
             }
         }
     }

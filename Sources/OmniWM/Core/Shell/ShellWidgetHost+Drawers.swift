@@ -104,6 +104,20 @@ extension ShellWidgetHost {
         ) { [weak self] in
             self?.closeDrawer()
         }
+        connectDrawer(drawer, members: members)
+        self.drawer = drawer
+        for (state, key) in members {
+            if bars[key] == nil {
+                drawerKeys[state.name] = key
+                place(state)
+            }
+            state.mailbox?.yield(.popout(key, true))
+        }
+        onPopoutChange()
+        return true
+    }
+
+    private func connectDrawer(_ drawer: ShellEdgeDrawer, members: [(state: WidgetState, key: ShellBarKey)]) {
         for (section, member) in zip(drawer.sections, members) {
             section.surface.assetFolders = member.state.assetPackages
             connectResourceDrop(
@@ -124,16 +138,6 @@ extension ShellWidgetHost {
             connectMenu(section.surface, key: key, state: member.state)
             connectSurfaceFocus(section.surface) { [weak self, weak drawer] in self?.drawer === drawer }
         }
-        self.drawer = drawer
-        for (state, key) in members {
-            if bars[key] == nil {
-                drawerKeys[state.name] = key
-                place(state)
-            }
-            state.mailbox?.yield(.popout(key, true))
-        }
-        onPopoutChange()
-        return true
     }
 
     func closeDrawer(animated: Bool = true) {

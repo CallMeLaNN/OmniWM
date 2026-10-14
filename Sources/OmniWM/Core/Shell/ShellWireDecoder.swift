@@ -137,7 +137,7 @@ enum ShellWireDecoder {
     }
 
     @inline(__always) private static func content(_ wire: omni_wire_node, kind: ElementKind) -> Content {
-        Content(
+        var content = Content(
             text: wire.text,
             reserve: wire.reserve,
             style: textStyle(wire),
@@ -177,53 +177,66 @@ enum ShellWireDecoder {
             closeDuration: wire.close_duration,
             evenOdd: UInt32(wire.options) & OMNI_NODE_OPTION_EVEN_ODD != 0,
             attaches: UInt32(wire.options) & OMNI_NODE_OPTION_ATTACH != 0,
-            audio: UInt32(wire.options) & OMNI_NODE_OPTION_AUDIO != 0,
-            hoverAction: wire.hover_action,
-            pressAction: wire.press_action,
-            gestureAction: wire.gesture_action,
-            gestureTrack: wire.gesture_track,
-            keyAction: wire.key_action,
-            outsidePressAction: wire.outside_press_action,
-            keys: wire.keys,
-            pressScale: wire.press_scale,
-            pressScaleSpecified: UInt32(wire.input_flags) & OMNI_INPUT_PRESS_SCALE != 0,
-            pressOpacity: wire.press_opacity,
-            pressFill: Color(packed: wire.press_fill, role: wire.press_fill_role),
-            pressFillSpecified: UInt32(wire.input_flags) & OMNI_INPUT_PRESS_FILL != 0,
-            pressMotion: wire.press_motion,
-            pressMotionCurve: wire.press_motion_curve,
-            pressMotionCurveRef: wire.press_motion_curve_ref,
-            hoverDelay: wire.hover_delay,
-            hoverGrace: wire.hover_grace,
-            focusable: UInt32(wire.input_flags) & OMNI_INPUT_FOCUSABLE != 0,
-            focusRing: UInt32(wire.options) & OMNI_NODE_OPTION_NO_FOCUS_RING == 0,
-            scrollMomentum: UInt32(wire.input_flags) & OMNI_INPUT_MOMENTUM_DELIVER != 0,
-            inputCommitAction: wire.input_commit_action,
-            inputCancelAction: wire.input_cancel_action,
-            inputFocusAction: wire.input_focus_action,
-            inputMaxLength: wire.input_max_length,
-            inputMultiline: UInt32(wire.input_flags) & OMNI_INPUT_MULTILINE != 0,
-            inputFocus: UInt32(wire.input_flags) & OMNI_INPUT_FOCUS_PRESENT == 0 ? -1 :
-                (UInt32(wire.input_flags) & OMNI_INPUT_FOCUS_VALUE != 0 ? 1 : 0),
-            gesture: ShellGestureConfig(
-                axis: ShellGestureConfig.Axis(rawValue: wire.gesture_axis) ?? .none,
-                source: ShellGestureConfig.Source(rawValue: wire.gesture_source) ?? .pointer,
-                direction: ShellGestureConfig.Direction(rawValue: wire.gesture_direction) ?? .any,
-                threshold: wire.gesture_threshold,
-                lockDistance: wire.gesture_lock_distance,
-                dominance: wire.gesture_dominance,
-                commitDistance: wire.gesture_commit_distance,
-                commitVelocity: wire.gesture_commit_velocity,
-                eventsAll: UInt32(wire.input_flags) & OMNI_INPUT_GESTURE_ALL != 0
-            ),
-            textureRef: wire.texture_ref,
-            resourceImageRef: wire.resource_image_ref,
-            thumbnail: wire.thumbnail,
-            resourceDropAction: wire.resource_drop_action,
-            resourceHoverAction: wire.resource_hover_action,
-            resourceAccepts: wire.resource_accepts,
-            dragItemsRef: wire.resource_drag_ref,
-            dragOutAction: wire.resource_drag_action
+            audio: UInt32(wire.options) & OMNI_NODE_OPTION_AUDIO != 0
         )
+        applyInteraction(wire, to: &content)
+        applyGesture(wire, to: &content)
+        applyResources(wire, to: &content)
+        return content
+    }
+
+    @inline(__always) private static func applyInteraction(_ wire: omni_wire_node, to content: inout Content) {
+        content.hoverAction = wire.hover_action
+        content.pressAction = wire.press_action
+        content.gestureAction = wire.gesture_action
+        content.gestureTrack = wire.gesture_track
+        content.keyAction = wire.key_action
+        content.outsidePressAction = wire.outside_press_action
+        content.keys = wire.keys
+        content.pressScale = wire.press_scale
+        content.pressScaleSpecified = UInt32(wire.input_flags) & OMNI_INPUT_PRESS_SCALE != 0
+        content.pressOpacity = wire.press_opacity
+        content.pressFill = Color(packed: wire.press_fill, role: wire.press_fill_role)
+        content.pressFillSpecified = UInt32(wire.input_flags) & OMNI_INPUT_PRESS_FILL != 0
+        content.pressMotion = wire.press_motion
+        content.pressMotionCurve = wire.press_motion_curve
+        content.pressMotionCurveRef = wire.press_motion_curve_ref
+        content.hoverDelay = wire.hover_delay
+        content.hoverGrace = wire.hover_grace
+        content.focusable = UInt32(wire.input_flags) & OMNI_INPUT_FOCUSABLE != 0
+        content.focusRing = UInt32(wire.options) & OMNI_NODE_OPTION_NO_FOCUS_RING == 0
+        content.scrollMomentum = UInt32(wire.input_flags) & OMNI_INPUT_MOMENTUM_DELIVER != 0
+        content.inputCommitAction = wire.input_commit_action
+        content.inputCancelAction = wire.input_cancel_action
+        content.inputFocusAction = wire.input_focus_action
+        content.inputMaxLength = wire.input_max_length
+        content.inputMultiline = UInt32(wire.input_flags) & OMNI_INPUT_MULTILINE != 0
+        content.inputFocus = UInt32(wire.input_flags) & OMNI_INPUT_FOCUS_PRESENT == 0 ? -1 :
+            (UInt32(wire.input_flags) & OMNI_INPUT_FOCUS_VALUE != 0 ? 1 : 0)
+    }
+
+    @inline(__always) private static func applyGesture(_ wire: omni_wire_node, to content: inout Content) {
+        content.gesture = ShellGestureConfig(
+            axis: ShellGestureConfig.Axis(rawValue: wire.gesture_axis) ?? .none,
+            source: ShellGestureConfig.Source(rawValue: wire.gesture_source) ?? .pointer,
+            direction: ShellGestureConfig.Direction(rawValue: wire.gesture_direction) ?? .any,
+            threshold: wire.gesture_threshold,
+            lockDistance: wire.gesture_lock_distance,
+            dominance: wire.gesture_dominance,
+            commitDistance: wire.gesture_commit_distance,
+            commitVelocity: wire.gesture_commit_velocity,
+            eventsAll: UInt32(wire.input_flags) & OMNI_INPUT_GESTURE_ALL != 0
+        )
+    }
+
+    @inline(__always) private static func applyResources(_ wire: omni_wire_node, to content: inout Content) {
+        content.textureRef = wire.texture_ref
+        content.resourceImageRef = wire.resource_image_ref
+        content.thumbnail = wire.thumbnail
+        content.resourceDropAction = wire.resource_drop_action
+        content.resourceHoverAction = wire.resource_hover_action
+        content.resourceAccepts = wire.resource_accepts
+        content.dragItemsRef = wire.resource_drag_ref
+        content.dragOutAction = wire.resource_drag_action
     }
 }

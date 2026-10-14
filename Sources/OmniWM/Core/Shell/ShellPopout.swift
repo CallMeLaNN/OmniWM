@@ -112,18 +112,7 @@ final class ShellPopout {
                 self?.pointerMoved()
             }
             if tracksDismissal {
-                dismissal.start(
-                    panels: [panel],
-                    isExemptWindow: { [weak self] _ in
-                        self?.currentAnchor.frame.contains(NSEvent.mouseLocation) == true
-                    },
-                    containsPanelPoint: { [weak self] panel, point in
-                        self?.contains(screenPoint: point, in: panel) ?? true
-                    },
-                    shouldHandleEscape: { [weak self] in self?.surface.hasFocusedTextInput != true },
-                    shouldDismissOnScreenChange: { [weak self] in self?.companion == nil },
-                    onDismiss: onDismiss
-                )
+                monitorPopoverDismissal(panel, onDismiss: onDismiss)
             }
             return
         }
@@ -147,6 +136,23 @@ final class ShellPopout {
                 onDismiss: onDismiss
             )
         }
+    }
+
+    private func monitorPopoverDismissal(
+        _ panel: ShellPopoutPanel, onDismiss: @escaping @MainActor () -> Void
+    ) {
+        dismissal.start(
+            panels: [panel],
+            isExemptWindow: { [weak self] _ in
+                self?.currentAnchor.frame.contains(NSEvent.mouseLocation) == true
+            },
+            containsPanelPoint: { [weak self] panel, point in
+                self?.contains(screenPoint: point, in: panel) ?? true
+            },
+            shouldHandleEscape: { [weak self] in self?.surface.hasFocusedTextInput != true },
+            shouldDismissOnScreenChange: { [weak self] in self?.companion == nil },
+            onDismiss: onDismiss
+        )
     }
 
     var onKeyboardFocus: (@MainActor (Bool) -> Void)? {

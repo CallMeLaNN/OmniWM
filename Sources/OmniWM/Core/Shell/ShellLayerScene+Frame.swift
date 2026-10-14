@@ -40,40 +40,7 @@ extension ShellLayerScene {
         }
         let from = layer.presentation() ?? layer
         if animation.motion.isSpring {
-            layer.removeAnimation(forKey: "position")
-            layer.removeAnimation(forKey: "bounds")
-            add(
-                animation,
-                to: layer,
-                "position.x",
-                from: from.position.x,
-                to: rect.minX,
-                changed: from.position.x != rect.minX
-            )
-            add(
-                animation,
-                to: layer,
-                "position.y",
-                from: from.position.y,
-                to: rect.minY,
-                changed: from.position.y != rect.minY
-            )
-            add(
-                animation,
-                to: layer,
-                "bounds.size.width",
-                from: from.bounds.width,
-                to: bounds.width,
-                changed: from.bounds.width != bounds.width
-            )
-            add(
-                animation,
-                to: layer,
-                "bounds.size.height",
-                from: from.bounds.height,
-                to: bounds.height,
-                changed: from.bounds.height != bounds.height
-            )
+            animateSpringFrame(animation, of: layer, from: from, rect: rect, bounds: bounds)
         } else {
             removeScalarFrameAnimations(from: layer)
             add(
@@ -93,6 +60,45 @@ extension ShellLayerScene {
                 changed: from.bounds != bounds
             )
         }
+    }
+
+    private func animateSpringFrame(
+        _ animation: ShellAnimation, of layer: CALayer, from: CALayer, rect: CGRect, bounds: CGRect
+    ) {
+        layer.removeAnimation(forKey: "position")
+        layer.removeAnimation(forKey: "bounds")
+        add(
+            animation,
+            to: layer,
+            "position.x",
+            from: from.position.x,
+            to: rect.minX,
+            changed: from.position.x != rect.minX
+        )
+        add(
+            animation,
+            to: layer,
+            "position.y",
+            from: from.position.y,
+            to: rect.minY,
+            changed: from.position.y != rect.minY
+        )
+        add(
+            animation,
+            to: layer,
+            "bounds.size.width",
+            from: from.bounds.width,
+            to: bounds.width,
+            changed: from.bounds.width != bounds.width
+        )
+        add(
+            animation,
+            to: layer,
+            "bounds.size.height",
+            from: from.bounds.height,
+            to: bounds.height,
+            changed: from.bounds.height != bounds.height
+        )
     }
 
     private func removeScalarFrameAnimations(from layer: CALayer) {
@@ -143,7 +149,7 @@ extension ShellLayerScene {
         let distance = to.doubleValue - from.doubleValue
         return ShellSpringDynamics.velocity(
             at: elapsed, displacement: -distance, initialVelocity: spring.initialVelocity * distance,
-            mass: spring.mass, stiffness: spring.stiffness, damping: spring.damping
+            spring: .init(mass: spring.mass, stiffness: spring.stiffness, damping: spring.damping)
         ) * Double(spring.speed)
     }
 }

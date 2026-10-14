@@ -26,10 +26,22 @@ final class ShellDesktopAnchorTests: XCTestCase {
         XCTAssertEqual(labels.count, 2)
         let root = widget.surface.layout.core.rootHandle
         let parent = widget.surface.layout.core.parent(of: labels[1])
-        let path: [(kind: ElementKind, key: UInt64, child: Int)] = [
-            (widget.surface.layout.core.kind(of: root), widget.surface.layout.core.key(of: root), 0),
-            (widget.surface.layout.core.kind(of: parent), widget.surface.layout.core.key(of: parent), 1),
-            (widget.surface.layout.core.kind(of: labels[1]), widget.surface.layout.core.key(of: labels[1]), 0)
+        let path: [ElementPathStep] = [
+            .init(
+                kind: widget.surface.layout.core.kind(of: root),
+                key: widget.surface.layout.core.key(of: root),
+                child: 0
+            ),
+            .init(
+                kind: widget.surface.layout.core.kind(of: parent),
+                key: widget.surface.layout.core.key(of: parent),
+                child: 1
+            ),
+            .init(
+                kind: widget.surface.layout.core.kind(of: labels[1]),
+                key: widget.surface.layout.core.key(of: labels[1]),
+                child: 0
+            )
         ]
         XCTAssertEqual(widget.surface.layout.core.resolve(path: path), labels[1])
         let anchor = try XCTUnwrap(widget.surface.desktopAnchor(ShellDesktopAnchorResolution(sequence: 0, path: path)))

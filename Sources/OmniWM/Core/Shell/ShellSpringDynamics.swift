@@ -4,14 +4,21 @@
 import Foundation
 
 enum ShellSpringDynamics {
+    struct Parameters {
+        let mass: Double
+        let stiffness: Double
+        let damping: Double
+    }
+
     static func velocity(
         at elapsed: Double,
         displacement: Double,
         initialVelocity: Double,
-        mass: Double,
-        stiffness: Double,
-        damping: Double
+        spring: Parameters
     ) -> Double {
+        let mass = spring.mass
+        let stiffness = spring.stiffness
+        let damping = spring.damping
         guard elapsed.isFinite, elapsed >= 0, displacement.isFinite, initialVelocity.isFinite,
               mass.isFinite, mass > 0, stiffness.isFinite, stiffness > 0,
               damping.isFinite, damping >= 0

@@ -324,6 +324,41 @@ final class ShellShaderLibrary {
         return lines.prefix(3).joined(separator: " ")
     }
 
+    private nonisolated static let shaderFunctions = """
+    float omni_progress(constant OmniShader& shader) {
+        if (shader.values.w < -1.5) return 0.5 - 0.5 * cos(shader.time * M_PI_F / 1.5);
+        return clamp(shader.values.w < 0.0 ? shader.progress : shader.values.w, 0.0, 1.0);
+    }
+    float omni_noise(float2 point) {
+        float2 cell = floor(point);
+        float2 local = fract(point);
+        local = local * local * (3.0 - 2.0 * local);
+        float4 hashes = fract(sin(float4(dot(cell, float2(127.1, 311.7)),
+            dot(cell + float2(1, 0), float2(127.1, 311.7)),
+            dot(cell + float2(0, 1), float2(127.1, 311.7)),
+            dot(cell + 1.0, float2(127.1, 311.7)))) * 43758.5453);
+        return mix(mix(hashes.x, hashes.y, local.x), mix(hashes.z, hashes.w, local.x), local.y);
+    }
+    float4 omni_sample(texture2d<float> image, float2 uv) {
+        if (any(uv < 0.0) || any(uv > 1.0)) return float4(0);
+        constexpr sampler sampling(coord::normalized, address::clamp_to_edge, filter::linear);
+        float4 color = image.sample(sampling, uv);
+        return color.a > 0 ? float4(color.rgb / color.a, color.a) : float4(0);
+    }
+    """
+
+    private nonisolated static let fragmentEntryPoint = """
+    fragment half4 omni_fragment(OmniVertex in [[stage_in]], constant OmniShader& shader [[buffer(0)]],
+                                 texture2d<float> image [[texture(0)]]) {
+    #ifdef OMNI_TEXTURE
+        float4 color = shade(in.uv, shader, image);
+    #else
+        float4 color = shade(in.uv, shader);
+    #endif
+        return half4(float4(color.rgb * color.a, color.a));
+    }
+    """
+
     nonisolated static func wrap(_ source: String, name: String) -> String {
         let roles = ShellRole.allCases.prefix(ShellShaderInput.Colors.count)
             .map { "constant int omni_\($0) = \($0.rawValue);" }
@@ -354,38 +389,11 @@ final class ShellShaderLibrary {
             out.uv = uv;
             return out;
         }
-        float omni_progress(constant OmniShader& shader) {
-            if (shader.values.w < -1.5) return 0.5 - 0.5 * cos(shader.time * M_PI_F / 1.5);
-            return clamp(shader.values.w < 0.0 ? shader.progress : shader.values.w, 0.0, 1.0);
-        }
-        float omni_noise(float2 point) {
-            float2 cell = floor(point);
-            float2 local = fract(point);
-            local = local * local * (3.0 - 2.0 * local);
-            float4 hashes = fract(sin(float4(dot(cell, float2(127.1, 311.7)),
-                dot(cell + float2(1, 0), float2(127.1, 311.7)),
-                dot(cell + float2(0, 1), float2(127.1, 311.7)),
-                dot(cell + 1.0, float2(127.1, 311.7)))) * 43758.5453);
-            return mix(mix(hashes.x, hashes.y, local.x), mix(hashes.z, hashes.w, local.x), local.y);
-        }
-        float4 omni_sample(texture2d<float> image, float2 uv) {
-            if (any(uv < 0.0) || any(uv > 1.0)) return float4(0);
-            constexpr sampler sampling(coord::normalized, address::clamp_to_edge, filter::linear);
-            float4 color = image.sample(sampling, uv);
-            return color.a > 0 ? float4(color.rgb / color.a, color.a) : float4(0);
-        }
+        \(shaderFunctions)
         #line 1 "\(name)"
         \(source)
         #line 1 "omniwm"
-        fragment half4 omni_fragment(OmniVertex in [[stage_in]], constant OmniShader& shader [[buffer(0)]],
-                                     texture2d<float> image [[texture(0)]]) {
-        #ifdef OMNI_TEXTURE
-            float4 color = shade(in.uv, shader, image);
-        #else
-            float4 color = shade(in.uv, shader);
-        #endif
-            return half4(float4(color.rgb * color.a, color.a));
-        }
+        \(fragmentEntryPoint)
         """
     }
 }

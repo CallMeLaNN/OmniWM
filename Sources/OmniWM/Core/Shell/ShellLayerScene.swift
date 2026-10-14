@@ -231,9 +231,7 @@ final class ShellLayerScene: @unchecked Sendable {
                 animated: animated
             )
         case let .image(slot, image, preset, frames):
-            replaceContents(slot, image, preset: preset, animated: animated)
-            imageFrames[slot] = frames
-            updatePlayback(slot, contentsReplaced: true)
+            applyImage(slot, image, frames: frames, preset: preset, animated: animated)
         case let .value(slot, fraction, color, track, preset):
             exitAnimations[slot] = preset
             applyValue(slot, fraction, color: color, track: track, animation: framedAnimation(preset, slot, animated))
@@ -244,10 +242,7 @@ final class ShellLayerScene: @unchecked Sendable {
             exitAnimations[slot] = preset
             applyPath(slot, path, animation: framedAnimation(preset, slot, animated))
         case let .scroll(slot, origin):
-            guard let layer = layers[slot] else { return }
-            scrollOrigins[slot] = origin
-            layer.masksToBounds = true
-            layer.bounds.origin = origin
+            applyScroll(slot, origin: origin)
         case let .transition(next):
             applyTransition(next)
         case let .stage(next):
@@ -264,6 +259,21 @@ final class ShellLayerScene: @unchecked Sendable {
             if !isVisible { finishAllPresenceExits() }
             shaders?.setVisible(isVisible)
         }
+    }
+
+    private func applyImage(
+        _ slot: Int32, _ image: CGImage?, frames: ShellImageFrames?, preset: ShellAnimation?, animated: Bool
+    ) {
+        replaceContents(slot, image, preset: preset, animated: animated)
+        imageFrames[slot] = frames
+        updatePlayback(slot, contentsReplaced: true)
+    }
+
+    private func applyScroll(_ slot: Int32, origin: CGPoint) {
+        guard let layer = layers[slot] else { return }
+        scrollOrigins[slot] = origin
+        layer.masksToBounds = true
+        layer.bounds.origin = origin
     }
 
     func framedAnimation(_ preset: ShellAnimation?, _ slot: Int32, _ animated: Bool) -> ShellAnimation? {
@@ -332,18 +342,7 @@ final class ShellLayerScene: @unchecked Sendable {
             layer.masksToBounds = true
             progress[slot] = Progress(fill: fill)
         case .slider:
-            let parts = (0 ..< 3).map { _ in
-                let part = CALayer()
-                part.anchorPoint = .zero
-                part.contentsScale = scale
-                layer.addSublayer(part)
-                return part
-            }
-            parts[2].backgroundColor = CGColor(gray: 1, alpha: 1)
-            parts[2].shadowOpacity = 0.3
-            parts[2].shadowRadius = 1
-            parts[2].shadowOffset = CGSize(width: 0, height: 0.5)
-            progress[slot] = Progress(fill: parts[1], track: parts[0], knob: parts[2])
+            insertSlider(in: layer, slot: slot)
         case .path:
             maskable.insert(slot)
         case .group,
@@ -360,6 +359,21 @@ final class ShellLayerScene: @unchecked Sendable {
             parents[slot] = parent
         }
         place(layer, in: host, after: after)
+    }
+
+    private func insertSlider(in layer: CALayer, slot: Int32) {
+        let parts = (0 ..< 3).map { _ in
+            let part = CALayer()
+            part.anchorPoint = .zero
+            part.contentsScale = scale
+            layer.addSublayer(part)
+            return part
+        }
+        parts[2].backgroundColor = CGColor(gray: 1, alpha: 1)
+        parts[2].shadowOpacity = 0.3
+        parts[2].shadowRadius = 1
+        parts[2].shadowOffset = CGSize(width: 0, height: 0.5)
+        progress[slot] = Progress(fill: parts[1], track: parts[0], knob: parts[2])
     }
 
     private func place(_ layer: CALayer, in host: CALayer, after: Int32) {

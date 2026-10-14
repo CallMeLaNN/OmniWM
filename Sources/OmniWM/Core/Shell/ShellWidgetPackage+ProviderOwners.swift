@@ -16,12 +16,12 @@ extension ShellWidgetPackage {
         let id: ShellServiceID
         let instance: String
         let configuration: ShellProviderConfiguration
-        enum Payload {
-            case data(Data)
-            case files(name: String, arguments: Data, ids: [ShellResourceID])
-        }
+        let payload: ProviderRequestPayload
+    }
 
-        let payload: Payload
+    enum ProviderRequestPayload {
+        case data(Data)
+        case files(name: String, arguments: Data, ids: [ShellResourceID])
     }
 
     struct ProviderActionRoute {
@@ -155,33 +155,7 @@ extension ShellWidgetPackage {
             guard componentConfigurationValid, id.owner.owner != 0, let component,
                   let configuration = providerConfigurations[component], providerOwner(component) == id.owner
             else { throw ShellProviderProtocol.Failure(message: "provider_denied") }
-            guard let fields = try ShellServiceValue.decode(value, byteLimit: 66_560).fields,
-                  let name = fields["name"]?.string, case let .bytes(argumentBytes)? = fields["argsJSON"],
-                  fields.count == (fields["files"] == nil ? 2 : 3)
-            else { throw ShellResourceFailure("invalid_provider_request") }
-            var files: [ShellResourceID]?
-            if let declared = fields["files"] {
-                guard permitsFiles(id.owner, component: component) else { throw ShellResourceFailure("files_denied") }
-                guard let values = declared.values, values.count <= ShellResourceStore.attachmentLimit else {
-                    throw ShellResourceFailure("invalid_provider_files")
-                }
-                let resources = try values.map { value in
-                    guard let uuid = Self.resourceUUID(value)
-                    else { throw ShellResourceFailure("invalid_provider_files") }
-                    return ShellResourceID(uuid)
-                }
-                guard Set(resources).count == resources.count
-                else { throw ShellResourceFailure("invalid_provider_files") }
-                try bindResources(id.owner, component: component)
-                guard resources.allSatisfy({ resourceStore.catalog.metadata($0, owner: id.owner) != nil }) else {
-                    throw ShellResourceFailure("invalid_provider_files")
-                }
-                files = resources
-            }
-            let arguments = Data(argumentBytes)
-            let payload: PendingProviderRequest.Payload
-            if let files { payload = .files(name: name, arguments: arguments, ids: files) }
-            else { payload = .data(try ShellProviderProtocol.action(id: id.request, name: name, arguments: arguments)) }
+            let payload = try providerPayload(id, component: component, value: value)
             pendingProviderRequests.append(PendingProviderRequest(
                 id: id,
                 instance: component,
@@ -195,6 +169,41 @@ extension ShellWidgetPackage {
                 error: (error as? ShellResourceFailure)?.description ?? error.localizedDescription
             )
         }
+    }
+
+    private func providerPayload(
+        _ id: ShellServiceID,
+        component: String,
+        value: [UInt8]
+    ) throws -> ProviderRequestPayload {
+        guard let fields = try ShellServiceValue.decode(value, byteLimit: 66_560).fields,
+              let name = fields["name"]?.string, case let .bytes(argumentBytes)? = fields["argsJSON"],
+              fields.count == (fields["files"] == nil ? 2 : 3)
+        else { throw ShellResourceFailure("invalid_provider_request") }
+        var files: [ShellResourceID]?
+        if let declared = fields["files"] {
+            guard permitsFiles(id.owner, component: component) else { throw ShellResourceFailure("files_denied") }
+            guard let values = declared.values, values.count <= ShellResourceStore.attachmentLimit else {
+                throw ShellResourceFailure("invalid_provider_files")
+            }
+            let resources = try values.map { value in
+                guard let uuid = Self.resourceUUID(value)
+                else { throw ShellResourceFailure("invalid_provider_files") }
+                return ShellResourceID(uuid)
+            }
+            guard Set(resources).count == resources.count
+            else { throw ShellResourceFailure("invalid_provider_files") }
+            try bindResources(id.owner, component: component)
+            guard resources.allSatisfy({ resourceStore.catalog.metadata($0, owner: id.owner) != nil }) else {
+                throw ShellResourceFailure("invalid_provider_files")
+            }
+            files = resources
+        }
+        let arguments = Data(argumentBytes)
+        let payload: ProviderRequestPayload
+        if let files { payload = .files(name: name, arguments: arguments, ids: files) }
+        else { payload = .data(try ShellProviderProtocol.action(id: id.request, name: name, arguments: arguments)) }
+        return payload
     }
 
     func failPendingProvider(_ request: PendingProviderRequest, error: String) {
@@ -233,52 +242,62 @@ extension ShellWidgetPackage {
                 kept.append(request)
                 continue
             }
-            if let route = providerActions[request.id] {
-                guard route.identity == binding.identity else { failPendingProvider(
-                    request,
-                    error: "configuration_changed"
-                )
-                continue
-                }
-                let key = route.key(request.id)
-                if let frame = providerInbox.preparedFrame(key), providerInbox.markSubmitted(key) {
-                    route.supervisor.send(request.id, identity: route.identity, frame: frame)
-                } else if providerInbox.preparingAction(key) {
-                    waiting.insert(request.id.owner)
-                    kept.append(request)
-                }
-                continue
-            }
-            let operation: ShellResourceOperation?
-            if case .files = request.payload { operation = ShellResourceOperation() }
-            else { operation = nil }
-            guard providerInbox.register(request.id, identity: binding.identity, operation: operation) else {
-                waiting.insert(request.id.owner)
-                kept.append(request)
-                continue
-            }
-            let route = ProviderActionRoute(
-                supervisor: slot.supervisor,
-                identity: binding.identity,
-                component: request.instance,
-                operation: operation
-            )
-            providerActions[request.id] = route
-            if case let .files(name, arguments, files) = request.payload, let operation {
-                guard resourceWork.count + (resourceWorker == nil ? 0 : 1) < ShellServiceLedger.capacity else {
-                    _ = providerInbox.actionPrepared(
-                        route.key(request.id),
-                        result: .failure(ShellResourceFailure("resource_work_overloaded"))
-                    )
-                    continue
-                }
-                enqueueProviderResource(.prepare(route.key(request.id), name, arguments, files, operation))
-                waiting.insert(request.id.owner)
-                kept.append(request)
-            } else if case let .data(frame) = request.payload {
-                slot.supervisor.send(request.id, identity: binding.identity, frame: frame)
-            }
+            dispatchProviderRequest(request, binding: binding, slot: slot, waiting: &waiting, kept: &kept)
         }
         pendingProviderRequests = kept
+    }
+
+    private func dispatchProviderRequest(
+        _ request: PendingProviderRequest,
+        binding: ShellProviderInbox.Binding,
+        slot: ProviderSlot,
+        waiting: inout Set<ShellServiceOwner>,
+        kept: inout [PendingProviderRequest]
+    ) {
+        if let route = providerActions[request.id] {
+            guard route.identity == binding.identity else { failPendingProvider(
+                request,
+                error: "configuration_changed"
+            )
+            return
+            }
+            let key = route.key(request.id)
+            if let frame = providerInbox.preparedFrame(key), providerInbox.markSubmitted(key) {
+                route.supervisor.send(request.id, identity: route.identity, frame: frame)
+            } else if providerInbox.preparingAction(key) {
+                waiting.insert(request.id.owner)
+                kept.append(request)
+            }
+            return
+        }
+        let operation: ShellResourceOperation?
+        if case .files = request.payload { operation = ShellResourceOperation() }
+        else { operation = nil }
+        guard providerInbox.register(request.id, identity: binding.identity, operation: operation) else {
+            waiting.insert(request.id.owner)
+            kept.append(request)
+            return
+        }
+        let route = ProviderActionRoute(
+            supervisor: slot.supervisor,
+            identity: binding.identity,
+            component: request.instance,
+            operation: operation
+        )
+        providerActions[request.id] = route
+        if case let .files(name, arguments, files) = request.payload, let operation {
+            guard resourceWork.count + (resourceWorker == nil ? 0 : 1) < ShellServiceLedger.capacity else {
+                _ = providerInbox.actionPrepared(
+                    route.key(request.id),
+                    result: .failure(ShellResourceFailure("resource_work_overloaded"))
+                )
+                return
+            }
+            enqueueProviderResource(.prepare(route.key(request.id), name, arguments, files, operation))
+            waiting.insert(request.id.owner)
+            kept.append(request)
+        } else if case let .data(frame) = request.payload {
+            slot.supervisor.send(request.id, identity: binding.identity, frame: frame)
+        }
     }
 }

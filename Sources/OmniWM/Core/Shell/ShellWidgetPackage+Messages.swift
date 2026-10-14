@@ -45,12 +45,7 @@ extension ShellWidgetPackage {
         case let .components(source):
             await updateComponents(source, in: script)
         case let .settings(next):
-            guard next != settings else { return }
-            settings = next
-            for (key, instance) in script.instances {
-                applySettings(instance)
-                await renderVisible(key, instance, changed: ShellDataKey.settings.bit)
-            }
+            await updateSettings(next, in: script)
         case let .invoke(key, view, action, clicked, event):
             await ShellFrameTrace.$context.withValue(event.trace) {
                 await invoke(action, in: view, of: key, clicked: clicked, event: event)
@@ -83,6 +78,15 @@ extension ShellWidgetPackage {
         case let .nativeInput(input):
             await deliverNativeInput(input, in: script)
         case .capture: break
+        }
+    }
+
+    private func updateSettings(_ next: [UInt8], in script: ShellScript) async {
+        guard next != settings else { return }
+        settings = next
+        for (key, instance) in script.instances {
+            applySettings(instance)
+            await renderVisible(key, instance, changed: ShellDataKey.settings.bit)
         }
     }
 
@@ -248,22 +252,10 @@ extension ShellWidgetPackage {
         hydrate(key, instance)
         installProviderStateBeforeAction(action, view: view, instance: instance, script: script)
         let sourceID = event.sourceID
-        let event = event.bytes
+        let bytes = event.bytes
         let trace = traceContext(key, view: view == .bar ? "bar" : "popout", continuing: ShellFrameTrace.current)
         ShellFrameTrace.shared.record(.handlerStart, context: trace)
-        let status = event.withUnsafeBufferPointer { bytes in
-            omni_instance_invoke(
-                instance,
-                view.wire,
-                action,
-                sourceID,
-                bytes.baseAddress,
-                bytes.count,
-                Self.handlerBudget,
-                &errorBuffer,
-                errorBuffer.count
-            )
-        }
+        let status = invokeHandler(action, view: view, instance: instance, sourceID: sourceID, bytes: bytes)
         ShellFrameTrace.shared.record(.handlerEnd, context: trace)
         failed = status != OMNI_OK
         if status == OMNI_ERR_COMPONENT {
@@ -279,6 +271,28 @@ extension ShellWidgetPackage {
                     await renderVisible(other, display)
                 }
             }
+        }
+    }
+
+    private func invokeHandler(
+        _ action: UInt32,
+        view: ShellWidgetView,
+        instance: OpaquePointer,
+        sourceID: UInt64,
+        bytes: [UInt8]
+    ) -> omni_status {
+        bytes.withUnsafeBufferPointer { bytes in
+            omni_instance_invoke(
+                instance,
+                view.wire,
+                action,
+                sourceID,
+                bytes.baseAddress,
+                bytes.count,
+                Self.handlerBudget,
+                &errorBuffer,
+                errorBuffer.count
+            )
         }
     }
 

@@ -290,41 +290,41 @@ public struct Content: Equatable, Sendable, BitwiseCopyable {
     public var evenOdd: Bool
     public var attaches: Bool
     public var audio: Bool
-    public var hoverAction: UInt32
-    public var pressAction: UInt32
-    public var gestureAction: UInt32
-    public var gestureTrack: UInt32
-    public var keyAction: UInt32
-    public var outsidePressAction: UInt32
-    public var keys: UInt32
-    public var pressScaleSpecified: Bool
-    public var pressScale: Float
-    public var pressOpacity: Float
-    public var pressFill: Color
-    public var pressFillSpecified: Bool
-    public var pressMotion: UInt8
-    public var pressMotionCurve: UInt8
-    public var pressMotionCurveRef: UInt32
-    public var hoverDelay: Float
-    public var hoverGrace: Float
-    public var focusable: Bool
-    public var focusRing: Bool
-    public var scrollMomentum: Bool
-    public var inputCommitAction: UInt32
-    public var inputCancelAction: UInt32
-    public var inputFocusAction: UInt32
-    public var inputMaxLength: UInt32
-    public var inputMultiline: Bool
-    public var inputFocus: Int8
-    public var textureRef: UInt32
-    public var resourceImageRef: UInt32
-    public var thumbnail: Float
-    public var resourceDropAction: UInt32
-    public var resourceHoverAction: UInt32
-    public var dragItemsRef: UInt32
-    public var dragOutAction: UInt32
-    public var resourceAccepts: UInt32
-    public var gesture: ShellGestureConfig
+    public var hoverAction: UInt32 = 0
+    public var pressAction: UInt32 = 0
+    public var gestureAction: UInt32 = 0
+    public var gestureTrack: UInt32 = 0
+    public var keyAction: UInt32 = 0
+    public var outsidePressAction: UInt32 = 0
+    public var keys: UInt32 = 0
+    public var pressScaleSpecified: Bool = false
+    public var pressScale: Float = 0
+    public var pressOpacity: Float = -1
+    public var pressFill: Color = .clear
+    public var pressFillSpecified: Bool = false
+    public var pressMotion: UInt8 = 0
+    public var pressMotionCurve: UInt8 = 0
+    public var pressMotionCurveRef: UInt32 = 0
+    public var hoverDelay: Float = 0
+    public var hoverGrace: Float = 0
+    public var focusable: Bool = false
+    public var focusRing: Bool = true
+    public var scrollMomentum: Bool = false
+    public var inputCommitAction: UInt32 = 0
+    public var inputCancelAction: UInt32 = 0
+    public var inputFocusAction: UInt32 = 0
+    public var inputMaxLength: UInt32 = 65536
+    public var inputMultiline: Bool = false
+    public var inputFocus: Int8 = -1
+    public var textureRef: UInt32 = 0
+    public var resourceImageRef: UInt32 = 0
+    public var thumbnail: Float = 128
+    public var resourceDropAction: UInt32 = 0
+    public var resourceHoverAction: UInt32 = 0
+    public var dragItemsRef: UInt32 = 0
+    public var dragOutAction: UInt32 = 0
+    public var resourceAccepts: UInt32 = 0
+    public var gesture: ShellGestureConfig = ShellGestureConfig()
 
     public var hasPressEffect: Bool {
         pressScaleSpecified || pressScale > 0 || pressOpacity >= 0 || pressFillSpecified
@@ -378,42 +378,7 @@ public struct Content: Equatable, Sendable, BitwiseCopyable {
         closeDuration: Float = -1,
         evenOdd: Bool = false,
         attaches: Bool = false,
-        audio: Bool = false,
-        hoverAction: UInt32 = 0,
-        pressAction: UInt32 = 0,
-        gestureAction: UInt32 = 0,
-        gestureTrack: UInt32 = 0,
-        keyAction: UInt32 = 0,
-        outsidePressAction: UInt32 = 0,
-        keys: UInt32 = 0,
-        pressScale: Float = 0,
-        pressScaleSpecified: Bool = false,
-        pressOpacity: Float = -1,
-        pressFill: Color = .clear,
-        pressFillSpecified: Bool = false,
-        pressMotion: UInt8 = 0,
-        pressMotionCurve: UInt8 = 0,
-        pressMotionCurveRef: UInt32 = 0,
-        hoverDelay: Float = 0,
-        hoverGrace: Float = 0,
-        focusable: Bool = false,
-        focusRing: Bool = true,
-        scrollMomentum: Bool = false,
-        inputCommitAction: UInt32 = 0,
-        inputCancelAction: UInt32 = 0,
-        inputFocusAction: UInt32 = 0,
-        inputMaxLength: UInt32 = 65536,
-        inputMultiline: Bool = false,
-        inputFocus: Int8 = -1,
-        gesture: ShellGestureConfig = ShellGestureConfig(),
-        textureRef: UInt32 = 0,
-        resourceImageRef: UInt32 = 0,
-        thumbnail: Float = 128,
-        resourceDropAction: UInt32 = 0,
-        resourceHoverAction: UInt32 = 0,
-        resourceAccepts: UInt32 = 0,
-        dragItemsRef: UInt32 = 0,
-        dragOutAction: UInt32 = 0
+        audio: Bool = false
     ) {
         self.text = text
         self.reserve = reserve
@@ -453,41 +418,6 @@ public struct Content: Equatable, Sendable, BitwiseCopyable {
         self.evenOdd = evenOdd
         self.attaches = attaches
         self.audio = audio
-        self.hoverAction = hoverAction
-        self.pressAction = pressAction
-        self.gestureAction = gestureAction
-        self.gestureTrack = gestureTrack
-        self.keyAction = keyAction
-        self.outsidePressAction = outsidePressAction
-        self.keys = keys
-        self.pressScaleSpecified = pressScaleSpecified
-        self.pressScale = pressScale
-        self.pressOpacity = pressOpacity
-        self.pressFill = pressFill
-        self.pressFillSpecified = pressFillSpecified
-        self.pressMotion = pressMotion
-        self.pressMotionCurve = pressMotionCurve
-        self.pressMotionCurveRef = pressMotionCurveRef
-        self.hoverDelay = hoverDelay
-        self.hoverGrace = hoverGrace
-        self.focusable = focusable
-        self.focusRing = focusRing
-        self.scrollMomentum = scrollMomentum
-        self.inputCommitAction = inputCommitAction
-        self.inputCancelAction = inputCancelAction
-        self.inputFocusAction = inputFocusAction
-        self.inputMaxLength = inputMaxLength
-        self.inputMultiline = inputMultiline
-        self.inputFocus = inputFocus
-        self.gesture = gesture
-        self.textureRef = textureRef
-        self.resourceImageRef = resourceImageRef
-        self.thumbnail = thumbnail
-        self.resourceDropAction = resourceDropAction
-        self.resourceHoverAction = resourceHoverAction
-        self.resourceAccepts = resourceAccepts
-        self.dragItemsRef = dragItemsRef
-        self.dragOutAction = dragOutAction
     }
 }
 

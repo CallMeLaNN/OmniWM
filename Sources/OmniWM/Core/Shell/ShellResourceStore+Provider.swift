@@ -43,19 +43,7 @@ extension ShellResourceStore {
         }
         do {
             for id in action.pending {
-                guard let metadata = catalog.metadata(id, owner: key.id.owner)
-                else { throw ShellResourceFailure("resource was released") }
-                if metadata.state == .failed { throw ShellResourceFailure(metadata.error ?? "resource failed") }
-                guard metadata.state == .ready else { continue }
-                guard let record = records[id], record.owner == key.id.owner, let item = backing[record.backing],
-                      case let .file(url) = item.value
-                else { throw ShellResourceFailure("provider inputs must be file-backed resources") }
-                action.backing[id] = item.id
-                action.files[id] = ShellResourceFile(name: metadata.descriptor.name, url: url)
-                backing[item.id]?.references += 1
-                action.pending.remove(id)
-                waiting[id]?.remove(key)
-                if waiting[id]?.isEmpty == true { waiting.removeValue(forKey: id) }
+                try resolveInput(id, key: key, action: &action)
             }
             actions[key] = action
             guard action.pending.isEmpty, let completion = action.completion else { return }
@@ -76,6 +64,22 @@ extension ShellResourceStore {
             finishAction(key)
             if active { callback?(.failure(ShellResourceFailure(String(describing: error)))) }
         }
+    }
+
+    private func resolveInput(_ id: ShellResourceID, key: ShellResourceLeaseKey, action: inout Action) throws {
+        guard let metadata = catalog.metadata(id, owner: key.id.owner)
+        else { throw ShellResourceFailure("resource was released") }
+        if metadata.state == .failed { throw ShellResourceFailure(metadata.error ?? "resource failed") }
+        guard metadata.state == .ready else { return }
+        guard let record = records[id], record.owner == key.id.owner, let item = backing[record.backing],
+              case let .file(url) = item.value
+        else { throw ShellResourceFailure("provider inputs must be file-backed resources") }
+        action.backing[id] = item.id
+        action.files[id] = ShellResourceFile(name: metadata.descriptor.name, url: url)
+        backing[item.id]?.references += 1
+        action.pending.remove(id)
+        waiting[id]?.remove(key)
+        if waiting[id]?.isEmpty == true { waiting.removeValue(forKey: id) }
     }
 
     func finishAction(_ key: ShellResourceLeaseKey) {

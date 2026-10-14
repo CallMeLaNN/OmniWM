@@ -88,37 +88,47 @@ extension ShellWidgetPackage {
             case OMNI_SERVICE_CONFIG:
                 enqueueConfiguration(id, value: value, cancelled: request.cancelled, in: script)
             case OMNI_SERVICE_STORE:
-                let namespace = namespace(component?.isEmpty == false ? component : nil)
-                storeOwners[namespace] = id.owner
-                let write = ShellStore.Write(namespace: namespace, id: id, revision: request.revision, bytes: value)
-                if request.cancelled {
-                    if resourceOwners.contains(id.owner) { finalResourceStores[namespace] = write }
-                    else { store.submit(write, final: true) { _ in } }
-                } else if services.register(id) {
-                    store.submit(write) { [services] commit in
-                        var writer = ShellValueWriter()
-                        writer.map(commit.error == nil ? 1 : 2)
-                        writer.key("ok")
-                        writer.bool(commit.error == nil)
-                        if let error = commit.error {
-                            writer.key("error")
-                            writer.string(error)
-                        }
-                        services.complete(ShellServiceCompletion(
-                            id: commit.id,
-                            revision: commit.revision,
-                            payload: writer.bytes
-                        ))
-                    }
-                } else {
-                    _ = omni_vm_cancel_service(script.vm, request.owner, request.id)
-                    log(1) { _ in "store request was rejected by its native owner" }
-                }
+                dispatchStore(id, component: component, request: request, value: value, in: script)
             default:
                 log(1) { _ in "unknown native service request" }
             }
         }
         flushServiceMessages(in: script)
+    }
+
+    private func dispatchStore(
+        _ id: ShellServiceID,
+        component: String?,
+        request: omni_service_request,
+        value: [UInt8],
+        in script: ShellScript
+    ) {
+        let namespace = namespace(component?.isEmpty == false ? component : nil)
+        storeOwners[namespace] = id.owner
+        let write = ShellStore.Write(namespace: namespace, id: id, revision: request.revision, bytes: value)
+        if request.cancelled {
+            if resourceOwners.contains(id.owner) { finalResourceStores[namespace] = write }
+            else { store.submit(write, final: true) { _ in } }
+        } else if services.register(id) {
+            store.submit(write) { [services] commit in
+                var writer = ShellValueWriter()
+                writer.map(commit.error == nil ? 1 : 2)
+                writer.key("ok")
+                writer.bool(commit.error == nil)
+                if let error = commit.error {
+                    writer.key("error")
+                    writer.string(error)
+                }
+                services.complete(ShellServiceCompletion(
+                    id: commit.id,
+                    revision: commit.revision,
+                    payload: writer.bytes
+                ))
+            }
+        } else {
+            _ = omni_vm_cancel_service(script.vm, request.owner, request.id)
+            log(1) { _ in "store request was rejected by its native owner" }
+        }
     }
 
     func deliverServices(in script: ShellScript) async {
@@ -133,30 +143,9 @@ extension ShellWidgetPackage {
             if completion.resource != nil { resourceRestores.removeValue(forKey: completion.id) }
             var handled = false
             var resourcesTransferred = false
-            let status = completion.payload.withUnsafeBufferPointer { payload in
-                if let resource = completion.resource {
-                    let problem = resource.error ?? ""
-                    return omni_vm_complete_resource(
-                        script.vm, completion.id.owner.wire, completion.id.request, resource.error == nil,
-                        resource.revision, resource.size ?? 0, resource.size != nil, problem, problem.utf8.count,
-                        Self.handlerBudget, &handled, &errorBuffer, errorBuffer.count
-                    )
-                }
-                if let resources = completion.desktopResources {
-                    let ids = resources.map { omni_resource_id(bytes: $0.value.uuid) }
-                    return ids.withUnsafeBufferPointer {
-                        omni_vm_complete_desktop(
-                            script.vm, completion.id.owner.wire, completion.id.request,
-                            payload.baseAddress, payload.count, $0.baseAddress, $0.count,
-                            Self.handlerBudget, &handled, &resourcesTransferred, &errorBuffer, errorBuffer.count
-                        )
-                    }
-                }
-                return omni_vm_complete_service(
-                    script.vm, completion.id.owner.wire, completion.id.request, completion.revision,
-                    payload.baseAddress, payload.count, Self.handlerBudget, &handled, &errorBuffer, errorBuffer.count
-                )
-            }
+            let status = completeService(
+                completion, in: script, handled: &handled, resourcesTransferred: &resourcesTransferred
+            )
             if completion.desktopResources != nil ? !resourcesTransferred : !handled { completion.discardUndelivered() }
             if status == OMNI_ERR_COMPONENT {
                 log(1) { _ in lastError() }
@@ -171,6 +160,38 @@ extension ShellWidgetPackage {
             for (key, instance) in script.instances { await renderVisible(key, instance) }
         }
         _ = services.finishBatch()
+    }
+
+    private func completeService(
+        _ completion: ShellServiceCompletion,
+        in script: ShellScript,
+        handled: inout Bool,
+        resourcesTransferred: inout Bool
+    ) -> omni_status {
+        return completion.payload.withUnsafeBufferPointer { payload in
+            if let resource = completion.resource {
+                let problem = resource.error ?? ""
+                return omni_vm_complete_resource(
+                    script.vm, completion.id.owner.wire, completion.id.request, resource.error == nil,
+                    resource.revision, resource.size ?? 0, resource.size != nil, problem, problem.utf8.count,
+                    Self.handlerBudget, &handled, &errorBuffer, errorBuffer.count
+                )
+            }
+            if let resources = completion.desktopResources {
+                let ids = resources.map { omni_resource_id(bytes: $0.value.uuid) }
+                return ids.withUnsafeBufferPointer {
+                    omni_vm_complete_desktop(
+                        script.vm, completion.id.owner.wire, completion.id.request,
+                        payload.baseAddress, payload.count, $0.baseAddress, $0.count,
+                        Self.handlerBudget, &handled, &resourcesTransferred, &errorBuffer, errorBuffer.count
+                    )
+                }
+            }
+            return omni_vm_complete_service(
+                script.vm, completion.id.owner.wire, completion.id.request, completion.revision,
+                payload.baseAddress, payload.count, Self.handlerBudget, &handled, &errorBuffer, errorBuffer.count
+            )
+        }
     }
 
     private func flushServiceMessages(in script: ShellScript) {

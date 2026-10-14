@@ -188,6 +188,10 @@ actor ShellResourceThumbnails {
             if !Task
                 .isCancelled { finishFailure(Array(jobs[request]?.bindings ?? []), error: String(describing: error)) }
         }
+        await finishRun(request, pin: pin)
+    }
+
+    private func finishRun(_ request: ShellThumbnailRequest, pin: ShellResourceStore.Pin?) async {
         let remaining = jobs.removeValue(forKey: request)?.bindings ?? []
         if let pin { await store.release(pin) }
         active -= 1

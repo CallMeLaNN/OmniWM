@@ -91,15 +91,10 @@ enum ShellHTTPResponse {
         guard data.count <= ShellHTTPService.byteLimit else { throw ShellHTTPFailure("response_too_large") }
         guard String(data: data, encoding: .utf8) != nil else { throw ShellHTTPFailure("invalid_json") }
         var depth = 0
-        var quoted = false
-        var escaped = false
+        var string = ShellJSONQuoteState()
         for byte in data {
-            if quoted {
-                if escaped { escaped = false }
-                else if byte == 92 { escaped = true }
-                else if byte == 34 { quoted = false }
-            } else if byte == 34 { quoted = true }
-            else if byte == 91 || byte == 123 {
+            if string.consume(byte) { continue }
+            if byte == 91 || byte == 123 {
                 depth += 1
                 guard depth <= 64 else { throw ShellHTTPFailure("invalid_json") }
             } else if byte == 93 || byte == 125 { depth -= 1 }
@@ -156,5 +151,22 @@ enum ShellHTTPResponse {
                 throw ShellHTTPFailure("invalid_json")
             }
         }
+    }
+}
+
+struct ShellJSONQuoteState {
+    private(set) var quoted = false
+    private var escaped = false
+
+    mutating func consume(_ byte: UInt8) -> Bool {
+        guard quoted else {
+            guard byte == 34 else { return false }
+            quoted = true
+            return true
+        }
+        if escaped { escaped = false }
+        else if byte == 92 { escaped = true }
+        else if byte == 34 { quoted = false }
+        return true
     }
 }

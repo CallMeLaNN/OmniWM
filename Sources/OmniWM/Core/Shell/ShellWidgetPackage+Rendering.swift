@@ -93,19 +93,7 @@ extension ShellWidgetPackage {
             let status = omni_instance_step_update(
                 instance, view.wire, Self.renderBudget, &step, &errorBuffer, errorBuffer.count
             )
-            if let trace, step.kind != OMNI_RENDER_IDLE {
-                ShellFrameTrace.shared.record(.init(
-                    event: .render,
-                    context: trace,
-                    duration: CACurrentMediaTime() - started,
-                    cpuNs: step.render.cpu_ns,
-                    encodeCpuNs: step.render.encode_cpu_ns,
-                    vmBytes: omni_vm_bytes_in_use(script.vm),
-                    count: step.kind == OMNI_RENDER_ASSEMBLE ? 0 : 1,
-                    status: Int(status == OMNI_OK ? step.unit_status.rawValue : status.rawValue),
-                    detail: "kind=\(step.kind.rawValue) owner=\(step.owner.owner) unit=\(step.unit_id) unit_epoch=\(step.unit_epoch) changed=\(step.render.changed) cpu_includes_encode=true"
-                ))
-            }
+            recordRenderStep(step, status: status, started: started, trace: trace, vm: script.vm)
             flushMessages(key, instance)
             guard status == OMNI_OK else {
                 states[key]?.deps[view.rawValue] = .max
@@ -133,6 +121,28 @@ extension ShellWidgetPackage {
                 return
             }
             await Task.yield()
+        }
+    }
+
+    private func recordRenderStep(
+        _ step: omni_render_step_stats,
+        status: omni_status,
+        started: CFTimeInterval,
+        trace: ShellFrameTraceContext?,
+        vm: OpaquePointer
+    ) {
+        if let trace, step.kind != OMNI_RENDER_IDLE {
+            ShellFrameTrace.shared.record(.init(
+                event: .render,
+                context: trace,
+                duration: CACurrentMediaTime() - started,
+                cpuNs: step.render.cpu_ns,
+                encodeCpuNs: step.render.encode_cpu_ns,
+                vmBytes: omni_vm_bytes_in_use(vm),
+                count: step.kind == OMNI_RENDER_ASSEMBLE ? 0 : 1,
+                status: Int(status == OMNI_OK ? step.unit_status.rawValue : status.rawValue),
+                detail: "kind=\(step.kind.rawValue) owner=\(step.owner.owner) unit=\(step.unit_id) unit_epoch=\(step.unit_epoch) changed=\(step.render.changed) cpu_includes_encode=true"
+            ))
         }
     }
 

@@ -22,9 +22,7 @@ extension ShellWidgetPackage {
         case let .prepare(key, name, arguments, inputs, operation):
             await resourceStore.prepareProviderAction(
                 key,
-                name: name,
-                arguments: arguments,
-                inputs: inputs,
+                action: ShellProviderActionRequest(name: name, arguments: arguments, inputs: inputs),
                 operation: operation
             ) { [providerInbox] result in
                 _ = providerInbox.actionPrepared(key, result: result)

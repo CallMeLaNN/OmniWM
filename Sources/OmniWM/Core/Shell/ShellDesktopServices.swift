@@ -6,7 +6,7 @@ import Foundation
 @MainActor
 final class ShellDesktopServices {
     @MainActor
-    private final class Operation {
+    final class Operation {
         let request: ShellDesktopRequest
         let ledger: ShellServiceLedger
         let bridge: ShellDesktopResourceBridge
@@ -28,11 +28,11 @@ final class ShellDesktopServices {
         }
     }
 
-    private let resources: ShellResourceStore
-    private let platform: ShellDesktopPlatform
-    private var operations: [ShellServiceID: Operation] = [:]
-    private var picker: ShellServiceID?
-    private var preview: ShellServiceID?
+    let resources: ShellResourceStore
+    let platform: ShellDesktopPlatform
+    var operations: [ShellServiceID: Operation] = [:]
+    var picker: ShellServiceID?
+    var preview: ShellServiceID?
 
     init(resources: ShellResourceStore, platform: ShellDesktopPlatform = .appKit) {
         self.resources = resources
@@ -81,229 +81,11 @@ final class ShellDesktopServices {
             finish(operation, result: ShellDesktopResult(error: "cancelled"))
             return true
         }
-        switch request.action {
-        case let .pick(multiple):
-            guard picker == nil else {
-                finish(operation, result: ShellDesktopResult(error: "picker_busy"))
-                return true
-            }
-            guard let source, source.isCurrent() else {
-                finish(operation, result: ShellDesktopResult(error: "source_surface_unavailable"))
-                return true
-            }
-            picker = request.id
-            do {
-                let cancel = try platform.pick(multiple, source) { [self] result in
-                    picked(operation, result: result)
-                }
-                if picker == request.id {
-                    operation.cancelPresentation = cancel
-                    if !fence.isActive { cancel() }
-                }
-            } catch {
-                picker = nil
-                finish(operation, result: ShellDesktopResult(error: String(describing: error)))
-            }
-        case let .openURL(url):
-            if let error = Self.urlError(url) { finish(operation, result: ShellDesktopResult(error: error)) }
-            else { open(url, operation: operation) }
-        case let .clipboardText(text):
-            let copied = text.utf8.count <= 1 << 20 && platform.clipboardCopy(.text(text))
-            finish(operation, result: ShellDesktopResult(error: copied ? nil : "clipboard_copy_failed"))
-        case let .clipboardCopy(resource):
-            Task { [self] in
-                do {
-                    let content = try await resources.clipboardContent(
-                        resource,
-                        owner: request.id.owner,
-                        operation: fence
-                    )
-                    guard current(operation) else { throw ShellResourceFailure("cancelled") }
-                    finish(
-                        operation,
-                        result: ShellDesktopResult(error: platform
-                            .clipboardCopy(content) ? nil : "clipboard_copy_failed")
-                    )
-                } catch { finish(operation, result: ShellDesktopResult(error: String(describing: error))) }
-            }
-        case .clipboardRead:
-            do { readClipboard(try platform.clipboardRead(), operation: operation) }
-            catch { finish(operation, result: ShellDesktopResult(error: String(describing: error))) }
-        case let .quicklook(ids, index):
-            guard preview == nil else {
-                finish(operation, result: ShellDesktopResult(error: "quicklook_busy"))
-                return true
-            }
-            guard !ids.isEmpty, ids.count <= 32, index > 0, index <= ids.count else {
-                finish(operation, result: ShellDesktopResult(error: "invalid_preview"))
-                return true
-            }
-            preview = request.id
-            present(operation, ids: ids, source: source, anchor: nil, resolveAnchor: nil)
-        case let .share(ids, service):
-            guard !ids.isEmpty, ids.count <= 32, service == nil || service == "airdrop" else {
-                finish(operation, result: ShellDesktopResult(error: "unsupported_service"))
-                return true
-            }
-            present(operation, ids: ids, source: source, anchor: anchor, resolveAnchor: resolveAnchor)
-        case let .open(resource),
-             let .reveal(resource):
-            Task { [self] in
-                do {
-                    operation.pin = try await resources.retain([resource], owner: request.id.owner)
-                    guard current(operation), let value = operation.pin?.values.first else {
-                        finish(operation, result: ShellDesktopResult(error: "cancelled"))
-                        return
-                    }
-                    switch (request.action, value) {
-                    case let (.reveal, .file(url)):
-                        finish(
-                            operation,
-                            result: ShellDesktopResult(error: platform.reveal(url) ? nil : "reveal_failed")
-                        )
-                    case let (.open, .file(url)):
-                        open(url, operation: operation)
-                    case let (.open, .url(url)):
-                        if let error = Self
-                            .urlError(url) { finish(operation, result: ShellDesktopResult(error: error)) }
-                        else { open(url, operation: operation) }
-                    default:
-                        finish(operation, result: ShellDesktopResult(error: "unsupported_resource"))
-                    }
-                } catch {
-                    finish(operation, result: ShellDesktopResult(error: String(describing: error)))
-                }
-            }
-        }
+        dispatch(operation, source: source, anchor: anchor, resolveAnchor: resolveAnchor)
         return true
     }
 
-    private func present(
-        _ operation: Operation,
-        ids: [ShellResourceID],
-        source: ShellDesktopSource?,
-        anchor: ShellDesktopAnchor?,
-        resolveAnchor: (@MainActor () async throws -> ShellDesktopAnchor)?
-    ) {
-        guard let source, source.isCurrent() else {
-            finish(operation, result: ShellDesktopResult(error: "source_surface_unavailable"))
-            return
-        }
-        Task { [self] in
-            do {
-                operation.pin = try await resources.retain(ids, owner: operation.request.id.owner)
-                guard current(operation), source.isCurrent(), let pin = operation.pin else {
-                    finish(operation, result: ShellDesktopResult(error: "cancelled"))
-                    return
-                }
-                let completion: ShellDesktopPlatform.PresentationCompletion = { [self] error in
-                    finish(operation, result: ShellDesktopResult(error: error))
-                }
-                let presentation: ShellDesktopPlatform.Presentation
-                switch operation.request.action {
-                case let .quicklook(_, index):
-                    let urls = try pin.values.map { value -> URL in
-                        guard case let .file(url) = value else { throw ShellResourceFailure("unsupported_resource") }
-                        return url
-                    }
-                    presentation = try platform.quicklook(urls, index, source, completion)
-                case let .share(_, service):
-                    let resolved = try await resolveAnchor?() ?? anchor
-                    guard current(operation), source.isCurrent(), let resolved, resolved.isCurrent() else {
-                        throw ShellResourceFailure("anchor_unavailable")
-                    }
-                    presentation = try platform.share(pin.values, service, source, resolved, completion)
-                default:
-                    throw ShellResourceFailure("invalid_desktop_operation")
-                }
-                if operations[operation.request.id] === operation, !operation.finishing {
-                    operation.cancelPresentation = presentation.cancel
-                    guard current(operation), source.isCurrent() else {
-                        finish(operation, result: ShellDesktopResult(error: "cancelled"))
-                        return
-                    }
-                    try presentation.start()
-                    if !operation.fence.isActive { presentation.cancel() }
-                }
-            } catch {
-                finish(operation, result: ShellDesktopResult(error: String(describing: error)))
-            }
-        }
-    }
-
-    private func picked(_ operation: Operation, result: Result<[URL], ShellResourceFailure>) {
-        let id = operation.request.id
-        guard operations[id] === operation, picker == id else { return }
-        picker = nil
-        operation.cancelPresentation = nil
-        guard current(operation) else {
-            finish(operation, result: ShellDesktopResult(error: "cancelled"))
-            return
-        }
-        switch result {
-        case let .failure(error):
-            finish(operation, result: ShellDesktopResult(error: error.description))
-        case let .success(urls):
-            Task { [self] in
-                var selection: ShellResourceStore.Selection?
-                var ids: [ShellResourceID] = []
-                do {
-                    let prepared = try await resources.prepareSelection(
-                        urls,
-                        owner: id.owner,
-                        operation: operation.fence
-                    )
-                    selection = prepared
-                    guard current(operation) else { throw ShellResourceFailure("cancelled") }
-                    ids = try await operation.bridge.admit(id, prepared.items)
-                    guard current(operation) else { throw ShellResourceFailure("cancelled") }
-                    try await resources.installSelection(
-                        prepared,
-                        ids: ids,
-                        owner: id.owner,
-                        operation: operation.fence
-                    )
-                    selection = nil
-                    if !finish(operation, result: ShellDesktopResult(resources: ids)) {
-                        await operation.bridge.release(ids, owner: id.owner, store: resources)
-                    }
-                } catch {
-                    if let selection { await resources.discardSelection(selection) }
-                    if !ids.isEmpty { await operation.bridge.release(ids, owner: id.owner, store: resources) }
-                    finish(operation, result: ShellDesktopResult(error: String(describing: error)))
-                }
-            }
-        }
-    }
-
-    private func readClipboard(_ items: [ShellDropItem], operation: Operation) {
-        guard !items.isEmpty else {
-            finish(operation, result: ShellDesktopResult(resources: []))
-            return
-        }
-        Task { [self] in
-            let id = operation.request.id
-            var ids: [ShellResourceID] = []
-            do {
-                guard items.count <= ShellResourceStore.attachmentLimit,
-                      current(operation) else { throw ShellResourceFailure("clipboard_unavailable") }
-                ids = try await operation.bridge.admit(
-                    id,
-                    items.map { ShellPickedResource(name: $0.name, kind: $0.kind, uti: $0.uti) }
-                )
-                guard current(operation) else { throw ShellResourceFailure("cancelled") }
-                try await resources.materialize(items.map(\.source), ids: ids, owner: id.owner)
-                if !finish(operation, result: ShellDesktopResult(resources: ids)) {
-                    await operation.bridge.release(ids, owner: id.owner, store: resources)
-                }
-            } catch {
-                if !ids.isEmpty { await operation.bridge.release(ids, owner: id.owner, store: resources) }
-                finish(operation, result: ShellDesktopResult(error: String(describing: error)))
-            }
-        }
-    }
-
-    private func open(_ url: URL, operation: Operation) {
+    func open(_ url: URL, operation: Operation) {
         guard current(operation) else {
             finish(operation, result: ShellDesktopResult(error: "cancelled"))
             return
@@ -313,17 +95,17 @@ final class ShellDesktopServices {
         }
     }
 
-    private func cancel(_ id: ShellServiceID) {
+    func cancel(_ id: ShellServiceID) {
         operations[id]?.cancelPresentation?()
     }
 
-    private func current(_ operation: Operation) -> Bool {
+    func current(_ operation: Operation) -> Bool {
         operations[operation.request.id] === operation && operation.fence.isActive && resources.catalog
             .isActive(operation.request.id.owner)
     }
 
     @discardableResult
-    private func finish(_ operation: Operation, result: ShellDesktopResult) -> Bool {
+    func finish(_ operation: Operation, result: ShellDesktopResult) -> Bool {
         let id = operation.request.id
         guard operations[id] === operation, !operation.finishing else { return false }
         let deliver = current(operation)
@@ -358,14 +140,14 @@ final class ShellDesktopServices {
         ))
     }
 
-    private func retire(_ operation: Operation) {
+    func retire(_ operation: Operation) {
         let id = operation.request.id
         guard operations[id] === operation else { return }
         operations.removeValue(forKey: id)
         if preview == id { preview = nil }
     }
 
-    private static func urlError(_ url: URL) -> String? {
+    static func urlError(_ url: URL) -> String? {
         if url.isFileURL { return "file_url_requires_resource" }
         guard let scheme = url.scheme, !scheme.isEmpty else { return "invalid_url" }
         return nil

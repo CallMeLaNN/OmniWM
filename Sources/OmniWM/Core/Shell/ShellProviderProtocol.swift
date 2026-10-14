@@ -96,17 +96,11 @@ enum ShellProviderProtocol {
         var result: [Range<Int>] = []
         var fieldStart = start
         var depth = 0
-        var quoted = false
-        var escaped = false
+        var string = ShellJSONQuoteState()
         for index in start ..< end {
             let byte = bytes[index]
-            if quoted {
-                if escaped { escaped = false }
-                else if byte == 92 { escaped = true }
-                else if byte == 34 { quoted = false }
-            } else if byte == 34 {
-                quoted = true
-            } else if byte == 91 || byte == 123 {
+            if string.consume(byte) { continue }
+            if byte == 91 || byte == 123 {
                 depth += 1
             } else if byte == 93 || byte == 125 {
                 depth -= 1
@@ -117,7 +111,7 @@ enum ShellProviderProtocol {
                 fieldStart = index + 1
             }
         }
-        guard !quoted, depth == 0 else { throw Failure(message: "Unterminated provider value") }
+        guard !string.quoted, depth == 0 else { throw Failure(message: "Unterminated provider value") }
         result.append(try trimmed(bytes, range: fieldStart ..< end))
         return result
     }

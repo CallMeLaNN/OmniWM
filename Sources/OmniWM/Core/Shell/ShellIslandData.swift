@@ -79,6 +79,10 @@ struct ShellIslandData: Equatable, Sendable {
         writer.key("drag")
         drag.write(to: &writer)
         writer.key("navigation")
+        writeNavigation(to: &writer)
+    }
+
+    private func writeNavigation(to writer: inout ShellValueWriter) {
         guard let navigation else {
             writer.null()
             return

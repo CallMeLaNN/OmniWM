@@ -300,7 +300,9 @@ struct MonitorSettingsTab: View {
             monitors: MonitorSettingsTabModel.sortedMonitors(monitors)
         )
     }
+}
 
+extension MonitorSettingsTab {
     private func routingNeighbor(of monitor: Monitor, _ direction: Direction) -> Monitor? {
         switch MonitorRouting.gridAdjacent(
             from: monitor,

@@ -79,6 +79,10 @@ actor ShellSettingsPreviewShader {
             buffer.commit()
         }
         try Task.checkCancellation()
+        return try image(from: texture, width: width, height: height)
+    }
+
+    private func image(from texture: any MTLTexture, width: Int, height: Int) throws -> CGImage {
         var bytes = [UInt8](repeating: 0, count: width * height * 4)
         texture.getBytes(&bytes, bytesPerRow: width * 4, from: MTLRegionMake2D(0, 0, width, height), mipmapLevel: 0)
         guard let space = CGColorSpace(name: CGColorSpace.sRGB),
@@ -107,19 +111,6 @@ enum ShellSettingsPreviewRaster {
         dark: Bool, scale: CGFloat, limit: CGSize?
     ) async throws -> [Image] {
         let scale = limit.map { ShellSettingsPreviewResolution.scale(size: $0, requested: scale) } ?? scale
-        let icon: @MainActor (String) -> NSImage? = { reference in
-            let path = switch reference {
-            case "com.apple.Safari",
-                 "sample-safari": "/Applications/Safari.app"
-            case "com.apple.Notes",
-                 "sample-notes": "/System/Applications/Notes.app"
-            case "com.apple.Terminal",
-                 "sample-terminal": "/System/Applications/Utilities/Terminal.app"
-            case "com.apple.Music": "/System/Applications/Music.app"
-            default: "/System/Library/CoreServices/Finder.app"
-            }
-            return NSWorkspace.shared.icon(forFile: path)
-        }
         let resources = ShellResources(
             motion: MotionPolicy(animationsEnabled: false),
             windowIcon: icon,
@@ -144,26 +135,7 @@ enum ShellSettingsPreviewRaster {
             let programs = surface.shaders.values.map(\.program)
             await wait(for: programs, in: resources.shaders)
             try Task.checkCancellation()
-            for index in commands.indices {
-                guard case let .shader(slot, program?, input) = commands[index],
-                      let binding = surface.shaders[slot]
-                else { continue }
-                guard let pipeline = program.pipeline else {
-                    throw ShellScriptFailure(
-                        kind: .runtime,
-                        message: program.failure ?? "The preview shader is unavailable."
-                    )
-                }
-                let frame = CGRect(surface.layout.core.absoluteFrame(of: binding.handle))
-                guard frame.width > 0, frame.height > 0 else {
-                    commands[index] = .image(slot: slot, image: nil, animation: nil)
-                    continue
-                }
-                let image = try await ShellSettingsPreviewShader.shared.render(
-                    pipeline: pipeline, input: input, size: frame.size, scale: scale
-                )
-                commands[index] = .image(slot: slot, image: image, animation: nil)
-            }
+            try await rasterizeShaders(in: &commands, surface: surface, scale: scale)
             surface.scene.submit(commands, animated: false)
             let size = surface.size
             if size.width <= 0 || size.height <= 0 { continue }
@@ -174,6 +146,45 @@ enum ShellSettingsPreviewRaster {
             ))
         }
         return images
+    }
+
+    private static func icon(_ reference: String) -> NSImage? {
+        let path = switch reference {
+        case "com.apple.Safari",
+             "sample-safari": "/Applications/Safari.app"
+        case "com.apple.Notes",
+             "sample-notes": "/System/Applications/Notes.app"
+        case "com.apple.Terminal",
+             "sample-terminal": "/System/Applications/Utilities/Terminal.app"
+        case "com.apple.Music": "/System/Applications/Music.app"
+        default: "/System/Library/CoreServices/Finder.app"
+        }
+        return NSWorkspace.shared.icon(forFile: path)
+    }
+
+    private static func rasterizeShaders(
+        in commands: inout [ShellLayerCommand], surface: ShellWidgetSurface, scale: CGFloat
+    ) async throws {
+        for index in commands.indices {
+            guard case let .shader(slot, program?, input) = commands[index],
+                  let binding = surface.shaders[slot]
+            else { continue }
+            guard let pipeline = program.pipeline else {
+                throw ShellScriptFailure(
+                    kind: .runtime,
+                    message: program.failure ?? "The preview shader is unavailable."
+                )
+            }
+            let frame = CGRect(surface.layout.core.absoluteFrame(of: binding.handle))
+            guard frame.width > 0, frame.height > 0 else {
+                commands[index] = .image(slot: slot, image: nil, animation: nil)
+                continue
+            }
+            let image = try await ShellSettingsPreviewShader.shared.render(
+                pipeline: pipeline, input: input, size: frame.size, scale: scale
+            )
+            commands[index] = .image(slot: slot, image: image, animation: nil)
+        }
     }
 
     static func wait(for programs: [ShellShaderProgram], in library: ShellShaderLibrary) async {

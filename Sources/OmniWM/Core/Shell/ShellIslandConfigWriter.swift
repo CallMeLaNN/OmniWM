@@ -130,8 +130,8 @@ final class ShellIslandConfigWriter: Sendable {
     }
 }
 
-private extension Result where Success == Bool, Failure == Error {
-    var failureMessage: String? {
+extension Result where Success == Bool, Failure == Error {
+    fileprivate var failureMessage: String? {
         if case let .failure(error) = self { error.localizedDescription } else { nil }
     }
 }

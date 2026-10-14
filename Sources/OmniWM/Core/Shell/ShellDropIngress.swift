@@ -133,37 +133,12 @@ final class ShellDropIngress {
     private func run(_ operation: Operation, point: CGPoint) async {
         let reservation = operation.reservation
         let fence = reservation.operation
-        var stream: AsyncStream<Void>?
-        var continuation: AsyncStream<Void>.Continuation?
-        var directory: URL?
-        var started = false
+        var reception = PromiseReception()
         do {
             guard fence.isActive else { throw ShellResourceFailure("cancelled") }
             var descriptors = operation.items.map { ShellPickedResource(name: $0.name, kind: $0.kind, uti: $0.uti) }
             if let promises = operation.promises {
-                let destination = try await resources.ingressDirectory()
-                directory = destination
-                guard fence.isActive else { throw ShellResourceFailure("cancelled") }
-                let batch = try ShellFilePromiseBatch(
-                    receiverCount: promises.count,
-                    directory: destination,
-                    temporaryRoot: resources.directory,
-                    operation: fence
-                )
-                operation.batch = batch
-                let pair = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
-                stream = pair.stream
-                continuation = pair.continuation
-                batch.attachWake { pair.continuation.yield(()) }
-                let names: [ShellFilePromiseBatch.Item]
-                do {
-                    names = try promises.start(batch, readerQueue)
-                    started = true
-                } catch {
-                    started = batch.isConfigured
-                    throw error
-                }
-                descriptors += names.map { ShellPickedResource(name: $0.name, kind: "file", uti: $0.uti) }
+                descriptors += try await preparePromises(promises, operation: operation, reception: &reception)
             }
             guard !descriptors.isEmpty, descriptors.count <= ShellResourceStore.attachmentLimit else {
                 throw ShellResourceFailure("drop exceeds 32 resources")
@@ -190,25 +165,70 @@ final class ShellDropIngress {
                 await resources.fail(operation.resources, owner: reservation.id.owner, error: String(describing: error))
             }
         }
-        if started, let batch = operation.batch, let stream {
+        await drainPromises(operation, reception: reception)
+        await finish(operation)
+    }
+
+    private struct PromiseReception {
+        var stream: AsyncStream<Void>?
+        var continuation: AsyncStream<Void>.Continuation?
+        var directory: URL?
+        var started = false
+    }
+
+    private func preparePromises(
+        _ promises: Promises,
+        operation: Operation,
+        reception: inout PromiseReception
+    ) async throws -> [ShellPickedResource] {
+        let fence = operation.reservation.operation
+        let destination = try await resources.ingressDirectory()
+        reception.directory = destination
+        guard fence.isActive else { throw ShellResourceFailure("cancelled") }
+        let batch = try ShellFilePromiseBatch(
+            receiverCount: promises.count,
+            directory: destination,
+            temporaryRoot: resources.directory,
+            operation: fence
+        )
+        operation.batch = batch
+        let pair = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
+        reception.stream = pair.stream
+        reception.continuation = pair.continuation
+        batch.attachWake { pair.continuation.yield(()) }
+        let names: [ShellFilePromiseBatch.Item]
+        do {
+            names = try promises.start(batch, readerQueue)
+            reception.started = true
+        } catch {
+            reception.started = batch.isConfigured
+            throw error
+        }
+        return names.map { ShellPickedResource(name: $0.name, kind: "file", uti: $0.uti) }
+    }
+
+    private func drainPromises(_ operation: Operation, reception: PromiseReception) async {
+        if reception.started, let batch = operation.batch, let stream = reception.stream {
+            let transfer = ShellResourceIngressTransfer(
+                ids: operation.resources,
+                offset: operation.items.count,
+                owner: operation.reservation.id.owner,
+                operation: operation.reservation.operation,
+                transferred: operation.transferred
+            )
             batch.activate()
             for await _ in stream {
                 let next = batch.takeBatch()
                 await resources.consumeIngress(
                     next,
-                    ids: operation.resources,
-                    offset: operation.items.count,
-                    owner: reservation.id.owner,
-                    operation: fence,
-                    transferred: operation.transferred
+                    transfer: transfer
                 )
                 batch.finishBatch()
                 if next.finished { break }
             }
         }
-        continuation?.finish()
-        if let directory { await resources.finishIngress(directory) }
-        await finish(operation)
+        reception.continuation?.finish()
+        if let directory = reception.directory { await resources.finishIngress(directory) }
     }
 
     private func finish(_ operation: Operation) async {

@@ -319,17 +319,7 @@ enum ShellComponentCatalog {
             place: place
         )
         var option = ShellComponentOption(kind: kind, title: try string(table["title"], fallback: key, place: place))
-        for key in ["min", "max", "step"] where table[key] != nil {
-            guard kind == .number, let number = ShellConfig.number(table[key]), number.isFinite,
-                  key != "step" || number > 0
-            else { throw Failure("\(place): invalid \(key)") }
-            if key == "min" { option.minimum = number }
-            else if key == "max" { option.maximum = number }
-            else { option.step = number }
-        }
-        if let minimum = option.minimum, let maximum = option.maximum, minimum > maximum {
-            throw Failure("\(place): min is greater than max")
-        }
+        try applyNumberConstraints(table, to: &option, place: place)
         if let node = table["maxLength"] {
             guard kind == .string || kind == .strings, case let .integer(count) = node, (0 ... 65536).contains(count)
             else { throw Failure("\(place): invalid maxLength") }
@@ -344,6 +334,22 @@ enum ShellComponentCatalog {
             option.defaultValue = value
         }
         return option
+    }
+
+    private static func applyNumberConstraints(
+        _ table: [String: TOMLNode], to option: inout ShellComponentOption, place: String
+    ) throws {
+        for key in ["min", "max", "step"] where table[key] != nil {
+            guard option.kind == .number, let number = ShellConfig.number(table[key]), number.isFinite,
+                  key != "step" || number > 0
+            else { throw Failure("\(place): invalid \(key)") }
+            if key == "min" { option.minimum = number }
+            else if key == "max" { option.maximum = number }
+            else { option.step = number }
+        }
+        if let minimum = option.minimum, let maximum = option.maximum, minimum > maximum {
+            throw Failure("\(place): min is greater than max")
+        }
     }
 
     private static func parseCapabilities(_ node: TOMLNode?, place: String) throws -> ShellComponentCapabilities {

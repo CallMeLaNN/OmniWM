@@ -151,67 +151,7 @@ extension ShellWidgetHost {
         var recovered = false
         for (name, delivery) in batch {
             guard let state = widgets[name] else { continue }
-            if let package = [state.package, state.loadingPackage].compactMap({ $0 })
-                .first(where: { $0.generation == delivery.generation })
-            {
-                deliverDesktop(delivery.desktopRequests, package: package)
-            }
-            guard delivery.generation == state.generation else { continue }
-            let previousDemand = demand(of: state)
-            defer {
-                if widgets[name] === state, state.generation == delivery.generation, state.package != nil,
-                   delivery.failure == nil, demand(of: state) & ~previousDemand != 0
-                {
-                    state.mailbox?.yield(.dataChanged)
-                }
-            }
-            if let background = delivery.backgroundDemand { state.backgroundDemand = background }
-            if tripsAfter(delivery, of: state) { continue }
-            if let failure = delivery.failure {
-                report(state, failure)
-            }
-            runRequests(of: delivery, for: state)
-            enqueueConfigurationRequests(delivery.configurationRequests, to: state)
-            if delivery.reload {
-                acknowledge(delivery, for: state)
-                load(state)
-                continue
-            }
-            guard !delivery.trees.isEmpty else {
-                acknowledge(delivery, for: state)
-                continue
-            }
-            resetIfStale(state, for: delivery)
-            if delivery.failure == nil, clearFailure(state) {
-                layoutChanged = true
-                recovered = true
-            }
-            state.text.ingest(delivery.strings, count: delivery.stringCount)
-            for (key, tree) in delivery.trees {
-                ShellFrameTrace.$context.withValue(tree.trace) {
-                    ShellFrameTrace.shared.record(.applyStart)
-                    defer { ShellFrameTrace.shared.record(.applyEnd) }
-                    switch key.view {
-                    case .bar:
-                        layoutGeneration &+= 1
-                        if state.instances[key.bar]?.apply(
-                            tree,
-                            text: state.text,
-                            gestureAcknowledgement: delivery.acknowledgements[key]?.invocationID ?? 0
-                        ) == true, bars[key.bar] != nil {
-                            layoutChanged = true
-                        }
-                    case .popout:
-                        applyPopout(
-                            tree,
-                            key: key.bar,
-                            for: state,
-                            gestureAcknowledgement: delivery.acknowledgements[key]?.invocationID ?? 0
-                        )
-                    }
-                }
-            }
-            acknowledge(delivery, for: state, excludingTrees: true)
+            receive(delivery, for: state, layoutChanged: &layoutChanged, recovered: &recovered)
         }
         publishDemand()
         if layoutChanged {
@@ -220,6 +160,83 @@ extension ShellWidgetHost {
         }
         if recovered {
             publishToggleNames()
+        }
+    }
+
+    private func receive(
+        _ delivery: ShellWidgetDelivery,
+        for state: WidgetState,
+        layoutChanged: inout Bool,
+        recovered: inout Bool
+    ) {
+        if let package = [state.package, state.loadingPackage].compactMap({ $0 })
+            .first(where: { $0.generation == delivery.generation })
+        {
+            deliverDesktop(delivery.desktopRequests, package: package)
+        }
+        guard delivery.generation == state.generation else { return }
+        let previousDemand = demand(of: state)
+        defer {
+            if widgets[state.name] === state, state.generation == delivery.generation, state.package != nil,
+               delivery.failure == nil, demand(of: state) & ~previousDemand != 0
+            {
+                state.mailbox?.yield(.dataChanged)
+            }
+        }
+        if let background = delivery.backgroundDemand { state.backgroundDemand = background }
+        if tripsAfter(delivery, of: state) { return }
+        if let failure = delivery.failure {
+            report(state, failure)
+        }
+        runRequests(of: delivery, for: state)
+        enqueueConfigurationRequests(delivery.configurationRequests, to: state)
+        if delivery.reload {
+            acknowledge(delivery, for: state)
+            load(state)
+            return
+        }
+        guard !delivery.trees.isEmpty else {
+            acknowledge(delivery, for: state)
+            return
+        }
+        resetIfStale(state, for: delivery)
+        if delivery.failure == nil, clearFailure(state) {
+            layoutChanged = true
+            recovered = true
+        }
+        state.text.ingest(delivery.strings, count: delivery.stringCount)
+        applyTrees(delivery, for: state, layoutChanged: &layoutChanged)
+        acknowledge(delivery, for: state, excludingTrees: true)
+    }
+
+    private func applyTrees(
+        _ delivery: ShellWidgetDelivery,
+        for state: WidgetState,
+        layoutChanged: inout Bool
+    ) {
+        for (key, tree) in delivery.trees {
+            ShellFrameTrace.$context.withValue(tree.trace) {
+                ShellFrameTrace.shared.record(.applyStart)
+                defer { ShellFrameTrace.shared.record(.applyEnd) }
+                switch key.view {
+                case .bar:
+                    layoutGeneration &+= 1
+                    if state.instances[key.bar]?.apply(
+                        tree,
+                        text: state.text,
+                        gestureAcknowledgement: delivery.acknowledgements[key]?.invocationID ?? 0
+                    ) == true, bars[key.bar] != nil {
+                        layoutChanged = true
+                    }
+                case .popout:
+                    applyPopout(
+                        tree,
+                        key: key.bar,
+                        for: state,
+                        gestureAcknowledgement: delivery.acknowledgements[key]?.invocationID ?? 0
+                    )
+                }
+            }
         }
     }
 

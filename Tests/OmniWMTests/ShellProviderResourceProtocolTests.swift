@@ -84,18 +84,14 @@ final class ShellProviderResourceProtocolTests: XCTestCase {
         let operation = ShellResourceOperation()
         await store.prepareProviderAction(
             first,
-            name: "convert",
-            arguments: Data("null".utf8),
-            inputs: [ids[0]],
+            action: .init(name: "convert", arguments: Data("null".utf8), inputs: [ids[0]]),
             operation: ShellResourceOperation()
         ) { result in
             if case let .success(frame) = result { received.withLock { $0[1] = frame } }
         }
         await store.prepareProviderAction(
             second,
-            name: "convert",
-            arguments: Data("null".utf8),
-            inputs: [ids[1]],
+            action: .init(name: "convert", arguments: Data("null".utf8), inputs: [ids[1]]),
             operation: operation
         ) { result in
             if case let .success(frame) = result { received.withLock { $0[2] = frame } }

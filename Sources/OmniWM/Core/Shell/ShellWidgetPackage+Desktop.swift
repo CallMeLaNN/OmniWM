@@ -30,32 +30,40 @@ extension ShellDesktopRequest {
                   let url = URL(string: value), !url.isFileURL, url.scheme != nil
         {
             action = .openURL(url)
-        } else if (operation == "open" || operation == "reveal"), fields.count == 2 {
+        } else if operation == "open" || operation == "reveal", fields.count == 2 {
             let resource = try Self.resource(fields["resource"])
             action = operation == "open" ? .open(resource) : .reveal(resource)
         } else if operation == "quicklook" || operation == "share" {
-            guard let values = fields["resources"]?.values, !values.isEmpty, values.count <= 32 else {
-                throw ShellResourceFailure("invalid_resources")
-            }
-            let resources = try values.map { try Self.resource($0) }
-            guard Set(resources).count == resources.count else { throw ShellResourceFailure("duplicate_resource") }
-            if operation == "quicklook" {
-                guard fields.count == 3, let value = fields["index"]?.number, value.isFinite,
-                      value >= 1, value <= Double(resources.count), value.rounded(.towardZero) == value
-                else {
-                    throw ShellResourceFailure("invalid_preview")
-                }
-                action = .quicklook(resources, index: Int(value))
-            } else {
-                let service = fields["service"]?.string
-                guard fields.count == (fields["service"] == nil ? 3 : 4),
-                      fields["service"] == nil || service == "airdrop",
-                      case let .bytes(value) = fields["anchor"] else { throw ShellResourceFailure("invalid_request") }
-                anchor = try ShellDesktopAnchorLocator(bytes: value)
-                action = .share(resources, service: service)
-            }
+            action = try Self.groupAction(operation, fields: fields, anchor: &anchor)
         } else { throw ShellResourceFailure("invalid_request") }
         self.init(id: id, action: action, anchor: anchor)
+    }
+
+    private static func groupAction(
+        _ operation: String,
+        fields: [String: ShellServiceValue],
+        anchor: inout ShellDesktopAnchorLocator?
+    ) throws -> Action {
+        guard let values = fields["resources"]?.values, !values.isEmpty, values.count <= 32 else {
+            throw ShellResourceFailure("invalid_resources")
+        }
+        let resources = try values.map { try Self.resource($0) }
+        guard Set(resources).count == resources.count else { throw ShellResourceFailure("duplicate_resource") }
+        if operation == "quicklook" {
+            guard fields.count == 3, let value = fields["index"]?.number, value.isFinite,
+                  value >= 1, value <= Double(resources.count), value.rounded(.towardZero) == value
+            else {
+                throw ShellResourceFailure("invalid_preview")
+            }
+            return .quicklook(resources, index: Int(value))
+        } else {
+            let service = fields["service"]?.string
+            guard fields.count == (fields["service"] == nil ? 3 : 4),
+                  fields["service"] == nil || service == "airdrop",
+                  case let .bytes(value) = fields["anchor"] else { throw ShellResourceFailure("invalid_request") }
+            anchor = try ShellDesktopAnchorLocator(bytes: value)
+            return .share(resources, service: service)
+        }
     }
 
     private static func resource(_ value: ShellServiceValue?) throws -> ShellResourceID {

@@ -16,17 +16,17 @@ final class HiddenBarController {
     let capture: HiddenBarCaptureSession
     let reconcealment: HiddenBarReconcealment
     let menuSession = HiddenBarMenuSession()
-    private let settings: SettingsStore
-    private let hider: NativeMenuBarHider
+    let settings: SettingsStore
+    let hider: NativeMenuBarHider
     private let itemService: MenuBarItemService
-    private let iconCache = HiddenBarIconCache()
+    let iconCache = HiddenBarIconCache()
     private let forwarder: HiddenBarClickForwarder
     private let setMenuAccess: (Bool) -> Bool
 
     private var activationTask: Task<Void, Never>?
     private var activationGeneration = 0
     private var activeActivation: ActiveActivation?
-    private var temporarilyRevealed: Set<String> = [] {
+    var temporarilyRevealed: Set<String> = [] {
         didSet {
             if !oldValue.isEmpty, temporarilyRevealed.isEmpty {
                 _ = setMenuAccess(false)
@@ -186,9 +186,7 @@ final class HiddenBarController {
             return
         }
         menuSession.acquire(
-            key: key,
-            ownerPID: owner.pid,
-            cachedItems: cachedItems,
+            target: .init(key: key, ownerPID: owner.pid, cachedItems: cachedItems),
             resolve: { [weak self] in
                 await self?.resolveRevealedItems(
                     for: key.bundleID,
@@ -273,39 +271,6 @@ final class HiddenBarController {
         let snapshot = HiddenBarRunningAppsSnapshot.current()
         iconCache.prune(keeping: configured.intersection(snapshot.bundleIDs))
         capture.reconcile(snapshot: snapshot, captureBundleIDs: [])
-    }
-
-    var configuredHiddenBundleIDs: Set<String> {
-        Set(settings.hiddenBar.hiddenBundleIDs)
-    }
-
-    var revealedBundleIDs: Set<String> {
-        temporarilyRevealed
-    }
-
-    var captureEligibleBundleIDs: Set<String> {
-        HiddenBarConcealmentPolicy.effectiveHiddenBundleIDs(
-            configured: configuredHiddenBundleIDs,
-            temporarilyRevealed: temporarilyRevealed
-        )
-    }
-
-    func applyConcealment(verifiedMenuItemBundleIDs: Set<String> = []) {
-        let configured = Set(settings.hiddenBar.hiddenBundleIDs)
-        guard HiddenBarConcealmentPolicy.wantsRefresh(
-            enabled: settings.effectiveHiddenBarEnabled,
-            available: hider.available,
-            hiddenBundleIDs: configured
-        ) else { return }
-        hider.apply(
-            configuredBundleIDs: configured,
-            hiddenBundleIDs: HiddenBarConcealmentPolicy.effectiveHiddenBundleIDs(
-                configured: configured,
-                temporarilyRevealed: temporarilyRevealed,
-                pendingCapture: capture.bundleIDs
-            ),
-            verifiedMenuItemBundleIDs: verifiedMenuItemBundleIDs
-        )
     }
 }
 
@@ -471,7 +436,7 @@ extension HiddenBarController {
         )
     }
 
-    private func cancelActivationIfInvalid(configured: Set<String>, snapshot: HiddenBarRunningAppsSnapshot) {
+    func cancelActivationIfInvalid(configured: Set<String>, snapshot: HiddenBarRunningAppsSnapshot) {
         guard let activation = activeActivation,
               !HiddenBarActivationPolicy.activationContextIsValid(
                   bundleID: activation.bundleID,
@@ -507,19 +472,9 @@ extension HiddenBarController {
         temporarilyRevealed.removeAll()
     }
 
-    private func cancelReconcealIfNoTemporaryReveals() {
+    func cancelReconcealIfNoTemporaryReveals() {
         guard temporarilyRevealed.isEmpty else { return }
         reconcealment.cancelIfRunning(reason: .noRevealedItems)
-    }
-
-    func concealRevealed(_ bundleIDs: Set<String>) {
-        temporarilyRevealed.subtract(bundleIDs)
-        applyConcealment()
-    }
-
-    func concealAllRevealed() {
-        temporarilyRevealed.removeAll(keepingCapacity: true)
-        applyConcealment()
     }
 
     func startReconcealForTests(revealedBundleIDs: Set<String>) {
@@ -530,35 +485,5 @@ extension HiddenBarController {
 
     var temporarilyRevealedBundleIDsForTests: Set<String> {
         temporarilyRevealed
-    }
-
-    func handleRunningApplicationChanged(bundleID: String?, terminated: Bool) {
-        let configured = Set(settings.hiddenBar.hiddenBundleIDs)
-        guard HiddenBarConcealmentPolicy.wantsRefresh(
-            enabled: settings.effectiveHiddenBarEnabled,
-            available: hider.available,
-            hiddenBundleIDs: configured
-        ) else { return }
-
-        if terminated, let bundleID {
-            temporarilyRevealed.remove(bundleID)
-            if menuSession.bundleID == bundleID {
-                dismissPanel()
-            }
-        }
-
-        let snapshot = HiddenBarRunningAppsSnapshot.current()
-        temporarilyRevealed.formIntersection(snapshot.bundleIDs)
-        cancelActivationIfInvalid(configured: configured, snapshot: snapshot)
-        cancelReconcealIfNoTemporaryReveals()
-        iconCache.prune(keeping: configured.intersection(snapshot.bundleIDs))
-        let captures: Set<String>
-        if !terminated, let bundleID, configured.contains(bundleID) {
-            captures = [bundleID]
-        } else {
-            captures = []
-        }
-        capture.reconcile(snapshot: snapshot, captureBundleIDs: captures)
-        refreshPanelIfVisible()
     }
 }

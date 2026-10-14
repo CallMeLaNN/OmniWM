@@ -38,39 +38,43 @@ extension ShellWidgetHost {
                 Self.close(package)
                 return
             }
-            if state.package != nil {
-                let failure = await package.validateReload(source)
-                guard self.widgets[state.name] === state, state.loadingGeneration == package.generation else {
-                    Self.close(package)
-                    return
-                }
-                if let failure {
-                    self.finishLoad(
-                        state: state,
-                        package: package,
-                        source: source,
-                        failure: failure,
-                        declaration: .init()
-                    )
-                    return
-                }
-                Self.retireTraceCapture(state.package)
-                state.mailbox?.finish()
-                state.mailbox = nil
-                let previous = state.package
-                state.package = nil
-                self.publishToggleNames()
-                Self.close(previous)
-                await previous?.close()
-                guard self.widgets[state.name] === state, state.loadingGeneration == package.generation else {
-                    Self.close(package)
-                    return
-                }
-            }
-            let failure = await package.load(source)
-            let declaration = await package.declaration
-            self.finishLoad(state: state, package: package, source: source, failure: failure, declaration: declaration)
+            await self.loadPackage(package, source: source, for: state)
         }
+    }
+
+    private func loadPackage(_ package: ShellWidgetPackage, source: ShellWidgetSource, for state: WidgetState) async {
+        if state.package != nil {
+            let failure = await package.validateReload(source)
+            guard self.widgets[state.name] === state, state.loadingGeneration == package.generation else {
+                Self.close(package)
+                return
+            }
+            if let failure {
+                self.finishLoad(
+                    state: state,
+                    package: package,
+                    source: source,
+                    failure: failure,
+                    declaration: .init()
+                )
+                return
+            }
+            Self.retireTraceCapture(state.package)
+            state.mailbox?.finish()
+            state.mailbox = nil
+            let previous = state.package
+            state.package = nil
+            self.publishToggleNames()
+            Self.close(previous)
+            await previous?.close()
+            guard self.widgets[state.name] === state, state.loadingGeneration == package.generation else {
+                Self.close(package)
+                return
+            }
+        }
+        let failure = await package.load(source)
+        let declaration = await package.declaration
+        self.finishLoad(state: state, package: package, source: source, failure: failure, declaration: declaration)
     }
 
     func sourceInput(of sourceURL: URL, name: String) -> ShellWidgetSourceLoader.Input {
@@ -146,6 +150,16 @@ extension ShellWidgetHost {
             report(state, ShellScriptFailure(kind: .compile, message: error.localizedDescription))
             return
         }
+        installPackage(package, source: source, latest: latest, declaration: declaration, for: state)
+    }
+
+    private func installPackage(
+        _ package: ShellWidgetPackage,
+        source: ShellWidgetSource,
+        latest: ShellWidgetSource,
+        declaration: ShellWidgetDeclaration,
+        for state: WidgetState
+    ) {
         let triggerChanged = state.declaration.hasTrigger != declaration.hasTrigger
         state.declaration = declaration
         state.assetPackages = latest.assetPackages

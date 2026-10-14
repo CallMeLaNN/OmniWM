@@ -133,24 +133,27 @@ final class RuntimeTraceCaptureCoordinator {
         }
         return await start(
             profile: profile,
-            reportProvider: reportProvider,
-            performanceMetricsBegin: performanceMetricsBegin,
-            performanceMetricsEnd: performanceMetricsEnd,
-            traceMetricsBegin: traceMetricsBegin,
-            traceMetricsEnd: traceMetricsEnd,
-            automaticEvidenceProvider: automaticEvidenceProvider
+            hooks: Hooks(
+                report: reportProvider,
+                performanceBegin: performanceMetricsBegin,
+                performanceEnd: performanceMetricsEnd,
+                traceBegin: traceMetricsBegin,
+                traceEnd: traceMetricsEnd,
+                automaticEvidence: automaticEvidenceProvider
+            )
         )
     }
 
-    private func start(
-        profile: TraceCaptureProfile,
-        reportProvider: @escaping () -> String,
-        performanceMetricsBegin: @escaping () -> Void,
-        performanceMetricsEnd: @escaping () -> Void,
-        traceMetricsBegin: @escaping () async -> Void,
-        traceMetricsEnd: @escaping () async -> Void,
-        automaticEvidenceProvider: @escaping () async -> String
-    ) async -> TraceCaptureOutcome {
+    private struct Hooks {
+        let report: () -> String
+        let performanceBegin: () -> Void
+        let performanceEnd: () -> Void
+        let traceBegin: () async -> Void
+        let traceEnd: () async -> Void
+        let automaticEvidence: () async -> String
+    }
+
+    private func start(profile: TraceCaptureProfile, hooks: Hooks) async -> TraceCaptureOutcome {
         guard phase == .idle else { return .noChange }
         captureGeneration &+= 1
         let generation = captureGeneration
@@ -161,8 +164,8 @@ final class RuntimeTraceCaptureCoordinator {
         resources.begin(for: profile, generation: generation)
         do {
             if profile == .problem {
-                self.traceMetricsEnd = traceMetricsEnd
-                await traceMetricsBegin()
+                self.traceMetricsEnd = hooks.traceEnd
+                await hooks.traceBegin()
             }
             if profile == .performance {
                 try await resources.writer.preparePerformanceCapture()
@@ -170,19 +173,8 @@ final class RuntimeTraceCaptureCoordinator {
             guard captureGeneration == generation, phase == .starting, startingProfile == profile else {
                 return .noChange
             }
-            let session = makeSession(
-                profile: profile,
-                startedAt: startedAt,
-                reportProvider: reportProvider,
-                performanceMetricsBegin: performanceMetricsBegin,
-                performanceMetricsEnd: performanceMetricsEnd
-            )
-            self.reportProvider = reportProvider
-            self.automaticEvidenceProvider = profile == .problem ? automaticEvidenceProvider : nil
-            self.session = session
-            startingProfile = nil
-            phase = .recording
-            onStateChange?()
+            let session = makeSession(profile: profile, startedAt: startedAt, hooks: hooks)
+            beginRecording(session: session, hooks: hooks)
             if profile == .problem {
                 _ = try await resources.writer.writeInitialPartial(session: session, recorders: resources.recorders)
             }
@@ -207,23 +199,30 @@ final class RuntimeTraceCaptureCoordinator {
         return .started
     }
 
+    private func beginRecording(session: TraceCaptureSession, hooks: Hooks) {
+        reportProvider = hooks.report
+        automaticEvidenceProvider = session.profile == .problem ? hooks.automaticEvidence : nil
+        self.session = session
+        startingProfile = nil
+        phase = .recording
+        onStateChange?()
+    }
+
     private func makeSession(
         profile: TraceCaptureProfile,
         startedAt: Date,
-        reportProvider: () -> String,
-        performanceMetricsBegin: () -> Void,
-        performanceMetricsEnd: @escaping () -> Void
+        hooks: Hooks
     ) -> TraceCaptureSession {
         var sessionStartedAt = startedAt
         var processResourceStart: ProcessResourceSnapshot?
         if profile == .performance {
-            performanceMetricsBegin()
-            self.performanceMetricsEnd = performanceMetricsEnd
+            hooks.performanceBegin()
+            self.performanceMetricsEnd = hooks.performanceEnd
             sessionStartedAt = Date()
             processResourceStart = processResourceProvider()
         }
         let startReport = RuntimeTraceLimits.boundedString(
-            reportProvider(),
+            hooks.report(),
             maxBytes: RuntimeTraceLimits.stateReportBytes
         )
         return TraceCaptureSession(
@@ -326,16 +325,40 @@ final class RuntimeTraceCaptureCoordinator {
             }
         }
 
+        return await finishFinalization(
+            session: session,
+            generation: generation,
+            report: FinalReport(
+                endedAt: endedAt,
+                processResourceEnd: processResourceEnd,
+                report: endReport,
+                evidenceProvider: evidenceProvider
+            )
+        )
+    }
+}
+
+extension RuntimeTraceCaptureCoordinator {
+    private struct FinalReport {
+        let endedAt: Date
+        let processResourceEnd: ProcessResourceSnapshot?
+        let report: String
+        let evidenceProvider: (() async -> String)?
+    }
+
+    private func finishFinalization(
+        session: TraceCaptureSession, generation: UInt64, report: FinalReport
+    ) async -> TraceCaptureOutcome {
         do {
             let url = try await writeFinalArtifact(
                 for: session,
-                endedAt: endedAt,
-                processResourceEnd: processResourceEnd,
-                endReport: endReport,
-                evidenceProvider: evidenceProvider
+                endedAt: report.endedAt,
+                processResourceEnd: report.processResourceEnd,
+                endReport: report.report,
+                evidenceProvider: report.evidenceProvider
             )
             guard captureGeneration == generation, phase == .finalizing else { return .noChange }
-            let artifact = TraceCaptureArtifact(session: session, url: url, endedAt: endedAt)
+            let artifact = TraceCaptureArtifact(session: session, url: url, endedAt: report.endedAt)
             lastArtifact = artifact
             self.session = nil
             phase = .idle

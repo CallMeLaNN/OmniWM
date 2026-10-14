@@ -78,13 +78,13 @@ final class ShellServiceLedger: Sendable {
         var capture = Capture()
     }
 
-    private final class Timer: Sendable {
-        private struct State {
-            var source: (any DispatchSourceTimer)?
-            var cancelled = false
-        }
+    private struct TimerState {
+        var source: (any DispatchSourceTimer)?
+        var cancelled = false
+    }
 
-        private let state = Mutex(State())
+    private final class Timer: Sendable {
+        private let state = Mutex(TimerState())
 
         func start(seconds: Double, queue: DispatchSerialQueue, fire: @escaping @Sendable () -> Void) {
             state.withLock { state in

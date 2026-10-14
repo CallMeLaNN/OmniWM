@@ -114,17 +114,17 @@ extension ShellWidgetPackage {
         RuntimeTraceLimits.boundedString(name, maxBytes: 128)
     }
 
-    private static func captureDetail(_ s: omni_capture_stats) -> String {
-        "scope=native available=true incomplete=false vm_bytes_begin=\(s.vm_bytes_begin) vm_bytes=\(s.vm_bytes)"
-            + " tree_encodes=\(s.tree_encodes) input_handlers=\(s.input_handlers) trigger_handlers=\(s.trigger_handlers)"
-            + " service_handlers=\(s.service_handlers) provider_handlers=\(s.provider_handlers) drop_handlers=\(s.drop_handlers) drag_handlers=\(s.drag_handlers)"
-            + " json_decodes=\(s.json_decodes) json_decode_successes=\(s.json_decode_successes)"
-            + " provider_topic_inputs=\(s.provider_topic_inputs) provider_topic_decodes=\(s.provider_topic_decodes) provider_topic_decode_successes=\(s.provider_topic_decode_successes)"
-            + " provider_event_decodes=\(s.provider_event_decodes) provider_event_decode_successes=\(s.provider_event_decode_successes)"
-            + " provider_result_decodes=\(s.provider_result_decodes) provider_result_decode_successes=\(s.provider_result_decode_successes)"
-            + " reservations=\(s.reservations) reservation_peak=\(s.reservation_peak) owner_reservation_peak=\(s.owner_reservation_peak)"
-            + " http_reservations=\(s.http_reservations) http_reservation_peak=\(s.http_reservation_peak)"
-            + " owner_rejections=\(s.owner_rejections) package_rejections=\(s.package_rejections) http_rejections=\(s.http_rejections)"
-            + " backlog_rejections=\(s.backlog_rejections) id_rejections=\(s.id_rejections)"
+    private static func captureDetail(_ stats: omni_capture_stats) -> String {
+        "scope=native available=true incomplete=false vm_bytes_begin=\(stats.vm_bytes_begin) vm_bytes=\(stats.vm_bytes)"
+            + " tree_encodes=\(stats.tree_encodes) input_handlers=\(stats.input_handlers) trigger_handlers=\(stats.trigger_handlers)"
+            + " service_handlers=\(stats.service_handlers) provider_handlers=\(stats.provider_handlers) drop_handlers=\(stats.drop_handlers) drag_handlers=\(stats.drag_handlers)"
+            + " json_decodes=\(stats.json_decodes) json_decode_successes=\(stats.json_decode_successes)"
+            + " provider_topic_inputs=\(stats.provider_topic_inputs) provider_topic_decodes=\(stats.provider_topic_decodes) provider_topic_decode_successes=\(stats.provider_topic_decode_successes)"
+            + " provider_event_decodes=\(stats.provider_event_decodes) provider_event_decode_successes=\(stats.provider_event_decode_successes)"
+            + " provider_result_decodes=\(stats.provider_result_decodes) provider_result_decode_successes=\(stats.provider_result_decode_successes)"
+            + " reservations=\(stats.reservations) reservation_peak=\(stats.reservation_peak) owner_reservation_peak=\(stats.owner_reservation_peak)"
+            + " http_reservations=\(stats.http_reservations) http_reservation_peak=\(stats.http_reservation_peak)"
+            + " owner_rejections=\(stats.owner_rejections) package_rejections=\(stats.package_rejections) http_rejections=\(stats.http_rejections)"
+            + " backlog_rejections=\(stats.backlog_rejections) id_rejections=\(stats.id_rejections)"
     }
 }

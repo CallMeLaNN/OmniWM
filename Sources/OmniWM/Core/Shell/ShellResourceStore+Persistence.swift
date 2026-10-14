@@ -5,19 +5,19 @@ import CryptoKit
 import Foundation
 
 extension ShellResourceStore {
-    struct SavedResource: Codable {
-        enum Content: Codable {
-            case bookmark(Data)
-            case scopedBookmark(Data)
-            case owned(String)
-            case text(String)
-            case url(URL)
-        }
+    enum SavedContent: Codable {
+        case bookmark(Data)
+        case scopedBookmark(Data)
+        case owned(String)
+        case text(String)
+        case url(URL)
+    }
 
+    struct SavedResource: Codable {
         let name: String
         let kind: String
         let uti: String
-        let content: Content
+        let content: SavedContent
     }
 
     @discardableResult
@@ -32,44 +32,7 @@ extension ShellResourceStore {
         else { return finishPersistence(request, error: metadata.error ?? "resource failed") }
         var owned: URL?
         do {
-            let content: SavedResource.Content
-            switch item.value {
-            case let .file(url):
-                if item.ownedDirectory != nil {
-                    let folder = namespaceDirectory(request.namespace).appendingPathComponent(
-                        token.string,
-                        isDirectory: true
-                    )
-                    try FileManager.default.createDirectory(
-                        at: folder,
-                        withIntermediateDirectories: true,
-                        attributes: [.posixPermissions: 0o700]
-                    )
-                    owned = folder
-                    try FileManager.default.copyItem(at: url, to: folder.appendingPathComponent("payload"))
-                    content = .owned(token.string)
-                } else if item.securityScope != nil {
-                    content = .scopedBookmark(try url.bookmarkData(
-                        options: .withSecurityScope,
-                        includingResourceValuesForKeys: nil,
-                        relativeTo: nil
-                    ))
-                } else {
-                    content = .bookmark(try url.bookmarkData(
-                        options: .minimalBookmark,
-                        includingResourceValuesForKeys: nil,
-                        relativeTo: nil
-                    ))
-                }
-            case let .text(text):
-                guard text.utf8.count <= Self.manifestLimit
-                else { throw ShellResourceFailure("resource manifest exceeds 4 MiB") }
-                content = .text(text)
-            case let .url(url):
-                guard url.absoluteString.utf8.count <= Self.manifestLimit
-                else { throw ShellResourceFailure("resource manifest exceeds 4 MiB") }
-                content = .url(url)
-            }
+            let content = try savedContent(item, request: request, owned: &owned)
             let saved = SavedResource(
                 name: metadata.descriptor.name,
                 kind: metadata.descriptor.kind,
@@ -96,6 +59,52 @@ extension ShellResourceStore {
             clean(owned)
             return finishPersistence(request, error: String(describing: error))
         }
+    }
+
+    private func savedContent(
+        _ item: Backing,
+        request: ShellResourcePersistenceRequest,
+        owned: inout URL?
+    ) throws -> SavedContent {
+        let content: SavedContent
+        switch item.value {
+        case let .file(url):
+            if item.ownedDirectory != nil {
+                let folder = namespaceDirectory(request.namespace).appendingPathComponent(
+                    request.token.string,
+                    isDirectory: true
+                )
+                try FileManager.default.createDirectory(
+                    at: folder,
+                    withIntermediateDirectories: true,
+                    attributes: [.posixPermissions: 0o700]
+                )
+                owned = folder
+                try FileManager.default.copyItem(at: url, to: folder.appendingPathComponent("payload"))
+                content = .owned(request.token.string)
+            } else if item.securityScope != nil {
+                content = .scopedBookmark(try url.bookmarkData(
+                    options: .withSecurityScope,
+                    includingResourceValuesForKeys: nil,
+                    relativeTo: nil
+                ))
+            } else {
+                content = .bookmark(try url.bookmarkData(
+                    options: .minimalBookmark,
+                    includingResourceValuesForKeys: nil,
+                    relativeTo: nil
+                ))
+            }
+        case let .text(text):
+            guard text.utf8.count <= Self.manifestLimit
+            else { throw ShellResourceFailure("resource manifest exceeds 4 MiB") }
+            content = .text(text)
+        case let .url(url):
+            guard url.absoluteString.utf8.count <= Self.manifestLimit
+            else { throw ShellResourceFailure("resource manifest exceeds 4 MiB") }
+            content = .url(url)
+        }
+        return content
     }
 
     @discardableResult

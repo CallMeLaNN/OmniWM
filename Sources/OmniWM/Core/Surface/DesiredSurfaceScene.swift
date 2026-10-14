@@ -28,7 +28,7 @@ struct DesiredBarSurface: Equatable {
 struct DesiredIslandSurface: Equatable {
     var monitor: Monitor
     var fullscreen: Bool
-    var navigation: IslandNavigationSnapshot? = nil
+    var navigation: IslandNavigationSnapshot?
 }
 
 struct ParkingEdgeMaskKey: Hashable {

@@ -3,6 +3,14 @@
 
 import Foundation
 
+struct ShellResourceIngressTransfer: Sendable {
+    let ids: [ShellResourceID]
+    let offset: Int
+    let owner: ShellServiceOwner
+    let operation: ShellResourceOperation
+    let transferred: Bool
+}
+
 extension ShellResourceStore {
     func materializeIngress(
         _ sources: [Source],
@@ -29,27 +37,23 @@ extension ShellResourceStore {
 
     func consumeIngress(
         _ batch: ShellFilePromiseBatch.Batch,
-        ids: [ShellResourceID],
-        offset: Int,
-        owner: ShellServiceOwner,
-        operation: ShellResourceOperation,
-        transferred: Bool
+        transfer: ShellResourceIngressTransfer
     ) {
         for delivery in batch.deliveries {
-            let index = delivery.index.map { $0 + offset }
-            let id = index.flatMap { ids.indices.contains($0) ? ids[$0] : nil }
-            guard transferred, operation.isActive, let id else {
+            let index = delivery.index.map { $0 + transfer.offset }
+            let id = index.flatMap { transfer.ids.indices.contains($0) ? transfer.ids[$0] : nil }
+            guard transfer.transferred, transfer.operation.isActive, let id else {
                 if case let .success(file) = delivery.result { discard([file]) }
                 continue
             }
             switch delivery.result {
             case let .success(file):
-                do { try receive(file, id: id, owner: owner, operation: operation) }
-                catch { fail([id], owner: owner, error: String(describing: error)) }
+                do { try receive(file, id: id, owner: transfer.owner, operation: transfer.operation) }
+                catch { fail([id], owner: transfer.owner, error: String(describing: error)) }
             case let .failure(error):
-                fail([id], owner: owner, error: error.description)
+                fail([id], owner: transfer.owner, error: error.description)
             }
         }
-        if transferred, let error = batch.error { fail(ids, owner: owner, error: error) }
+        if transfer.transferred, let error = batch.error { fail(transfer.ids, owner: transfer.owner, error: error) }
     }
 }

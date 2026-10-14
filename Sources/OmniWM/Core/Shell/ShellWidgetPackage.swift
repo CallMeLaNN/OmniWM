@@ -250,21 +250,7 @@ actor ShellWidgetPackage {
         guard !closing, script === loaded else {
             return ShellScriptFailure(kind: .internalError, message: "package was closed while loading")
         }
-        guard omni_vm_set_module_limit(vm, source.moduleLimit) == OMNI_OK else {
-            script = nil
-            return ShellScriptFailure(kind: .compile, message: "invalid module limit")
-        }
-        for module in source.modules {
-            guard omni_vm_add_module(vm, module.path, module.path.utf8.count, module.source, module.source.utf8.count)
-                == OMNI_OK
-            else {
-                script = nil
-                return ShellScriptFailure(
-                    kind: .memory,
-                    message: "could not load module \(module.path) within the \(source.moduleLimit)-module limit"
-                )
-            }
-        }
+        if let failure = installModules(source, in: vm) { return failure }
         let status = omni_vm_load(
             vm,
             source.chunk,
@@ -282,6 +268,11 @@ actor ShellWidgetPackage {
             return ShellScriptFailure(kind: .compile, message: "the widget does not define a render function")
         }
         if validateOnly { return nil }
+        return await finishLoad(source, in: loaded)
+    }
+
+    private func finishLoad(_ source: ShellWidgetSource, in loaded: ShellScript) async -> ShellScriptFailure? {
+        let vm = loaded.vm
         loadedModules = Set(source.modules.map(\.path))
         loadedChunk = source.chunk
         loadedMain = source.main
@@ -296,6 +287,25 @@ actor ShellWidgetPackage {
         declaration = ShellWidgetDeclaration(vm: vm)
         omni_vm_collect(vm)
         liveAfterCollect = omni_vm_bytes_in_use(vm)
+        return nil
+    }
+
+    private func installModules(_ source: ShellWidgetSource, in vm: OpaquePointer) -> ShellScriptFailure? {
+        guard omni_vm_set_module_limit(vm, source.moduleLimit) == OMNI_OK else {
+            script = nil
+            return ShellScriptFailure(kind: .compile, message: "invalid module limit")
+        }
+        for module in source.modules {
+            guard omni_vm_add_module(vm, module.path, module.path.utf8.count, module.source, module.source.utf8.count)
+                == OMNI_OK
+            else {
+                script = nil
+                return ShellScriptFailure(
+                    kind: .memory,
+                    message: "could not load module \(module.path) within the \(source.moduleLimit)-module limit"
+                )
+            }
+        }
         return nil
     }
 

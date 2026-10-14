@@ -85,15 +85,22 @@ final class HiddenBarMenuSession {
         self.press = press
     }
 
+    struct Target {
+        let key: MenuBarItemKey
+        let ownerPID: pid_t
+        let cachedItems: [ResolvedMenuBarItem]?
+    }
+
     func acquire(
-        key: MenuBarItemKey,
-        ownerPID: pid_t,
-        cachedItems: [ResolvedMenuBarItem]?,
+        target: Target,
         resolve: @escaping () async -> [ResolvedMenuBarItem]?,
         onResolve: @escaping ([ResolvedMenuBarItem]) -> Void = { _ in },
         release: @escaping (RevealDisposition) -> Void,
         onOpen: @escaping (OpenResult) -> Void
     ) {
+        let key = target.key
+        let ownerPID = target.ownerPID
+        let cachedItems = target.cachedItems
         close()
         let owner = MenuBarAppCandidate(bundleID: key.bundleID, pid: ownerPID)
         self.owner = owner

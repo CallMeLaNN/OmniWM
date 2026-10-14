@@ -253,7 +253,7 @@ private struct ShellStyleThumbnail: View {
             if let image {
                 Image(decorative: image, scale: displayScale)
                     .resizable()
-                    .aspectRatio(contentMode: .fit)
+                    .scaledToFit()
             } else if failure {
                 Image(systemName: "rectangle.topthird.inset.filled").foregroundStyle(.secondary)
             } else {

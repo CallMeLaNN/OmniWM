@@ -6,8 +6,8 @@ import OmniWMScriptHost
 extension ShellWidgetPackage {
     func updateComponents(_ source: ShellWidgetSource, in script: ShellScript) async {
         guard source.profile == storeProfile, let plan = ShellComponentReloadPlan.make(
-            source: source, loadedChunk: loadedChunk, loadedMain: loadedMain,
-            loadedModules: loadedModules, previousDescriptors: componentDescriptors,
+            source: source, loaded: .init(chunk: loadedChunk, main: loadedMain, modules: loadedModules),
+            previousDescriptors: componentDescriptors,
             matches: { module in
                 omni_vm_module_matches(
                     script.vm, module.path, module.path.utf8.count, module.source, module.source.utf8.count
@@ -18,31 +18,7 @@ extension ShellWidgetPackage {
             return
         }
         if !plan.widgets.isEmpty || !plan.modules.isEmpty {
-            let status = replaceModules(plan, in: script.vm)
-            if status == OMNI_ERR_RELOAD_REQUIRED {
-                requestReload()
-                return
-            }
-            guard status == OMNI_OK || status == OMNI_ERR_COMPONENT else {
-                outbox.fail(name: name, generation: generation, failure: ShellScriptFailure(
-                    status: status, message: lastError()
-                ))
-                return
-            }
-            if status == OMNI_ERR_COMPONENT { log(1) { _ in lastError() } }
-            drainServices(in: script)
-            let affected = Set(plan.widgets)
-            let retired = Set(configuredComponents.compactMap { affected.contains($0.value.widget) ? $0.key : nil })
-            let owners = storeOwners.filter { $0.key.instance.map(retired.contains) == true }
-            configuredComponents = configuredComponents.filter { !retired.contains($0.key) }
-            for namespace in owners.keys { storeOwners.removeValue(forKey: namespace) }
-            loadedModules = Set(source.modules.map(\.path))
-            await retireProviders()
-            guard !closing, self.script === script else { return }
-            await retireResources(components: retired)
-            guard !closing, self.script === script else { return }
-            for failure in await store.close(owners) { log(1) { _ in "store: \(failure.message)" } }
-            guard !closing, self.script === script else { return }
+            guard await reloadComponents(plan, source: source, in: script) else { return }
         }
         guard await retireChangedComponentOwners(source, in: script) else { return }
         await seedComponents(source, in: script)
@@ -55,6 +31,39 @@ extension ShellWidgetPackage {
             await renderVisible(key, instance)
             guard !closing, self.script === script else { return }
         }
+    }
+
+    private func reloadComponents(
+        _ plan: ShellComponentReloadPlan,
+        source: ShellWidgetSource,
+        in script: ShellScript
+    ) async -> Bool {
+        let status = replaceModules(plan, in: script.vm)
+        if status == OMNI_ERR_RELOAD_REQUIRED {
+            requestReload()
+            return false
+        }
+        guard status == OMNI_OK || status == OMNI_ERR_COMPONENT else {
+            outbox.fail(name: name, generation: generation, failure: ShellScriptFailure(
+                status: status, message: lastError()
+            ))
+            return false
+        }
+        if status == OMNI_ERR_COMPONENT { log(1) { _ in lastError() } }
+        drainServices(in: script)
+        let affected = Set(plan.widgets)
+        let retired = Set(configuredComponents.compactMap { affected.contains($0.value.widget) ? $0.key : nil })
+        let owners = storeOwners.filter { $0.key.instance.map(retired.contains) == true }
+        configuredComponents = configuredComponents.filter { !retired.contains($0.key) }
+        for namespace in owners.keys { storeOwners.removeValue(forKey: namespace) }
+        loadedModules = Set(source.modules.map(\.path))
+        await retireProviders()
+        guard !closing, self.script === script else { return false }
+        await retireResources(components: retired)
+        guard !closing, self.script === script else { return false }
+        for failure in await store.close(owners) { log(1) { _ in "store: \(failure.message)" } }
+        guard !closing, self.script === script else { return false }
+        return true
     }
 
     private func retireChangedComponentOwners(_ source: ShellWidgetSource, in script: ShellScript) async -> Bool {

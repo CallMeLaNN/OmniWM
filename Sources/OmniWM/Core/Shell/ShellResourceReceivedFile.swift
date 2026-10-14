@@ -14,22 +14,7 @@ struct ShellResourceReceivedFile: Sendable {
         guard !parts.isEmpty, !path.hasPrefix("/"), !path.hasPrefix("~"), !path.contains("\0"),
               !parts.contains(where: { $0.isEmpty || $0 == "." || $0 == ".." })
         else { throw ShellResourceFailure("received file path must stay within its action directory") }
-        var descriptor = open(directory.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
-        guard descriptor >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
-        defer { if descriptor >= 0 { _ = Darwin.close(descriptor) } }
-        for (index, part) in parts.enumerated() {
-            let flags = O_RDONLY | O_NOFOLLOW | O_CLOEXEC | (index + 1 == parts.count ? O_NONBLOCK : O_DIRECTORY)
-            let next = openat(descriptor, String(part), flags)
-            guard next >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
-            _ = Darwin.close(descriptor)
-            descriptor = next
-        }
-        var info = stat()
-        guard fstat(descriptor, &info) == 0, info.st_mode & S_IFMT == S_IFREG, info.st_size >= 0 else {
-            throw ShellResourceFailure("received file is not a regular file")
-        }
-        let input = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
-        descriptor = -1
+        let (input, size) = try openInput(parts, directory: directory)
         defer { try? input.close() }
         let folder = root.appendingPathComponent("temporary", isDirectory: true).appendingPathComponent(
             UUID().uuidString,
@@ -49,7 +34,6 @@ struct ShellResourceReceivedFile: Sendable {
             }
             let output = try FileHandle(forWritingTo: url)
             defer { try? output.close() }
-            let size = UInt64(info.st_size)
             var remaining = size
             while remaining > 0 {
                 guard operation.isActive else { throw ShellResourceFailure("resource action was cancelled") }
@@ -63,6 +47,26 @@ struct ShellResourceReceivedFile: Sendable {
             remove(folder)
             throw error
         }
+    }
+
+    private static func openInput(_ parts: [Substring], directory: URL) throws -> (FileHandle, UInt64) {
+        var descriptor = open(directory.path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+        guard descriptor >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
+        defer { if descriptor >= 0 { _ = Darwin.close(descriptor) } }
+        for (index, part) in parts.enumerated() {
+            let flags = O_RDONLY | O_NOFOLLOW | O_CLOEXEC | (index + 1 == parts.count ? O_NONBLOCK : O_DIRECTORY)
+            let next = openat(descriptor, String(part), flags)
+            guard next >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
+            _ = Darwin.close(descriptor)
+            descriptor = next
+        }
+        var info = stat()
+        guard fstat(descriptor, &info) == 0, info.st_mode & S_IFMT == S_IFREG, info.st_size >= 0 else {
+            throw ShellResourceFailure("received file is not a regular file")
+        }
+        let input = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
+        descriptor = -1
+        return (input, UInt64(info.st_size))
     }
 
     static func remove(_ directory: URL) {

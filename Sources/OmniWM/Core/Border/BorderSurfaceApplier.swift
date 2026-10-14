@@ -310,7 +310,28 @@ final class BorderSurfaceApplier {
         }
         return cornerRetryState.phase == .exhausted
     }
+}
 
+extension BorderSurfaceApplier {
+    private func clearCornerState() {
+        cornerQueryGeneration &+= 1
+        cornerQueryTask?.cancel()
+        cornerDesiredSize = nil
+        wantsCornerQuery = false
+        cornerTargetToken = nil
+        cachedCornerSample = nil
+        cornerRetryState = nil
+    }
+
+    private func rememberCornerSample() {
+        guard let cachedCornerSample else { return }
+        recentCornerSamples.removeAll { $0.token == cachedCornerSample.token }
+        recentCornerSamples.insert(cachedCornerSample, at: 0)
+        if recentCornerSamples.count > 32 { recentCornerSamples.removeLast() }
+    }
+}
+
+extension BorderSurfaceApplier {
     private func syncSurfaceRegistration() {
         guard let borderWindow, let windowNumber = borderWindow.windowId.map(Int.init) else {
             unregisterSurface()
@@ -340,24 +361,5 @@ final class BorderSurfaceApplier {
     private func unregisterSurface() {
         surfaceCoordinator.unregister(id: surfaceID)
         registeredSurfaceWindowNumber = nil
-    }
-}
-
-extension BorderSurfaceApplier {
-    private func clearCornerState() {
-        cornerQueryGeneration &+= 1
-        cornerQueryTask?.cancel()
-        cornerDesiredSize = nil
-        wantsCornerQuery = false
-        cornerTargetToken = nil
-        cachedCornerSample = nil
-        cornerRetryState = nil
-    }
-
-    private func rememberCornerSample() {
-        guard let cachedCornerSample else { return }
-        recentCornerSamples.removeAll { $0.token == cachedCornerSample.token }
-        recentCornerSamples.insert(cachedCornerSample, at: 0)
-        if recentCornerSamples.count > 32 { recentCornerSamples.removeLast() }
     }
 }

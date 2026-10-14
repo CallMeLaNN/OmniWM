@@ -4,21 +4,25 @@
 import Foundation
 import UniformTypeIdentifiers
 
+struct ShellProviderActionRequest: Sendable {
+    let name: String
+    let arguments: Data
+    let inputs: [ShellResourceID]
+}
+
 extension ShellResourceStore {
     func prepareProviderAction(
         _ key: ShellResourceLeaseKey,
-        name: String,
-        arguments: Data,
-        inputs: [ShellResourceID],
+        action: ShellProviderActionRequest,
         operation: ShellResourceOperation,
         completion: @escaping @Sendable (Result<Data, ShellResourceFailure>) -> Void
     ) {
-        beginAction(key, inputs: inputs, operation: operation) { result in
+        beginAction(key, inputs: action.inputs, operation: operation) { result in
             completion(result.flatMap { files in
                 do { return .success(try ShellProviderResourceProtocol.action(
                     id: key.id.request,
-                    name: name,
-                    arguments: arguments,
+                    name: action.name,
+                    arguments: action.arguments,
                     files: files
                 )) } catch { return .failure(ShellResourceFailure(String(describing: error))) }
             })

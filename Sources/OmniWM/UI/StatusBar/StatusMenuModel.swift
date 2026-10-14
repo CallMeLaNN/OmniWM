@@ -275,7 +275,9 @@ final class StatusMenuModel {
             Log.config.error("settings file action failed: \(error.localizedDescription)")
         }
     }
+}
 
+extension StatusMenuModel {
     func installCLI() {
         guard let cliManager else { return }
         let status = cliManager.exposureStatus()

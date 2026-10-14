@@ -499,7 +499,7 @@ final class ShellWidgetBarLifecycleTests: XCTestCase {
             let ready = AsyncStream.makeStream(of: Void.self)
             var releases = 0
             session.acquire(
-                key: key, ownerPID: getpid(), cachedItems: nil,
+                target: .init(key: key, ownerPID: getpid(), cachedItems: nil),
                 resolve: {
                     started.fulfill()
                     for await _ in ready.stream { break }

@@ -189,25 +189,8 @@ final class ShellShaderDrawer {
         guard let target = targets[frame.slot], target.token == frame.token else { return }
         target.inFlight = false
         let current = target.program === program
-        if let failure = frame.failure {
-            program.fail(failure)
-            if current {
-                clear(target)
-            } else if target.pending {
-                draw(frame.slot, target)
-            }
-            return
-        }
-        if current, frame.duration > Self.frameBudget {
-            target.overruns += 1
-            if target.overruns >= Self.overrunLimit {
-                program.fail("took \(Int((frame.duration * 1000).rounded())) ms per frame, over the 8 ms budget")
-                clear(target)
-                return
-            }
-        } else if current {
-            target.overruns = 0
-        }
+        if handleFailure(frame, target: target, current: current) { return }
+        guard acceptFrameBudget(frame, target: target, current: current) else { return }
         guard current, target.revision == frame.revision else {
             if target.pending { draw(frame.slot, target) }
             return
@@ -228,6 +211,35 @@ final class ShellShaderDrawer {
         if target.pending {
             draw(frame.slot, target)
         }
+    }
+
+    private func handleFailure(_ frame: Frame, target: Target, current: Bool) -> Bool {
+        let program = frame.program
+        if let failure = frame.failure {
+            program.fail(failure)
+            if current {
+                clear(target)
+            } else if target.pending {
+                draw(frame.slot, target)
+            }
+            return true
+        }
+        return false
+    }
+
+    private func acceptFrameBudget(_ frame: Frame, target: Target, current: Bool) -> Bool {
+        let program = frame.program
+        if current, frame.duration > Self.frameBudget {
+            target.overruns += 1
+            if target.overruns >= Self.overrunLimit {
+                program.fail("took \(Int((frame.duration * 1000).rounded())) ms per frame, over the 8 ms budget")
+                clear(target)
+                return false
+            }
+        } else if current {
+            target.overruns = 0
+        }
+        return true
     }
 
     private func clear(_ target: Target) {

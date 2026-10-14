@@ -11,25 +11,25 @@ extension ShellComponentDescriptor {
 }
 
 extension ShellProviderConfiguration {
-    private struct Options: Encodable {
-        struct Value: Encodable {
-            let value: ShellComponentValue
+    private struct OptionValue: Encodable {
+        let value: ShellComponentValue
 
-            func encode(to encoder: any Encoder) throws {
-                var container = encoder.singleValueContainer()
-                switch value {
-                case let .bool(value): try container.encode(value)
-                case let .number(value): try container.encode(value)
-                case let .string(value): try container.encode(value)
-                case let .strings(value): try container.encode(value)
-                }
+        func encode(to encoder: any Encoder) throws {
+            var container = encoder.singleValueContainer()
+            switch value {
+            case let .bool(value): try container.encode(value)
+            case let .number(value): try container.encode(value)
+            case let .string(value): try container.encode(value)
+            case let .strings(value): try container.encode(value)
             }
         }
+    }
 
+    private struct Options: Encodable {
         let values: [String: ShellComponentValue]
 
         func encode(to encoder: any Encoder) throws {
-            try values.mapValues { Value(value: $0) }.encode(to: encoder)
+            try values.mapValues { OptionValue(value: $0) }.encode(to: encoder)
         }
     }
 

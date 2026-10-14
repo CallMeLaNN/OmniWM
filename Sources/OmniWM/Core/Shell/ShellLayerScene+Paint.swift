@@ -124,30 +124,7 @@ extension ShellLayerScene {
             to: fill ?? Self.clear,
             changed: !Self.same(layer.backgroundColor, fill)
         )
-        add(
-            animation,
-            to: layer,
-            "borderColor",
-            from: from.borderColor ?? Self.clear,
-            to: paint.border ?? Self.clear,
-            changed: !Self.same(layer.borderColor, paint.border)
-        )
-        add(
-            animation,
-            to: layer,
-            "borderWidth",
-            from: from.borderWidth,
-            to: paint.borderWidth,
-            changed: layer.borderWidth != paint.borderWidth
-        )
-        add(
-            animation,
-            to: layer,
-            "cornerRadius",
-            from: from.cornerRadius,
-            to: paint.radius,
-            changed: layer.cornerRadius != paint.radius
-        )
+        animateOutline(animation, of: layer, from: from, to: paint)
         add(
             animation,
             to: layer,
@@ -180,6 +157,35 @@ extension ShellLayerScene {
                 quarter: paint.quarter
             )),
             changed: (scales[slot] ?? 1) != paint.scale || (rotations[slot] ?? 0) != paint.rotation
+        )
+    }
+
+    private func animateOutline(
+        _ animation: ShellAnimation, of layer: CALayer, from: CALayer, to paint: ShellLayerPaint
+    ) {
+        add(
+            animation,
+            to: layer,
+            "borderColor",
+            from: from.borderColor ?? Self.clear,
+            to: paint.border ?? Self.clear,
+            changed: !Self.same(layer.borderColor, paint.border)
+        )
+        add(
+            animation,
+            to: layer,
+            "borderWidth",
+            from: from.borderWidth,
+            to: paint.borderWidth,
+            changed: layer.borderWidth != paint.borderWidth
+        )
+        add(
+            animation,
+            to: layer,
+            "cornerRadius",
+            from: from.cornerRadius,
+            to: paint.radius,
+            changed: layer.cornerRadius != paint.radius
         )
     }
 

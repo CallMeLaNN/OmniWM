@@ -69,62 +69,89 @@ struct ShellDropSnapshot {
             throw ShellResourceFailure("pasteboard representations do not match their items")
         }
         for (index, item) in items.enumerated() {
-            let url = urls[index] as? URL
-            if !receivers.isEmpty, let receiver = receivers[index] as? NSFilePromiseReceiver,
-               accepts.contains(.file) || accepts.contains(.image) && isImagePromise(receiver)
-            {
-                snapshot.promises.append(receiver)
-            } else if let url, url.isFileURL,
-                      accepts.contains(.file) || accepts
-                      .contains(.image) && UTType(filenameExtension: url.pathExtension)?.conforms(to: .image) == true
-            {
-                let type = UTType(filenameExtension: url.pathExtension)
-                snapshot.items.append(ShellDropItem(
-                    name: url.lastPathComponent,
-                    kind: "file",
-                    uti: type?.identifier ?? UTType.data.identifier,
-                    source: .file(url)
-                ))
-            } else if accepts.contains(.url), let url, !url.isFileURL, let scheme = url.scheme, !scheme.isEmpty {
-                let string = url.absoluteString
-                guard string.utf8.count <= inlineByteLimit - bytes
-                else { throw ShellResourceFailure("inline drop data exceeds 16 MiB") }
-                bytes += string.utf8.count
-                snapshot.items.append(ShellDropItem(
-                    name: String(string.prefix(256)),
-                    kind: "url",
-                    uti: UTType.url.identifier,
-                    source: .url(url)
-                ))
-            } else if accepts.contains(.image), let type = item.availableType(from: [.png, .tiff]),
-                      let data = item.data(forType: type)
-            {
-                guard data.count <= inlineByteLimit - bytes
-                else { throw ShellResourceFailure("inline drop data exceeds 16 MiB") }
-                bytes += data.count
-                snapshot.items.append(ShellDropItem(
-                    name: type == .png ? "Image.png" : "Image.tiff",
-                    kind: "image",
-                    uti: type == .png ? UTType.png.identifier : UTType.tiff.identifier,
-                    source: .bytes(data)
-                ))
-            } else if accepts.contains(.text), let text = item.string(forType: .string) ?? url?.absoluteString {
-                guard text.utf8.count <= inlineByteLimit - bytes
-                else { throw ShellResourceFailure("inline drop data exceeds 16 MiB") }
-                bytes += text.utf8.count
-                snapshot.items.append(ShellDropItem(
-                    name: "Text",
-                    kind: "text",
-                    uti: UTType.utf8PlainText.identifier,
-                    source: .text(text)
-                ))
-            }
+            try snapshot.append(
+                item,
+                url: urls[index] as? URL,
+                receiver: receivers.isEmpty ? nil : receivers[index] as? NSFilePromiseReceiver,
+                accepts: accepts,
+                bytes: &bytes
+            )
             guard snapshot.items.count + snapshot.promises.count <= ShellFilePromiseBatch.itemLimit
             else { throw ShellResourceFailure("drop exceeds 32 items") }
         }
         guard !snapshot.items.isEmpty || !snapshot.promises.isEmpty
         else { throw ShellResourceFailure("drop has no supported items") }
         return snapshot
+    }
+
+    private mutating func append(
+        _ item: NSPasteboardItem,
+        url: URL?,
+        receiver: NSFilePromiseReceiver?,
+        accepts: ShellDropTypes,
+        bytes: inout Int
+    ) throws {
+        if let receiver,
+           accepts.contains(.file) || accepts.contains(.image) && Self.isImagePromise(receiver)
+        {
+            promises.append(receiver)
+        } else if let url, url.isFileURL,
+                  accepts.contains(.file) || accepts
+                  .contains(.image) && UTType(filenameExtension: url.pathExtension)?.conforms(to: .image) == true
+        {
+            let type = UTType(filenameExtension: url.pathExtension)
+            items.append(ShellDropItem(
+                name: url.lastPathComponent,
+                kind: "file",
+                uti: type?.identifier ?? UTType.data.identifier,
+                source: .file(url)
+            ))
+        } else if let value = try Self.inlineItem(item, url: url, accepts: accepts, bytes: &bytes) {
+            items.append(value)
+        }
+    }
+
+    private static func inlineItem(
+        _ item: NSPasteboardItem,
+        url: URL?,
+        accepts: ShellDropTypes,
+        bytes: inout Int
+    ) throws -> ShellDropItem? {
+        if accepts.contains(.url), let url, !url.isFileURL, let scheme = url.scheme, !scheme.isEmpty {
+            let string = url.absoluteString
+            guard string.utf8.count <= inlineByteLimit - bytes
+            else { throw ShellResourceFailure("inline drop data exceeds 16 MiB") }
+            bytes += string.utf8.count
+            return ShellDropItem(
+                name: String(string.prefix(256)),
+                kind: "url",
+                uti: UTType.url.identifier,
+                source: .url(url)
+            )
+        } else if accepts.contains(.image), let type = item.availableType(from: [.png, .tiff]),
+                  let data = item.data(forType: type)
+        {
+            guard data.count <= inlineByteLimit - bytes
+            else { throw ShellResourceFailure("inline drop data exceeds 16 MiB") }
+            bytes += data.count
+            return ShellDropItem(
+                name: type == .png ? "Image.png" : "Image.tiff",
+                kind: "image",
+                uti: type == .png ? UTType.png.identifier : UTType.tiff.identifier,
+                source: .bytes(data)
+            )
+        } else if accepts.contains(.text), let text = item.string(forType: .string) ?? url?.absoluteString {
+            guard text.utf8.count <= inlineByteLimit - bytes
+            else { throw ShellResourceFailure("inline drop data exceeds 16 MiB") }
+            bytes += text.utf8.count
+            return ShellDropItem(
+                name: "Text",
+                kind: "text",
+                uti: UTType.utf8PlainText.identifier,
+                source: .text(text)
+            )
+        }
+        return nil
     }
 
     private static func isImagePromise(_ receiver: NSFilePromiseReceiver) -> Bool {

@@ -64,47 +64,54 @@ extension ShellLayerScene {
             opacity: Double(layer.opacity)
         )
         if let animation {
-            add(
-                animation,
-                to: layer,
-                "transform.translation.x",
-                from: value.dx,
-                to: 0,
-                changed: value.dx != 0,
-                velocity: velocity.dx
-            )
-            add(
-                animation,
-                to: layer,
-                "transform.translation.y",
-                from: value.dy,
-                to: 0,
-                changed: value.dy != 0,
-                velocity: velocity.dy
-            )
-            add(
-                animation,
-                to: layer,
-                "transform.scale",
-                from: value.scale,
-                to: 1,
-                changed: value.scale != 1,
-                velocity: velocity.scale
-            )
-            add(
-                animation,
-                to: layer,
-                "opacity",
-                from: value.opacity,
-                to: 1,
-                changed: value.opacity != 1,
-                velocity: velocity.opacity
-            )
+            animateGestureSettlement(animation, on: layer, from: value, velocity: velocity)
         } else {
             clearGestureAnimations(layer)
         }
         layer.transform = CATransform3DIdentity
         layer.opacity = 1
+    }
+
+    private func animateGestureSettlement(
+        _ animation: ShellAnimation, on layer: CALayer,
+        from value: ShellGestureTransform, velocity: ShellGestureTransform
+    ) {
+        add(
+            animation,
+            to: layer,
+            "transform.translation.x",
+            from: value.dx,
+            to: 0,
+            changed: value.dx != 0,
+            velocity: velocity.dx
+        )
+        add(
+            animation,
+            to: layer,
+            "transform.translation.y",
+            from: value.dy,
+            to: 0,
+            changed: value.dy != 0,
+            velocity: velocity.dy
+        )
+        add(
+            animation,
+            to: layer,
+            "transform.scale",
+            from: value.scale,
+            to: 1,
+            changed: value.scale != 1,
+            velocity: velocity.scale
+        )
+        add(
+            animation,
+            to: layer,
+            "opacity",
+            from: value.opacity,
+            to: 1,
+            changed: value.opacity != 1,
+            velocity: velocity.opacity
+        )
     }
 
     private func clearGestureAnimations(_ layer: CALayer) {
