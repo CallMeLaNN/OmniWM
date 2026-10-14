@@ -27,7 +27,8 @@ extension SkyLight {
             windowIteratorGetWindowID = queries.windowIteratorGetWindowID,
             windowIteratorGetBounds = queries.windowIteratorGetBounds,
             windowIteratorGetResolvedCornerRadii = queries.windowIteratorGetResolvedCornerRadii,
-            windowIteratorGetCornerRadii = queries.windowIteratorGetCornerRadii
+            windowIteratorGetCornerRadii = queries.windowIteratorGetCornerRadii,
+            captureWindowList = surfaces.captureWindowList
         ] cid in
             let windowNumbers = [NSNumber(value: wid)] as CFArray
             guard let query = windowQueryWindows(cid, windowNumbers, 1)?.takeRetainedValue(),
@@ -41,7 +42,21 @@ extension SkyLight {
                 return sample
             }
             let raw = windowIteratorGetCornerRadii(iterator, 0)?.takeRetainedValue()
-            return Self.cornerSample(resolved: nil, raw: raw, observedSize: observedSize)
+            if let sample = Self.cornerSample(resolved: nil, raw: raw, observedSize: observedSize) {
+                return sample
+            }
+            guard observedSize.hasFinitePositiveDimensions(),
+                  let captureWindowList, CGPreflightScreenCaptureAccess()
+            else { return nil }
+            var windowId = wid
+            guard let images = captureWindowList(cid, &windowId, 1, (1 << 11) | (1 << 8) | (1 << 19))?
+                .takeRetainedValue(),
+                let image = Self.firstCapturedImage(in: images),
+                let contour = WindowCornerContour(image: image, observedSize: observedSize)
+            else { return nil }
+            return WindowCornerSample(
+                radii: .zero, observedSize: observedSize, source: .captured, contour: contour
+            )
         }
     }
 

@@ -48,6 +48,7 @@ final class BorderWindow {
     private var lastOrderedTargetToken: WindowToken?
     private var lastConfiguredScale: CGFloat = 0
     private var currentCornerRadii: WindowCornerRadii
+    private var currentCornerContour: WindowCornerContour?
     private var cachedScale: CGFloat = 0
     private var cachedScaleScreenFrame: CGRect = .null
     private var cachedTargetLevel: CachedTargetLevel?
@@ -71,6 +72,7 @@ final class BorderWindow {
         self.operations = operations
         self.defaultCornerRadii = defaultCornerRadii
         self.currentCornerRadii = defaultCornerRadii
+        currentCornerContour = nil
     }
 
     isolated deinit {
@@ -91,6 +93,7 @@ final class BorderWindow {
         pendingTargetLevelRetryToken = nil
         needsWindowLevelRetry = false
         currentCornerRadii = defaultCornerRadii
+        currentCornerContour = nil
     }
 
     @discardableResult
@@ -98,6 +101,7 @@ final class BorderWindow {
         frame targetFrame: CGRect,
         targetToken: WindowToken,
         cornerRadii: WindowCornerRadii? = nil,
+        cornerContour: WindowCornerContour? = nil,
         forceOrdering: Bool = false
     ) -> Bool {
         BorderOpMetricsRecorder.shared.noteUpdate()
@@ -132,11 +136,12 @@ final class BorderWindow {
             BorderOpMetricsRecorder.shared.noteReshape()
             needsRedraw = true
         }
-        if currentCornerRadii != resolvedCornerRadii {
+        if currentCornerRadii != resolvedCornerRadii || currentCornerContour != cornerContour {
             needsRedraw = true
         }
         currentSurfaceFrame = localGeometry.surfaceFrame
         currentCornerRadii = resolvedCornerRadii
+        currentCornerContour = cornerContour
 
         updateLayerGeometry(localGeometry)
 
@@ -355,7 +360,8 @@ extension BorderWindow {
         )
         layerPanel.updateEffects(
             geometry: geometry, cornerRadii: currentCornerRadii,
-            config: config, baseColor: color, scale: lastConfiguredScale
+            config: config, baseColor: color, scale: lastConfiguredScale,
+            cornerContour: currentCornerContour
         )
         needsRedraw = false
         BorderOpMetricsRecorder.shared.noteRedraw()
