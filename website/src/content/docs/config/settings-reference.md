@@ -465,6 +465,8 @@ minWidth = 574.0
 
 Five arrays hold per-monitor exceptions to the global tables. Every entry requires `monitorName`. Use the display’s `monitorDisplayUUID`; for a display without a UUID, supply both `monitorDisplayId` and `monitorName`. A name alone does not match a display. All entries except orientation also carry an `id` UUID identifying the override row, not the display. Override keys are all optional — an omitted key falls back to the corresponding global setting. All five arrays default to empty. Custom routing grids live separately in [`routing.arrangements`](#routing).
 
+Empty monitor override arrays are omitted when OmniWM saves the file. Add a `[[monitorGapOverrides]]` table to create an override; delete its whole table to remove it. An absent array means no overrides. If your file contains a line such as `monitorGapOverrides = []`, delete that line before adding tables with the same name: TOML does not allow both forms together.
+
 When `workspaceBar.enabled = false`, no monitor can show its bar. Saved `monitorBarOverrides.enabled` values take effect again when the global bar is enabled.
 
 | Array | Overridable keys |

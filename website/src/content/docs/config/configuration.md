@@ -32,6 +32,7 @@ The searchable Settings window groups controls by task. **Desktop** contains Sty
 
 - Saving `settings.toml` from an editor applies the changes immediately; no restart needed.
 - If the file cannot be parsed, OmniWM leaves it untouched and reports the problem in Diagnostics: at startup it runs with defaults, and a malformed live edit leaves the active settings unchanged. If you later save from the Settings window, OmniWM first secures the exact rejected bytes as `settings.toml.corrupt` (then `settings.toml.corrupt.1`) next to the config file — two write-once slots — before replacing the file.
+- Rejected edits and blocked writes also show an on-screen notice with the file path and error, even with the menu bar hidden. **Edit Settings File** opens the file for correction. The notice stays until dismissed or the error clears; repeated reports of the same error do not reopen a dismissed notice.
 - Unrecognized keys are preserved on save and reported by the built-in diagnostics rather than deleted. If an unrecognized key belongs to an array element that cannot be matched unambiguously after an edit, OmniWM leaves the file untouched and blocks writes instead of attaching the key to the wrong element.
 
 ### Automatic version upgrades

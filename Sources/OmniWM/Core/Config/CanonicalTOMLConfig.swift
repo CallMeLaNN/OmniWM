@@ -94,14 +94,20 @@ extension CanonicalTOMLConfig {
         hotkeys = try HotkeyBindingRegistry.resolve(persistedHotkeys)
         workspaces = try container.decode([WorkspaceConfiguration].self, forKey: .workspaces)
         appRules = try container.decode([AppRule].self, forKey: .appRules)
-        monitorBarOverrides = try container.decode([MonitorBarSettings].self, forKey: .monitorBarOverrides)
-        monitorOrientationOverrides = try container.decode(
+        monitorBarOverrides = try container
+            .decodeIfPresent([MonitorBarSettings].self, forKey: .monitorBarOverrides) ?? []
+        monitorOrientationOverrides = try container.decodeIfPresent(
             [MonitorOrientationSettings].self,
             forKey: .monitorOrientationOverrides
-        )
-        monitorNiriOverrides = try container.decode([MonitorNiriSettings].self, forKey: .monitorNiriOverrides)
-        monitorDwindleOverrides = try container.decode([MonitorDwindleSettings].self, forKey: .monitorDwindleOverrides)
-        monitorGapOverrides = try container.decode([MonitorGapSettings].self, forKey: .monitorGapOverrides)
+        ) ?? []
+        monitorNiriOverrides = try container
+            .decodeIfPresent([MonitorNiriSettings].self, forKey: .monitorNiriOverrides) ?? []
+        monitorDwindleOverrides = try container.decodeIfPresent(
+            [MonitorDwindleSettings].self,
+            forKey: .monitorDwindleOverrides
+        ) ?? []
+        monitorGapOverrides = try container
+            .decodeIfPresent([MonitorGapSettings].self, forKey: .monitorGapOverrides) ?? []
     }
 }
 
