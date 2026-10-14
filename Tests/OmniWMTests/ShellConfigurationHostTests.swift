@@ -545,13 +545,22 @@ final class ShellConfigurationHostTests: XCTestCase {
         try await fixture.load()
         let before = try Data(contentsOf: fixture.shell.appendingPathComponent("shell.toml"))
         try fixture.component("box", uses: ["missing"])
+        let writes = Mutex(0)
+        fixture.host.configurationWriter = ShellIslandConfigWriter(
+            shellDirectory: fixture.shell,
+            writeFile: { data, url in
+                writes.withLock { $0 += 1 }
+                try SettingsFileAccess.writeAtomically(data, at: url)
+            },
+            reloadReady: {}
+        )
         let rejected = expectation(description: "source resolution fails before mutation")
         fixture.sink.watch(2, expectation: rejected)
         fixture.trigger()
         await fulfillment(of: [rejected], timeout: 10)
         XCTAssertTrue(fixture.host.config.island?.components.isEmpty == true)
         XCTAssertEqual(try Data(contentsOf: fixture.shell.appendingPathComponent("shell.toml")), before)
-        XCTAssertNil(fixture.host.configurationWriter)
+        XCTAssertEqual(writes.withLock { $0 }, 0)
         XCTAssertEqual(fixture.state.generation, 7)
         XCTAssertEqual(fixture.host.configurationWorkCount, 0)
         await fixture.close()

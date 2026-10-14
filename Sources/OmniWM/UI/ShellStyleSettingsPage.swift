@@ -130,7 +130,7 @@ struct ShellStyleSettingsPage: View {
             }
         }
         .task {
-            do { try await configuration.refresh() }
+            do { try await configuration.ensureLoaded() }
             catch { editError = error.localizedDescription }
         }
         .task(id: PreviewSelection(profile: previewProfile, revision: configuration.revision)) {

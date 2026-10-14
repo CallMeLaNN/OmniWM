@@ -79,7 +79,7 @@ struct WorkspaceBarSettingsTab: View {
             }
         }
         .task {
-            do { try await configuration.refresh() } catch { editError = error.localizedDescription }
+            do { try await configuration.ensureLoaded() } catch { editError = error.localizedDescription }
             applyRoute()
         }
         .onChange(of: navigation.route) { _, _ in applyRoute() }

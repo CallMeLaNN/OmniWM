@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 // Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
 
+import AppKit
 import SwiftUI
 
 struct ShellWidgetLibraryEntry: Identifiable {
@@ -23,6 +24,7 @@ struct WidgetsSettingsPage: View {
     @State private var editError: String?
     @State private var widgetStates: [String: String] = [:]
     @State private var widgetErrors: [String: String] = [:]
+    @State private var monitors = Monitor.current()
 
     private var configuration: ShellConfigurationCoordinator {
         controller.workspaceBarManager.shellConfiguration
@@ -37,6 +39,7 @@ struct WidgetsSettingsPage: View {
     }
 
     var body: some View {
+        let vertical = ShellBarLayout.vertical(settings.workspaceBar, on: monitors)
         Form {
             Section {
                 TextField("Search widgets", text: $query).textFieldStyle(.roundedBorder)
@@ -81,7 +84,7 @@ struct WidgetsSettingsPage: View {
                             if entry.bar {
                                 if let lane = configuration.config.barLane(of: entry.name) {
                                     Text(
-                                        "On Bar · \(ShellBarLayout.side(lane, vertical: ShellBarLayout.vertical(settings.workspaceBar, on: Monitor.current())))"
+                                        "On Bar · \(ShellBarLayout.side(lane, vertical: vertical))"
                                     )
                                     .font(.caption).foregroundStyle(.secondary)
                                     Button("Remove from Bar") {
@@ -92,8 +95,7 @@ struct WidgetsSettingsPage: View {
                                         ForEach(ShellLane.allCases, id: \.self) { lane in
                                             Button(ShellBarLayout.side(
                                                 lane,
-                                                vertical: ShellBarLayout
-                                                    .vertical(settings.workspaceBar, on: Monitor.current())
+                                                vertical: vertical
                                             )) {
                                                 perform {
                                                     try await configuration.editBar { $0.add(entry.name, to: lane) }
@@ -138,14 +140,20 @@ struct WidgetsSettingsPage: View {
         }
         .formStyle(.grouped)
         .task {
-            do { try await configuration.refresh() } catch { editError = error.localizedDescription }
+            do { try await configuration.ensureLoaded() } catch { editError = error.localizedDescription }
             reload()
             applyRoute()
         }
         .onChange(of: configuration.config) { _, _ in reload() }
+        .onChange(of: configuration.barLayout) { _, _ in reload() }
         .onChange(of: configuration.catalog) { _, _ in reload() }
         .onChange(of: navigation.route) { _, _ in applyRoute() }
         .onReceive(NotificationCenter.default.publisher(for: .shellWidgetsDidChange)) { _ in reloadStatus() }
+        .onReceive(NotificationCenter.default
+            .publisher(for: NSApplication.didChangeScreenParametersNotification))
+        { _ in
+            monitors = Monitor.current()
+        }
         .sheet(isPresented: Binding(get: { selectedWidget != nil }, set: { if !$0 { selectedWidget = nil } })) {
             if let widget = selectedWidget { ShellWidgetInspector(configuration: configuration, widget: widget) }
         }
@@ -159,10 +167,8 @@ struct WidgetsSettingsPage: View {
 
     private func reload() {
         var available: [String: ShellWidgetLibraryEntry] = [:]
-        if case let .success(layout) = ShellBarLayout.load(shellDirectory: configuration.shellDirectory) {
-            for widget in layout.widgets where widget.name != configuration.config.island?.root {
-                available[widget.name] = ShellWidgetLibraryEntry(name: widget.name, bar: true)
-            }
+        for widget in configuration.availableWidgets where widget != configuration.config.island?.root {
+            available[widget] = ShellWidgetLibraryEntry(name: widget, bar: true)
         }
         for entry in configuration.catalog?.entries ?? [] where entry.descriptor != nil {
             var value = available[entry.widget] ?? ShellWidgetLibraryEntry(name: entry.widget)

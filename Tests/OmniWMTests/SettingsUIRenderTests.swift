@@ -220,6 +220,14 @@ final class SettingsUIRenderTests: XCTestCase {
         try await preparePreviews(
             fixture: fixture, section: section, dark: windowClass.dark, scale: window.backingScaleFactor
         )
+        if section == .styles {
+            let configuration = fixture.controller.workspaceBarManager.shellConfiguration
+            let revision = configuration.revision
+            NotificationCenter.default.post(name: .shellWidgetsDidChange, object: nil)
+            await display(window, appearance: appearance)
+            await configuration.flush()
+            XCTAssertEqual(configuration.revision, revision, "Widget runtime status must preserve preview identity")
+        }
         let currentSize = window.contentRect(forFrameRect: window.frame).size
         let layoutSize = window.contentLayoutRect.size
         window.setContentSize(CGSize(

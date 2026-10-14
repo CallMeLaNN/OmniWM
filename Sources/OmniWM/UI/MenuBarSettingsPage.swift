@@ -15,7 +15,7 @@ struct MenuBarSettingsPage: View {
 
     var body: some View {
         TabView(selection: selection) {
-            Tab("OmniWM Status Item", systemImage: "menubar.rectangle", value: "status") {
+            Tab("macOS Status Item", systemImage: "menubar.rectangle", value: "status") {
                 Form {
                     Section("Status Bar") {
                         Toggle("Show Workspace", isOn: Bindable(settings.statusBar).showWorkspaceName)
@@ -42,7 +42,7 @@ struct MenuBarSettingsPage: View {
                             }
                             .disabled(!settings.statusBar.showWorkspaceName)
                         SettingsCaption(
-                            localized: "Shows the active workspace and focused app beside the menu bar icon"
+                            localized: "Controls OmniWM’s item in the macOS menu bar. Show Workspace adds the active workspace and enables the app name and icon options."
                         )
                     }
                     .id("Status Bar")

@@ -43,14 +43,28 @@ struct ShellBarLayout: Equatable, Sendable {
         guard let config = loaded else {
             return .failure(Unreadable(problem: problems.last ?? "shell.toml"))
         }
-        return .success(ShellBarLayout(
-            leading: config.leading,
-            center: config.center,
-            trailing: config.trailing,
-            widgets: available(config: config, shellDirectory: shellDirectory),
-            profile: config.profile,
-            customized: ShellProfiles.hasTopLevel(keys(of: config.profile), in: shellDirectory)
-        ))
+        return .success(ShellBarLayout(config: config, shellDirectory: shellDirectory))
+    }
+
+    init(config: ShellConfig, shellDirectory: URL) {
+        leading = config.leading
+        center = config.center
+        trailing = config.trailing
+        widgets = Self.available(config: config, shellDirectory: shellDirectory)
+        profile = config.profile
+        customized = ShellProfiles.hasTopLevel(Self.keys(of: config.profile), in: shellDirectory)
+    }
+
+    init(
+        leading: [String], center: [String] = [], trailing: [String], widgets: [Widget],
+        profile: String, customized: Bool
+    ) {
+        self.leading = leading
+        self.center = center
+        self.trailing = trailing
+        self.widgets = widgets
+        self.profile = profile
+        self.customized = customized
     }
 
     @discardableResult

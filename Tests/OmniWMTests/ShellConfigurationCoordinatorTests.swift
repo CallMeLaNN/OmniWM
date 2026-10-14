@@ -2,6 +2,7 @@
 // Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
 
 import Foundation
+import Observation
 @testable import OmniWM
 import Synchronization
 import XCTest
@@ -241,6 +242,192 @@ final class ShellConfigurationCoordinatorTests: XCTestCase {
             XCTFail("The refreshed maximum must reject 540")
         } catch {}
         XCTAssertEqual(try Data(contentsOf: shell.appendingPathComponent("shell.toml")), saved)
+    }
+
+    func testUnchangedRefreshKeepsPreviewRevisionMetadataAndPublication() async throws {
+        let shell = try fixture()
+        defer { try? FileManager.default.removeItem(at: shell) }
+        let coordinator = ShellConfigurationCoordinator(shellDirectory: shell)
+        try await coordinator.refresh()
+        let initialRevision = coordinator.revision
+        let catalog = try XCTUnwrap(coordinator.catalog)
+        let schemas = coordinator.widgetSchemas
+        let layout = coordinator.barLayout
+        var publications = 0
+        coordinator.onSave = { _ in publications += 1 }
+        for _ in 0 ..< 3 { try await coordinator.refresh() }
+        XCTAssertEqual(coordinator.revision, initialRevision)
+        XCTAssertEqual(coordinator.catalog, catalog)
+        XCTAssertEqual(coordinator.widgetSchemas, schemas)
+        XCTAssertEqual(coordinator.barLayout, layout)
+        XCTAssertEqual(publications, 0)
+    }
+
+    func testLoadedPageAndProfilePreviewReusePreparedValues() async throws {
+        let shell = try fixture()
+        defer { try? FileManager.default.removeItem(at: shell) }
+        let coordinator = ShellConfigurationCoordinator(shellDirectory: shell)
+        try await coordinator.ensureLoaded()
+        let system = try await coordinator.previewConfig(profile: "system")
+        let revision = coordinator.revision
+        try Data("not valid = [".utf8).write(to: shell.appendingPathComponent("shell.toml"))
+        try await coordinator.ensureLoaded()
+        let cached = try await coordinator.previewConfig(profile: "system")
+        XCTAssertEqual(cached, system)
+        XCTAssertEqual(coordinator.revision, revision)
+        do {
+            try await coordinator.refresh()
+            XCTFail("An explicit refresh must report the broken configuration")
+        } catch {}
+        XCTAssertEqual(coordinator.revision, revision)
+    }
+
+    func testScalarSavePublishesOnceWithoutInvalidatingAgainOnRefresh() async throws {
+        let shell = try fixture()
+        defer { try? FileManager.default.removeItem(at: shell) }
+        let coordinator = ShellConfigurationCoordinator(shellDirectory: shell)
+        try await coordinator.refresh()
+        let revision = coordinator.revision
+        var publications = 0
+        coordinator.onSave = { _ in publications += 1 }
+        try await coordinator.set(46, key: "height")
+        XCTAssertEqual(publications, 1)
+        XCTAssertEqual(coordinator.revision, revision + 1)
+        try await coordinator.refresh()
+        XCTAssertEqual(publications, 1)
+        XCTAssertEqual(coordinator.revision, revision + 1)
+        XCTAssertEqual(coordinator.barLayout?.profile, "lake")
+    }
+
+    func testCompletedWritePublishesAfterTheLiveHostAdoptsTheSavedValue() async throws {
+        let shell = try fixture()
+        defer { try? FileManager.default.removeItem(at: shell) }
+        let coordinator = ShellConfigurationCoordinator(shellDirectory: shell)
+        try await coordinator.refresh()
+        var publications = 0
+        coordinator.onSave = { _ in publications += 1 }
+        let written = expectation(description: "configuration written before reload")
+        let release = DispatchSemaphore(value: 0)
+        defer { release.signal() }
+        coordinator.writer = ShellIslandConfigWriter(shellDirectory: shell, writeFile: { data, url in
+            try SettingsFileAccess.writeAtomically(data, at: url)
+            written.fulfill()
+            release.wait()
+        }, reloadReady: {})
+        let edit = Task { try await coordinator.island(.rootSetting(key: "width", value: .number(540))) }
+        await fulfillment(of: [written], timeout: 5)
+        coordinator.adopt(try load(shell))
+        XCTAssertEqual(publications, 0)
+        release.signal()
+        _ = try await edit.value
+        XCTAssertEqual(publications, 1)
+        try await coordinator.refresh()
+        XCTAssertEqual(publications, 1)
+    }
+
+    func testSourceAndAssetEditsRefreshWithNoLiveShellHost() async throws {
+        for path in ["lib/sample.luau", "shaders/sample.metal", "assets/sample.png"] {
+            let shell = try fixture()
+            defer { try? FileManager.default.removeItem(at: shell) }
+            let file = shell.appendingPathComponent(path)
+            try FileManager.default.createDirectory(
+                at: file.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try Data("before".utf8).write(to: file)
+            let coordinator = ShellConfigurationCoordinator(shellDirectory: shell)
+            try await coordinator.refresh()
+            coordinator.startObserving()
+            defer { coordinator.stopObserving() }
+            try await coordinator.refresh()
+            let revision = coordinator.revision
+            let changed = expectation(description: "Source content revision published for " + path)
+            withObservationTracking { _ = coordinator.revision } onChange: { changed.fulfill() }
+            try Data("after-content".utf8).write(to: file)
+            await fulfillment(of: [changed], timeout: 5)
+            await coordinator.flush()
+            XCTAssertEqual(coordinator.revision, revision + 1)
+            XCTAssertNil(coordinator.metadataError)
+        }
+    }
+
+    func testObservedSchemaAndConfigurationEditsUpdateTheirOwners() async throws {
+        let shell = try fixture()
+        defer { try? FileManager.default.removeItem(at: shell) }
+        let coordinator = ShellConfigurationCoordinator(shellDirectory: shell)
+        try await coordinator.refresh()
+        coordinator.startObserving()
+        defer { coordinator.stopObserving() }
+        try await coordinator.refresh()
+        let clock = try XCTUnwrap(coordinator.widgetSchemas["clock"])
+        let changed = expectation(description: "Schema edit published")
+        withObservationTracking { _ = coordinator.revision } onChange: { changed.fulfill() }
+        try Data("[options.date]\ntype = 'number'\ndefault = 5\n".utf8)
+            .write(to: clock.folder.appendingPathComponent("settings.toml"))
+        await fulfillment(of: [changed], timeout: 5)
+        await coordinator.flush()
+        XCTAssertEqual(coordinator.widgetSchemas["clock"]?.options["date"]?.kind, .number)
+        let published = expectation(description: "External configuration applied")
+        coordinator.onSave = { config in
+            XCTAssertEqual(config.barOverride?.settings.height, 47)
+            published.fulfill()
+        }
+        _ = try ShellProfiles.setValue(47, at: ShellProfiles.key("workspaceBar", of: "lake") + ["height"], in: shell)
+        await fulfillment(of: [published], timeout: 5)
+        await coordinator.flush()
+        XCTAssertEqual(coordinator.config.barOverride?.settings.height, 47)
+    }
+
+    func testFirstImplicitProfileEditUsesTheDiskSelectedStyle() async throws {
+        let shell = try fixture()
+        defer { try? FileManager.default.removeItem(at: shell) }
+        let coordinator = ShellConfigurationCoordinator(shellDirectory: shell)
+        try await coordinator.set(45, key: "height")
+        XCTAssertEqual(coordinator.config.profile, "lake")
+        XCTAssertEqual(coordinator.config.barOverride?.settings.height, 45)
+        var problems: [String] = []
+        let defaultStyle = try XCTUnwrap(ShellConfig.load(
+            profile: "default",
+            shellDirectory: shell,
+            problems: &problems
+        ))
+        XCTAssertNotEqual(defaultStyle.barOverride?.settings.height, 45)
+    }
+
+    func testComponentSourceRemovalAndRestorationRefreshTheCatalog() async throws {
+        let shell = try fixture()
+        defer { try? FileManager.default.removeItem(at: shell) }
+        let coordinator = ShellConfigurationCoordinator(shellDirectory: shell)
+        try await coordinator.refresh()
+        let descriptor = try XCTUnwrap(coordinator.catalog?.descriptors["world-clock"])
+        let file = descriptor.folder.appendingPathComponent("component.luau")
+        let original = try Data(contentsOf: file)
+        try FileManager.default.removeItem(at: file)
+        try await coordinator.refresh()
+        XCTAssertNil(coordinator.catalog?.descriptors["world-clock"])
+        try original.write(to: file)
+        try await coordinator.refresh()
+        XCTAssertNotNil(coordinator.catalog?.descriptors["world-clock"])
+    }
+
+    func testFirstRootConfigurationWriteDoesNotInvalidateAgainOnRefresh() async throws {
+        let shell = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: shell) }
+        let coordinator = ShellConfigurationCoordinator(shellDirectory: shell)
+        try await coordinator.refresh()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: shell.appendingPathComponent("shell.toml").path))
+        let revision = coordinator.revision
+        try await coordinator.set(43, key: "height")
+        XCTAssertEqual(coordinator.revision, revision + 1)
+        try await coordinator.refresh()
+        XCTAssertEqual(coordinator.revision, revision + 1)
+    }
+
+    private func fixture() throws -> URL {
+        let shell = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        _ = ShellDefaults.sync(into: shell)
+        _ = try ShellProfiles.select("lake", in: shell)
+        return shell
     }
 
     private func load(_ shell: URL) throws -> ShellConfig {

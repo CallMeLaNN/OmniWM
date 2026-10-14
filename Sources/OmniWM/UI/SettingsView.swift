@@ -34,7 +34,11 @@ struct SettingsView: View {
         } message: {
             Text("You have unsaved changes to this app rule.")
         }
-        .task { controller.refreshDiagnosticsIssues() }
+        .task {
+            controller.workspaceBarManager.shellConfiguration.startObserving()
+            controller.refreshDiagnosticsIssues()
+        }
+        .onDisappear { controller.workspaceBarManager.shellConfiguration.stopObserving() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             controller.refreshDiagnosticsIssues()
             guard [.styles, .bar, .island, .widgets, .menuBar, .advanced].contains(navigation.section) else { return }
@@ -42,9 +46,6 @@ struct SettingsView: View {
                 do { try await controller.workspaceBarManager.shellConfiguration.refresh() }
                 catch { refreshError = error.localizedDescription }
             }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .shellWidgetsDidChange)) { _ in
-            controller.workspaceBarManager.shellConfiguration.invalidatePreviews()
         }
         .shellSettingsError($refreshError, title: "Unable to Refresh Shell Settings")
     }

@@ -27,10 +27,16 @@ final class ShellConfigurationCoordinator {
     private(set) var config = ShellConfig()
     private(set) var catalog: ShellConfigurationCatalog?
     private(set) var widgetSchemas: [String: ShellRootSettings] = [:]
+    private(set) var barLayout: ShellBarLayout?
+    var availableWidgets: [String] {
+        barLayout?.widgets.map(\.name) ?? []
+    }
+
     private(set) var profiles: [String] = []
     private(set) var themes: [String] = []
     private(set) var revision: UInt64 = 0
     private(set) var metadataError: String?
+    private(set) var configProblems: [String] = []
     private var pendingCount = 0
     var isSaving: Bool {
         pendingCount > 0
@@ -42,6 +48,13 @@ final class ShellConfigurationCoordinator {
     @ObservationIgnored private let sourceLoader = ShellWidgetSourceLoader()
     @ObservationIgnored private var defaultsInstalled = false
     @ObservationIgnored private var metadataScope: MetadataScope?
+    @ObservationIgnored private var inputs: ShellConfigurationInputs?
+    @ObservationIgnored private var previewConfigurations: [String: ShellConfig] = [:]
+    @ObservationIgnored private var previewGeneration: UInt64 = 0
+    @ObservationIgnored private var observation: ShellDirectoryObservation?
+    @ObservationIgnored private var observationTask: Task<Void, Never>?
+    @ObservationIgnored private var needsRefresh = false
+    @ObservationIgnored private var observationGeneration: UInt64 = 0
     @ObservationIgnored private let onDefaultsUpdated: @MainActor ([URL]) -> Void
     @ObservationIgnored var onSave: (@MainActor (ShellConfig) -> Void)?
 
@@ -56,32 +69,63 @@ final class ShellConfigurationCoordinator {
     }
 
     func adopt(_ config: ShellConfig) {
+        guard self.config != config else { return }
         self.config = config
-        revision += 1
+        clearProfilePreviews()
+        requestRefresh()
     }
 
     func invalidatePreviews() {
         metadataScope = nil
-        revision += 1
+        clearProfilePreviews()
+    }
+
+    func ensureLoaded() async throws {
+        guard metadataScope == nil else { return }
+        try await refresh(onlyIfNeeded: true)
+    }
+
+    func startObserving() {
+        guard observation == nil else { return }
+        observation = ShellDirectoryObservation { [weak self] in self?.requestRefresh() }
+        observation?.sync(paths: inputs?.paths ?? [shellDirectory, shellDirectory.deletingLastPathComponent()])
+        requestRefresh()
+    }
+
+    func stopObserving() {
+        observation?.cancel()
+        observation = nil
+        observationGeneration += 1
+        observationTask?.cancel()
+        observationTask = nil
+        needsRefresh = false
     }
 
     func refresh() async throws {
+        try await refresh(onlyIfNeeded: false)
+    }
+
+    private func refresh(onlyIfNeeded: Bool) async throws {
         try await ordered { [self] in
+            if onlyIfNeeded, metadataScope != nil { return }
             if !defaultsInstalled {
                 let backups = try await persistence().perform { ShellDefaults.sync(into: $0) }
                 if !backups.isEmpty { onDefaultsUpdated(backups) }
                 defaultsInstalled = true
             }
-            try await reload(refreshMetadata: true)
-            onSave?(config)
+            try await reload(scanInputs: true)
         }
     }
 
     func previewConfig(profile: String) async throws -> ShellConfig {
-        guard ShellProfiles.names(in: shellDirectory).contains(profile) else { throw CocoaError(.fileNoSuchFile) }
-        var problems: [String] = []
-        guard let value = ShellConfig.load(profile: profile, shellDirectory: shellDirectory, problems: &problems)
-        else { throw ShellBarLayout.Unreadable(problem: problems.last ?? "shell.toml") }
+        try await ensureLoaded()
+        if let cached = previewConfigurations[profile] { return cached }
+        guard profiles.contains(profile) else { throw CocoaError(.fileNoSuchFile) }
+        let generation = previewGeneration
+        let value = try await load(profile: profile)
+        try Task.checkCancellation()
+        guard generation == previewGeneration else { return try await previewConfig(profile: profile) }
+        previewConfigurations[profile] = value
         return value
     }
 
@@ -115,9 +159,9 @@ final class ShellConfigurationCoordinator {
     func setWidgetValue(
         _ value: ShellComponentValue?, widget: String, key: String, profile: String? = nil
     ) async throws {
-        let profile = try load(profile: profile).profile
+        let profile = try await targetProfile(profile)
         try await ordered { [self] in
-            let snapshot = try load(profile: profile)
+            let snapshot = try await load(profile: profile)
             let schema = if metadataScope == MetadataScope(snapshot) {
                 widgetSchemas[widget]
             } else {
@@ -159,7 +203,7 @@ final class ShellConfigurationCoordinator {
 
     @discardableResult
     func island(_ operation: ShellIslandLayout.Operation, profile: String? = nil) async throws -> String? {
-        try await islandCommit(operation, profile: try load(profile: profile).profile).instanceID
+        try await islandCommit(operation, profile: try await targetProfile(profile)).instanceID
     }
 
     func islandCommit(
@@ -168,7 +212,7 @@ final class ShellConfigurationCoordinator {
         validate: @escaping @MainActor (ShellConfig) throws -> Void = { _ in }
     ) async throws -> IslandCommit {
         try await ordered { [self] in
-            let snapshot = try load(profile: profile)
+            let snapshot = try await load(profile: profile)
             try validate(snapshot)
             guard let island = snapshot.island else {
                 throw ShellComponentCatalog.Failure("This profile has no island")
@@ -189,7 +233,7 @@ final class ShellConfigurationCoordinator {
                     directories: snapshot.directories, profile: snapshot.profile, components: components
                 ))
             }
-            guard try load(profile: profile) == snapshot else {
+            guard try await load(profile: profile) == snapshot else {
                 throw ShellComponentCatalog.Failure("configuration_changed")
             }
             try validate(snapshot)
@@ -200,9 +244,12 @@ final class ShellConfigurationCoordinator {
     }
 
     func editBar(_ change: @escaping @MainActor (inout ShellBarLayout) -> Void) async throws {
-        let profile = try load().profile
+        let profile = try await targetProfile(nil)
         try await ordered { [self] in
-            var layout = try ShellBarLayout.load(shellDirectory: shellDirectory, profile: profile).get()
+            let snapshot = try await load(profile: profile)
+            var layout = try await persistence().perform {
+                ShellBarLayout(config: snapshot, shellDirectory: $0)
+            }
             change(&layout)
             let next = layout
             _ = try await persistence().perform { directory in
@@ -214,7 +261,7 @@ final class ShellConfigurationCoordinator {
     }
 
     func resetBarLayout() async throws {
-        let profile = try load().profile
+        let profile = try await targetProfile(nil)
         try await ordered { [self] in
             _ = try await persistence().perform { directory in
                 try ShellProfiles.setNodes(
@@ -231,9 +278,9 @@ final class ShellConfigurationCoordinator {
     }
 
     func updateMonitor(_ monitor: Monitor, change: (@MainActor (inout MonitorBarSettings) -> Void)?) async throws {
-        let profile = try load().profile
+        let profile = try await targetProfile(nil)
         try await ordered { [self] in
-            let snapshot = try load(profile: profile)
+            let snapshot = try await load(profile: profile)
             var overrides = snapshot.barOverride?.monitorOverrides ?? []
             if let change {
                 var value = MonitorSettingsStore.get(for: monitor, in: overrides)
@@ -268,55 +315,123 @@ final class ShellConfigurationCoordinator {
     }
 
     private func setNode(_ node: TOMLNode?, path: [String], profile: String?) async throws {
-        let profile = try load(profile: profile).profile
+        let profile = try await targetProfile(profile)
         try await ordered { [self] in
-            let name = try load(profile: profile).profile
+            let name = profile
             _ = try await persistence().perform { directory in
                 try ShellProfiles.setNodes([([ShellConfig.profilesKey, name] + path, node)], in: directory)
             }
             try await saved()
         }
     }
+}
 
-    private func load(profile: String? = nil) throws -> ShellConfig {
-        var problems: [String] = []
-        let value = if let profile {
-            ShellConfig.load(profile: profile, shellDirectory: shellDirectory, problems: &problems)
-        } else { ShellConfig.load(shellDirectory: shellDirectory, problems: &problems) }
-        guard let value else { throw ShellBarLayout.Unreadable(problem: problems.last ?? "shell.toml") }
-        return value
+extension ShellConfigurationCoordinator {
+    private func targetProfile(_ profile: String?) async throws -> String {
+        if let profile { return profile }
+        if !config.directories.isEmpty { return config.profile }
+        return try await load().profile
     }
 
-    private func reload(refreshMetadata: Bool = false) async throws {
-        let snapshot = try load()
-        config = snapshot
-        let scope = MetadataScope(snapshot)
-        if !refreshMetadata, metadataScope == scope {
-            revision += 1
-            return
+    private func load(profile: String? = nil) async throws -> ShellConfig {
+        try await prepared(profile: profile).config
+    }
+
+    private func prepared(profile: String? = nil) async throws -> ShellConfigurationInputs.Prepared {
+        try await persistence().perform { directory in
+            try ShellConfigurationInputs.load(in: directory, profile: profile)
         }
-        metadataScope = nil
-        profiles = ShellProfiles.names(in: shellDirectory)
-        themes = ShellProfiles.themes(of: snapshot)
-        widgetSchemas = [:]
-        catalog = nil
-        metadataError = nil
-        let widgets = ShellConfig.widgetFolders(in: shellDirectory).map(\.lastPathComponent)
-            + snapshot.directories.flatMap { ShellConfig.widgetFolders(in: $0).map(\.lastPathComponent) }
-        widgetSchemas = try await catalogLoader.settings(widgets: widgets, directories: snapshot.directories)
-        if let root = snapshot.island?.root {
-            catalog = try await catalogLoader.load(directories: snapshot.directories, root: root)
-        } else { catalog = nil }
-        metadataScope = scope
-        revision += 1
+    }
+
+    private func reload(scanInputs: Bool = false, refreshMetadata: Bool = false, didSave: Bool = false) async throws {
+        let loaded = try await prepared()
+        let snapshot = loaded.config
+        let previousInputs = inputs
+        let nextInputs = if scanInputs || inputs == nil {
+            try await persistence().perform { directory in
+                try ShellConfigurationInputs(directory: directory, config: snapshot)
+            }
+        } else {
+            try await persistence().perform { _ in previousInputs?.updatingConfiguration() }
+        }
+        var metadata = (schemas: widgetSchemas, catalog: catalog)
+        var problem: String?
+        do { metadata = try await self.metadata(for: snapshot, inputs: nextInputs, refresh: refreshMetadata) }
+        catch {
+            metadata = ([:], nil)
+            problem = error.localizedDescription
+        }
+        let listing = try await persistence().perform { directory in
+            (
+                ShellProfiles.names(in: directory), ShellProfiles.themes(of: snapshot),
+                ShellBarLayout(config: snapshot, shellDirectory: directory)
+            )
+        }
+        let configChanged = config != snapshot
+        let problemsChanged = configProblems != loaded.problems
+        let filesChanged = nextInputs?.files != previousInputs?.files
+        if configChanged || filesChanged {
+            clearProfilePreviews()
+            revision += 1
+        }
+        config = snapshot
+        configProblems = loaded.problems
+        profiles = listing.0
+        themes = listing.1
+        barLayout = listing.2
+        widgetSchemas = metadata.schemas
+        catalog = metadata.catalog
+        metadataError = problem
+        metadataScope = problem == nil ? MetadataScope(snapshot) : nil
+        inputs = nextInputs
+        previewConfigurations[snapshot.profile] = snapshot
+        if filesChanged || nextInputs?.paths != previousInputs?.paths {
+            observation?.sync(paths: nextInputs?.paths ?? [])
+        }
+        if didSave || configChanged || problemsChanged {
+            onSave?(snapshot)
+            NotificationCenter.default.post(name: .shellConfigDidChange, object: nil)
+        }
+    }
+
+    private func metadata(
+        for snapshot: ShellConfig, inputs nextInputs: ShellConfigurationInputs?, refresh: Bool
+    ) async throws -> (schemas: [String: ShellRootSettings], catalog: ShellConfigurationCatalog?) {
+        let changed = refresh || metadataScope != MetadataScope(snapshot)
+            || nextInputs?.metadata != inputs?.metadata
+        guard changed else { return (widgetSchemas, catalog) }
+        let schemas = try await catalogLoader.settings(
+            widgets: nextInputs?.widgets ?? [], directories: snapshot.directories
+        )
+        let catalog = if let root = snapshot.island?.root {
+            try await catalogLoader.load(directories: snapshot.directories, root: root)
+        } else { Optional<ShellConfigurationCatalog>.none }
+        return (schemas, catalog)
     }
 
     private func saved(refreshMetadata: Bool = false) async throws {
-        config = try load()
-        onSave?(config)
-        NotificationCenter.default.post(name: .shellConfigDidChange, object: nil)
-        do { try await reload(refreshMetadata: refreshMetadata) }
-        catch { metadataError = error.localizedDescription }
+        try await reload(refreshMetadata: refreshMetadata, didSave: true)
+    }
+
+    private func clearProfilePreviews() {
+        previewGeneration += 1
+        previewConfigurations.removeAll(keepingCapacity: true)
+    }
+
+    private func requestRefresh() {
+        guard observation != nil else { return }
+        needsRefresh = true
+        guard observationTask == nil else { return }
+        let generation = observationGeneration
+        observationTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer { if generation == observationGeneration { observationTask = nil } }
+            while generation == observationGeneration, needsRefresh, !Task.isCancelled {
+                needsRefresh = false
+                do { try await refresh() }
+                catch { metadataError = error.localizedDescription }
+            }
+        }
     }
 
     private func persistence() -> ShellIslandConfigWriter {

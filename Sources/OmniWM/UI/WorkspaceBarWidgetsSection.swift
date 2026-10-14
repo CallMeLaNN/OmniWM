@@ -7,7 +7,6 @@ struct WorkspaceBarWidgetsSection: View {
     let configuration: ShellConfigurationCoordinator
     let vertical: Bool?
     @Environment(SettingsNavigationModel.self) private var navigation
-    @State private var layout: ShellBarLayout?
     @State private var problem: String?
     @State private var selection: String?
     @State private var confirmingReset = false
@@ -15,33 +14,15 @@ struct WorkspaceBarWidgetsSection: View {
     @State private var destination: ShellLane = .trailing
     @State private var query = ""
 
+    private var layout: ShellBarLayout? {
+        configuration.barLayout
+    }
+
     var body: some View {
         Section("Bar Widgets") {
             if let layout {
                 SettingsCaption(localized: "Arrange your widgets. The layout is shared by all displays in this style.")
-                List(selection: $selection) {
-                    ForEach(ShellLane.allCases, id: \.self) { lane in
-                        Section(ShellBarLayout.side(lane, vertical: vertical)) {
-                            if layout.names(in: lane).isEmpty {
-                                Text("No widgets").foregroundStyle(.secondary).selectionDisabled()
-                            }
-                            ForEach(layout.names(in: lane), id: \.self) { name in
-                                Label(
-                                    ShellBarLayout.title(of: name),
-                                    systemImage: layout.source(of: name) == nil
-                                        ? "exclamationmark.triangle" : "puzzlepiece.extension"
-                                )
-                                .tag(name)
-                            }
-                            .onMove { offsets, index in edit { $0.move(in: lane, from: offsets, to: index) } }
-                        }
-                    }
-                }
-                .listStyle(.bordered)
-                .frame(height: min(
-                    340,
-                    CGFloat(layout.leading.count + layout.center.count + layout.trailing.count + 3) * 30 + 45
-                ))
+                widgetList(layout)
                 HStack {
                     Button("Add Widget…", systemImage: "plus") { adding = true }
                         .disabled(layout.addable.isEmpty)
@@ -71,14 +52,21 @@ struct WorkspaceBarWidgetsSection: View {
                     .disabled(!layout.customized)
             } else if let problem {
                 Label(problem, systemImage: "exclamationmark.triangle").foregroundStyle(.red)
-                Button("Try Again", action: reload)
+                Button("Try Again") {
+                    Task {
+                        do { try await configuration.refresh()
+                            reload()
+                        } catch { self.problem = error.localizedDescription }
+                    }
+                }
             } else {
                 ProgressView()
             }
         }
         .id("Bar Widgets")
         .onAppear(perform: reload)
-        .onChange(of: configuration.config) { _, _ in reload() }
+        .onChange(of: configuration.barLayout) { _, _ in reload() }
+        .onChange(of: configuration.metadataError) { _, _ in reload() }
         .confirmationDialog("Use this style’s widget layout?", isPresented: $confirmingReset) {
             Button("Use Style Layout", role: .destructive) {
                 Task {
@@ -91,6 +79,36 @@ struct WorkspaceBarWidgetsSection: View {
             }
         }
         .sheet(isPresented: $adding) { addSheet }
+    }
+
+    private func widgetList(_ layout: ShellBarLayout) -> some View {
+        List(selection: $selection) {
+            ForEach(ShellLane.allCases, id: \.self) { lane in
+                widgetLane(lane, layout: layout)
+            }
+        }
+        .listStyle(.bordered)
+        .frame(height: min(
+            340,
+            CGFloat(layout.leading.count + layout.center.count + layout.trailing.count + 3) * 30 + 45
+        ))
+    }
+
+    private func widgetLane(_ lane: ShellLane, layout: ShellBarLayout) -> some View {
+        Section(ShellBarLayout.side(lane, vertical: vertical)) {
+            if layout.names(in: lane).isEmpty {
+                Text("No widgets").foregroundStyle(.secondary).selectionDisabled()
+            }
+            ForEach(layout.names(in: lane), id: \.self) { name in
+                Label(
+                    ShellBarLayout.title(of: name),
+                    systemImage: layout.source(of: name) == nil
+                        ? "exclamationmark.triangle" : "puzzlepiece.extension"
+                )
+                .tag(name)
+            }
+            .onMove { offsets, index in edit { $0.move(in: lane, from: offsets, to: index) } }
+        }
     }
 
     private var addSheet: some View {
@@ -140,12 +158,7 @@ struct WorkspaceBarWidgetsSection: View {
     }
 
     private func reload() {
-        switch ShellBarLayout.load(shellDirectory: configuration.shellDirectory) {
-        case let .success(value): layout = value
-            problem = nil
-        case let .failure(error): layout = nil
-            problem = error.problem
-        }
+        problem = layout == nil ? configuration.metadataError : nil
         if let selection, layout?.lane(of: selection) == nil { self.selection = nil }
     }
 }

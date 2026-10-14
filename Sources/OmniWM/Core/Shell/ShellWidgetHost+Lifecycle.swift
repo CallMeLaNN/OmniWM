@@ -194,7 +194,7 @@ extension ShellWidgetHost {
         }
     }
 
-    func rescan() {
+    func rescan(reloadConfiguration: Bool = true) {
         guard started else { return }
         let (found, directories) = discoverPackages()
         for (name, state) in widgets where found[name] != state.sourceURL {
@@ -237,7 +237,7 @@ extension ShellWidgetHost {
         }
         shadersChanged(includingAssets: false)
         refreshSlots()
-        reloadConfig()
+        if reloadConfiguration { reloadConfig() }
         refreshConfigurationCatalog()
         publishToggleNames()
     }
@@ -299,7 +299,17 @@ extension ShellWidgetHost {
         var problems: [String] = []
         let loaded = ShellConfig.load(shellDirectory: shellDirectory, problems: &problems)
         configProblems = problems
-        guard let next = loaded, next != config else { return }
+        guard let next = loaded else { return }
+        applyConfig(next, problems: problems)
+    }
+
+    func applyConfig(_ next: ShellConfig, problems: [String] = []) {
+        let problemsChanged = configProblems != problems
+        configProblems = problems
+        guard next != config else {
+            if problemsChanged { publishToggleNames() }
+            return
+        }
         let previous = config
         if next.profile != previous.profile { closeHiddenBarMenu() }
         config = next
@@ -348,7 +358,7 @@ extension ShellWidgetHost {
             || next.trailing != previous.trailing || next.drawers != previous.drawers
         if lanesChanged || next.directories != previous.directories || next.island != previous.island {
             updateIslands(desiredIslands, level: islandLevel)
-            rescan()
+            rescan(reloadConfiguration: false)
             onLayoutChange()
         } else if next.barShader != previous.barShader {
             onLayoutChange()

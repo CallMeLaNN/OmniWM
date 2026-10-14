@@ -50,7 +50,7 @@ extension WorkspaceBarManager {
 
     func shellConfigurationSaved(_ config: ShellConfig) {
         if let shellHost {
-            if shellHost.config != config { shellHost.reloadConfig() }
+            shellHost.applyConfig(config, problems: shellConfiguration.configProblems)
         } else { applyShellProfile(config) }
     }
 

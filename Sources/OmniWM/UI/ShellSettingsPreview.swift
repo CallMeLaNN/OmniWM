@@ -270,24 +270,86 @@ struct ShellSettingsPreview: View {
 
 @MainActor
 final class ShellSettingsPreviewCache {
+    private struct Pending {
+        let id: UUID
+        let request: ShellSettingsPreview.Request
+        let task: Task<Void, Never>
+        var waiters: [UUID: CheckedContinuation<CGImage, any Error>]
+    }
+
     static let shared = ShellSettingsPreviewCache()
     static let maximumBytes = 32 << 20
+    private let render: @MainActor (ShellSettingsPreview.Request) async throws -> CGImage
     private var entries: [(ShellSettingsPreview.Request, CGImage)] = []
+    private var pending: [Pending] = []
     private(set) var retainedBytes = 0
     var count: Int {
         entries.count
     }
 
+    init(render: @escaping @MainActor (ShellSettingsPreview.Request) async throws -> CGImage = ShellSettingsPreview
+        .render)
+    {
+        self.render = render
+    }
+
     func image(for request: ShellSettingsPreview.Request) async throws -> CGImage {
+        try Task.checkCancellation()
         if let index = entries.firstIndex(where: { $0.0 == request }) {
             let entry = entries.remove(at: index)
             entries.append(entry)
             return entry.1
         }
-        let image = try await ShellSettingsPreview.render(request)
-        try Task.checkCancellation()
-        insert(image, for: request)
-        return image
+        let waiter = UUID()
+        return try await withTaskCancellationHandler {
+            let image = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<
+                CGImage,
+                any Error
+            >) in
+                guard !Task.isCancelled else {
+                    continuation.resume(throwing: CancellationError())
+                    return
+                }
+                if let index = pending.firstIndex(where: { $0.request == request }) {
+                    pending[index].waiters[waiter] = continuation
+                    return
+                }
+                let id = UUID()
+                let task = Task { [weak self, render] in
+                    let result: Result<CGImage, any Error>
+                    do {
+                        let image = try await render(request)
+                        try Task.checkCancellation()
+                        result = .success(image)
+                    } catch {
+                        result = .failure(error)
+                    }
+                    self?.complete(id, result: result)
+                }
+                pending.append(Pending(id: id, request: request, task: task, waiters: [waiter: continuation]))
+            }
+            try Task.checkCancellation()
+            return image
+        } onCancel: {
+            Task { @MainActor in self.cancel(waiter) }
+        }
+    }
+
+    private func cancel(_ waiter: UUID) {
+        guard let index = pending.firstIndex(where: { $0.waiters[waiter] != nil }),
+              let continuation = pending[index].waiters.removeValue(forKey: waiter)
+        else { return }
+        if pending[index].waiters.isEmpty {
+            pending.remove(at: index).task.cancel()
+        }
+        continuation.resume(throwing: CancellationError())
+    }
+
+    private func complete(_ id: UUID, result: Result<CGImage, any Error>) {
+        guard let index = pending.firstIndex(where: { $0.id == id }) else { return }
+        let entry = pending.remove(at: index)
+        if case let .success(image) = result { insert(image, for: entry.request) }
+        for continuation in entry.waiters.values { continuation.resume(with: result) }
     }
 
     func insert(_ image: CGImage, for request: ShellSettingsPreview.Request) {
