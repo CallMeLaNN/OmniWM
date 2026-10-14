@@ -25,7 +25,6 @@ extension SkyLight {
             windowQueryResultCopyWindows = queries.windowQueryResultCopyWindows,
             windowIteratorAdvance = queries.windowIteratorAdvance,
             windowIteratorGetWindowID = queries.windowIteratorGetWindowID,
-            windowIteratorGetPID = queries.windowIteratorGetPID,
             windowIteratorGetBounds = queries.windowIteratorGetBounds,
             windowIteratorGetResolvedCornerRadii = queries.windowIteratorGetResolvedCornerRadii,
             windowIteratorGetCornerRadii = queries.windowIteratorGetCornerRadii
@@ -34,8 +33,7 @@ extension SkyLight {
             guard let query = windowQueryWindows(cid, windowNumbers, 1)?.takeRetainedValue(),
                   let iterator = windowQueryResultCopyWindows(query)?.takeRetainedValue(),
                   windowIteratorAdvance(iterator),
-                  windowIteratorGetWindowID(iterator) == wid,
-                  windowIteratorGetPID(iterator) == token.pid
+                  windowIteratorGetWindowID(iterator) == wid
             else { return nil }
             let observedSize = windowIteratorGetBounds(iterator).size
             let resolved = windowIteratorGetResolvedCornerRadii?(iterator, 0)?.takeRetainedValue()

@@ -42,7 +42,7 @@ final class BorderSurfaceApplier {
     private let cornerSampleProvider: @MainActor (WindowToken) async throws -> WindowCornerSample?
     private let surfaceCoordinator = SurfaceCoordinator.shared
     private var registeredSurfaceWindowNumber: Int?
-    private let defaultCornerRadii = WindowCornerRadii(uniform: 9.0)
+    private let defaultCornerRadii: WindowCornerRadii
     private let surfaceID = "border-surface"
     private var screenParametersObserver: NSObjectProtocol?
     private var scaleInvalidated = false
@@ -52,11 +52,13 @@ final class BorderSurfaceApplier {
 
     init(
         borderWindowOperations: BorderWindow.Operations = .live,
+        defaultCornerRadii: WindowCornerRadii = .systemDefault,
         cornerSampleProvider: @escaping @MainActor (WindowToken) async throws -> WindowCornerSample? = {
             try await SkyLight.shared.cornerSampleDeferred(for: $0)
         }
     ) {
         self.borderWindowOperations = borderWindowOperations
+        self.defaultCornerRadii = defaultCornerRadii
         self.cornerSampleProvider = cornerSampleProvider
         installScreenParametersObserverIfNeeded()
     }
@@ -145,7 +147,11 @@ final class BorderSurfaceApplier {
 
     private func configureBorderWindow(_ config: BorderConfig) {
         if borderWindow == nil {
-            borderWindow = BorderWindow(config: config, operations: borderWindowOperations)
+            borderWindow = BorderWindow(
+                config: config,
+                operations: borderWindowOperations,
+                defaultCornerRadii: defaultCornerRadii
+            )
             borderWindow?.onWindowLevelResolved = { [weak self] in
                 self?.onWindowLevelResolved?()
             }
