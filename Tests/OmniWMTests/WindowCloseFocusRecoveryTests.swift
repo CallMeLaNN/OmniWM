@@ -157,6 +157,8 @@ final class WindowCloseFocusRecoveryTests: XCTestCase {
         let world = WorldView(controller: controller, liveBoundsProvider: { _ in frame })
         XCTAssertNotNil(SurfaceDerivation.deriveBorder(world: world))
         XCTAssertEqual(controller.workspaceManager.nativeManagedFocusToken, token)
+        controller.surfaceReconciler.reconcileNow()
+        XCTAssertNil(controller.surfaceReconciler.pendingReconcileScope)
 
         controller.axEventHandler.retireManagedWindow(
             try XCTUnwrap(controller.workspaceManager.entry(for: token)),

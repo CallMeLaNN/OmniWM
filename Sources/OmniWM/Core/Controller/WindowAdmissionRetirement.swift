@@ -260,7 +260,6 @@ extension AXEventHandler {
             _ = controller.workspaceManager.externalizeNativeFocus(matching: token)
         } else if ownsLiveFocus {
             _ = controller.workspaceManager.clearNativeFocusOwner()
-            controller.surfaceReconciler.noteBorderChanged()
         }
     }
 }
