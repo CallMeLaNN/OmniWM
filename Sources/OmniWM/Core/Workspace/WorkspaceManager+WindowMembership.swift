@@ -35,6 +35,9 @@ extension WorkspaceManager {
     private func removeTrackedWindow(_ entry: WindowState) -> WindowState {
         let previousFocus = focusSessionSnapshot
         let removesNativeFullscreenFocusOwner = activeNativeFullscreenFocusOwnerToken == entry.token
+        let removesNativeFocusOwner = removesNativeFullscreenFocusOwner
+            || nativeFocusOwner.managedToken == entry.token
+            || nativeFocusOwner.externalToken == entry.token
         recordReconcileEvent(
             .windowRemoved(
                 token: entry.token,
@@ -43,7 +46,7 @@ extension WorkspaceManager {
             )
         )
         _ = removeNativeFullscreenRecord(containing: entry.token)
-        if removesNativeFullscreenFocusOwner {
+        if removesNativeFocusOwner {
             _ = clearNativeFocusOwner()
         }
         let focusChanged = auxiliaryFocusStateChanged(from: previousFocus)
