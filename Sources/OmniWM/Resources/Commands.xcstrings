@@ -16954,6 +16954,72 @@
           }
         }
       }
+    },
+    "command.palette.mode.applications" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Command Palette: Applications"
+          }
+        }
+      }
+    },
+    "command.palette.mode.clipboard" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Command Palette: Clipboard"
+          }
+        }
+      }
+    },
+    "command.palette.mode.commands" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Command Palette: Commands"
+          }
+        }
+      }
+    },
+    "command.palette.mode.files" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Command Palette: Files"
+          }
+        }
+      }
+    },
+    "command.palette.mode.menu" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Command Palette: Menu"
+          }
+        }
+      }
+    },
+    "command.palette.mode.windows" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Command Palette: Windows"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

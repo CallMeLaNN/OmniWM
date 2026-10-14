@@ -84,6 +84,8 @@ final class CommandHandler {
         case let .dwindle(action): return perform(action, controller: controller)
         case .openCommandPalette:
             controller.openCommandPalette()
+        case let .openCommandPaletteMode(mode):
+            controller.openCommandPalette(mode: CommandPaletteMode(ipc: mode))
         case .raiseAllFloatingWindows:
             controller.raiseAllFloatingWindows()
         case .toggleFloatingFocus:
