@@ -4,6 +4,16 @@
 import Foundation
 
 extension IPCJSONWriter {
+    mutating func shellRequestProfile(_ name: borrowing String) throws {
+        begin(123)
+        var first = true
+        self.key("key", &first)
+        try self.value(name)
+        self.key("name", &first)
+        try self.value("profile")
+        end(125)
+    }
+
     mutating func shellRequestTheme(_ name: borrowing String, _ scheme: borrowing String?) throws {
         begin(123)
         var first = true

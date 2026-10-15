@@ -149,6 +149,10 @@ extension IPCJSONWriter {
         }
     }
 
+    mutating func value(_ value: borrowing IPCCycleDirection) throws {
+        try self.value(value.rawValue)
+    }
+
     mutating func value(_ value: borrowing IPCWindowRequest) throws {
         begin(123)
         var first = true
@@ -162,7 +166,7 @@ extension IPCJSONWriter {
         }
         if let fieldValue = value.cycle {
             self.key("cycle", &first)
-            try self.value(fieldValue.rawValue)
+            try self.value(fieldValue)
         }
         if let fieldValue = value.direction {
             self.key("direction", &first)
@@ -255,16 +259,6 @@ extension IPCJSONWriter {
         try self.value("toggle")
         self.key("widget", &first)
         try self.value(widget)
-        end(125)
-    }
-
-    mutating func shellRequestProfile(_ name: borrowing String) throws {
-        begin(123)
-        var first = true
-        self.key("key", &first)
-        try self.value(name)
-        self.key("name", &first)
-        try self.value("profile")
         end(125)
     }
 }
