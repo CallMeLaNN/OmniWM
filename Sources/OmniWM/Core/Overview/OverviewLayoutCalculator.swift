@@ -23,7 +23,7 @@ struct OverviewWindowLayoutData {
 }
 
 enum OverviewLayoutMetrics {
-    static let searchBarHeight: CGFloat = 52
+    static let searchBarHeight: CGFloat = 44
     static let searchBarPadding: CGFloat = 20
     static let workspaceLabelHeight: CGFloat = 32
     static let workspaceSectionPadding: CGFloat = 16
