@@ -98,9 +98,10 @@ extension ShellDataFeed {
                 continue
             }
             data.battery = (Double(current) / Double(maximum) * 100).rounded()
-            data.charging = description[kIOPSIsChargingKey] as? Bool ?? false
+            let charging = description[kIOPSIsChargingKey] as? Bool ?? false
+            data.charging = charging
             data.power?.remaining = ShellPower.minutes(description[kIOPSTimeToEmptyKey])
-            data.power?.full = data.charging ? ShellPower.minutes(description[kIOPSTimeToFullChargeKey]) : nil
+            data.power?.full = charging ? ShellPower.minutes(description[kIOPSTimeToFullChargeKey]) : nil
             data.power?.charged = description[kIOPSIsChargedKey] as? Bool ?? false
             if data.power != nil, let registry = ShellPower.batteryRegistry() {
                 data.power?.describe(registry)

@@ -199,7 +199,7 @@ final class ShellWeatherTests: XCTestCase {
         XCTAssertTrue(strings.contains("Toronto"))
         XCTAssertTrue(strings.contains("2 PM"))
         XCTAssertTrue(strings.contains("Wed"))
-        XCTAssertTrue(strings.contains("40%"))
+        XCTAssertTrue(strings.contains(ShellFormatter.string(kind: OMNI_FORMAT_PERCENT, 0.4, digits: 0)))
         XCTAssertFalse(strings.contains(ShellLocalizer.string("Last update failed", [])))
 
         weather.stale = true
