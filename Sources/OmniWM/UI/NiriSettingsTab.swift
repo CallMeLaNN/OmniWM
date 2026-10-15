@@ -121,6 +121,11 @@ private struct GlobalNiriSettingsSection: View {
                     controller.updateMonitorGapSettings()
                 }
 
+            Toggle(
+                "Stack Moved Window Into Adjacent Column",
+                isOn: Bindable(settings.niri).moveWindowStacksIntoColumn
+            )
+
             SingleWindowFitControls(
                 label: String(localized: "Single Window"),
                 fit: settings.niri.singleWindowFit,
