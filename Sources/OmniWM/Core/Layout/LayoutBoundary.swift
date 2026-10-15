@@ -266,6 +266,7 @@ struct WorkspaceLayoutPlan {
     var sessionPatch: WorkspaceSessionPatch
     var diff: WorkspaceLayoutDiff
     var niriRestorePlacements: [WindowToken: PersistedNiriPlacement] = [:]
+    var quietArrivalTokens: Set<WindowToken> = []
     var dwindleRestorePlacements: [WindowToken: PersistedDwindlePlacement] = [:]
     var animationDirectives: [AnimationDirective] = []
     var dwindleAnimationTargetDisposition: DwindleAnimationTargetDisposition?
