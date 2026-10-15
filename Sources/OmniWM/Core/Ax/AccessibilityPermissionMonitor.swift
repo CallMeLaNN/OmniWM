@@ -10,8 +10,6 @@ final class AccessibilityPermissionMonitor {
 
     private var task: Task<Void, Never>?
     private var pollTask: Task<Void, Never>?
-    /// `com.apple.accessibility.api` is not posted reliably when the permission is revoked,
-    /// so the trust state is also polled.
     static let pollInterval: Duration = .seconds(1)
     private var continuations: [UUID: AsyncStream<Bool>.Continuation] = [:]
     private(set) var isGranted: Bool

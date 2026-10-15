@@ -67,8 +67,6 @@ final class ServiceLifecycleManager {
                     self.maybeStartServices()
                 } else {
                     controller.updateAccessibilityPermissionGranted(false)
-                    // Revoked while running: event taps and AX observers left installed block
-                    // system-wide input. Release everything now; services restart on re-grant.
                     if controller.hasStartedServices {
                         self.stopServices(retainingAXWorkers: false)
                         self.startPermissionMonitoring()
