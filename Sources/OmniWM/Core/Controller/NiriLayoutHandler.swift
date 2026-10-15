@@ -21,7 +21,6 @@ struct StructuralMutation: Equatable {
     let sourceWorkspaceId: WorkspaceDescriptor.ID
     let destinationWorkspaceId: WorkspaceDescriptor.ID
     let selectedHandle: WindowHandle
-    let movedTokens: [WindowToken]
     let scrollWorkspaceId: WorkspaceDescriptor.ID?
 
     var affectedWorkspaceIds: Set<WorkspaceDescriptor.ID> {
@@ -101,7 +100,6 @@ enum StructuralMutationOutcome: Equatable {
     }
 
     struct NiriStructuralMutation {
-        let movedTokens: [WindowToken]
         let operation: LayoutOperation
     }
 

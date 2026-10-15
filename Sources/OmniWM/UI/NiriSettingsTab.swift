@@ -125,6 +125,7 @@ private struct GlobalNiriSettingsSection: View {
                 "Stack Moved Window Into Adjacent Column",
                 isOn: Bindable(settings.niri).moveWindowStacksIntoColumn
             )
+            .id("Stack Moved Window Into Adjacent Column")
 
             SingleWindowFitControls(
                 label: String(localized: "Single Window"),

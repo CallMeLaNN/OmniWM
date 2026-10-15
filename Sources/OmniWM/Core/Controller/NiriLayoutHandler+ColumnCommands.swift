@@ -33,7 +33,6 @@ extension NiriLayoutHandler {
                 return nil
             }
             return NiriStructuralMutation(
-                movedTokens: [ctx.windowNode.token],
                 operation: .windowConsumedOrExpelled(token: ctx.windowNode.token)
             )
         }
@@ -68,7 +67,6 @@ extension NiriLayoutHandler {
                 return nil
             }
             return NiriStructuralMutation(
-                movedTokens: [movedToken],
                 operation: .windowConsumedOrExpelled(token: movedToken)
             )
         }
@@ -102,7 +100,6 @@ extension NiriLayoutHandler {
                 return nil
             }
             return NiriStructuralMutation(
-                movedTokens: [movedToken],
                 operation: .windowConsumedOrExpelled(token: movedToken)
             )
         }
@@ -160,7 +157,6 @@ extension NiriLayoutHandler {
     ) -> StructuralMutationOutcome {
         performStructuralMutation(handle: handle) { ctx, state in
             guard let column = ctx.engine.findColumn(containing: ctx.windowNode, in: ctx.wsId) else { return nil }
-            let movedTokens = column.windowNodes.map(\.token)
             let oldFrames = ctx.engine.captureWindowFrames(in: ctx.wsId)
             let interactionContext = NiriInteractionContext(
                 workspaceId: ctx.wsId,
@@ -199,7 +195,7 @@ extension NiriLayoutHandler {
             }
             guard moved else { return nil }
             ctx.prepareCapturedAnimation(oldFrames: oldFrames)
-            return NiriStructuralMutation(movedTokens: movedTokens, operation: .columnMoved)
+            return NiriStructuralMutation(operation: .columnMoved)
         }
     }
 }

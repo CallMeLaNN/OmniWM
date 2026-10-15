@@ -124,6 +124,12 @@ enum SettingsSearchIndex {
         setting("Center Focused Column", section: .layouts, tab: "niri", anchor: "Center Focused Column"),
         setting("Always Center Single Column", section: .layouts, tab: "niri", anchor: "Always Center Single Column"),
         setting("Gaps at Screen Edges", section: .layouts, tab: "niri", anchor: "Gaps at Screen Edges"),
+        setting(
+            "Stack Moved Window Into Adjacent Column",
+            section: .layouts,
+            tab: "niri",
+            anchor: "Stack Moved Window Into Adjacent Column"
+        ),
         setting("Single Window", section: .layouts, tab: "niri", anchor: "Niri Layout"),
         setting("Resize Increment", section: .layouts, tab: "niri", anchor: "Resize Increment"),
         setting(
