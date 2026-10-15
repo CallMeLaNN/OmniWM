@@ -133,7 +133,9 @@ extension NiriLayoutHandler {
                 settledContext: isSettled ? (snapshot.monitor, snapshot.viewportState) : nil
             )
         )
-        enforceOnDemandFrameSizes(&diff, animated: sampledAnimationTime != nil)
+        let isInteractiveResize = animationTime == nil
+            && engine.interactiveResize?.workspaceId == snapshot.workspaceId
+        enforceOnDemandFrameSizes(&diff, animated: sampledAnimationTime != nil || isInteractiveResize)
         if animationTime != nil {
             diff.tabRailGeometryCommands = niriTabRailGeometryCommands(
                 engine: engine,
@@ -152,6 +154,7 @@ extension NiriLayoutHandler {
             ),
             diff: diff,
             isAnimationTick: sampledAnimationTime != nil,
+            isInteractiveResize: isInteractiveResize,
             isActiveWorkspace: snapshot.isActiveWorkspace
         )
     }
