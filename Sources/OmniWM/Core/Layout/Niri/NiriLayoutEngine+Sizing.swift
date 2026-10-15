@@ -130,9 +130,7 @@ extension NiriLayoutEngine {
             gaps: context.gaps
         )
 
-        let currentSpec = column.isFullHeight ? ProportionalSize.proportion(1) : column.height
         let newHeight = NiriSizeChange(presetContainerPrimarySpans[nextIndex]).primarySpanSpec(
-            currentSpec: currentSpec,
             currentPixels: currentHeight,
             axisSpan: context.workingFrame.height,
             gaps: context.gaps
@@ -229,9 +227,7 @@ extension NiriLayoutEngine {
             context: context
         )
 
-        let currentSpec = column.isFullWidth ? ProportionalSize.proportion(1) : column.width
         let newWidth = NiriSizeChange(presetContainerPrimarySpans[nextIdx]).primarySpanSpec(
-            currentSpec: currentSpec,
             currentPixels: previousWidth,
             axisSpan: context.workingFrame.width,
             gaps: context.gaps
@@ -314,9 +310,7 @@ extension NiriLayoutEngine {
                 workingAreaHeight: context.workingFrame.height,
                 gaps: context.gaps
             )
-            let currentSpec = column.isFullHeight ? ProportionalSize.proportion(1) : column.height
             let newHeight = change.primarySpanSpec(
-                currentSpec: currentSpec,
                 currentPixels: previousHeight,
                 axisSpan: context.workingFrame.height,
                 gaps: context.gaps
@@ -338,7 +332,6 @@ extension NiriLayoutEngine {
             contentInset: tabContentInset(for: column)
         )
         let newWidth = change.primarySpanSpec(
-            currentSpec: currentSpec,
             currentPixels: currentPixels,
             axisSpan: context.workingFrame.width,
             gaps: context.gaps
