@@ -36,6 +36,45 @@ final class OverviewLayoutCalculatorTests: XCTestCase {
         }
     }
 
+    /// Checks that projection forwards each monitor's notch height without scaling it or using the global origin.
+    func testProjectionUsesEachMonitorsNotchHeightForSearchPosition() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let settings = SettingsStore(
+            persistence: SettingsFilePersistence(
+                directory: directory.appendingPathComponent("config"), startWatching: false, deferSaves: false
+            ),
+            runtimeState: RuntimeStateStore(directory: directory.appendingPathComponent("state"), deferSaves: false),
+            autosaveEnabled: false
+        )
+        let controller = WMController(settings: settings)
+        let monitors = [CGFloat(0), 32].enumerated().map { index, notchHeight in
+            let displayId = CGDirectDisplayID(93_001 + index)
+            let frame = CGRect(x: index * 1512, y: 200, width: 1512, height: 982)
+            return Monitor(
+                id: .init(displayId: displayId), displayId: displayId, frame: frame, visibleFrame: frame,
+                hasNotch: notchHeight > 0, notchHeight: notchHeight, name: "Projection Test \(index)"
+            )
+        }
+        controller.workspaceManager.applyMonitorConfigurationChange(monitors)
+        let snapshot = OverviewSnapshot(
+            wmController: controller,
+            facts: OverviewWindowFacts(wmController: controller, environment: OverviewEnvironment())
+        )
+        let scale: CGFloat = 1.25
+        let projection = OverviewViewportProjection(wmController: controller, snapshot: snapshot, scale: scale)
+
+        projection.rebuildProjectedLayouts()
+
+        for monitor in monitors {
+            let layout = try XCTUnwrap(projection.layoutsByMonitor[monitor.id])
+            XCTAssertEqual(
+                layout.searchBarFrame.maxY,
+                monitor.frame.height - monitor.notchHeight - OverviewLayoutMetrics.searchBarPadding * scale
+            )
+        }
+    }
+
     func testGenericFallbackProjectsMonitorLocalFramesAtUniformStripScale() throws {
         let (layout, handles) = makeMixedLayout()
         let section = try XCTUnwrap(layout.workspaceSections.first)
