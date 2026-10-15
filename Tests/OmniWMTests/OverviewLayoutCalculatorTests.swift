@@ -7,28 +7,56 @@ import XCTest
 
 @MainActor
 final class OverviewLayoutCalculatorTests: XCTestCase {
+    func testNotchedDisplayKeepsSearchAndContentBelowSafeAreaAtEveryZoom() throws {
+        let viewport = CGRect(x: 0, y: 0, width: 1512, height: 982)
+        let safeAreaInset: CGFloat = 32
+        let workspace = OverviewWorkspaceLayoutItem(id: UUID(), name: "Main", isActive: true)
+
+        for scale: CGFloat in [0.5, 1, 1.5] {
+            for query in ["", "Safari"] {
+                let layout = OverviewLayoutCalculator(
+                    screenFrame: viewport,
+                    scale: scale,
+                    topSafeAreaInset: safeAreaInset
+                ).calculateLayout(workspaces: [workspace], windows: [:], searchQuery: query)
+                let section = try XCTUnwrap(layout.workspaceSections.first)
+
+                XCTAssertEqual(
+                    layout.searchBarFrame.maxY,
+                    viewport.maxY - safeAreaInset - OverviewLayoutMetrics.searchBarPadding * scale
+                )
+                XCTAssertLessThan(section.labelFrame.maxY, layout.searchBarFrame.minY)
+                XCTAssertEqual(layout.viewportFrame, viewport)
+                XCTAssertEqual(
+                    OverviewLayoutCalculator.visibleContentFrame(layout: layout, screenFrame: viewport).maxY,
+                    layout.searchBarFrame.minY - OverviewLayoutMetrics.contentTopPadding * scale
+                )
+            }
+        }
+    }
+
     func testGenericFallbackProjectsMonitorLocalFramesAtUniformStripScale() throws {
         let (layout, handles) = makeMixedLayout()
         let section = try XCTUnwrap(layout.workspaceSections.first)
 
-        XCTAssertEqual(layout.searchBarFrame, CGRect(x: 50, y: 620, width: 500, height: 55))
+        XCTAssertEqual(layout.searchBarFrame, CGRect(x: 50, y: 610, width: 500, height: 65))
         XCTAssertEqual(layout.viewportFrame, CGRect(x: -200, y: -100, width: 1000, height: 800))
         XCTAssertEqual(section.name, "Generic")
         XCTAssertTrue(section.isActive)
-        XCTAssertEqual(section.labelFrame, CGRect(x: -170, y: 555, width: 940, height: 40))
-        assertFrame(section.visibleFrame, CGRect(x: 40.625, y: 120, width: 518.75, height: 415))
-        assertFrame(section.ribbonFrame, CGRect(x: -170, y: 120, width: 940, height: 415))
+        XCTAssertEqual(section.labelFrame, CGRect(x: -170, y: 545, width: 940, height: 40))
+        assertFrame(section.visibleFrame, CGRect(x: 44.53125, y: 116.25, width: 510.9375, height: 408.75))
+        assertFrame(section.ribbonFrame, CGRect(x: -170, y: 116.25, width: 940, height: 408.75))
         XCTAssertEqual(section.gridFrame, section.ribbonFrame)
-        assertFrame(section.sectionFrame, CGRect(x: -200, y: 120, width: 1000, height: 455))
+        assertFrame(section.sectionFrame, CGRect(x: -200, y: 116.25, width: 1000, height: 448.75))
         XCTAssertEqual(section.windows.map(\.handle), Array(handles.prefix(2)))
         for window in section.windows {
             assertFrame(
                 window.overviewFrame,
                 CGRect(
-                    x: 40.625 + window.originalFrame.minX * 0.51875,
-                    y: 120 + window.originalFrame.minY * 0.51875,
-                    width: window.originalFrame.width * 0.51875,
-                    height: window.originalFrame.height * 0.51875
+                    x: 44.53125 + window.originalFrame.minX * 0.5109375,
+                    y: 116.25 + window.originalFrame.minY * 0.5109375,
+                    width: window.originalFrame.width * 0.5109375,
+                    height: window.originalFrame.height * 0.5109375
                 )
             )
         }
@@ -42,25 +70,25 @@ final class OverviewLayoutCalculatorTests: XCTestCase {
         let dropZones = try XCTUnwrap(layout.niriColumnDropZonesByWorkspace[section.workspaceId])
 
         XCTAssertFalse(section.isActive)
-        assertFrame(section.labelFrame, CGRect(x: -170, y: 60, width: 940, height: 40))
-        assertFrame(section.visibleFrame, CGRect(x: 40.625, y: -375, width: 518.75, height: 415))
-        assertFrame(section.sectionFrame, CGRect(x: -200, y: -375, width: 1000, height: 455))
+        assertFrame(section.labelFrame, CGRect(x: -170, y: 56.25, width: 940, height: 40))
+        assertFrame(section.visibleFrame, CGRect(x: 44.53125, y: -372.5, width: 510.9375, height: 408.75))
+        assertFrame(section.sectionFrame, CGRect(x: -200, y: -372.5, width: 1000, height: 448.75))
         XCTAssertEqual(columns.map(\.columnIndex), [3, 8])
         assertFrames(columns.map(\.frame), [
-            CGRect(x: 40.625, y: -375, width: 103.75, height: 415),
-            CGRect(x: 152.675, y: -375, width: 103.75, height: 415)
+            CGRect(x: 44.53125, y: -372.5, width: 102.1875, height: 408.75),
+            CGRect(x: 154.89375, y: -372.5, width: 102.1875, height: 408.75)
         ])
         XCTAssertEqual(columns.map(\.windowHandles), [[handles[2], handles[3]], [handles[4]]])
         assertFrames(section.windows.map(\.overviewFrame), [
-            CGRect(x: 40.625, y: -9.28125, width: 103.75, height: 49.28125),
-            CGRect(x: 40.625, y: -66.8625, width: 103.75, height: 49.28125),
-            CGRect(x: 152.675, y: -11.875, width: 103.75, height: 51.875)
+            CGRect(x: 44.53125, y: -12.2890625, width: 102.1875, height: 48.5390625),
+            CGRect(x: 44.53125, y: -69.003125, width: 102.1875, height: 48.5390625),
+            CGRect(x: 154.89375, y: -14.84375, width: 102.1875, height: 51.09375)
         ])
         XCTAssertEqual(dropZones.map(\.insertIndex), [3, 8, 9])
         assertFrames(dropZones.map(\.frame), [
-            CGRect(x: 20.625, y: -375, width: 20, height: 415),
-            CGRect(x: 144.375, y: -375, width: 8.3, height: 415),
-            CGRect(x: 256.425, y: -375, width: 20, height: 415)
+            CGRect(x: 24.53125, y: -372.5, width: 20, height: 408.75),
+            CGRect(x: 146.71875, y: -372.5, width: 8.175, height: 408.75),
+            CGRect(x: 257.08125, y: -372.5, width: 20, height: 408.75)
         ])
         XCTAssertEqual(section.hiddenColumnsBefore, 0)
         XCTAssertEqual(section.hiddenColumnsAfter, 0)
@@ -80,18 +108,18 @@ final class OverviewLayoutCalculatorTests: XCTestCase {
         let section = try XCTUnwrap(layout.workspaceSections.first)
         let columns = try XCTUnwrap(layout.niriColumnsByWorkspace[workspaceId])
 
-        XCTAssertEqual(section.visibleFrame.width, 425)
+        XCTAssertEqual(section.visibleFrame.width, 420)
         assertFrame(columns[0].frame, CGRect(
-            x: section.visibleFrame.minX - 380 * 0.425,
-            y: section.visibleFrame.minY + 40 * 0.425,
-            width: 400 * 0.425,
-            height: 700 * 0.425
+            x: section.visibleFrame.minX - 380 * 0.42,
+            y: section.visibleFrame.minY + 40 * 0.42,
+            width: 400 * 0.42,
+            height: 700 * 0.42
         ))
         assertFrame(columns[1].frame, CGRect(
-            x: section.visibleFrame.minX + 40 * 0.425,
-            y: section.visibleFrame.minY + 40 * 0.425,
-            width: 600 * 0.425,
-            height: 700 * 0.425
+            x: section.visibleFrame.minX + 40 * 0.42,
+            y: section.visibleFrame.minY + 40 * 0.42,
+            width: 600 * 0.42,
+            height: 700 * 0.42
         ))
         XCTAssertEqual(section.windows.map(\.overviewFrame), columns.map(\.frame))
     }
@@ -102,9 +130,9 @@ final class OverviewLayoutCalculatorTests: XCTestCase {
 
         XCTAssertTrue(section.isEmpty)
         XCTAssertEqual(layout.workspaceSections.count, 3)
-        assertFrame(section.visibleFrame, CGRect(x: 40.625, y: -870, width: 518.75, height: 415))
+        assertFrame(section.visibleFrame, CGRect(x: 44.53125, y: -861.25, width: 510.9375, height: 408.75))
         XCTAssertEqual(section.visibleFrame.size, layout.workspaceSections.first?.visibleFrame.size)
-        assertFrame(section.sectionFrame, CGRect(x: -200, y: -870, width: 1000, height: 455))
+        assertFrame(section.sectionFrame, CGRect(x: -200, y: -861.25, width: 1000, height: 448.75))
         let point = CGPoint(x: section.visibleFrame.midX, y: section.visibleFrame.midY)
         XCTAssertEqual(layout.ribbonSection(at: point)?.workspaceId, section.workspaceId)
         XCTAssertEqual(
@@ -129,9 +157,10 @@ final class OverviewLayoutCalculatorTests: XCTestCase {
         XCTAssertNil(layout.windowHit(at: CGPoint(x: section.ribbonFrame.minX - 200, y: section.ribbonFrame.midY)))
 
         let range = layout.stripPanRange(for: workspaceId)
-        XCTAssertEqual(range, -697 ... 433.5)
+        XCTAssertEqual(range.lowerBound, -683.2, accuracy: 0.001)
+        XCTAssertEqual(range.upperBound, 422.8, accuracy: 0.001)
         XCTAssertTrue(layout.panStrip(workspaceId, by: 10_000))
-        XCTAssertEqual(layout.stripPanByWorkspace[workspaceId], 1020)
+        XCTAssertEqual(try XCTUnwrap(layout.stripPanByWorkspace[workspaceId]), 1006.6666666666666, accuracy: 0.001)
         section = try XCTUnwrap(layout.workspaceSections.first)
         XCTAssertEqual(section.hiddenColumnsBefore, 0)
         XCTAssertEqual(section.windows.first?.overviewFrame.minX, section.ribbonFrame.minX)
@@ -171,7 +200,7 @@ final class OverviewLayoutCalculatorTests: XCTestCase {
 
         XCTAssertEqual(layout.workspaceSections.count, 3)
         XCTAssertEqual(layout.scale, 1.25)
-        XCTAssertEqual(layout.totalContentHeight, 1515, accuracy: 1e-10)
+        XCTAssertEqual(layout.totalContentHeight, 1496.25, accuracy: 1e-10)
         XCTAssertEqual(layout.allWindows.map(\.matchesSearch), [false, true, true, false, false])
         for (window, handle) in zip(layout.allWindows, handles) {
             XCTAssertTrue(window.handle === handle)
@@ -180,7 +209,7 @@ final class OverviewLayoutCalculatorTests: XCTestCase {
             layout: layout,
             screenFrame: CGRect(x: -200, y: -100, width: 1000, height: 800)
         )
-        XCTAssertEqual(bounds.lowerBound, -820, accuracy: 1e-10)
+        XCTAssertEqual(bounds.lowerBound, -811.25, accuracy: 1e-10)
         XCTAssertEqual(bounds.upperBound, 0)
     }
 

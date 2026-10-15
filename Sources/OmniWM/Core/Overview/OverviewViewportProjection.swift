@@ -146,7 +146,8 @@ final class OverviewViewportProjection {
         let viewportFrame = OverviewLayoutCalculator.viewportFrame(for: monitor.frame)
         let layout = OverviewLayoutCalculator(
             screenFrame: viewportFrame,
-            scale: scale
+            scale: scale,
+            topSafeAreaInset: monitor.notchHeight
         ).calculateLayout(
             workspaces: workspaces,
             windows: localizedWindowData,

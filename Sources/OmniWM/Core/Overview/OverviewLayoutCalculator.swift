@@ -23,7 +23,7 @@ struct OverviewWindowLayoutData {
 }
 
 enum OverviewLayoutMetrics {
-    static let searchBarHeight: CGFloat = 44
+    static let searchBarHeight: CGFloat = 52
     static let searchBarPadding: CGFloat = 20
     static let workspaceLabelHeight: CGFloat = 32
     static let workspaceSectionPadding: CGFloat = 16
@@ -46,8 +46,8 @@ struct OverviewLayoutCalculator {
     private let geometry: OverviewLayoutGeometry
     private let scale: CGFloat
 
-    init(screenFrame: CGRect, scale: CGFloat) {
-        geometry = OverviewLayoutGeometry(screenFrame: screenFrame, scale: scale)
+    init(screenFrame: CGRect, scale: CGFloat, topSafeAreaInset: CGFloat = 0) {
+        geometry = OverviewLayoutGeometry(screenFrame: screenFrame, scale: scale, topSafeAreaInset: topSafeAreaInset)
         self.scale = scale
     }
 
