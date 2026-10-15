@@ -748,35 +748,30 @@ final class ShellBundledWidgetTests: XCTestCase {
         let modules = try FileManager.default.contentsOfDirectory(atPath: library.path).map {
             try ("celestial/lib/\($0)", String(contentsOf: library.appendingPathComponent($0), encoding: .utf8))
         }
-        let source = """
-        local panes = {
-            require("../lib/dash"), require("../lib/mediatab"), require("../lib/performance"),
-            require("../lib/weathertab"),
-        }
-        function render(ctx)
-            return ui.box{ w = 0, h = 0 }
-        end
-        function popout(ctx)
-            local weather = ctx.data.weather
-            if weather and (weather.days[1].code ~= 61 or weather.hours[1].code ~= 3) then
-                error("forecast codes")
-            end
-            local column = {}
-            for index, pane in panes do
-                column[index] = pane.tab(ctx)
-            end
-            return ui.column(column)
-        end
-        """
         let full = try fullData()
-        for data in [full, full.filter { Self.essentials.contains($0.0) }] {
-            try render(
-                "celestial/tabs",
-                source: source,
-                chunk: "@celestial/widgets/tabs/init.luau",
-                modules: modules,
-                data: data
-            )
+        for pane in ["dash", "mediatab", "performance", "weathertab"] {
+            let source = """
+            local pane = require("../lib/\(pane)")
+            function render(ctx)
+                return ui.box{ w = 0, h = 0 }
+            end
+            function popout(ctx)
+                local weather = ctx.data.weather
+                if weather and (weather.days[1].code ~= 61 or weather.hours[1].code ~= 3) then
+                    error("forecast codes")
+                end
+                return pane.tab(ctx)
+            end
+            """
+            for data in [full, full.filter { Self.essentials.contains($0.0) }] {
+                try render(
+                    "celestial/\(pane)",
+                    source: source,
+                    chunk: "@celestial/widgets/tabs/init.luau",
+                    modules: modules,
+                    data: data
+                )
+            }
         }
     }
 
