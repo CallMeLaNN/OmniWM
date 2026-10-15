@@ -26,7 +26,10 @@ extension CommandPaletteController {
             }
             return
         }
+        performSelected(action)
+    }
 
+    private func performSelected(_ action: CommandPaletteActionExecutor.Action) {
         if case .moveWindowToWorkspace = action {
             let outcome = actionExecutor.perform(action) ?? .moveFailed
             guard outcome == .movedToWorkspace else {
