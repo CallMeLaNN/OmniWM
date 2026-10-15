@@ -117,7 +117,7 @@ final class LayoutSectionsSettingsExportTests: XCTestCase {
         var export = SettingsExport.defaults()
         export.niri = settings.export()
         let ids = ["ContainerPrimary", "WindowPrimary", "WindowSecondary"].flatMap { span in
-            ["decrease", "increase"].map { "set\(span)Span.\($0)10Percent" }
+            ["shrink", "grow"].map { "resize\(span)Span.\($0)" }
         }
         let shortcut = try XCTUnwrap(KeySymbolMapper.fromHumanReadable("Hyper+Minus"))
         for index in export.hotkeyBindings.indices where ids.contains(export.hotkeyBindings[index].id) {

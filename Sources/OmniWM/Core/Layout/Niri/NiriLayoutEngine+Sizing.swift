@@ -305,45 +305,42 @@ extension NiriLayoutEngine {
     ) {
         assertSanctionedMutation()
         beginManualPrimarySpanResize(column, in: context.workspaceId, orientation: context.orientation)
-        if context.orientation == .vertical {
-            let previousHeight = column.currentHeightForSizing(
-                workingAreaHeight: context.workingFrame.height,
-                gaps: context.gaps
+        let horizontal = context.orientation == .horizontal
+        let currentSpec = horizontal
+            ? (column.isFullWidth ? .proportion(1) : column.width)
+            : (column.isFullHeight ? .proportion(1) : column.height)
+        let axisSpan = horizontal ? context.workingFrame.width : context.workingFrame.height
+        let contentInset = horizontal ? tabContentInset(for: column) : 0
+        let currentPixels: CGFloat
+        if case .adjustProportion = change, currentSpec.isProportion {
+            currentPixels = column.resolvedPrimarySpan(
+                currentSpec,
+                orientation: context.orientation,
+                availableSpace: axisSpan,
+                gaps: context.gaps,
+                contentInset: contentInset,
+                applyingPackingHints: false
             )
-            let newHeight = change.primarySpanSpec(
-                currentPixels: previousHeight,
-                axisSpan: context.workingFrame.height,
-                gaps: context.gaps
+        } else if horizontal {
+            currentPixels = column.resolvedWidthPixels(
+                currentSpec,
+                availableSpan: axisSpan,
+                gaps: context.gaps,
+                contentInset: contentInset
             )
-            applyContainerHeight(
-                column,
-                height: newHeight,
-                context: context,
-                state: &state
-            )
-            return
+        } else {
+            currentPixels = column.currentHeightForSizing(workingAreaHeight: axisSpan, gaps: context.gaps)
         }
-
-        let currentSpec = column.isFullWidth ? ProportionalSize.proportion(1) : column.width
-        let currentPixels = column.resolvedWidthPixels(
-            currentSpec,
-            availableSpan: context.workingFrame.width,
-            gaps: context.gaps,
-            contentInset: tabContentInset(for: column)
-        )
-        let newWidth = change.primarySpanSpec(
+        let newSpan = change.primarySpanSpec(
             currentPixels: currentPixels,
-            axisSpan: context.workingFrame.width,
+            axisSpan: axisSpan,
             gaps: context.gaps
         )
-
-        applyColumnWidth(
-            column,
-            width: newWidth,
-            presetIndex: nil,
-            context: context,
-            state: &state
-        )
+        if horizontal {
+            applyColumnWidth(column, width: newSpan, presetIndex: nil, context: context, state: &state)
+        } else {
+            applyContainerHeight(column, height: newSpan, context: context, state: &state)
+        }
     }
 
     func toggleContainerFullPrimarySpan(
