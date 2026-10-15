@@ -515,7 +515,9 @@ final class SettingsMigrationTests: XCTestCase {
 
         let actionsAddedAfterVersionFour: Set<String> = [
             "toggleFloatingFocus", "volumeUp", "volumeDown", "volumeMute", "mediaPlayPause", "mediaNext",
-            "mediaPrevious"
+            "mediaPrevious", "openCommandPalette.windows", "openCommandPalette.menu",
+            "openCommandPalette.clipboard", "openCommandPalette.commands", "openCommandPalette.applications",
+            "openCommandPalette.files"
         ]
         XCTAssertEqual(
             hotkeyIDs(in: migratedData),

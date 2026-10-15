@@ -55,6 +55,7 @@ enum HotkeyCommand: Equatable, Hashable {
     case moveColumn(Direction)
 
     case openCommandPalette
+    case openCommandPaletteMode(IPCCommandPaletteMode)
 
     case raiseAllFloatingWindows
     case toggleFloatingFocus

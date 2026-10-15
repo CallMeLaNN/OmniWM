@@ -519,6 +519,26 @@ final class CommandPaletteFocusTests: XCTestCase {
         XCTAssertTrue(dispatched.isEmpty)
     }
 
+    func testSelectingPaletteModeCommandSwitchesModeInPlace() throws {
+        var dispatched: [HotkeyCommand] = []
+        let fixture = CommandPaletteFocusFixture { environment in
+            environment.performCommand = { _, command in
+                dispatched.append(command)
+                return .executed
+            }
+        }
+        defer { fixture.cleanup() }
+        _ = try fixture.show()
+
+        fixture.palette.selectMode(.commands)
+        fixture.palette.selectedItemID = .command("openCommandPalette.clipboard")
+        fixture.palette.selectCurrent()
+
+        XCTAssertTrue(fixture.palette.isVisible)
+        XCTAssertEqual(fixture.palette.selectedMode, .clipboard)
+        XCTAssertTrue(dispatched.isEmpty)
+    }
+
     func testCommandWaitsForCapturedAppAndWindowFocus() {
         let fixture = CommandPaletteFocusFixture()
         defer { fixture.cleanup() }

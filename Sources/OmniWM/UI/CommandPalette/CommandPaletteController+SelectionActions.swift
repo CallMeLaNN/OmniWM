@@ -50,6 +50,10 @@ extension CommandPaletteController {
             dismiss(reason: .cancel)
             return
         }
+        if case let .command(_, .openCommandPaletteMode(mode), _) = action {
+            selectedMode = CommandPaletteMode(ipc: mode)
+            return
+        }
         dismiss(reason: .selection)
         actionExecutor.perform(action)
     }
