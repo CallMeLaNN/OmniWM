@@ -7,6 +7,7 @@ import XCTest
 
 @MainActor
 final class OverviewLayoutCalculatorTests: XCTestCase {
+    /// Checks fixed notch clearance and content spacing for empty and typed searches at each zoom limit and default.
     func testNotchedDisplayKeepsSearchAndContentBelowSafeAreaAtEveryZoom() throws {
         let viewport = CGRect(x: 0, y: 0, width: 1512, height: 982)
         let safeAreaInset: CGFloat = 32

@@ -46,6 +46,7 @@ struct OverviewLayoutCalculator {
     private let geometry: OverviewLayoutGeometry
     private let scale: CGFloat
 
+    /// Creates a layout calculator with a top safe-area inset in display points, independent of zoom.
     init(screenFrame: CGRect, scale: CGFloat, topSafeAreaInset: CGFloat = 0) {
         geometry = OverviewLayoutGeometry(screenFrame: screenFrame, scale: scale, topSafeAreaInset: topSafeAreaInset)
         self.scale = scale
