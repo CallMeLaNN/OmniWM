@@ -124,8 +124,14 @@ final class NiriSettings {
     }
 
     private func resolved(override: MonitorNiriSettings?) -> ResolvedNiriSettings {
+        let defaultSpan: Double? = if let spanOverride = override?.defaultContainerPrimarySpan {
+            spanOverride.customSpan
+        } else {
+            defaultContainerPrimarySpan
+        }
         return ResolvedNiriSettings(
             visibleContainerCount: override?.visibleContainerCount ?? visibleContainerCount,
+            defaultContainerPrimarySpan: defaultSpan,
             centerFocusedColumn: override?.centerFocusedColumn ?? centerFocusedColumn,
             alwaysCenterSingleColumn: override?.alwaysCenterSingleColumn ?? alwaysCenterSingleColumn,
             singleWindowFit: override?.singleWindowFit ?? singleWindowFit,

@@ -50,23 +50,21 @@ private struct GlobalNiriSettingsSection: View {
     @Bindable var controller: WMController
 
     var body: some View {
-        let useAutoDefaultContainerPrimarySpan = Binding(
-            get: { settings.niri.defaultContainerPrimarySpan == nil },
-            set: { useAuto in
+        let spanMode = Binding<NiriDefaultSpanSettingsSection.Mode>(
+            get: { settings.niri.defaultContainerPrimarySpan == nil ? .auto : .custom },
+            set: { mode in
                 settings
                     .niri
-                    .defaultContainerPrimarySpan = useAuto ? nil :
+                    .defaultContainerPrimarySpan = mode == .auto ? nil :
                     (settings.niri.defaultContainerPrimarySpan ?? 0.5)
                 controller.updateNiriConfig(defaultContainerPrimarySpan: settings.niri.defaultContainerPrimarySpan)
-                controller.balanceNiriSizesAllWorkspaces()
             }
         )
         let defaultContainerPrimarySpanPercent = Binding(
-            get: { Int((settings.niri.defaultContainerPrimarySpan ?? 0.5) * 100) },
+            get: { Int(((settings.niri.defaultContainerPrimarySpan ?? 0.5) * 100).rounded()) },
             set: { newPercent in
                 settings.niri.defaultContainerPrimarySpan = Double(min(100, max(5, newPercent))) / 100.0
                 controller.updateNiriConfig(defaultContainerPrimarySpan: settings.niri.defaultContainerPrimarySpan)
-                controller.balanceNiriSizesAllWorkspaces()
             }
         )
         let presets = settings.niri.containerPrimarySpanPresets
@@ -151,37 +149,11 @@ private struct GlobalNiriSettingsSection: View {
         }
         .id("Niri Layout")
 
-        Section("Default New Container Primary Span") {
-            Picker("Span Mode", selection: useAutoDefaultContainerPrimarySpan) {
-                Text("Auto").tag(true)
-                Text("Custom").tag(false)
-            }
-            .id("Span Mode")
-            .pickerStyle(.segmented)
-            .frame(maxWidth: 220)
-
-            if settings.niri.defaultContainerPrimarySpan != nil {
-                LabeledContent("Custom Span") {
-                    HStack {
-                        TextField("Custom Span", value: defaultContainerPrimarySpanPercent, format: .number)
-                            .id("Custom Span")
-                            .labelsHidden()
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 48)
-                            .multilineTextAlignment(.trailing)
-                        Text("%")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-
-            SettingsCaption(
-                settings.niri.defaultContainerPrimarySpan == nil
-                    ? String(localized: "Auto divides the primary axis by the Visible Containers setting.")
-                    : String(localized: "New or claimed containers start at this primary span until you resize them.")
-            )
-        }
-        .id("Default New Container Primary Span")
+        NiriDefaultSpanSettingsSection(
+            allowsGlobal: false,
+            mode: spanMode,
+            percent: defaultContainerPrimarySpanPercent
+        )
 
         Section("Container Primary Span Presets") {
             ForEach(presets.indices, id: \.self) { index in
@@ -263,6 +235,33 @@ private struct MonitorNiriSettingsSection: View {
 
     var body: some View {
         let ms = monitorSettings
+        let resolved = settings.niri.resolved(for: monitor)
+        let effectiveSpan = resolved.defaultContainerPrimarySpan ?? 1.0 / Double(resolved.visibleContainerCount)
+        let spanMode = Binding<NiriDefaultSpanSettingsSection.Mode>(
+            get: {
+                switch monitorSettings.defaultContainerPrimarySpan {
+                case nil: .useGlobal
+                case .auto: .auto
+                case .custom: .custom
+                }
+            },
+            set: { mode in
+                let span: NiriContainerPrimarySpanOverride? = switch mode {
+                case .useGlobal: nil
+                case .auto: .auto
+                case .custom: .custom(effectiveSpan)
+                }
+                updateSetting { $0.defaultContainerPrimarySpan = span }
+            }
+        )
+        let spanPercent = Binding(
+            get: { Int((effectiveSpan * 100).rounded()) },
+            set: { percent in
+                updateSetting {
+                    $0.defaultContainerPrimarySpan = .custom(Double(min(100, max(5, percent))) / 100.0)
+                }
+            }
+        )
 
         Section("Niri Layout") {
             OverridableSlider(
@@ -315,5 +314,61 @@ private struct MonitorNiriSettingsSection: View {
             )
         }
         .id("Niri Layout")
+
+        NiriDefaultSpanSettingsSection(allowsGlobal: true, mode: spanMode, percent: spanPercent)
+    }
+}
+
+private struct NiriDefaultSpanSettingsSection: View {
+    enum Mode {
+        case useGlobal
+        case auto
+        case custom
+    }
+
+    let allowsGlobal: Bool
+    @Binding var mode: Mode
+    @Binding var percent: Int
+
+    var body: some View {
+        Section("Default New Container Primary Span") {
+            Picker("Span Mode", selection: $mode) {
+                if allowsGlobal {
+                    Text("Use Global").tag(Mode.useGlobal)
+                }
+                Text("Auto").tag(Mode.auto)
+                Text("Custom").tag(Mode.custom)
+            }
+            .id("Span Mode")
+            .pickerStyle(.segmented)
+            .frame(maxWidth: allowsGlobal ? 320 : 220)
+
+            if mode == .custom {
+                LabeledContent("Custom Span") {
+                    HStack {
+                        TextField("Custom Span", value: $percent, format: .number)
+                            .id("Custom Span")
+                            .labelsHidden()
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 48)
+                            .multilineTextAlignment(.trailing)
+                        Text("%")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
+            switch mode {
+            case .useGlobal:
+                SettingsCaption(localized: "Follows the span setting for All Displays.")
+            case .auto:
+                SettingsCaption(localized: "Auto divides the primary axis by the Visible Containers setting.")
+            case .custom:
+                SettingsCaption(
+                    localized: "New or claimed containers start at this primary span until you resize them."
+                )
+            }
+        }
+        .id("Default New Container Primary Span")
     }
 }
