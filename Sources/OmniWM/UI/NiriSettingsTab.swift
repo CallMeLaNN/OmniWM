@@ -85,12 +85,8 @@ private struct GlobalNiriSettingsSection: View {
             )
             .id("Visible Containers")
             .onChange(of: settings.niri.visibleContainerCount) { _, newValue in
-                settings.niri.defaultContainerPrimarySpan = nil
-                controller.updateNiriConfig(
-                    visibleContainerCount: newValue,
-                    defaultContainerPrimarySpan: settings.niri.defaultContainerPrimarySpan
-                )
-                controller.balanceNiriSizesAllWorkspaces()
+                controller.updateNiriConfig(visibleContainerCount: newValue)
+                controller.rebalanceNiriSizesForVisibleContainerCountChange()
             }
 
             Toggle("Infinite Loop Navigation", isOn: Bindable(settings.niri).infiniteLoop)
@@ -272,9 +268,7 @@ private struct MonitorNiriSettingsSection: View {
                 formatter: { "\(Int($0))" },
                 onChange: { newValue in
                     updateSetting { $0.visibleContainerCount = Int(newValue) }
-                    settings.niri.defaultContainerPrimarySpan = nil
-                    controller.updateNiriConfig(defaultContainerPrimarySpan: settings.niri.defaultContainerPrimarySpan)
-                    controller.balanceNiriSizesAllWorkspaces()
+                    controller.rebalanceNiriSizesForVisibleContainerCountChange(on: monitor.id)
                 },
                 onReset: { updateSetting { $0.visibleContainerCount = nil } }
             )
