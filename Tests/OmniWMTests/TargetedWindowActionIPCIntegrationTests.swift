@@ -435,6 +435,7 @@ final class TargetedWindowActionIPCIntegrationTests: XCTestCase {
         )
         manager.setNiriRestorePlacements(placements)
         XCTAssertNil(fixture.controller.layoutRefreshController.executeLayoutPlanReturningAcceptedSeq(plan))
+        XCTAssertTrue(manager.quietArrivalTokens.contains(retiled.id))
 
         fixture.controller.layoutRefreshController.requestLayoutCommandRelayout(
             affectedWorkspaceIds: [fixture.niriWorkspaceId]
