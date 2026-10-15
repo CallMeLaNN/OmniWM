@@ -25,6 +25,7 @@ final class NiriVisibleContainerCountSettingsTests: XCTestCase {
         fixture.controller.settings.niri.visibleContainerCount = 3
         fixture.controller.updateNiriConfig(visibleContainerCount: 3)
         fixture.controller.rebalanceNiriSizesForVisibleContainerCountChange()
+        overrideVisibleContainerCount(4, on: fixture.leftMonitor, fixture: fixture)
         fixture.controller.rebalanceNiriSizesForVisibleContainerCountChange(on: fixture.leftMonitor.id)
 
         XCTAssertEqual(fixture.controller.settings.niri.defaultContainerPrimarySpan, 0.95)
@@ -40,13 +41,21 @@ final class NiriVisibleContainerCountSettingsTests: XCTestCase {
         fixture.controller.updateNiriConfig(defaultContainerPrimarySpan: .some(nil))
         let before = widths(fixture)
 
-        fixture.controller.settings.niri.visibleContainerCount = 4
-        fixture.controller.updateNiriConfig(visibleContainerCount: 4)
+        XCTAssertEqual(fixture.controller.settings.niri.visibleContainerCount, 2)
+        overrideVisibleContainerCount(4, on: fixture.leftMonitor, fixture: fixture)
         fixture.controller.rebalanceNiriSizesForVisibleContainerCountChange(on: fixture.leftMonitor.id)
 
         let after = widths(fixture)
         XCTAssertEqual(after.left, [0.25, 0.25])
         XCTAssertEqual(after.right, before.right)
+    }
+
+    private func overrideVisibleContainerCount(_ count: Int, on monitor: Monitor, fixture: Fixture) {
+        var monitorSettings = fixture.controller.settings.niri.settings(for: monitor)
+            ?? MonitorNiriSettings(monitorName: monitor.name)
+        monitorSettings.visibleContainerCount = count
+        fixture.controller.settings.niri.update(monitorSettings, for: monitor)
+        fixture.controller.updateMonitorNiriSettings()
     }
 
     private func widths(_ fixture: Fixture) -> (left: [CGFloat], right: [CGFloat]) {
