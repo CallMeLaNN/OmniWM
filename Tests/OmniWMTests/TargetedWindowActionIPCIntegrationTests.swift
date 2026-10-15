@@ -388,6 +388,67 @@ final class TargetedWindowActionIPCIntegrationTests: XCTestCase {
         XCTAssertEqual(manager.restoreIntent(for: retiled.id)?.niriPlacement?.columnIndex, 3)
     }
 
+    func testQuietRetileKeepsItsTokenWhenItsPlanIsRejectedBeforeAPersistedArrival() async throws {
+        let fixture = try await makeFlushLeftFixture()
+        let manager = fixture.controller.workspaceManager
+        let retiled = try addWindow(
+            pid: 512_900, windowId: 512_901, to: fixture.niriWorkspaceId, controller: fixture.controller
+        )
+        fixture.controller.layoutRefreshController.requestLayoutCommandRelayout(
+            affectedWorkspaceIds: [fixture.niriWorkspaceId]
+        )
+        await WindowAdmissionTestSupport.drainLayoutRefreshes(fixture.controller)
+        try storeStalePlacement(for: retiled.id, inColumnOf: fixture.focused, fixture)
+        XCTAssertTrue(fixture.controller.transitionWindowMode(
+            for: retiled.id,
+            to: .floating,
+            applyFloatingFrame: false
+        ))
+        fixture.controller.layoutRefreshController.requestRelayout(
+            reason: .windowRuleReevaluation,
+            affectedWorkspaceIds: [fixture.niriWorkspaceId]
+        )
+        await WindowAdmissionTestSupport.drainLayoutRefreshes(fixture.controller)
+        let before = try XCTUnwrap(fixture.frame(of: fixture.focused))
+
+        manager.quietArrivalTokens.insert(retiled.id)
+        XCTAssertTrue(fixture.controller.transitionWindowMode(for: retiled.id, to: .tiling, applyFloatingFrame: false))
+        let plans = manager.withBatchedLayoutBuild {
+            fixture.controller.niriLayoutHandler.layoutWithNiriEngine(activeWorkspaces: [fixture.niriWorkspaceId])
+        }
+        let plan = try XCTUnwrap(plans.first { $0.workspaceId == fixture.niriWorkspaceId })
+
+        let arrivalToken = manager.addWindow(
+            AXWindowRef(element: AXUIElementCreateApplication(512_910), windowId: 512_911),
+            pid: 512_910,
+            windowId: 512_911,
+            to: fixture.niriWorkspaceId
+        )
+        var placements = fixture.engine.persistedPlacements(in: fixture.niriWorkspaceId)
+        placements[retiled.id] = manager.restoreIntent(for: retiled.id)?.niriPlacement
+        let lastPlacement = try XCTUnwrap(placements[fixture.focused.id])
+        placements[arrivalToken] = PersistedNiriPlacement(
+            columnIndex: placements.values.map(\.columnIndex).max().map { $0 + 1 } ?? 0,
+            tileIndex: 0,
+            column: lastPlacement.column,
+            window: lastPlacement.window
+        )
+        manager.setNiriRestorePlacements(placements)
+        XCTAssertNil(fixture.controller.layoutRefreshController.executeLayoutPlanReturningAcceptedSeq(plan))
+
+        fixture.controller.layoutRefreshController.requestLayoutCommandRelayout(
+            affectedWorkspaceIds: [fixture.niriWorkspaceId]
+        )
+        await WindowAdmissionTestSupport.drainLayoutRefreshes(fixture.controller)
+
+        let columns = fixture.engine.columns(in: fixture.niriWorkspaceId).map { $0.windowNodes.map(\.token) }
+        XCTAssertTrue(columns.contains([fixture.focused.id]), "\(columns)")
+        XCTAssertTrue(columns.contains([retiled.id]), "\(columns)")
+        XCTAssertNotEqual(manager.selectedManagedToken, retiled.id)
+        XCTAssertEqual(fixture.frame(of: fixture.focused), before)
+        XCTAssertFalse(manager.quietArrivalTokens.contains(retiled.id))
+    }
+
     func testFloatingAColumnBeforeTheCenteredFocusKeepsTheFocusedFrame() async throws {
         let fixture = try await makeCenteredFixture()
         let before = try XCTUnwrap(fixture.frame(of: fixture.focused))

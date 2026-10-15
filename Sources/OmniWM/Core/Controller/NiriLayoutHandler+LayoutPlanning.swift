@@ -171,7 +171,6 @@ extension NiriLayoutHandler {
         let pass = makeLayoutPass(snapshot: snapshot, engine: engine, monitor: monitor, motion: motion)
         let currentSelection = state.selectedNodeId
         pass.engine.setProjectionExclusions(snapshot.excludedTokens, in: pass.wsId)
-        controller?.workspaceManager.quietArrivalTokens.subtract(snapshot.quietArrivalTokens)
 
         let removal = processWindowRemovals(
             pass: pass,
@@ -215,6 +214,7 @@ extension NiriLayoutHandler {
             snapshot: snapshot
         )
         plan.niriRestorePlacements = pass.engine.persistedPlacements(in: pass.wsId)
+        plan.quietArrivalTokens = snapshot.quietArrivalTokens
 
         return plan
     }
