@@ -27,7 +27,13 @@ extension DwindleLayoutEngine {
               let destination = source.sibling() === target ? source.parent : target
         else { return false }
 
-        let movementFrame = source.presentedFrame(at: animationClock?.now() ?? CACurrentMediaTime())
+        let now = animationClock?.now() ?? CACurrentMediaTime()
+        for node in [source, target, source.sibling()] {
+            guard let node, let affectedTile = node.tile, let frame = node.presentedFrame(at: now) else { continue }
+            for member in affectedTile.members where state.pendingMovementFrameSeeds[member.token] == nil {
+                state.pendingMovementFrameSeeds[member.token] = frame
+            }
+        }
         source.kind = .leaf(tile: nil)
         source.cachedContentFrame = nil
         state.tileCount -= 1
@@ -43,9 +49,6 @@ extension DwindleLayoutEngine {
         )
         for member in tile.members {
             state.leafByToken[member.token] = inserted
-            if state.pendingMovementFrameSeeds[member.token] == nil, let movementFrame {
-                state.pendingMovementFrameSeeds[member.token] = movementFrame
-            }
         }
         state.selectedNodeId = inserted.id
         return true

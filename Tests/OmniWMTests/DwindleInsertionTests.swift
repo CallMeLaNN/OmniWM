@@ -59,6 +59,14 @@ final class DwindleInsertionTests: XCTestCase {
         }
     }
 
+    func testSiblingInsertionAnimatesBothTilesFromTheirPresentedFrames() throws {
+        try assertInsertionAnimationContinuity(windowCount: 2, sourceIndex: 0, targetIndex: 1)
+    }
+
+    func testInsertionAnimatesTargetAndPromotedSiblingFromTheirPresentedFrames() throws {
+        try assertInsertionAnimationContinuity(windowCount: 3, sourceIndex: 1, targetIndex: 0)
+    }
+
     func testUnrelatedSubtreeAndPreselectionArePreserved() throws {
         let fixture = makeFixture(count: 4)
         let engine = fixture.engine
@@ -252,6 +260,38 @@ final class DwindleInsertionTests: XCTestCase {
             XCTAssertNil(engine.interactiveMoveEnd())
             XCTAssertEqual(engine.calculateLayout(for: fixture.workspaceId, screen: screen), frames)
         }
+    }
+
+    private func assertInsertionAnimationContinuity(windowCount: Int, sourceIndex: Int, targetIndex: Int) throws {
+        let fixture = makeFixture(count: windowCount)
+        let engine = fixture.engine
+        let ws = fixture.workspaceId
+        let before = engine.presentedFrames(in: ws, at: 100)
+        let source = fixture.tokens[sourceIndex]
+        let target = fixture.tokens[targetIndex]
+
+        try hover(source, over: target, direction: .up, fixture: fixture)
+        XCTAssertEqual(engine.interactiveMoveEnd(), target)
+
+        var previousTargets = engine.currentFrames(in: ws)
+        var oldFrames = engine.presentedFrames(in: ws, at: 100)
+        engine.consumePendingMovementFrameSeeds(
+            in: ws,
+            oldFrames: &oldFrames,
+            previousTargetFrames: &previousTargets
+        )
+        let newFrames = engine.calculateLayout(for: ws, screen: screen)
+        for token in fixture.tokens {
+            XCTAssertNotEqual(newFrames[token], before[token])
+        }
+        engine.animateWindowMovements(
+            .init(oldFrames: oldFrames, previousTargetFrames: previousTargets, newFrames: newFrames),
+            in: ws,
+            startTime: 100,
+            motion: .enabled
+        )
+
+        XCTAssertEqual(engine.calculateAnimatedFrames(baseFrames: newFrames, in: ws, at: 100), before)
     }
 
     private func makeFixture(count: Int) -> Fixture {
