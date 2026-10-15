@@ -129,8 +129,7 @@ final class LockScreenObserverTests: XCTestCase {
         XCTAssertTrue(observer.isFrontmostAppLockScreen())
     }
 
-    func testAppActivationWhileLockedDoesNotUnlock() async throws {
-        let activatedApp = try runningAppWithBundleIdentifier()
+    func testAppActivationWhileLockedDoesNotUnlock() async {
         let observer = LockScreenObserver()
         observer.screenLockedProvider = { false }
         var unlockDetections = 0
@@ -143,8 +142,14 @@ final class LockScreenObserverTests: XCTestCase {
         observer.screenLockedProvider = { true }
         observer.enqueueLockEventForTests()
         await fulfillment(of: [lockHandled], timeout: 1)
-        postActivation(of: activatedApp)
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        let sessionChecked = expectation(description: "activation checks session")
+        sessionChecked.assertForOverFulfill = false
+        observer.screenLockedProvider = {
+            sessionChecked.fulfill()
+            return true
+        }
+        postActivation()
+        await fulfillment(of: [sessionChecked], timeout: 1)
 
         XCTAssertEqual(unlockDetections, 0)
         guard case .locked = observer.state else {
@@ -153,8 +158,7 @@ final class LockScreenObserverTests: XCTestCase {
         XCTAssertTrue(observer.isFrontmostAppLockScreen())
     }
 
-    func testAppActivationAfterMissedUnlockReconcilesFromSession() async throws {
-        let activatedApp = try runningAppWithBundleIdentifier()
+    func testAppActivationAfterMissedUnlockReconcilesFromSession() async {
         let observer = LockScreenObserver()
         observer.screenLockedProvider = { false }
         let lockHandled = expectation(description: "lock event handled")
@@ -168,24 +172,16 @@ final class LockScreenObserverTests: XCTestCase {
         observer.enqueueLockEventForTests()
         await fulfillment(of: [lockHandled], timeout: 1)
         observer.screenLockedProvider = { false }
-        postActivation(of: activatedApp)
+        postActivation()
         await fulfillment(of: [unlockHandled], timeout: 1)
 
         XCTAssertFalse(observer.isFrontmostAppLockScreen())
     }
 
-    private func runningAppWithBundleIdentifier() throws -> NSRunningApplication {
-        guard let app = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dock").first else {
-            throw XCTSkip("needs a running app with a bundle identifier")
-        }
-        return app
-    }
-
-    private func postActivation(of app: NSRunningApplication) {
+    private func postActivation() {
         NSWorkspace.shared.notificationCenter.post(
             name: NSWorkspace.didActivateApplicationNotification,
-            object: NSWorkspace.shared,
-            userInfo: [NSWorkspace.applicationUserInfoKey: app]
+            object: NSWorkspace.shared
         )
     }
 }
