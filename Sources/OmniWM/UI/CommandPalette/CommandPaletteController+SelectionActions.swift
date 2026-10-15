@@ -51,7 +51,10 @@ extension CommandPaletteController {
             return
         }
         if case let .command(_, .openCommandPaletteMode(mode), _) = action {
-            selectedMode = CommandPaletteMode(ipc: mode)
+            let mode = CommandPaletteMode(ipc: mode)
+            guard mode != selectedMode else { return }
+            searchText = ""
+            selectedMode = mode
             return
         }
         dismiss(reason: .selection)

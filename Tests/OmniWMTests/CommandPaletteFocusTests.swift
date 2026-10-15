@@ -256,9 +256,11 @@ final class CommandPaletteFocusTests: XCTestCase {
         XCTAssertEqual(fixture.palette.selectedMode, .windows)
         XCTAssertEqual(fixture.controller.settings.commandPaletteLastMode, .windows)
 
+        fixture.palette.searchText = "query"
         fixture.palette.toggle(wmController: fixture.controller, mode: .commands)
         XCTAssertTrue(fixture.palette.isVisible)
         XCTAssertEqual(fixture.palette.selectedMode, .commands)
+        XCTAssertEqual(fixture.palette.searchText, "query")
 
         fixture.palette.toggle(wmController: fixture.controller, mode: .commands)
         XCTAssertFalse(fixture.palette.isVisible)
@@ -519,7 +521,7 @@ final class CommandPaletteFocusTests: XCTestCase {
         XCTAssertTrue(dispatched.isEmpty)
     }
 
-    func testSelectingPaletteModeCommandSwitchesModeInPlace() throws {
+    func testSelectingPaletteModeCommandClearsQueryAndSwitchesModeInPlace() throws {
         var dispatched: [HotkeyCommand] = []
         let fixture = CommandPaletteFocusFixture { environment in
             environment.performCommand = { _, command in
@@ -531,12 +533,50 @@ final class CommandPaletteFocusTests: XCTestCase {
         _ = try fixture.show()
 
         fixture.palette.selectMode(.commands)
+        fixture.palette.searchText = "clipboard"
         fixture.palette.selectedItemID = .command("openCommandPalette.clipboard")
         fixture.palette.selectCurrent()
 
         XCTAssertTrue(fixture.palette.isVisible)
         XCTAssertEqual(fixture.palette.selectedMode, .clipboard)
+        XCTAssertEqual(fixture.palette.searchText, "")
+        XCTAssertEqual(fixture.palette.filteredClipboardItems.map(\.title), ["Alpha", "Beta"])
         XCTAssertTrue(dispatched.isEmpty)
+    }
+
+    func testSelectingLauncherModeCommandStartsWithEmptyQuery() throws {
+        for mode in [CommandPaletteMode.applications, .files] {
+            var submittedQueries: [String] = []
+            let fixture = CommandPaletteFocusFixture { environment in
+                environment.submitApplicationSearch = { _, query, _, _, _ in submittedQueries.append(query) }
+                environment.submitFileSearch = { _, query, _, _, _ in submittedQueries.append(query) }
+            }
+            defer { fixture.cleanup() }
+            _ = try fixture.show(mode: .commands)
+
+            fixture.palette.searchText = mode.rawValue
+            fixture.palette.selectedItemID = .command("openCommandPalette.\(mode.rawValue)")
+            fixture.palette.selectCurrent()
+
+            XCTAssertTrue(fixture.palette.isVisible)
+            XCTAssertEqual(fixture.palette.selectedMode, mode)
+            XCTAssertEqual(submittedQueries, [""])
+        }
+    }
+
+    func testSelectingCurrentPaletteModeCommandKeepsQueryAndStaysOpen() throws {
+        let fixture = CommandPaletteFocusFixture()
+        defer { fixture.cleanup() }
+        _ = try fixture.show(mode: .commands)
+
+        fixture.palette.searchText = "commands"
+        fixture.palette.selectedItemID = .command("openCommandPalette.commands")
+        fixture.palette.selectCurrent()
+
+        XCTAssertTrue(fixture.palette.isVisible)
+        XCTAssertEqual(fixture.palette.selectedMode, .commands)
+        XCTAssertEqual(fixture.palette.searchText, "commands")
+        XCTAssertEqual(fixture.palette.selectedItemID, .command("openCommandPalette.commands"))
     }
 
     func testCommandWaitsForCapturedAppAndWindowFocus() {
