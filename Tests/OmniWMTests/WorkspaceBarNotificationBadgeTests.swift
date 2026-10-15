@@ -57,7 +57,7 @@ final class WorkspaceBarNotificationBadgeTests: XCTestCase {
                 widget.render(data)
                 let badgeHeight = max(9, icon * 0.55)
                 let badges = widget.layers().filter {
-                    $0.backgroundColor != nil && abs($0.bounds.height - badgeHeight) < 0.5
+                    $0.backgroundColor != nil && $0.borderWidth == 0 && abs($0.bounds.height - badgeHeight) < 0.5
                         && abs($0.cornerRadius - badgeHeight / 2) < 0.5
                 }
                 XCTAssertEqual(badges.count, 1, "\(label) \(height)")

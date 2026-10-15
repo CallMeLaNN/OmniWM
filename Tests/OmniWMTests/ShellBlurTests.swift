@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 // Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
 
+import AppKit
 @testable import OmniWM
 import OmniWMScriptHost
 import QuartzCore
@@ -9,6 +10,9 @@ import XCTest
 @MainActor
 final class ShellBlurTests: XCTestCase {
     func testBlurDefaultsAndExplicitZeroPassThroughToNativeFilters() throws {
+        guard !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency else {
+            throw XCTSkip("Reduce Transparency replaces materials with solid fills")
+        }
         let widget = try ShellRenderedWidget(name: "blur", source: """
         function render(ctx)
             return ui.stack{ w = 100, h = 80, material = 'regular',
