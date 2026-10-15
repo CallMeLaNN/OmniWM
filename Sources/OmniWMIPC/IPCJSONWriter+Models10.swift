@@ -152,8 +152,28 @@ extension IPCJSONWriter {
     mutating func value(_ value: borrowing IPCWindowRequest) throws {
         begin(123)
         var first = true
+        if let fieldValue = value.change {
+            self.key("change", &first)
+            try self.value(fieldValue)
+        }
+        if let fieldValue = value.columnIndex {
+            self.key("columnIndex", &first)
+            try self.value(fieldValue)
+        }
+        if let fieldValue = value.cycle {
+            self.key("cycle", &first)
+            try self.value(fieldValue.rawValue)
+        }
+        if let fieldValue = value.direction {
+            self.key("direction", &first)
+            try self.value(fieldValue)
+        }
         self.key("name", &first)
         try self.value(value.name)
+        if let fieldValue = value.scratchpadIndex {
+            self.key("scratchpadIndex", &first)
+            try self.value(fieldValue)
+        }
         self.key("windowId", &first)
         try self.value(value.windowId)
         if let fieldValue = value.workspaceTarget {

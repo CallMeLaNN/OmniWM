@@ -79,10 +79,42 @@ extension IPCWindowRequest {
         else {
             return nil
         }
-        self.init(
-            name: action,
-            windowId: words[1],
-            workspaceTarget: action == .moveToWorkspace ? WorkspaceTarget(resolvingInput: words[2]) : nil
-        )
+        guard let argument = words.dropFirst(2).first else {
+            self.init(name: action, windowId: words[1])
+            return
+        }
+        switch action {
+        case .moveToWorkspace:
+            self.init(name: action, windowId: words[1], workspaceTarget: WorkspaceTarget(resolvingInput: argument))
+        case .moveColumnToIndex:
+            guard let index = Int(argument), index > 0 else { return nil }
+            self.init(name: action, windowId: words[1], columnIndex: index)
+        case .moveColumn:
+            guard let direction = IPCDirection(rawValue: argument) else { return nil }
+            self.init(name: action, windowId: words[1], direction: direction)
+        case .setContainerPrimarySpan,
+             .setWindowPrimarySpan,
+             .setWindowSecondarySpan:
+            guard let change = IPCSizeChange(token: argument) else { return nil }
+            self.init(name: action, windowId: words[1], change: change)
+        case .cycleWindowPrimarySpan,
+             .cycleWindowSecondarySpan:
+            guard let cycle = IPCCycleDirection(rawValue: argument) else { return nil }
+            self.init(name: action, windowId: words[1], cycle: cycle)
+        case .assignToScratchpad:
+            guard let index = Int(argument), IPCScratchpadSlots.range.contains(index) else { return nil }
+            self.init(name: action, windowId: words[1], scratchpadIndex: index)
+        case .focus,
+             .navigate,
+             .summonRight,
+             .close,
+             .moveColumnToFirst,
+             .moveColumnToLast,
+             .toggleContainerFullPrimarySpan,
+             .resetWindowSecondarySpan,
+             .toggleColumnTabbed,
+             .toggleFloating:
+            return nil
+        }
     }
 }
