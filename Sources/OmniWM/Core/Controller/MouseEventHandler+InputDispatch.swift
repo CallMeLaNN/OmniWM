@@ -55,8 +55,10 @@ extension MouseEventHandler {
             resetHoveredEdgesIfNeeded()
             return
         }
-        controller?.mouseWarpHandler.handleMouseWarpMoved(at: location)
-        recordMouseWarpSample()
+        if controller?.pointerEdgeBarrier.ownsCrossings == false {
+            controller?.mouseWarpHandler.handleMouseWarpMoved(at: location)
+            recordMouseWarpSample()
+        }
         handleMouseMovedFromTap(
             at: location,
             modifiersRawValue: modifiersRawValue,
@@ -86,6 +88,9 @@ extension MouseEventHandler {
             )
         }
         if blocked {
+            if controller?.ownedWindowRegistry.contains(point: location, excluding: .parkingEdgeMask) == false {
+                state.parkingEdgePressButton = button
+            }
             return false
         }
         if button == .left {
@@ -104,8 +109,7 @@ extension MouseEventHandler {
             handleInputSuppressionBegan()
             return
         }
-        controller?.mouseWarpHandler.handleMouseWarpMoved(at: location)
-        recordMouseWarpSample()
+        warpDraggedPointer(at: location)
         controller?.workspaceBarManager.handleAutoHideMouseMoved(at: location)
         beginNativeTitleBarDragIfNeeded(button: button)
         if !isCapturedInteraction(button), shouldBlockOwnWindowInput(at: location) {
@@ -116,6 +120,9 @@ extension MouseEventHandler {
     }
 
     func dispatchMouseUp(at location: CGPoint, button: MouseButton = .left) {
+        if state.parkingEdgePressButton == button {
+            state.parkingEdgePressButton = nil
+        }
         guard !isInputSuppressed else {
             handleInputSuppressionBegan()
             return
@@ -402,8 +409,7 @@ extension MouseEventHandler {
             handleInputSuppressionBegan()
             return
         }
-        controller?.mouseWarpHandler.handleMouseWarpMoved(at: location)
-        recordMouseWarpSample()
+        warpDraggedPointer(at: location)
         controller?.workspaceBarManager.handleAutoHideMouseMoved(at: location)
         beginNativeTitleBarDragIfNeeded(button: button)
         if !isCapturedInteraction(button), shouldBlockOwnWindowInput(at: location) {
@@ -411,5 +417,11 @@ extension MouseEventHandler {
             return
         }
         handleMouseDraggedFromTap(at: location, button: button, requirePressedButtonCheck: false)
+    }
+
+    private func warpDraggedPointer(at location: CGPoint) {
+        guard state.parkingEdgePressButton == nil else { return }
+        controller?.mouseWarpHandler.handleMouseWarpMoved(at: location)
+        recordMouseWarpSample()
     }
 }

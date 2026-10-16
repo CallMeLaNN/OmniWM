@@ -124,6 +124,9 @@ extension MouseEventHandler {
         if let button = state.capturedInteractionButton, pressedButtons & button.pressedMask == 0 {
             state.capturedInteractionButton = nil
         }
+        if let button = state.parkingEdgePressButton, pressedButtons & button.pressedMask == 0 {
+            state.parkingEdgePressButton = nil
+        }
         if let button = state.capturedOtherMouseButton, pressedButtons & (1 << Int(button)) == 0 {
             state.capturedOtherMouseButton = nil
         }

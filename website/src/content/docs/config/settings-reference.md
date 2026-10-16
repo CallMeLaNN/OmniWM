@@ -58,6 +58,7 @@ Pointer-driven focus and monitor-edge focus/move behavior.
 | Key | Type | Default | Description |
 | --- | --- | --- | --- |
 | `followsMouse` | boolean | `false` | Focuses a managed window when the pointer enters it, no click needed. |
+| `edgeNavigationInterval` *(optional)* | float | `1.5` | Seconds before hovering at a Niri edge moves one column, and between further moves while the pointer stays on the edge or preview. Requires `followsMouse`; moving away stops navigation. Values are clamped to `0.25`–`2.0` and rounded to the nearest `0.25`; nonfinite values use `1.5`. |
 | `raiseOnMouseFocus` | boolean | `false` | Also raises the window when focus-follows-mouse focuses it. A tiled window that a visible floating window overlaps from the front is focused without raising. |
 | `lockModifier` | string | `"off"` | Modifier that holds focus in place while pressed: `off`, `option`, `leftOption`, `rightOption`, `command`, `leftCommand`, `rightCommand`, `control`, `leftControl`, `rightControl`, `shift`, `leftShift`, `rightShift`. |
 | `moveMouseToFocusedWindow` | boolean | `false` | Moves the pointer to the window that gains focus. |
@@ -72,7 +73,7 @@ Cursor warping across the monitor arrangement (used with `routing.mode = "custom
 | Key | Type | Default | Description |
 | --- | --- | --- | --- |
 | `margin` | integer | `1` | Edge margin in pixels used when warping the cursor between monitors. |
-| `enabled` | boolean | `true` | Enables cursor warping between monitors. |
+| `enabled` | boolean | `true` | Enables cursor warping between monitors. At an edge showing a Niri parked-column fin, the pointer rests on the fin; keep pushing outward to cross. |
 | `constrainToArrangement` | boolean | `false` | Constrains the cursor to the configured monitor arrangement. |
 
 ## routing

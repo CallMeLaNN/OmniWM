@@ -48,6 +48,7 @@ final class WMController {
         didSet {
             guard oldValue != isLockScreenActive else { return }
             workspaceBarManager.setShellLocked(isLockScreenActive)
+            publishPointerEdgeTopology()
             if isLockScreenActive {
                 layoutRefreshController.suspendForLockScreen()
                 resetWorkspaceBarReveal()
@@ -157,6 +158,7 @@ final class WMController {
     private(set) lazy var mouseEventHandler = MouseEventHandler(controller: self)
     @ObservationIgnored
     private(set) lazy var mouseWarpHandler = MouseWarpHandler(controller: self)
+    let pointerEdgeBarrier = PointerEdgeBarrier()
     @ObservationIgnored
     private(set) lazy var axEventHandler = AXEventHandler(controller: self)
     @ObservationIgnored
@@ -474,6 +476,12 @@ extension WMController {
     func syncMouseWarpPolicy(for monitors: [Monitor]? = nil) -> Bool {
         let effectiveMonitors = monitors ?? workspaceManager.monitors
         let shouldEnable = shouldUseMouseWarp(for: effectiveMonitors)
+        if shouldEnable, hasStartedServices, settings.pointer.enabled {
+            pointerEdgeBarrier.start()
+        } else {
+            pointerEdgeBarrier.stop()
+        }
+        publishPointerEdgeTopology()
         mouseEventHandler.reconcileMouseMoveSubscription()
         guard shouldEnable != isMouseWarpPolicyEnabled else {
             return shouldEnable
@@ -489,6 +497,7 @@ extension WMController {
     }
 
     func resetMouseWarpPolicy() {
+        pointerEdgeBarrier.stop()
         mouseWarpHandler.cleanup()
         isMouseWarpPolicyEnabled = false
     }

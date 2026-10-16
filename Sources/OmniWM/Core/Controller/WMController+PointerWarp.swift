@@ -13,6 +13,44 @@ extension WMController {
 
     func resetMouseWarpTransientState() {
         mouseWarpHandler.resetTransientState()
+        pointerEdgeBarrier.reset()
+        publishPointerEdgeTopology()
+    }
+
+    func publishPointerEdgeTopology() {
+        let monitors = workspaceManager.monitors
+        var topology = PointerEdgeTopology()
+        topology.isEnabled = isEnabled && settings.pointer.enabled && monitors.count > 1
+            && !mouseEventHandler.isInputSuppressed
+        guard topology.isEnabled else {
+            pointerEdgeBarrier.publish(topology)
+            return
+        }
+        topology.margin = CGFloat(settings.pointer.margin)
+        topology.flipY = NSScreen.screens.first?.frame.maxY ?? 0
+        topology.monitors = monitors
+        if settings.pointer.constrainToArrangement, settings.monitors.routingMode == .custom {
+            topology.containment = MouseContainment(
+                layout: MonitorRouting.layout(for: monitors, in: settings.monitors.arrangements),
+                monitors: monitors
+            )
+        }
+        let fins = surfaceReconciler.pointerEdgeFinSpans()
+        for monitor in monitors {
+            for direction in [Direction.left, .right, .up, .down] {
+                let side: ParkingEdgeMaskKey.Side = switch direction {
+                case .left: .left
+                case .right: .right
+                case .up: .top
+                case .down: .bottom
+                }
+                let target = workspaceManager.adjacentMonitor(from: monitor.id, direction: direction)
+                let fin = fins[ParkingEdgeMaskKey(monitorId: monitor.id, side: side)]
+                guard target != nil || fin != nil else { continue }
+                topology.edges[.init(monitorId: monitor.id, direction: direction)] = .init(target: target, finSpan: fin)
+            }
+        }
+        pointerEdgeBarrier.publish(topology)
     }
 
     func screen(for monitorId: Monitor.ID) -> NSScreen? {

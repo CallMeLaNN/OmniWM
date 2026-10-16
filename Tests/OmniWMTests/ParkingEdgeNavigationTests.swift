@@ -267,3 +267,44 @@ final class ParkingEdgeNavigationTests: XCTestCase {
         ))
     }
 }
+
+extension ParkingEdgeNavigationTests {
+    func testRepeatedEdgeClicksFollowFreshTargetsAndStopAtTheLastColumn() throws {
+        for orientation in [Monitor.Orientation.horizontal, .vertical] {
+            try withFixture(orientation: orientation) { fixture in
+                let controller = fixture.controller
+                controller.setFocusFollowsMouse(true)
+                controller.settings.focus.edgeNavigationInterval = 0.25
+                let side: ParkingEdgeMaskKey.Side = orientation == .horizontal ? .right : .top
+                let mask = try XCTUnwrap(WorldView(controller: controller).parkingEdgeMasks().first {
+                    $0.key.monitorId == fixture.monitors[0].id && $0.key.side == side
+                })
+                let edges = ParkingEdgeMaskManager(pointerLocation: { mask.frame.center })
+                defer { edges.removeAll() }
+                controller.surfaceReconciler.configureParkingEdgeCallbacks(edges)
+                edges.apply([mask])
+                XCTAssertEqual(edges.navigationInterval(), 0.25)
+                let window = try XCTUnwrap(SurfaceCoordinator.shared.visibleSurfaceInfos().first {
+                    $0.id == "parking-edge-mask-987100-\(side.rawValue)"
+                }?.window as? ParkingEdgeMaskWindow)
+                window.updateHover()
+                XCTAssertNotNil(window.dwellTask)
+                let click = try XCTUnwrap(NSEvent.mouseEvent(
+                    with: .leftMouseDown, location: .zero, modifierFlags: [], timestamp: 0,
+                    windowNumber: window.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: 1
+                ))
+                for index in 1 ... 2 {
+                    window.contentView?.mouseDown(with: click)
+                    XCTAssertEqual(fixture.state().selectedNodeId, fixture.windows[0][index].id)
+                    edges.apply(WorldView(controller: controller).parkingEdgeMasks().filter { $0.key == mask.key })
+                    XCTAssertEqual(window.dwellTask != nil, index < 2)
+                }
+                window.contentView?.mouseDown(with: click)
+                XCTAssertEqual(fixture.state().selectedNodeId, fixture.windows[0][2].id)
+                XCTAssertNil(window.dwellTask)
+                controller.settings.focus.edgeNavigationInterval = 0.75
+                XCTAssertEqual(edges.navigationInterval(), 0.75)
+            }
+        }
+    }
+}
