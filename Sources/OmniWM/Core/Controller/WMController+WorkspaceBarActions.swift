@@ -116,7 +116,11 @@ extension WMController {
             guard let workspaceId = workspaceManager.activeWorkspaceOrFirst(on: monitorId)?.id else { return }
             workspaceNavigationHandler.moveWindowsFromBar(tokens, toWorkspaceId: workspaceId)
         case let .toggleFloating(token):
-            toggleWindowFloating(token, preferredMonitor: monitorOfWindow(token))
+            toggleWindowFloating(
+                token,
+                preferredMonitor: monitorOfWindow(token),
+                arrivesQuietly: token != focusedManagedTokenForCommand()
+            )
         case let .summonRight(token):
             summonWindowRightFromBar(token, barMonitorId: barMonitorId)
         case let .windowMark(token, action):

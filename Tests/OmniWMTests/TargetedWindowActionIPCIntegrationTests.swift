@@ -238,6 +238,62 @@ final class TargetedWindowActionIPCIntegrationTests: XCTestCase {
         }
     }
 
+    func testBarUnfloatOfABackgroundWindowTilesItAfterFocusWithoutTakingFocus() async throws {
+        let fixture = try await makeFlushLeftFixture()
+        let manager = fixture.controller.workspaceManager
+        let before = try XCTUnwrap(fixture.frame(of: fixture.focused))
+        let viewOffset = fixture.viewport.viewOffset
+        let token = manager.addWindow(
+            AXWindowRef(element: AXUIElementCreateApplication(512_500), windowId: 512_501),
+            pid: 512_500,
+            windowId: 512_501,
+            to: fixture.niriWorkspaceId,
+            mode: .floating
+        )
+        fixture.controller.windowDispositionEvaluationForTests = { [weak controller = fixture.controller] candidate in
+            guard candidate == token else { return nil }
+            return controller?.evaluateWindowDisposition(
+                token: candidate,
+                evidence: AXWindowDecisionEvidence(
+                    facts: AXWindowFacts(
+                        role: kAXWindowRole as String,
+                        subrole: kAXStandardWindowSubrole as String,
+                        title: "Tileable",
+                        hasCloseButton: true,
+                        hasFullscreenButton: true,
+                        fullscreenButtonEnabled: true,
+                        hasZoomButton: true,
+                        hasMinimizeButton: true,
+                        appPolicy: .regular,
+                        bundleId: "com.example.tileable",
+                        attributeFetchSucceeded: true
+                    ),
+                    sizeConstraints: .unconstrained
+                ),
+                appFullscreen: false,
+                windowInfo: WindowServerInfo(
+                    id: UInt32(candidate.windowId),
+                    pid: candidate.pid,
+                    level: 0,
+                    frame: CGRect(x: 100, y: 100, width: 800, height: 600)
+                ),
+                admissionGeometry: WindowAdmissionGeometryEvidence(
+                    isSizeSettable: true,
+                    frame: CGRect(x: 100, y: 100, width: 800, height: 600)
+                )
+            )
+        }
+
+        fixture.controller.performWorkspaceBarMenuAction(.toggleFloating(token), barMonitorId: fixture.monitor.id)
+        await WindowAdmissionTestSupport.drainLayoutRefreshes(fixture.controller)
+
+        XCTAssertEqual(manager.entry(for: token)?.mode, .tiling)
+        try assertOwnColumnRightAfterFocus(token, fixture)
+        assertFocusUnchanged(fixture)
+        XCTAssertEqual(fixture.viewport.viewOffset, viewOffset, accuracy: 0.5)
+        XCTAssertEqual(fixture.frame(of: fixture.focused), before)
+    }
+
     func testQuietRetileOfAHiddenAppWindowJoinsTheLayoutWhenTheAppUnhides() async throws {
         let fixture = try await makeFlushLeftFixture()
         let manager = fixture.controller.workspaceManager
