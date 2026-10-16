@@ -11,12 +11,4 @@ enum ResizePreviewStyle: String, CaseIterable, Codable, Identifiable, Sendable {
     var id: String {
         rawValue
     }
-
-    var displayName: String {
-        switch self {
-        case .live: "Live Window Resizing"
-        case .glass: "Liquid Glass Placeholder"
-        case .snapshot: "Live Snapshot Overlay"
-        }
-    }
 }

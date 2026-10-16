@@ -178,7 +178,7 @@ struct SettingsExport: Equatable {
         var windowResizeEnabled: Bool? = false
         var windowResizeFingerCount: GestureFingerCount? = .three
         var windowGestureSensitivity: Double? = 1.0
-        var resizePreviewStyle: ResizePreviewStyle? = .snapshot
+        var resizePreviewStyle: ResizePreviewStyle? = .live
     }
 
     struct StatusBar: Codable, Equatable {
@@ -436,7 +436,7 @@ extension SettingsExport.Gestures {
             workspaceSwipeEnabled: false,
             workspaceSwipeFingerCount: .three,
             workspaceSwipeAxis: .vertical,
-            resizePreviewStyle: .snapshot
+            resizePreviewStyle: .live
         )
     }
 }

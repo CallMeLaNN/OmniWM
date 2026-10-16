@@ -98,13 +98,13 @@ struct MouseTrackpadSettingsTab: View {
 
             Picker("Resize Preview", selection: Bindable(settings.gestures).resizePreviewStyle) {
                 ForEach(ResizePreviewStyle.allCases) { style in
-                    Text(style.displayName).tag(style)
+                    Text(style.localizedDisplayName).tag(style)
                 }
             }
             .id("Resize Preview")
 
             SettingsCaption(
-                localized: "Live Snapshot shows the real window contents while resizing (needs Screen Recording). Glass Placeholder shows a frosted outline with the app icon instead, no permission needed."
+                localized: "Window Snapshot stretches a still image of the window while you drag and needs Screen Recording. Glass Placeholder shows the app icon on glass and needs no permission. Both write the final size once you let go."
             )
         }
         .id("Mouse Move & Resize")

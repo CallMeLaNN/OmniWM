@@ -57,7 +57,7 @@ final class ResizeOverlayController {
         guard style == .snapshot, captureAccessAllowed() else { return }
 
         if let shared = previews.sharedPreview(for: token)?.frame {
-            overlayWindow?.setSnapshot(shared.surface)
+            overlayWindow?.setSnapshot(shared.surface, contentsRect: shared.contentsRect, holding: shared)
         }
 
         let scale = NSScreen.screen(containing: initialFrame)?.backingScaleFactor ?? 2
@@ -100,7 +100,12 @@ final class ResizeOverlayWindow: NSPanel {
     private let snapshotView = NSView()
     private let surfaceCoordinator: SurfaceCoordinator
     private var surfaceId: String?
+    private var preview: OverviewPreviewFrame?
     private var isDestroyed = false
+
+    var showsSnapshot: Bool {
+        !snapshotView.isHidden
+    }
 
     init(surfaceCoordinator: SurfaceCoordinator = .shared) {
         self.surfaceCoordinator = surfaceCoordinator
@@ -185,13 +190,22 @@ final class ResizeOverlayWindow: NSPanel {
         iconView.image = icon
         snapshotView.layer?.contents = nil
         snapshotView.isHidden = true
+        preview = nil
         updateFrame(frame)
     }
 
-    func setSnapshot(_ contents: Any) {
+    func setSnapshot(
+        _ contents: Any,
+        contentsRect: CGRect = CGRect(x: 0, y: 0, width: 1, height: 1),
+        holding retained: OverviewPreviewFrame? = nil
+    ) {
+        let previous = preview
+        preview = retained
         CATransaction.begin()
         CATransaction.setDisableActions(true)
+        CATransaction.setCompletionBlock { withExtendedLifetime(previous) {} }
         snapshotView.layer?.contents = contents
+        snapshotView.layer?.contentsRect = contentsRect
         snapshotView.isHidden = false
         CATransaction.commit()
     }
@@ -229,6 +243,7 @@ final class ResizeOverlayWindow: NSPanel {
             self.surfaceId = nil
         }
         snapshotView.layer?.contents = nil
+        preview = nil
         hide()
         close()
     }

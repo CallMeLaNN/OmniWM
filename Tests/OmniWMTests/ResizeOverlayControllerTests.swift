@@ -8,7 +8,7 @@ import XCTest
 
 @MainActor
 final class ResizeOverlayControllerTests: XCTestCase {
-    func testGlassResizeDoesNotAttemptScreenCapture() async throws {
+    func testGlassResizeDoesNotAttemptScreenCapture() throws {
         var captureCalled = false
         let controller = ResizeOverlayController(
             captureAccessAllowed: { true },
@@ -43,7 +43,7 @@ final class ResizeOverlayControllerTests: XCTestCase {
         controller.destroy()
     }
 
-    func testSnapshotFallsBackToGlassWhenPermissionDenied() async throws {
+    func testSnapshotFallsBackToGlassWhenPermissionDenied() throws {
         var captureCalled = false
         let controller = ResizeOverlayController(
             captureAccessAllowed: { false },
@@ -70,35 +70,22 @@ final class ResizeOverlayControllerTests: XCTestCase {
         controller.destroy()
     }
 
-    func testSnapshotLoadsImageWhenPermissionGranted() async throws {
-        let expectedImage = CGImage.blank()
-        let captureInvoked = expectation(description: "capture invoked")
-
+    func testSnapshotShowsCapturedImageWhenPermissionGranted() async throws {
         let controller = ResizeOverlayController(
             captureAccessAllowed: { true },
-            captureImage: { _, _ in
-                captureInvoked.fulfill()
-                return expectedImage
-            }
+            captureImage: { _, _ in CGImage.blank() }
         )
 
-        let initialFrame = CGRect(x: 50, y: 50, width: 400, height: 300)
-        let token = WindowToken(pid: 1003, windowId: 103)
-
         controller.beginResize(
-            token: token,
-            initialFrame: initialFrame,
+            token: WindowToken(pid: 1003, windowId: 103),
+            initialFrame: CGRect(x: 50, y: 50, width: 400, height: 300),
             appIcon: nil,
             style: .snapshot
         )
-
         XCTAssertTrue(controller.isActive)
-        await fulfillment(of: [captureInvoked], timeout: 2.0)
+        await controller.captureTask?.value
 
-        // Allow main actor task completion block to run
-        try? await Task.sleep(nanoseconds: 50_000_000)
-
-        XCTAssertNotNil(controller.overlayWindow)
+        XCTAssertEqual(controller.overlayWindow?.showsSnapshot, true)
         controller.destroy()
     }
 
@@ -142,7 +129,6 @@ final class ResizeOverlayControllerTests: XCTestCase {
         )
         _ = engine.addWindow(token: token, to: workspaceId, afterSelection: nil)
 
-        // Ensure layout is settled
         fixtureController.layoutRefreshController.renderInteractiveResize(for: workspaceId)
 
         let resized = try XCTUnwrap(engine.findNode(for: token, in: workspaceId))
@@ -150,33 +136,31 @@ final class ResizeOverlayControllerTests: XCTestCase {
         let start = CGPoint(x: frame.maxX - 2, y: frame.midY)
         let mouse = fixtureController.mouseEventHandler
 
-        // 1. With style = .glass
         fixtureController.settings.gestures.resizePreviewStyle = .glass
         XCTAssertTrue(mouse.beginNiriResize(
             window: resized, engine: engine, wsId: workspaceId, at: start, source: .mouse(.right)
         ))
-        XCTAssertNotNil(mouse.state.resizeOverlayController)
-        XCTAssertTrue(mouse.state.resizeOverlayController?.isActive == true)
+        let overlay = try XCTUnwrap(mouse.state.resizeOverlayController)
+        XCTAssertTrue(overlay.isActive)
 
-        mouse.updateManagedResize(at: CGPoint(x: start.x + 80, y: start.y))
-        XCTAssertTrue(mouse.state.resizeOverlayController?.isActive == true)
+        mouse.updateManagedResize(at: CGPoint(x: start.x - 120, y: start.y))
+        XCTAssertLessThan(try XCTUnwrap(overlay.overlayWindow?.frame.width), frame.width)
 
         mouse.completeActiveResize()
         XCTAssertFalse(mouse.state.isResizing)
-        XCTAssertFalse(mouse.state.resizeOverlayController?.isActive == true)
+        XCTAssertFalse(overlay.isActive)
 
-        // 2. With style = .live
         fixtureController.settings.gestures.resizePreviewStyle = .live
         XCTAssertTrue(mouse.beginNiriResize(
             window: resized, engine: engine, wsId: workspaceId, at: start, source: .mouse(.right)
         ))
-        XCTAssertFalse(mouse.state.resizeOverlayController?.isActive == true)
+        XCTAssertFalse(overlay.isActive)
         mouse.completeActiveResize()
     }
 }
 
-private extension CGImage {
-    static func blank() -> CGImage {
+extension CGImage {
+    fileprivate static func blank() -> CGImage {
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         let context = CGContext(
             data: nil,

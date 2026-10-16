@@ -221,7 +221,7 @@ extension CanonicalTOMLConfig {
         gestures.windowResizeEnabled = gestures.windowResizeEnabled ?? false
         gestures.windowResizeFingerCount = gestures.windowResizeFingerCount ?? .three
         gestures.windowGestureSensitivity = gestures.windowGestureSensitivity ?? 1.0
-        gestures.resizePreviewStyle = gestures.resizePreviewStyle ?? .snapshot
+        gestures.resizePreviewStyle = gestures.resizePreviewStyle ?? .live
         return gestures
     }
 }

@@ -128,7 +128,7 @@ final class GestureSettings {
         }
     }
 
-    var resizePreviewStyle = GestureSettings.defaults.resizePreviewStyle ?? .snapshot {
+    var resizePreviewStyle = GestureSettings.defaults.resizePreviewStyle ?? .live {
         didSet { notifyChange() }
     }
 
@@ -190,7 +190,7 @@ final class GestureSettings {
         windowResizeEnabled = gestures.windowResizeEnabled ?? false
         windowResizeFingerCount = gestures.windowResizeFingerCount ?? .three
         windowGestureSensitivity = gestures.windowGestureSensitivity ?? 1.0
-        resizePreviewStyle = gestures.resizePreviewStyle ?? .snapshot
+        resizePreviewStyle = gestures.resizePreviewStyle ?? .live
         isApplying = false
         if export() != previous {
             notifyChange()

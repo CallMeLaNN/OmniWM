@@ -100,20 +100,7 @@ extension MouseEventHandler {
         state.currentHoveredEdges = edges
         edges.cursor.set()
 
-        let style = controller.settings.gestures.resizePreviewStyle
-        if style != .live {
-            if state.resizeOverlayController == nil {
-                state.resizeOverlayController = ResizeOverlayController()
-            }
-            let pid = controller.workspaceManager.entry(for: tiledWindow.token)?.pid
-            let icon = pid.flatMap { controller.appInfoCache.info(for: $0)?.icon }
-            state.resizeOverlayController?.beginResize(
-                token: tiledWindow.token,
-                initialFrame: frame,
-                appIcon: icon,
-                style: style
-            )
-        }
+        beginResizeOverlay(token: tiledWindow.token, frame: frame)
         return true
     }
 
@@ -183,20 +170,21 @@ extension MouseEventHandler {
         state.resizeLayout = .dwindle
         edges.cursor.set()
 
-        let style = controller.settings.gestures.resizePreviewStyle
-        if style != .live {
-            if state.resizeOverlayController == nil {
-                state.resizeOverlayController = ResizeOverlayController()
-            }
-            let pid = controller.workspaceManager.entry(for: token)?.pid
-            let icon = pid.flatMap { controller.appInfoCache.info(for: $0)?.icon }
-            state.resizeOverlayController?.beginResize(
-                token: token,
-                initialFrame: frame,
-                appIcon: icon,
-                style: style
-            )
-        }
+        beginResizeOverlay(token: token, frame: frame)
         return true
+    }
+
+    private func beginResizeOverlay(token: WindowToken, frame: CGRect) {
+        guard let controller else { return }
+        let style = controller.settings.gestures.resizePreviewStyle
+        guard style != .live else { return }
+        let overlay = state.resizeOverlayController ?? ResizeOverlayController()
+        state.resizeOverlayController = overlay
+        overlay.beginResize(
+            token: token,
+            initialFrame: frame,
+            appIcon: controller.appInfoCache.info(for: token.pid)?.icon,
+            style: style
+        )
     }
 }
