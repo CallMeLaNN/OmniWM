@@ -21,9 +21,20 @@ extension WMController {
         let monitors = workspaceManager.monitors
         var topology = PointerEdgeTopology()
         topology.isEnabled = isEnabled && settings.pointer.enabled && monitors.count > 1
+            && !mouseEventHandler.isInputSuppressed
+        guard topology.isEnabled else {
+            pointerEdgeBarrier.publish(topology)
+            return
+        }
         topology.margin = CGFloat(settings.pointer.margin)
         topology.flipY = NSScreen.screens.first?.frame.maxY ?? 0
         topology.monitors = monitors
+        if settings.pointer.constrainToArrangement, settings.monitors.routingMode == .custom {
+            topology.containment = MouseContainment(
+                layout: MonitorRouting.layout(for: monitors, in: settings.monitors.arrangements),
+                monitors: monitors
+            )
+        }
         let fins = surfaceReconciler.pointerEdgeFinSpans()
         for monitor in monitors {
             for direction in [Direction.left, .right, .up, .down] {

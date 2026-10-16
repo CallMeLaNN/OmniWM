@@ -55,8 +55,10 @@ extension MouseEventHandler {
             resetHoveredEdgesIfNeeded()
             return
         }
-        controller?.mouseWarpHandler.handleMouseWarpMoved(at: location)
-        recordMouseWarpSample()
+        if controller?.pointerEdgeBarrier.ownsCrossings == false {
+            controller?.mouseWarpHandler.handleMouseWarpMoved(at: location)
+            recordMouseWarpSample()
+        }
         handleMouseMovedFromTap(
             at: location,
             modifiersRawValue: modifiersRawValue,
@@ -118,15 +120,15 @@ extension MouseEventHandler {
     }
 
     func dispatchMouseUp(at location: CGPoint, button: MouseButton = .left) {
+        if state.parkingEdgePressButton == button {
+            state.parkingEdgePressButton = nil
+        }
         guard !isInputSuppressed else {
             handleInputSuppressionBegan()
             return
         }
         markNativeTitleBarDragFallbackReleased(button: button)
         finishNativeTitleBarDragIfNeeded(button: button)
-        if state.parkingEdgePressButton == button {
-            state.parkingEdgePressButton = nil
-        }
         if !isCapturedInteraction(button), shouldBlockOwnWindowInput(at: location) {
             cancelActiveMouseInteraction()
             return
@@ -419,7 +421,7 @@ extension MouseEventHandler {
 
     private func warpDraggedPointer(at location: CGPoint) {
         guard state.parkingEdgePressButton == nil else { return }
-        controller?.mouseWarpHandler.handleMouseWarpMoved(at: location, respectsPointerEdgeClaims: false)
+        controller?.mouseWarpHandler.handleMouseWarpMoved(at: location)
         recordMouseWarpSample()
     }
 }

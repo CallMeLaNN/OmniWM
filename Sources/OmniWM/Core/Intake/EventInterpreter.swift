@@ -84,8 +84,11 @@ final class EventInterpreter: EventIntakeSink {
         case .systemWake:
             controller.serviceLifecycleManager.handleSystemWake()
 
-        case let .pointerEdgeHoldEnded(token, crossedTo):
-            controller.mouseWarpHandler.acknowledgePointerEdgeHold(token: token, crossedTo: crossedTo)
+        case let .pointerEdgeCrossed(target):
+            controller.mouseWarpHandler.notePointerEdgeCrossing(to: target)
+
+        case .pointerEdgeOwnershipChanged:
+            controller.mouseEventHandler.reconcileMouseMoveSubscription()
 
         case let .windowConstraintsResolved(fact):
             controller.layoutRefreshController.applyResolvedConstraints(fact)

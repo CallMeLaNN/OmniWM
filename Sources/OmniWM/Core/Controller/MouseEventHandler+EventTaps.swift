@@ -33,7 +33,8 @@ extension MouseEventHandler {
         return controller.focusFollowsMouseEnabled
             || controller.workspaceBarManager.needsAutoHideMouseMoves
             || controller.workspaceBarManager.needsShellEdgeMouseMoves
-            || (controller.settings.pointer.enabled && controller.workspaceManager.monitors.count > 1)
+            || (controller.settings.pointer.enabled && controller.workspaceManager.monitors.count > 1
+                && !controller.pointerEdgeBarrier.ownsCrossings)
     }
 
     func setup() {
