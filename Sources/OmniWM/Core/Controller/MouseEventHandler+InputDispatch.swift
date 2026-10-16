@@ -73,6 +73,7 @@ extension MouseEventHandler {
         button: MouseButton = .left,
         windowIdUnderPointer: Int? = nil
     ) -> Bool {
+        state.parkingEdgePressButton = nil
         guard !isInputSuppressed else {
             handleInputSuppressionBegan()
             return false

@@ -95,7 +95,7 @@ struct PointerEdgeRecognizer: Sendable {
             reset()
             return .pass
         }
-        guard timestamp >= cooldownUntil else { return .pass }
+        let coolingDown = timestamp < cooldownUntil
         if let last = lastLocation {
             let moved = hypot(motion.dx, motion.dy)
             if hypot(location.x - last.x, location.y - last.y) > moved + max(3, moved * 0.3) {
@@ -119,7 +119,7 @@ struct PointerEdgeRecognizer: Sendable {
         let continuing = hold != nil && hold?.key == key && edge?.target != nil
         let starting = !continuing && edge?.target != nil
             && edge?.finSpan.map { Self.spans($0, location, direction) } == true
-        if let key, let direction, let target = edge?.target, continuing || starting {
+        if !coolingDown, let key, let direction, let target = edge?.target, continuing || starting {
             return holdDecision(
                 location: location, motion: motion, timestamp: timestamp, source: source, inside: inside,
                 key: key, direction: direction, target: target, starting: starting, margin: topology.margin
@@ -139,7 +139,7 @@ struct PointerEdgeRecognizer: Sendable {
             lastSampleAt = timestamp
         }
         let warpSource = current ?? source
-        guard let zone = MouseWarpGeometry.crossing(
+        guard !coolingDown, let zone = MouseWarpGeometry.crossing(
             location: location,
             frame: warpSource.frame,
             margin: topology.margin
@@ -466,17 +466,17 @@ final class PointerEdgeBarrier: Sendable {
         receivedAt: UInt64
     ) -> Unmanaged<CGEvent>? {
         let warpPoint = CGPoint(x: crossing.destination.x, y: flipY - crossing.destination.y)
-        let route = "from=\(crossing.source) to=\(crossing.target.id) dir=\(crossing.direction) "
-            + "dest=\(TraceFormat.point(crossing.destination)) warp=\(TraceFormat.point(warpPoint))"
         guard let bounds = displayBounds(crossing.target.displayId), bounds.contains(warpPoint) else {
             state.withLock { $0.recognizer.crossFailed() }
-            MouseTrace.record("edge-warp suppressed (invalid-target-bounds) \(route)")
+            MouseTrace.record("edge-warp suppressed (invalid-target-bounds) \(Self.traceRoute(crossing, warpPoint))")
             return Unmanaged.passUnretained(event)
         }
         let error = warpCursor(warpPoint)
         guard error == .success else {
             state.withLock { $0.recognizer.crossFailed() }
-            MouseTrace.record("edge-warp failed (cursor-warp raw=\(error.rawValue)) \(route)")
+            MouseTrace.record(
+                "edge-warp failed (cursor-warp raw=\(error.rawValue)) \(Self.traceRoute(crossing, warpPoint))"
+            )
             return Unmanaged.passUnretained(event)
         }
         let now = clock()
@@ -484,11 +484,17 @@ final class PointerEdgeBarrier: Sendable {
             $0.recognizer.noteCursorMoved(to: crossing.destination, monitor: crossing.target.id, at: now)
         }
         MouseTrace.record(
-            "edge-warp \(route)\(crossing.pushed ? " pushed" : "") callbackUs=\((now - receivedAt) / 1000)"
+            "edge-warp \(Self.traceRoute(crossing, warpPoint))\(crossing.pushed ? " pushed" : "") "
+                + "callbackUs=\((now - receivedAt) / 1000)"
         )
         EventIntake.post(.pointerEdgeCrossed(target: crossing.target.id))
         postMove(warpPoint)
         return nil
+    }
+
+    private static func traceRoute(_ crossing: PointerEdgeRecognizer.Crossing, _ warpPoint: CGPoint) -> String {
+        "from=\(crossing.source) to=\(crossing.target.id) dir=\(crossing.direction) "
+            + "dest=\(TraceFormat.point(crossing.destination)) warp=\(TraceFormat.point(warpPoint))"
     }
 
     static func activeDisplayBounds(_ displayId: CGDirectDisplayID) -> CGRect? {

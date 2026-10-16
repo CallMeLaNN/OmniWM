@@ -25,6 +25,8 @@ final class PointerEdgeBarrierTests: XCTestCase {
     private let staircase = monitor(2, CGRect(x: 2560, y: 1440, width: 1920, height: 1080))
     private let adjoining = monitor(3, CGRect(x: 2560, y: 0, width: 1920, height: 1440))
     private let above = monitor(4, CGRect(x: 0, y: 1440, width: 2560, height: 1440))
+    private let bottom = monitor(5, CGRect(x: 0, y: 0, width: 1920, height: 1080))
+    private let top = monitor(6, CGRect(x: 0, y: 1080, width: 1920, height: 1080))
     private var clock: UInt64 = 1_000_000_000
 
     private static func monitor(_ id: CGDirectDisplayID, _ frame: CGRect) -> Monitor {
@@ -47,6 +49,21 @@ final class PointerEdgeBarrierTests: XCTestCase {
         topology.edges[.init(monitorId: main.id, direction: .right)] = .init(
             target: other,
             finSpan: fin ? CGRect(x: 2559, y: 0, width: 1, height: 1440) : nil
+        )
+        return topology
+    }
+
+    private func stackedButRoutedSideBySide() -> PointerEdgeTopology {
+        var topology = PointerEdgeTopology()
+        topology.isEnabled = true
+        topology.flipY = 1080
+        topology.monitors = [bottom, top]
+        topology.containment = MouseContainment(
+            layout: [
+                MonitorRoutingSettings(monitorName: "M5", monitorDisplayId: 5, gridColumn: 0, gridRow: 0),
+                MonitorRoutingSettings(monitorName: "M6", monitorDisplayId: 6, gridColumn: 1, gridRow: 0)
+            ],
+            monitors: [bottom, top]
         )
         return topology
     }
@@ -176,19 +193,7 @@ final class PointerEdgeBarrierTests: XCTestCase {
     }
 
     func testContainmentWallClampsFreshNativeCrossingAndStaleBaselineAdopts() {
-        let bottom = Self.monitor(5, CGRect(x: 0, y: 0, width: 1920, height: 1080))
-        let top = Self.monitor(6, CGRect(x: 0, y: 1080, width: 1920, height: 1080))
-        var topology = PointerEdgeTopology()
-        topology.isEnabled = true
-        topology.flipY = 1080
-        topology.monitors = [bottom, top]
-        topology.containment = MouseContainment(
-            layout: [
-                MonitorRoutingSettings(monitorName: "M5", monitorDisplayId: 5, gridColumn: 0, gridRow: 0),
-                MonitorRoutingSettings(monitorName: "M6", monitorDisplayId: 6, gridColumn: 1, gridRow: 0)
-            ],
-            monitors: [bottom, top]
-        )
+        let topology = stackedButRoutedSideBySide()
         var recognizer = PointerEdgeRecognizer()
         _ = move(&recognizer, 960, 1075, dx: 0, dy: 5, topology)
         XCTAssertEqual(
@@ -200,6 +205,15 @@ final class PointerEdgeBarrierTests: XCTestCase {
         _ = move(&stale, 960, 1075, dx: 0, dy: 5, topology)
         XCTAssertEqual(move(&stale, 960, 1085, dx: 0, dy: 10, after: 2_000_000_000, topology), .pass)
         XCTAssertEqual(move(&stale, 960, 1095, dx: 0, dy: 10, topology), .pass)
+    }
+
+    func testContainmentWallsDuringCrossingCooldownAndKeepsItsBaseline() {
+        let topology = stackedButRoutedSideBySide()
+        var recognizer = PointerEdgeRecognizer()
+        recognizer.noteCursorMoved(to: CGPoint(x: 2, y: 1096), monitor: top.id, at: clock)
+        let wall = PointerEdgeRecognizer.Decision.wall(CGPoint(x: 2, y: 1082), source: top.id, blocked: bottom.id)
+        XCTAssertEqual(move(&recognizer, 2, 1079, dx: 0, dy: -17, after: 10_000_000, topology), wall)
+        XCTAssertEqual(move(&recognizer, 2, 1079, dx: 0, dy: -3, after: 60_000_000, topology), wall)
     }
 
     func testProgrammaticMoveEndsHoldAndStartsCooldown() {
@@ -273,6 +287,41 @@ final class PointerEdgeBarrierTests: XCTestCase {
         XCTAssertTrue(posts.all.isEmpty)
     }
 
+    func testCrossingTraceRecordsRouteOnlyWhileCapturing() throws {
+        let time = Mutex<UInt64>(1_000_000_000)
+        let barrier = PointerEdgeBarrier(
+            installsTap: false,
+            displayBounds: { _ in .infinite },
+            warpCursor: { _ in .success },
+            postMove: { _ in },
+            clock: { time.withLock { $0 } }
+        )
+        barrier.publish(topology(staircase, fin: false))
+        MouseTrace.shared.beginCapture()
+        MouseTrace.shared.endCapture()
+        let untraced = try moveEvent(CGPoint(x: 2559.5, y: 740))
+        XCTAssertTrue(barrier.handleTapEvent(.mouseMoved, untraced) == nil)
+        XCTAssertFalse(MouseTrace.shared.dump().contains("edge-warp"))
+
+        time.withLock { $0 += 100_000_000 }
+        MouseTrace.shared.beginCapture()
+        defer { MouseTrace.shared.endCapture() }
+        let traced = try moveEvent(CGPoint(x: 2559.5, y: 740))
+        XCTAssertTrue(barrier.handleTapEvent(.mouseMoved, traced) == nil)
+        MouseTrace.shared.endCapture()
+        let zone = try XCTUnwrap(
+            MouseWarpGeometry.crossing(location: CGPoint(x: 2559.5, y: 700), frame: main.frame, margin: 1)
+        )
+        let destination = MouseWarpGeometry.destinationPoint(
+            on: staircase.frame, entryEdge: zone.entryEdge, ratio: zone.ratio, margin: 1
+        )
+        let warp = CGPoint(x: destination.x, y: 1440 - destination.y)
+        XCTAssertTrue(MouseTrace.shared.dump().contains(
+            "edge-warp from=\(main.id) to=\(staircase.id) dir=right "
+                + "dest=\(TraceFormat.point(destination)) warp=\(TraceFormat.point(warp)) callbackUs="
+        ))
+    }
+
     func testStopDisablesHoldsBeforeTheTapThreadExits() throws {
         let barrier = PointerEdgeBarrier(installsTap: false)
         barrier.publish(topology(adjoining))
@@ -283,7 +332,7 @@ final class PointerEdgeBarrierTests: XCTestCase {
         XCTAssertFalse(barrier.ownsCrossings)
     }
 
-    func testFinPressLatchClearsWhenReleaseArrivesDuringInputSuppression() {
+    private func controllerWithFin() -> WMController {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("OmniWMPointerEdge-\(UUID().uuidString)")
         let settings = SettingsStore(
@@ -306,6 +355,11 @@ final class PointerEdgeBarrierTests: XCTestCase {
             ),
             windowNumber: 999_401, frameProvider: { fin }, visibilityProvider: { true }
         )
+        return controller
+    }
+
+    func testFinPressLatchClearsWhenReleaseArrivesDuringInputSuppression() {
+        let controller = controllerWithFin()
         defer { controller.ownedWindowRegistry.unregister(surfaceId: "pointer-edge-latch-test") }
         let mouse = controller.mouseEventHandler
         let point = CGPoint(x: 2545, y: 700)
@@ -314,6 +368,16 @@ final class PointerEdgeBarrierTests: XCTestCase {
         controller.isLockScreenActive = true
         mouse.dispatchMouseUp(at: point)
         controller.isLockScreenActive = false
+        XCTAssertNil(mouse.state.parkingEdgePressButton)
+    }
+
+    func testNextPressReplacesFinPressLatchWhoseReleaseWasLost() {
+        let controller = controllerWithFin()
+        defer { controller.ownedWindowRegistry.unregister(surfaceId: "pointer-edge-latch-test") }
+        let mouse = controller.mouseEventHandler
+        XCTAssertFalse(mouse.dispatchMouseDown(at: CGPoint(x: 2545, y: 700), modifiers: []))
+        XCTAssertEqual(mouse.state.parkingEdgePressButton, .left)
+        _ = mouse.dispatchMouseDown(at: CGPoint(x: 1280, y: 720), modifiers: [], button: .right)
         XCTAssertNil(mouse.state.parkingEdgePressButton)
     }
 }
