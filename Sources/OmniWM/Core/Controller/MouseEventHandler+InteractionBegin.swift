@@ -99,6 +99,21 @@ extension MouseEventHandler {
         state.capturedInteractionButton = source.mouseButton
         state.currentHoveredEdges = edges
         edges.cursor.set()
+
+        let style = controller.settings.gestures.resizePreviewStyle
+        if style != .live {
+            if state.resizeOverlayController == nil {
+                state.resizeOverlayController = ResizeOverlayController()
+            }
+            let pid = controller.workspaceManager.entry(for: tiledWindow.token)?.pid
+            let icon = pid.flatMap { controller.appInfoCache.info(for: $0)?.icon }
+            state.resizeOverlayController?.beginResize(
+                token: tiledWindow.token,
+                initialFrame: frame,
+                appIcon: icon,
+                style: style
+            )
+        }
         return true
     }
 
@@ -167,6 +182,21 @@ extension MouseEventHandler {
         state.currentHoveredEdges = edges
         state.resizeLayout = .dwindle
         edges.cursor.set()
+
+        let style = controller.settings.gestures.resizePreviewStyle
+        if style != .live {
+            if state.resizeOverlayController == nil {
+                state.resizeOverlayController = ResizeOverlayController()
+            }
+            let pid = controller.workspaceManager.entry(for: token)?.pid
+            let icon = pid.flatMap { controller.appInfoCache.info(for: $0)?.icon }
+            state.resizeOverlayController?.beginResize(
+                token: token,
+                initialFrame: frame,
+                appIcon: icon,
+                style: style
+            )
+        }
         return true
     }
 }

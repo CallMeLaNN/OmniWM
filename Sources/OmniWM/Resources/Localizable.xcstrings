@@ -1,6 +1,12 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Live Snapshot shows the real window contents while resizing (needs Screen Recording). Glass Placeholder shows a frosted outline with the app icon instead, no permission needed." : {
+
+    },
+    "Resize Preview" : {
+
+    },
     "Dynamic Island" : {
 
     },

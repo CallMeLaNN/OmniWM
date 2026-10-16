@@ -208,6 +208,7 @@ extension MouseEventHandler {
     }
 
     func clearResizeInteractionState() {
+        state.resizeOverlayController?.endResize()
         state.isResizing = false
         state.activeInteractionSource = nil
         state.resizeLayout = nil

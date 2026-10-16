@@ -95,6 +95,17 @@ struct MouseTrackpadSettingsTab: View {
             .id("Right Mouse Resize Modifier")
 
             SettingsCaption(localized: "Hold this modifier combo + right mouse drag to resize tiled windows")
+
+            Picker("Resize Preview", selection: Bindable(settings.gestures).resizePreviewStyle) {
+                ForEach(ResizePreviewStyle.allCases) { style in
+                    Text(style.displayName).tag(style)
+                }
+            }
+            .id("Resize Preview")
+
+            SettingsCaption(
+                localized: "Live Snapshot shows the real window contents while resizing (needs Screen Recording). Glass Placeholder shows a frosted outline with the app icon instead, no permission needed."
+            )
         }
         .id("Mouse Move & Resize")
     }

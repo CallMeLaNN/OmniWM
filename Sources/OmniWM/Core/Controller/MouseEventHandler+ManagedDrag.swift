@@ -169,21 +169,52 @@ extension MouseEventHandler {
     }
 
     func updateManagedResize(at location: CGPoint) {
-        guard let controller else { return }
         if state.resizeLayout == .dwindle {
-            guard let engine = controller.dwindleEngine,
-                  let wsId = engine.interactiveResize?.workspaceId
-            else {
-                cancelActiveMouseInteraction()
-                return
-            }
-            if engine.interactiveResizeUpdate(currentLocation: location) {
-                controller.layoutRefreshController.renderDwindleInteractiveResize(for: wsId)
-            }
+            updateManagedDwindleResize(at: location)
+        } else {
+            updateManagedNiriResize(at: location)
+        }
+    }
+
+    private func updateManagedDwindleResize(at location: CGPoint) {
+        guard let controller,
+              let engine = controller.dwindleEngine,
+              let wsId = engine.interactiveResize?.workspaceId,
+              let monitor = controller.workspaceManager.monitor(for: wsId)
+        else {
+            cancelActiveMouseInteraction()
             return
         }
+        guard engine.interactiveResizeUpdate(currentLocation: location) else { return }
+        if let overlay = state.resizeOverlayController, overlay.isActive, let token = overlay.token,
+           let snapshot = controller.dwindleLayoutHandler.makeWorkspaceSnapshot(
+               workspaceId: wsId,
+               monitor: monitor,
+               resolveConstraints: false,
+               isActiveWorkspace: true
+           )
+        {
+            let frames = engine.calculateLayout(
+                for: wsId,
+                screen: snapshot.monitor.workingFrame,
+                borderSafeFillScreen: snapshot.monitor.borderSafeFillFrame,
+                fullscreenScreen: snapshot.monitor.fullscreenLayoutFrame,
+                calculationSettings: controller.dwindleLayoutHandler.calculationSettings(
+                    controller.resolvedDwindleSettings(for: monitor),
+                    from: engine
+                )
+            )
+            if let targetFrame = frames[token] {
+                overlay.updateFrame(targetFrame)
+            }
+        } else {
+            controller.layoutRefreshController.renderDwindleInteractiveResize(for: wsId)
+        }
+    }
 
-        guard let engine = controller.niriEngine,
+    private func updateManagedNiriResize(at location: CGPoint) {
+        guard let controller,
+              let engine = controller.niriEngine,
               let resize = engine.interactiveResize,
               let monitor = controller.workspaceManager.monitor(for: resize.workspaceId)
         else {
@@ -198,14 +229,27 @@ extension MouseEventHandler {
         )
         let wsId = resize.workspaceId
 
-        if engine.interactiveResizeUpdate(
+        guard engine.interactiveResizeUpdate(
             currentLocation: location,
             monitorFrame: geometry.workingFrame,
             gaps: gaps,
             viewportState: { mutate in
                 controller.workspaceManager.withNiriViewportState(for: wsId, mutate)
             }
-        ) {
+        ) else { return }
+
+        if let overlay = state.resizeOverlayController, overlay.isActive, let token = overlay.token {
+            let vstate = controller.workspaceManager.niriViewportState(for: wsId)
+            let layout = engine.calculateCombinedLayoutUsingPools(
+                in: wsId,
+                monitor: monitor,
+                gaps: gaps,
+                state: vstate
+            )
+            if let targetFrame = layout.frames[token] {
+                overlay.updateFrame(targetFrame)
+            }
+        } else {
             controller.layoutRefreshController.renderInteractiveResize(for: wsId)
         }
     }
