@@ -370,6 +370,16 @@ final class TargetedWindowActionIPCIntegrationTests: XCTestCase {
             affectedWorkspaceIds: [fixture.otherNiriWorkspaceId]
         )
         await WindowAdmissionTestSupport.drainLayoutRefreshes(fixture.controller)
+        let savedWindowWidth = WeightedSize.fixed(485)
+        let savedWindowHeight = WeightedSize.auto(weight: 2)
+        manager.withEngineMutationScope {
+            guard let node = fixture.engine.findNode(for: released.id, in: fixture.otherNiriWorkspaceId) else {
+                XCTFail("Expected Niri node")
+                return
+            }
+            node.windowWidth = savedWindowWidth
+            node.savedHeight = savedWindowHeight
+        }
         let focusedColumnIndex = try XCTUnwrap(
             fixture.engine.persistedPlacement(for: fixture.focused.id, in: fixture.niriWorkspaceId)?.columnIndex
         )
@@ -404,6 +414,9 @@ final class TargetedWindowActionIPCIntegrationTests: XCTestCase {
             columns.first { column in column.windowNodes.contains { $0.token == released.id } }
         )
         XCTAssertEqual(releasedColumn.windowNodes.map(\.token), [released.id])
+        let releasedNode = try XCTUnwrap(fixture.engine.findNode(for: released.id, in: fixture.niriWorkspaceId))
+        XCTAssertEqual(releasedNode.windowWidth, savedWindowWidth)
+        XCTAssertEqual(releasedNode.savedHeight, savedWindowHeight)
     }
 
     func testUnassigningAScratchpadWindowOnItsOwnWorkspaceRestoresItsColumn() async throws {
