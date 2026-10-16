@@ -73,7 +73,6 @@ extension MouseEventHandler {
         button: MouseButton = .left,
         windowIdUnderPointer: Int? = nil
     ) -> Bool {
-        state.parkingEdgePressButton = nil
         guard !isInputSuppressed else {
             handleInputSuppressionBegan()
             return false
@@ -206,6 +205,11 @@ extension MouseEventHandler {
         modifiers: CGEventFlags,
         button: MouseButton = .left
     ) -> Bool {
+        if let latched = state.parkingEdgePressButton,
+           latched == button || pressedMouseButtonsProvider() & latched.pressedMask == 0
+        {
+            state.parkingEdgePressButton = nil
+        }
         if shouldBlockOwnWindowInput(at: location) {
             dropPendingTapEvents()
         } else {

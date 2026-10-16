@@ -371,13 +371,39 @@ final class PointerEdgeBarrierTests: XCTestCase {
         XCTAssertNil(mouse.state.parkingEdgePressButton)
     }
 
-    func testNextPressReplacesFinPressLatchWhoseReleaseWasLost() {
+    func testOtherButtonPressClearsFinPressLatchWhoseReleaseWasMissed() {
         let controller = controllerWithFin()
         defer { controller.ownedWindowRegistry.unregister(surfaceId: "pointer-edge-latch-test") }
         let mouse = controller.mouseEventHandler
-        XCTAssertFalse(mouse.dispatchMouseDown(at: CGPoint(x: 2545, y: 700), modifiers: []))
+        XCTAssertFalse(mouse.receiveTapMouseDown(at: CGPoint(x: 2545, y: 700), modifiers: []))
         XCTAssertEqual(mouse.state.parkingEdgePressButton, .left)
-        _ = mouse.dispatchMouseDown(at: CGPoint(x: 1280, y: 720), modifiers: [], button: .right)
+        mouse.pressedMouseButtonsProvider = { 0 }
+        _ = mouse.receiveTapMouseDown(at: CGPoint(x: 1280, y: 720), modifiers: [], button: .right)
+        XCTAssertNil(mouse.state.parkingEdgePressButton)
+    }
+
+    func testFinPressLatchSurvivesOtherButtonPressWhileStillHeld() {
+        let controller = controllerWithFin()
+        defer { controller.ownedWindowRegistry.unregister(surfaceId: "pointer-edge-latch-test") }
+        let mouse = controller.mouseEventHandler
+        XCTAssertFalse(mouse.receiveTapMouseDown(at: CGPoint(x: 2545, y: 700), modifiers: []))
+        mouse.pressedMouseButtonsProvider = { MouseEventHandler.MouseButton.left.pressedMask }
+        _ = mouse.receiveTapMouseDown(at: CGPoint(x: 1280, y: 720), modifiers: [], button: .right)
+        XCTAssertEqual(mouse.state.parkingEdgePressButton, .left)
+    }
+
+    func testSameButtonPressClearsMissedFinReleaseBeforeDrainingItsDrags() {
+        let controller = controllerWithFin()
+        defer { controller.ownedWindowRegistry.unregister(surfaceId: "pointer-edge-latch-test") }
+        controller.eventIntake.open(sink: controller.eventInterpreter)
+        defer { controller.eventIntake.close() }
+        let mouse = controller.mouseEventHandler
+        XCTAssertFalse(mouse.receiveTapMouseDown(at: CGPoint(x: 2545, y: 700), modifiers: []))
+        mouse.pressedMouseButtonsProvider = { MouseEventHandler.MouseButton.left.pressedMask }
+        XCTAssertTrue(EventIntake.post(.mouseDragged(button: .left, location: CGPoint(x: 1280, y: 720))))
+        XCTAssertNil(controller.mouseWarpHandler.state.lastSampleAt)
+        _ = mouse.receiveTapMouseDown(at: CGPoint(x: 1280, y: 720), modifiers: [])
+        XCTAssertNotNil(controller.mouseWarpHandler.state.lastSampleAt)
         XCTAssertNil(mouse.state.parkingEdgePressButton)
     }
 }
