@@ -968,7 +968,7 @@ final class ShellWidgetClickTests: XCTestCase {
         sink.world = world
         sink.bars = bars
         let (changes, changed) = AsyncStream.makeStream(of: Void.self)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 60) { changed.finish() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 30) { changed.finish() }
         let resources = ShellResources(
             motion: MotionPolicy(animationsEnabled: animations),
             iconOverride: { _ in sink.iconOverride }
@@ -1069,7 +1069,7 @@ final class ShellWidgetClickTests: XCTestCase {
         let harness = try harness("function render(ctx) return ui.box{ w = 10, h = 10 } end")
         defer { harness.close() }
         let (changes, changed) = AsyncStream.makeStream(of: Void.self)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 60) { changed.finish() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 30) { changed.finish() }
         harness.host.onWidgetsChange = { changed.yield() }
         var reports = changes.makeAsyncIterator()
         XCTAssertEqual(harness.host.widgetReport.problems, [])
@@ -1357,9 +1357,8 @@ final class ShellWidgetClickTests: XCTestCase {
         for _ in 0 ..< 30 {
             XCTAssertTrue(surface.scroll(at: CGPoint(x: 5, y: 5), event: event))
         }
-        while harness.slot?.size.width != 40 {
-            try await layoutChanges.change()
-        }
+        while harness.slot?.size.width != 40, await layoutChanges.next() != nil {}
+        XCTAssertEqual(harness.slot?.size.width, 40)
     }
 
     func testWidgetsStartWithTheCurrentWorldAndFollowUpdates() async throws {
@@ -1518,7 +1517,7 @@ final class ShellWidgetClickTests: XCTestCase {
         let sink = Sink()
         sink.bars = [Harness.bar: ShellBarData(monitor: "Main", workspaces: [workspace, workspace])]
         let (changes, changed) = AsyncStream.makeStream(of: Void.self)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 60) { changed.finish() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 30) { changed.finish() }
         let host = ShellWidgetHost(
             configDirectory: root,
             resources: ShellResources(motion: MotionPolicy(animationsEnabled: false)),
