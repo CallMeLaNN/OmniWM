@@ -199,9 +199,10 @@ final class SurfaceScene {
         return true
     }
 
-    func containsInteractive(point: CGPoint) -> Bool {
+    func containsInteractive(point: CGPoint, excluding kind: SurfaceKind? = nil) -> Bool {
         nodesByID.values.contains { node in
-            guard node.policy.hitTestPolicy != .passthrough,
+            guard node.policy.kind != kind,
+                  node.policy.hitTestPolicy != .passthrough,
                   isVisible(node)
             else {
                 return false
@@ -336,6 +337,9 @@ final class SurfaceScene {
     private func contains(_ point: CGPoint, in node: SurfaceNode) -> Bool {
         if let regionProvider = node.regionProvider {
             return regionProvider().contains { $0.contains(point) }
+        }
+        if node.policy.kind == .parkingEdgeMask {
+            return resolvedFrame(for: node).map { NSMouseInRect(point, $0, false) } == true
         }
         return resolvedFrame(for: node)?.contains(point) == true
     }

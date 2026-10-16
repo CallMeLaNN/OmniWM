@@ -377,6 +377,7 @@ extension WMController {
     func setFocusFollowsMouse(_ enabled: Bool) {
         focusFollowsMouseEnabled = enabled
         mouseEventHandler.reconcileMouseMoveSubscription()
+        surfaceReconciler.noteWorldChanged()
         guard !enabled,
               let request = intentLedger.activeManagedRequest,
               request.origin == .focusFollowsMouse

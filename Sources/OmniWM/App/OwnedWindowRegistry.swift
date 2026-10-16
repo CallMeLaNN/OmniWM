@@ -76,8 +76,8 @@ final class OwnedWindowRegistry {
         surfaceCoordinator.unregister(id: surfaceId)
     }
 
-    func contains(point: CGPoint) -> Bool {
-        surfaceCoordinator.containsInteractive(point: point)
+    func contains(point: CGPoint, excluding kind: SurfaceKind? = nil) -> Bool {
+        surfaceCoordinator.containsInteractive(point: point, excluding: kind)
     }
 
     func containsGeometric(point: CGPoint) -> Bool {

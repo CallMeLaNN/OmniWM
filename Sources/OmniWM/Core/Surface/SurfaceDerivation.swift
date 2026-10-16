@@ -20,7 +20,7 @@ enum SurfaceDerivation {
             placeholders: world.nativeFullscreenPlaceholders(),
             bars: world.barSurfaces(),
             islands: world.islandSurfaces(),
-            parkingEdgeMasks: deriveParkingEdgeMasks(monitors: world.monitors, spaceTopology: world.spaceTopology),
+            parkingEdgeMasks: world.parkingEdgeMasks(),
             niriColumns: world.niriColumnSummaries()
         )
     }
