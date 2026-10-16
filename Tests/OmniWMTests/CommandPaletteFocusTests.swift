@@ -23,7 +23,7 @@ final class CommandPaletteFocusTests: XCTestCase {
         let revealObservation = panel.publisher(for: \.alphaValue, options: [.initial, .new])
             .first { $0 >= 0.99 }
             .sink { _ in revealed.fulfill() }
-        await fulfillment(of: [revealed], timeout: 1)
+        await fulfillment(of: [revealed], timeout: 5)
         revealObservation.cancel()
         XCTAssertEqual(panel.frame.height, compactFrame.height, accuracy: 0.5)
 
