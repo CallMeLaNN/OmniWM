@@ -269,6 +269,7 @@ final class MouseEventHandler {
             resolvedOtherButtons.insert(capturedOther)
         }
         let otherButtons = resolvedOtherButtons
+        let moveFlags = controller?.settings.gestures.mouseMoveModifierKey.cgEventFlags
         let resizeFlags = controller?.settings.gestures.mouseResizeModifierKey.cgEventFlag ?? []
         let scrollFlags = controller?.settings.gestures.scrollModifierKey.cgEventFlag ?? []
         let minFingers: Int
@@ -286,6 +287,7 @@ final class MouseEventHandler {
         inputTapThread.updateFilterSnapshot { snapshot in
             snapshot.activeCapture = capturedButton
             snapshot.claimedOtherButtons = otherButtons
+            snapshot.moveModifier = moveFlags
             snapshot.resizeModifier = resizeFlags
             snapshot.scrollModifier = scrollFlags
             snapshot.minGestureFingers = minFingers

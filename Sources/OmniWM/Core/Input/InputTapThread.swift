@@ -8,6 +8,7 @@ import os
 struct TapFilterSnapshot: Sendable {
     var activeCapture: MouseEventHandler.MouseButton?
     var claimedOtherButtons: Set<Int64> = []
+    var moveModifier: CGEventFlags?
     var resizeModifier: CGEventFlags = []
     var scrollModifier: CGEventFlags = []
     var minGestureFingers: Int = 3
@@ -22,7 +23,12 @@ final class InputTapThread: @unchecked Sendable {
     private var started = false
 
     private let filterLock = OSAllocatedUnfairLock(initialState: TapFilterSnapshot())
-    var touchCountProvider: (@Sendable () -> Int)?
+    private let touchCountLock = OSAllocatedUnfairLock<(@Sendable () -> Int)?>(initialState: nil)
+
+    var touchCountProvider: (@Sendable () -> Int)? {
+        get { touchCountLock.withLock { $0 } }
+        set { touchCountLock.withLock { $0 = newValue } }
+    }
 
     var runLoop: CFRunLoop? {
         condition.lock()
@@ -143,11 +149,22 @@ final class InputTapThread: @unchecked Sendable {
         switch type {
         case .leftMouseDown:
             let flags = event.flags
-            DispatchQueue.main.async {
-                MainActor.assumeIsolated {
-                    _ = MouseEventHandler._instance?.receiveTapMouseDown(at: location, modifiers: flags, button: .left)
+            let isMoveCandidate = MouseEventHandler.mouseMoveMode(modifiers: flags, required: snap.moveModifier) != nil
+            guard isMoveCandidate else {
+                DispatchQueue.main.async {
+                    MainActor.assumeIsolated {
+                        _ = MouseEventHandler._instance?.receiveTapMouseDown(
+                            at: location,
+                            modifiers: flags,
+                            button: .left
+                        )
+                    }
                 }
+                return event
             }
+            _ = evaluateAuthoritativeTapOnMain(
+                type: type, location: location, modifiers: flags, buttonNumber: 0, scrollPayload: nil
+            )
             return event
         case .leftMouseDragged:
             guard snap.activeCapture == .left else {
