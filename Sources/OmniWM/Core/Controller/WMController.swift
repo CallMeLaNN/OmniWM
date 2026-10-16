@@ -157,6 +157,7 @@ final class WMController {
     private(set) lazy var mouseEventHandler = MouseEventHandler(controller: self)
     @ObservationIgnored
     private(set) lazy var mouseWarpHandler = MouseWarpHandler(controller: self)
+    let pointerEdgeBarrier = PointerEdgeBarrier()
     @ObservationIgnored
     private(set) lazy var axEventHandler = AXEventHandler(controller: self)
     @ObservationIgnored
@@ -475,6 +476,12 @@ extension WMController {
         let effectiveMonitors = monitors ?? workspaceManager.monitors
         let shouldEnable = shouldUseMouseWarp(for: effectiveMonitors)
         mouseEventHandler.reconcileMouseMoveSubscription()
+        if shouldEnable, hasStartedServices, settings.pointer.enabled {
+            pointerEdgeBarrier.start()
+        } else {
+            pointerEdgeBarrier.stop()
+        }
+        publishPointerEdgeTopology()
         guard shouldEnable != isMouseWarpPolicyEnabled else {
             return shouldEnable
         }
@@ -489,6 +496,7 @@ extension WMController {
     }
 
     func resetMouseWarpPolicy() {
+        pointerEdgeBarrier.stop()
         mouseWarpHandler.cleanup()
         isMouseWarpPolicyEnabled = false
     }

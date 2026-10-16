@@ -20,6 +20,26 @@ extension SurfaceReconciler {
         }
     }
 
+    func pointerEdgeFinSpans() -> [ParkingEdgeMaskKey: CGRect] {
+        guard let monitors = controller?.workspaceManager.monitors, canInteractWithParkingEdge(isHover: false) else {
+            return [:]
+        }
+        var spans: [ParkingEdgeMaskKey: CGRect] = [:]
+        for mask in appliedScene.parkingEdgeMasks where mask.navigation != nil {
+            guard let frame = monitors.first(where: { $0.id == mask.key.monitorId })?.frame else { continue }
+            let reachesEdge = switch mask.key.side {
+            case .left: mask.frame.minX == frame.minX
+            case .right: mask.frame.maxX == frame.maxX
+            case .top: mask.frame.maxY == frame.maxY
+            case .bottom: mask.frame.minY == frame.minY
+            }
+            if reachesEdge {
+                spans[mask.key] = mask.frame
+            }
+        }
+        return spans
+    }
+
     private func canInteractWithParkingEdge(isHover: Bool) -> Bool {
         guard let controller, controller.isEnabled, !controller.isOverviewOpen(),
               !controller.mouseEventHandler.isInputSuppressed,

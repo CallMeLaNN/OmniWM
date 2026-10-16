@@ -77,6 +77,7 @@ struct MouseInputState {
 
     var capturedInteractionButton: MouseEventHandler.MouseButton?
     var capturedOtherMouseButton: Int64?
+    var parkingEdgePressButton: MouseEventHandler.MouseButton?
     var resizeLayout: LayoutType?
     var moveLayout: LayoutType?
     var awaitsNativeTitleBarDragTarget = false

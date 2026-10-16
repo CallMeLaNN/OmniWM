@@ -69,7 +69,7 @@ final class MouseWarpHandler: NSObject {
         state.lastSampleAt = nil
     }
 
-    func handleMouseWarpMoved(at location: CGPoint) {
+    func handleMouseWarpMoved(at location: CGPoint, respectsPointerEdgeClaims: Bool = true) {
         guard let controller else { return }
         guard !state.isWarping else { return }
         guard controller.isEnabled else { return }
@@ -85,17 +85,41 @@ final class MouseWarpHandler: NSObject {
         if let currentMonitor = monitors.first(where: { $0.frame.contains(location) }) {
             state.lastMonitorId = currentMonitor.id
             state.lastSampleAt = Date()
-            _ = attemptWarp(from: currentMonitor, location: location, margin: margin)
+            _ = attemptWarp(
+                from: currentMonitor,
+                location: location,
+                margin: margin,
+                respectsClaims: respectsPointerEdgeClaims
+            )
             return
         }
 
         guard let lastMonitorId = state.lastMonitorId,
               let lastMonitor = controller.workspaceManager.monitor(byId: lastMonitorId)
         else { return }
-        _ = attemptWarp(from: lastMonitor, location: location, margin: margin)
+        _ = attemptWarp(
+            from: lastMonitor,
+            location: location,
+            margin: margin,
+            respectsClaims: respectsPointerEdgeClaims
+        )
     }
 
-    private func attemptWarp(from sourceMonitor: Monitor, location: CGPoint, margin: CGFloat) -> Bool {
+    func acknowledgePointerEdgeHold(token: UInt64, crossedTo: Monitor.ID?) {
+        guard let controller else { return }
+        controller.pointerEdgeBarrier.acknowledge(token: token)
+        guard let crossedTo else { return }
+        state.lastMonitorId = crossedTo
+        state.lastSampleAt = Date()
+        _ = controller.workspaceManager.setInteractionMonitor(crossedTo)
+    }
+
+    private func attemptWarp(
+        from sourceMonitor: Monitor,
+        location: CGPoint,
+        margin: CGFloat,
+        respectsClaims: Bool
+    ) -> Bool {
         guard let controller else { return false }
         guard let crossing = MouseWarpGeometry.crossing(
             location: location,
@@ -108,6 +132,9 @@ final class MouseWarpHandler: NSObject {
             from: sourceMonitor.id,
             direction: crossing.direction
         ) else {
+            return false
+        }
+        guard !respectsClaims || !controller.pointerEdgeBarrier.isClaimed(sourceMonitor.id, crossing.direction) else {
             return false
         }
 

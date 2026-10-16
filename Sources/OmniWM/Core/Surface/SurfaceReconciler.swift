@@ -326,6 +326,7 @@ final class SurfaceReconciler {
         }
         parkingEdgeMaskManager.apply(desired.parkingEdgeMasks)
         appliedScene = desired
+        controller.publishPointerEdgeTopology()
         if !borderOutcome.didApply {
             appliedScene.border = nil
         }

@@ -73,7 +73,7 @@ Cursor warping across the monitor arrangement (used with `routing.mode = "custom
 | Key | Type | Default | Description |
 | --- | --- | --- | --- |
 | `margin` | integer | `1` | Edge margin in pixels used when warping the cursor between monitors. |
-| `enabled` | boolean | `true` | Enables cursor warping between monitors. |
+| `enabled` | boolean | `true` | Enables cursor warping between monitors. At an edge showing a Niri parked-column fin, the pointer rests on the fin; keep pushing outward to cross. |
 | `constrainToArrangement` | boolean | `false` | Constrains the cursor to the configured monitor arrangement. |
 
 ## routing
