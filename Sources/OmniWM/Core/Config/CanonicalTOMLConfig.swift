@@ -72,6 +72,7 @@ extension CanonicalTOMLConfig {
         general = try container.decode(General.self, forKey: .general)
         KeySymbolMapper.setHyperKeyModifiers(general.hyperKeyModifiers)
         focus = try container.decode(SettingsExport.Focus.self, forKey: .focus)
+        focus.edgeNavigationInterval = FocusSettings.normalizedEdgeNavigationInterval(focus.edgeNavigationInterval)
         mouseWarp = try container.decode(SettingsExport.MouseWarp.self, forKey: .mouseWarp)
         routing = try container.decode(SettingsExport.Routing.self, forKey: .routing)
         monitors = try container.decodeIfPresent(Monitors.self, forKey: .monitors)
@@ -128,6 +129,7 @@ extension CanonicalTOMLConfig {
             language: export.language
         )
         focus = export.focus
+        focus.edgeNavigationInterval = FocusSettings.normalizedEdgeNavigationInterval(focus.edgeNavigationInterval)
         mouseWarp = export.mouseWarp
         routing = export.routing
         monitors = export.monitorRanking.isEmpty ? nil : Monitors(ranking: export.monitorRanking)

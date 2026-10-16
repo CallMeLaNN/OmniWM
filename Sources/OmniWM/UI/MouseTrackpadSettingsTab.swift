@@ -111,6 +111,22 @@ struct MouseTrackpadSettingsTab: View {
                 .id("Raise Window When Focus Follows Mouse")
                 .disabled(!settings.focus.followsMouse)
 
+            SettingsSliderRow(
+                label: String(localized: "Edge navigation interval"),
+                value: Bindable(settings.focus).edgeNavigationInterval,
+                range: FocusSettings.edgeNavigationIntervalRange,
+                step: FocusSettings.edgeNavigationIntervalStep,
+                valueText: String(
+                    localized: "\(settings.focus.edgeNavigationInterval.formatted(.number.precision(.fractionLength(0 ... 2))))s"
+                )
+            )
+            .id("Edge navigation interval")
+            .disabled(!settings.focus.followsMouse)
+
+            SettingsCaption(
+                localized: "Hover at a Niri screen edge to move one column after this interval, then repeat while the pointer stays on the edge or preview. Move away to stop."
+            )
+
             Picker("Focus Lock Modifier", selection: Bindable(settings.focus).lockModifier) {
                 ForEach(FocusLockModifier.allCases, id: \.self) { key in
                     Text(key.localizedDisplayName).tag(key)

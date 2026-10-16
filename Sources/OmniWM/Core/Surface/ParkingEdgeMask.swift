@@ -10,7 +10,8 @@ final class ParkingEdgeMaskManager {
     private let sleep: @MainActor (Duration) async throws -> Void
     var canInteract: @MainActor (Bool) -> Bool = { _ in true }
     var animationsEnabled: @MainActor () -> Bool = { true }
-    var onActivate: (@MainActor (ParkingEdgeMaskKey, ParkingEdgeNavigation) -> Void)?
+    var navigationInterval: @MainActor () -> TimeInterval = { SettingsExport.Focus.defaults().edgeNavigationInterval }
+    var onActivate: (@MainActor (ParkingEdgeMaskKey, ParkingEdgeNavigation) -> Bool)?
 
     init(
         pointerLocation: @escaping @MainActor () -> CGPoint = { NSEvent.mouseLocation },
@@ -38,7 +39,10 @@ final class ParkingEdgeMaskManager {
                     sleep: sleep,
                     canInteract: { [weak self] in self?.canInteract($0) == true },
                     animationsEnabled: { [weak self] in self?.animationsEnabled() == true },
-                    onActivate: { [weak self] in self?.onActivate?(mask.key, $0) }
+                    navigationInterval: { [weak self] in
+                        self?.navigationInterval() ?? SettingsExport.Focus.defaults().edgeNavigationInterval
+                    },
+                    onActivate: { [weak self] in self?.onActivate?(mask.key, $0) == true }
                 )
                 windowsByKey[mask.key] = window
                 return window
@@ -61,11 +65,10 @@ final class ParkingEdgeMaskManager {
 
 @MainActor
 final class ParkingEdgeMaskWindow: NSPanel {
-    private static let dwellDuration: TimeInterval = 1.5
-
     private enum HoverPhase {
         case outside
         case entered
+        case awaitingTarget
         case consumed
     }
 
@@ -75,7 +78,8 @@ final class ParkingEdgeMaskWindow: NSPanel {
     private let sleep: @MainActor (Duration) async throws -> Void
     private let canInteract: @MainActor (Bool) -> Bool
     private let animationsEnabled: @MainActor () -> Bool
-    private let onActivate: @MainActor (ParkingEdgeNavigation) -> Void
+    private let navigationInterval: @MainActor () -> TimeInterval
+    private let onActivate: @MainActor (ParkingEdgeNavigation) -> Bool
     private var appliedMask: DesiredParkingEdgeMask?
     private var phase = HoverPhase.outside
     private(set) var dwellTask: Task<Void, Never>?
@@ -87,13 +91,17 @@ final class ParkingEdgeMaskWindow: NSPanel {
         sleep: @escaping @MainActor (Duration) async throws -> Void,
         canInteract: @escaping @MainActor (Bool) -> Bool,
         animationsEnabled: @escaping @MainActor () -> Bool,
-        onActivate: @escaping @MainActor (ParkingEdgeNavigation) -> Void
+        navigationInterval: @escaping @MainActor () -> TimeInterval = {
+            SettingsExport.Focus.defaults().edgeNavigationInterval
+        },
+        onActivate: @escaping @MainActor (ParkingEdgeNavigation) -> Bool
     ) {
         self.key = key
         self.pointerLocation = pointerLocation
         self.sleep = sleep
         self.canInteract = canInteract
         self.animationsEnabled = animationsEnabled
+        self.navigationInterval = navigationInterval
         self.onActivate = onActivate
         surfaceId = "parking-edge-mask-\(key.monitorId.displayId)-\(key.side.rawValue)"
 
@@ -159,12 +167,21 @@ final class ParkingEdgeMaskWindow: NSPanel {
             setFrame(mask.frame, display: true)
             contentView?.frame = CGRect(origin: .zero, size: mask.frame.size)
         } else if previous?.navigation != mask.navigation {
+            let continuesNavigation = phase == .awaitingTarget
+                && previous?.navigation?.workspaceId == mask.navigation?.workspaceId
+                && previous?.navigation?.target != mask.navigation?.target
             cancelDwell()
-            if phase == .entered { phase = .consumed }
+            if continuesNavigation {
+                phase = .entered
+            } else if phase != .outside {
+                phase = .consumed
+            }
         }
         if mask.navigation == nil {
             cancelDwell()
             fin?.hide()
+        } else {
+            updateDwell()
         }
 
         if !isVisible {
@@ -180,7 +197,7 @@ final class ParkingEdgeMaskWindow: NSPanel {
         }
         guard phase == .outside else { return }
         phase = .entered
-        guard let navigation = appliedMask?.navigation, canInteract(false) else { return }
+        guard appliedMask?.navigation != nil, canInteract(false) else { return }
         let fin = fin ?? {
             let window = ParkingEdgeFinWindow(
                 key: key,
@@ -191,12 +208,26 @@ final class ParkingEdgeMaskWindow: NSPanel {
             return window
         }()
         fin.show(at: point, maskFrame: frame, animated: animationsEnabled())
-        guard navigation.hoverEnabled, canInteract(true) else { return }
-        fin.setProgress(duration: Self.dwellDuration)
+        updateDwell()
+    }
+
+    private func updateDwell() {
+        guard phase == .entered else { return }
+        guard appliedMask?.navigation?.hoverEnabled == true,
+              fin?.isVisible == true,
+              NSMouseInRect(pointerLocation(), frame, false) || fin?.contains(pointerLocation()) == true,
+              canInteract(true)
+        else {
+            cancelDwell()
+            return
+        }
+        guard dwellTask == nil else { return }
+        let interval = navigationInterval()
+        fin?.setProgress(duration: interval)
         let sleep = sleep
         dwellTask = Task { @MainActor [weak self] in
             do {
-                try await sleep(.seconds(Self.dwellDuration))
+                try await sleep(.seconds(interval))
             } catch {
                 return
             }
@@ -214,10 +245,13 @@ final class ParkingEdgeMaskWindow: NSPanel {
             endHover()
             return
         }
-        phase = .consumed
+        phase = .awaitingTarget
         cancelDwell()
         fin?.setProgress(duration: 0)
-        onActivate(navigation)
+        if !onActivate(navigation) {
+            phase = .consumed
+            cancelDwell()
+        }
     }
 
     private func cancelDwell() {

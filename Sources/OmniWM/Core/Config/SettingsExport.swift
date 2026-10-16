@@ -66,6 +66,7 @@ struct SettingsExport: Equatable {
 
     struct Focus: Codable, Equatable {
         var followsMouse: Bool
+        var edgeNavigationInterval: Double
         var raiseOnMouseFocus: Bool
         var lockModifier: FocusLockModifier
         var moveMouseToFocusedWindow: Bool
@@ -296,9 +297,23 @@ extension SettingsExport.Clipboard {
 }
 
 extension SettingsExport.Focus {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        followsMouse = try container.decode(Bool.self, forKey: .followsMouse)
+        edgeNavigationInterval = try container.decodeIfPresent(Double.self, forKey: .edgeNavigationInterval)
+            ?? Self.defaults().edgeNavigationInterval
+        raiseOnMouseFocus = try container.decode(Bool.self, forKey: .raiseOnMouseFocus)
+        lockModifier = try container.decode(FocusLockModifier.self, forKey: .lockModifier)
+        moveMouseToFocusedWindow = try container.decode(Bool.self, forKey: .moveMouseToFocusedWindow)
+        followsWindowToMonitor = try container.decode(Bool.self, forKey: .followsWindowToMonitor)
+        crossesMonitorAtEdge = try container.decode(Bool.self, forKey: .crossesMonitorAtEdge)
+        moveCrossesMonitorAtEdge = try container.decode(Bool.self, forKey: .moveCrossesMonitorAtEdge)
+    }
+
     static func defaults() -> Self {
         Self(
             followsMouse: false,
+            edgeNavigationInterval: 1.5,
             raiseOnMouseFocus: false,
             lockModifier: .off,
             moveMouseToFocusedWindow: false,

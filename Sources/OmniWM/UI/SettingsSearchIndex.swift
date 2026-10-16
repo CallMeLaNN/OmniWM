@@ -233,6 +233,7 @@ enum SettingsSearchIndex {
             anchor: "Raise Window When Focus Follows Mouse"
         ),
         setting("Focus Lock Modifier", section: .mouseTrackpad, tab: "mouse", anchor: "Focus Lock Modifier"),
+        setting("Edge navigation interval", section: .mouseTrackpad, tab: "mouse", anchor: "Edge navigation interval"),
         setting("Quake Terminal", section: .quakeTerminal, anchor: "Quake Terminal"),
         setting("Enable Quake Terminal", section: .quakeTerminal, anchor: "Enable Quake Terminal"),
         setting("Position & Size", section: .quakeTerminal, anchor: "Position & Size"),
