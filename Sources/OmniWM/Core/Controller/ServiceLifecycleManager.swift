@@ -190,6 +190,7 @@ final class ServiceLifecycleManager {
 
     func handleFrameApplySucceeded(_ result: AXFrameApplyResult) {
         guard let controller else { return }
+        controller.resizeOverlay.frameApplied(windowId: result.windowId)
         controller.axEventHandler.clearTerminalFrameFailure(windowId: result.windowId)
         controller.mouseEventHandler.handleNativeTitleBarDragFrameApplySucceeded(result)
         guard result.writeResult.observedFrame != nil, result.confirmedFrame != nil else { return }

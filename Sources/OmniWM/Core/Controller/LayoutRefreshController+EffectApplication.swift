@@ -129,7 +129,21 @@ extension LayoutRefreshController {
 extension LayoutRefreshController {
     @discardableResult
     func executeLayoutPlan(_ plan: WorkspaceLayoutPlan) -> Bool {
-        executeLayoutPlanReturningAcceptedSeq(plan, suppressWindowActivation: false) != nil
+        guard let controller, controller.resizeOverlay.isTracking(plan.workspaceId) else {
+            return executeLayoutPlanReturningAcceptedSeq(plan, suppressWindowActivation: false) != nil
+        }
+        let overlay = controller.resizeOverlay
+        var plan = plan
+        overlay.update(Dictionary(plan.diff.frameChanges.map { ($0.token, $0.frame) }, uniquingKeysWith: { $1 }))
+        let settles = overlay.followsAnimation && !plan.isAnimationTick
+        if !settles {
+            plan.diff.frameChanges.removeAll()
+        }
+        let applied = executeLayoutPlanReturningAcceptedSeq(plan, suppressWindowActivation: false) != nil
+        if settles {
+            overlay.finish { controller.axManager.lastAppliedFrame(for: $0.windowId) }
+        }
+        return applied
     }
 
     func executeLayoutPlanReturningAcceptedSeq(

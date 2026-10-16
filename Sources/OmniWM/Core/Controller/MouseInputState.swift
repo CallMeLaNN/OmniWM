@@ -90,7 +90,6 @@ struct MouseInputState {
     var latestFocusFollowsMouseSample: FocusFollowsMouseSample?
     let focusFollowsMouseDebounce: TimeInterval = 0.1
     var dragGhostController: DragGhostController?
-    var resizeOverlayController: ResizeOverlayController?
 
     var gesturePhase: GesturePhase = .idle
     var gestureStartX: CGFloat = 0.0

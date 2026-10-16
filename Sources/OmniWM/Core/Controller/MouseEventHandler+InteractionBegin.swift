@@ -100,7 +100,7 @@ extension MouseEventHandler {
         state.currentHoveredEdges = edges
         edges.cursor.set()
 
-        beginResizeOverlay(token: tiledWindow.token, frame: frame)
+        beginResizeOverlay(in: wsId)
         return true
     }
 
@@ -170,21 +170,14 @@ extension MouseEventHandler {
         state.resizeLayout = .dwindle
         edges.cursor.set()
 
-        beginResizeOverlay(token: token, frame: frame)
+        beginResizeOverlay(in: wsId)
         return true
     }
 
-    private func beginResizeOverlay(token: WindowToken, frame: CGRect) {
+    private func beginResizeOverlay(in workspaceId: WorkspaceDescriptor.ID) {
         guard let controller else { return }
         let style = controller.settings.gestures.resizePreviewStyle
         guard style != .live else { return }
-        let overlay = state.resizeOverlayController ?? ResizeOverlayController()
-        state.resizeOverlayController = overlay
-        overlay.beginResize(
-            token: token,
-            initialFrame: frame,
-            appIcon: controller.appInfoCache.info(for: token.pid)?.icon,
-            style: style
-        )
+        controller.resizeOverlay.begin(workspaceId: workspaceId, style: style, followsAnimation: false)
     }
 }

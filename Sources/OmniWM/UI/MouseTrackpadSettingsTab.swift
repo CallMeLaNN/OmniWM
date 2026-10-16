@@ -104,7 +104,7 @@ struct MouseTrackpadSettingsTab: View {
             .id("Resize Preview")
 
             SettingsCaption(
-                localized: "Window Snapshot stretches a still image of the window while you drag and needs Screen Recording. Glass Placeholder shows the app icon on glass and needs no permission. Both write the final size once you let go."
+                localized: "Applies to mouse resizing and to keyboard resizing in Niri. Window Snapshot stretches a still image of each moving window and needs Screen Recording. Glass Placeholder shows the app icon on glass and needs no permission. Windows get their final size once the resize ends."
             )
         }
         .id("Mouse Move & Resize")

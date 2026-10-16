@@ -10,20 +10,33 @@ import ScreenCaptureKit
 final class ResizeOverlayController {
     typealias ImageCapture = @MainActor (WindowToken, CGSize) async -> CGImage?
 
-    private(set) var overlayWindow: ResizeOverlayWindow?
-    private(set) var captureTask: Task<Void, Never>?
-    private(set) var token: WindowToken?
-    private(set) var isActive: Bool = false
+    private enum Phase {
+        case idle
+        case tracking
+        case settling
+    }
+
+    private(set) var workspaceId: WorkspaceDescriptor.ID?
+    private(set) var panels: [WindowToken: ResizeOverlayWindow] = [:]
+    private(set) var captureTasks: [WindowToken: Task<Void, Never>] = [:]
+    private(set) var followsAnimation = false
+    private var phase = Phase.idle
+    private var style = ResizePreviewStyle.live
+    private var expiry: Task<Void, Never>?
     private let surfaceCoordinator: SurfaceCoordinator
     private let previews: PreviewCaptureCoordinator
     private let captureAccessAllowed: @MainActor () -> Bool
     private let captureImage: ImageCapture
+    private let currentFrame: @MainActor (WindowToken) -> CGRect?
+    private let icon: @MainActor (WindowToken) -> NSImage?
 
     init(
         surfaceCoordinator: SurfaceCoordinator = .shared,
         previews: PreviewCaptureCoordinator = .shared,
         captureAccessAllowed: @escaping @MainActor () -> Bool = { ScreenCapturePermissionMonitor.shared.isGranted },
-        captureImage: ImageCapture? = nil
+        captureImage: ImageCapture? = nil,
+        currentFrame: @escaping @MainActor (WindowToken) -> CGRect?,
+        icon: @escaping @MainActor (WindowToken) -> NSImage? = { _ in nil }
     ) {
         self.surfaceCoordinator = surfaceCoordinator
         self.previews = previews
@@ -31,65 +44,133 @@ final class ResizeOverlayController {
         self.captureImage = captureImage ?? { token, pixelSize in
             await DragGhostController.captureWindowImage(token: token, pixelSize: pixelSize, previews: previews)
         }
+        self.currentFrame = currentFrame
+        self.icon = icon
     }
 
     isolated deinit {
-        destroy()
+        reset()
     }
 
-    func beginResize(
-        token: WindowToken,
-        initialFrame: CGRect,
-        appIcon: NSImage?,
-        style: ResizePreviewStyle
-    ) {
+    var isActive: Bool {
+        phase != .idle
+    }
+
+    func isTracking(_ workspaceId: WorkspaceDescriptor.ID) -> Bool {
+        phase == .tracking && self.workspaceId == workspaceId
+    }
+
+    func isFollowingAnimation(in workspaceId: WorkspaceDescriptor.ID) -> Bool {
+        followsAnimation && isTracking(workspaceId)
+    }
+
+    func begin(workspaceId: WorkspaceDescriptor.ID, style: ResizePreviewStyle, followsAnimation: Bool) {
         guard style != .live else { return }
-        isActive = true
-        self.token = token
-        captureTask?.cancel()
-
-        if overlayWindow == nil {
-            overlayWindow = ResizeOverlayWindow(surfaceCoordinator: surfaceCoordinator)
+        if self.workspaceId != workspaceId || self.style != style {
+            reset()
         }
-        overlayWindow?.setup(icon: appIcon, frame: initialFrame)
-        overlayWindow?.show()
+        self.workspaceId = workspaceId
+        self.style = style
+        self.followsAnimation = followsAnimation
+        phase = .tracking
+        scheduleExpiry()
+    }
 
-        guard style == .snapshot, captureAccessAllowed() else { return }
+    func followAnimation() {
+        guard phase == .tracking else { return }
+        followsAnimation = true
+        scheduleExpiry()
+    }
 
+    func update(_ frames: [WindowToken: CGRect]) {
+        guard phase == .tracking else { return }
+        for (token, frame) in frames {
+            if let panel = panels[token] {
+                panel.updateFrame(frame)
+            } else if let start = currentFrame(token),
+                      !start.approximatelyEqual(to: frame, tolerance: FrameTolerance.frameWrite),
+                      NSScreen.screens.contains(where: { $0.frame.intersects(start.union(frame)) })
+            {
+                addPanel(token: token, from: start, to: frame)
+            }
+        }
+        scheduleExpiry()
+    }
+
+    func finish(lastAppliedFrame: (WindowToken) -> CGRect?) {
+        guard phase == .tracking else { return }
+        phase = .settling
+        for (token, panel) in panels
+            where lastAppliedFrame(token)?
+            .approximatelyEqual(to: panel.frame, tolerance: FrameTolerance.frameWrite) == true
+        {
+            retire(token)
+        }
+        if panels.isEmpty {
+            reset()
+        } else {
+            scheduleExpiry()
+        }
+    }
+
+    func frameApplied(windowId: Int) {
+        guard phase == .settling, let token = panels.keys.first(where: { $0.windowId == windowId }) else { return }
+        retire(token)
+        if panels.isEmpty {
+            reset()
+        }
+    }
+
+    func reset() {
+        expiry?.cancel()
+        expiry = nil
+        for token in Array(panels.keys) {
+            retire(token)
+        }
+        workspaceId = nil
+        followsAnimation = false
+        phase = .idle
+    }
+
+    private func scheduleExpiry() {
+        expiry?.cancel()
+        expiry = nil
+        guard phase == .settling || followsAnimation else { return }
+        expiry = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            self?.reset()
+        }
+    }
+
+    private func addPanel(token: WindowToken, from start: CGRect, to frame: CGRect) {
+        let panel = ResizeOverlayWindow(surfaceCoordinator: surfaceCoordinator)
+        panel.setup(icon: icon(token), frame: start)
+        panel.updateFrame(frame)
+        panels[token] = panel
+        guard style == .snapshot, captureAccessAllowed() else {
+            panel.show()
+            return
+        }
         if let shared = previews.sharedPreview(for: token)?.frame {
-            overlayWindow?.setSnapshot(shared.surface, contentsRect: shared.contentsRect, holding: shared)
+            panel.setSnapshot(shared.surface, contentsRect: shared.contentsRect, holding: shared)
+            panel.show()
         }
-
-        let scale = NSScreen.screen(containing: initialFrame)?.backingScaleFactor ?? 2
-        let pixelSize = CGSize(
-            width: (initialFrame.width * scale).rounded(),
-            height: (initialFrame.height * scale).rounded()
-        )
-
-        captureTask = Task { [weak self, captureImage] in
-            guard let image = await captureImage(token, pixelSize) else { return }
-            guard let self, isActive, !Task.isCancelled else { return }
-            overlayWindow?.setSnapshot(image)
+        let scale = NSScreen.screen(containing: start)?.backingScaleFactor ?? 2
+        let pixelSize = CGSize(width: (start.width * scale).rounded(), height: (start.height * scale).rounded())
+        captureTasks[token] = Task { [weak self, captureImage] in
+            let image = await captureImage(token, pixelSize)
+            guard !Task.isCancelled, let panel = self?.panels[token] else { return }
+            if let image {
+                panel.setSnapshot(image)
+            }
+            panel.show()
         }
     }
 
-    func updateFrame(_ frame: CGRect) {
-        guard isActive else { return }
-        overlayWindow?.updateFrame(frame)
-    }
-
-    func endResize() {
-        isActive = false
-        captureTask?.cancel()
-        captureTask = nil
-        token = nil
-        overlayWindow?.hide()
-    }
-
-    func destroy() {
-        endResize()
-        overlayWindow?.destroy()
-        overlayWindow = nil
+    private func retire(_ token: WindowToken) {
+        captureTasks.removeValue(forKey: token)?.cancel()
+        panels.removeValue(forKey: token)?.destroy()
     }
 }
 
