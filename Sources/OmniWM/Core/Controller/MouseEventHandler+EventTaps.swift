@@ -48,8 +48,10 @@ extension MouseEventHandler {
         }
         controller?.settings.onPointerSettingsChanged = { [weak self] in
             self?.reconcileMouseMoveSubscription()
+            self?.syncTapSuppressionState()
         }
         reconcileMultitouchSource()
+        syncTapSuppressionState()
     }
 
     func reconcileMouseMoveSubscription() {
@@ -160,7 +162,9 @@ extension MouseEventHandler {
         if let tap = state.eventTap {
             state.runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
             if let source = state.runLoopSource {
-                CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
+                let tapRunLoop = inputTapThread.startAndGetRunLoop()
+                state.eventTapRunLoop = tapRunLoop
+                CFRunLoopAddSource(tapRunLoop, source, .commonModes)
                 CGEvent.tapEnable(tap: tap, enable: true)
             } else {
                 tearDownSessionEventTap()
@@ -190,43 +194,48 @@ extension MouseEventHandler {
     private func tearDownSessionEventTap() {
         var tap = state.eventTap
         var source = state.runLoopSource
-        EventTapTeardown.tearDown(tap: &tap, runLoopSource: &source)
+        let runLoop = state.eventTapRunLoop ?? CFRunLoopGetMain()!
+        EventTapTeardown.tearDown(tap: &tap, runLoopSource: &source, runLoop: runLoop)
         state.eventTap = tap
         state.runLoopSource = source
+        state.eventTapRunLoop = nil
     }
 
-    private nonisolated static func processTapCallback(
+    nonisolated static func processTapCallback(
         type: CGEventType,
         event: CGEvent,
         isMainThread: Bool = Thread.isMainThread
     ) -> Bool {
-        guard isMainThread else { return false }
-
-        let location = event.location
-        let screenLocation = ScreenCoordinateSpace.toAppKit(point: location)
-        let modifiers = event.flags
-        let windowIdUnderPointer = type == .mouseMoved ? eventWindowIdUnderPointer(event) : nil
-        let buttonNumber = type == .otherMouseDown || type == .otherMouseDragged || type == .otherMouseUp
-            ? event.getIntegerValueField(.mouseEventButtonNumber) : nil
-        let scrollPayload = type == .scrollWheel ? Self.scrollPayload(
-            event,
-            at: screenLocation,
-            modifiersRawValue: modifiers.rawValue
-        ) : nil
-        return MainActor.assumeIsolated {
-            guard let handler = MouseEventHandler._instance else { return false }
-            if handler.isCapturingPerformance { handler.recordCGEvent(type) }
-            if let buttonNumber {
-                if type == .otherMouseDragged, !handler.isInputSuppressed {
-                    handler.controller?.workspaceBarManager.handleAutoHideMouseMoved(at: screenLocation)
+        if isMainThread {
+            let location = event.location
+            let screenLocation = ScreenCoordinateSpace.toAppKit(point: location)
+            let modifiers = event.flags
+            let windowIdUnderPointer = type == .mouseMoved ? eventWindowIdUnderPointer(event) : nil
+            let buttonNumber = type == .otherMouseDown || type == .otherMouseDragged || type == .otherMouseUp
+                ? event.getIntegerValueField(.mouseEventButtonNumber) : nil
+            let scrollPayload = type == .scrollWheel ? Self.scrollPayload(
+                event,
+                at: screenLocation,
+                modifiersRawValue: modifiers.rawValue
+            ) : nil
+            return MainActor.assumeIsolated {
+                guard let handler = MouseEventHandler._instance else { return false }
+                if handler.isCapturingPerformance { handler.recordCGEvent(type) }
+                if let buttonNumber {
+                    if type == .otherMouseDragged, !handler.isInputSuppressed {
+                        handler.controller?.workspaceBarManager.handleAutoHideMouseMoved(at: screenLocation)
+                    }
+                    return handler.receiveTapOtherMouseButton(type: type, button: buttonNumber, modifiers: modifiers)
                 }
-                return handler.receiveTapOtherMouseButton(type: type, button: buttonNumber, modifiers: modifiers)
+                return handler.dispatchTapEvent(
+                    type: type, location: screenLocation, modifiers: modifiers,
+                    windowIdUnderPointer: windowIdUnderPointer, scrollPayload: scrollPayload
+                )
             }
-            return handler.dispatchTapEvent(
-                type: type, location: screenLocation, modifiers: modifiers,
-                windowIdUnderPointer: windowIdUnderPointer, scrollPayload: scrollPayload
-            )
         }
+
+        guard let handler = MouseEventHandler._instance else { return false }
+        return handler.tapSuppressionState.evaluateTapThreadSuppression(type: type, event: event)
     }
 
     private func dispatchTapEvent(
