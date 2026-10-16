@@ -14,6 +14,7 @@ final class FocusRoutingSettingsExportTests: XCTestCase {
 
         XCTAssertEqual(tree["focus"], .table([
             "followsMouse": .boolean(false),
+            "edgeNavigationInterval": .float(1.5),
             "raiseOnMouseFocus": .boolean(false),
             "lockModifier": .string("off"),
             "moveMouseToFocusedWindow": .boolean(false),
@@ -33,7 +34,60 @@ final class FocusRoutingSettingsExportTests: XCTestCase {
         XCTAssertEqual(try SettingsTOMLCodec.decode(data), defaults)
     }
 
-    func testEverySectionFieldRemainsRequired() throws {
+    func testEveryEdgeNavigationIntervalRoundTrips() throws {
+        var export = SettingsExport.defaults()
+        for interval in stride(from: 0.25, through: 2.0, by: 0.25) {
+            export.focus.edgeNavigationInterval = interval
+            let data = try SettingsTOMLCodec.encode(export)
+            let result = try SettingsTOMLCodec.decodeForLoad(data)
+            XCTAssertEqual(result.export, export)
+            XCTAssertNil(result.migration)
+            XCTAssertNil(result.migratedData)
+            XCTAssertFalse(SettingsTOMLCodec.unknownKeyPaths(in: data).contains("focus.edgeNavigationInterval"))
+        }
+    }
+
+    func testEdgeNavigationIntervalNormalizesAtTOMLBoundary() throws {
+        let source = String(decoding: try SettingsTOMLCodec.encode(.defaults()), as: UTF8.self)
+        for (literal, expected) in [
+            ("0", 0.25), ("-1.0", 0.25), ("0.374", 0.25), ("0.375", 0.5),
+            ("1.375", 1.5), ("3.0", 2.0), ("nan", 1.5), ("inf", 1.5), ("-inf", 1.5)
+        ] {
+            let data = Data(source.replacingOccurrences(
+                of: "edgeNavigationInterval = 1.5",
+                with: "edgeNavigationInterval = \(literal)"
+            ).utf8)
+            XCTAssertEqual(try SettingsTOMLCodec.decode(data).focus.edgeNavigationInterval, expected, literal)
+        }
+        var export = SettingsExport.defaults()
+        for (value, expected) in [(Double.nan, 1.5), (.infinity, 1.5), (-2.0, 0.25), (1.375, 1.5), (4.0, 2.0)] {
+            export.focus.edgeNavigationInterval = value
+            let data = try SettingsTOMLCodec.encode(export)
+            XCTAssertEqual(try SettingsTOMLCodec.decode(data).focus.edgeNavigationInterval, expected)
+        }
+    }
+
+    func testOmittedEdgeNavigationIntervalUsesDefaultAndMalformedValueFails() throws {
+        let source = String(decoding: try SettingsTOMLCodec.encode(.defaults()), as: UTF8.self)
+        let missing = try removing(key: "edgeNavigationInterval", from: "focus", in: source)
+        let result = try SettingsTOMLCodec.decodeForLoad(Data(missing.utf8))
+        XCTAssertEqual(result.export.focus.edgeNavigationInterval, 1.5)
+        XCTAssertNil(result.migration)
+        XCTAssertNil(result.migratedData)
+
+        let malformed = source.replacingOccurrences(
+            of: "edgeNavigationInterval = 1.5",
+            with: "edgeNavigationInterval = \"1.5\""
+        )
+        XCTAssertThrowsError(try SettingsTOMLCodec.decode(Data(malformed.utf8))) { error in
+            guard case let DecodingError.typeMismatch(_, context) = error else {
+                return XCTFail("Expected an invalid interval type, got \(error)")
+            }
+            XCTAssertEqual(context.codingPath.map(\.stringValue), ["focus", "edgeNavigationInterval"])
+        }
+    }
+
+    func testExistingSectionFieldsRemainRequired() throws {
         let data = try SettingsTOMLCodec.encode(.defaults())
         let source = String(decoding: data, as: UTF8.self)
         let sections = [

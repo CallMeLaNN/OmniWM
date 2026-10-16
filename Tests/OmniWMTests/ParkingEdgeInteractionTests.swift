@@ -15,7 +15,7 @@ final class ParkingEdgeInteractionTests: XCTestCase {
         }
     }
 
-    @MainActor private final class Dwell {
+    @MainActor final class Dwell {
         var durations: [Duration] = []
         var continuations: [CheckedContinuation<Void, Error>] = []
         var onStart: (() -> Void)?
@@ -31,9 +31,17 @@ final class ParkingEdgeInteractionTests: XCTestCase {
         func complete() {
             continuations.removeFirst().resume()
         }
+
+        func cancelAll() {
+            let pending = continuations
+            continuations.removeAll()
+            for continuation in pending {
+                continuation.resume(throwing: CancellationError())
+            }
+        }
     }
 
-    @MainActor private final class Fixture {
+    @MainActor final class Fixture {
         let key = ParkingEdgeMaskKey(monitorId: .init(displayId: 989_001), side: .left)
         let frame = CGRect(x: 91_000, y: 92_000, width: 1, height: 800)
         let workspaceId = WorkspaceDescriptor.ID()
@@ -59,7 +67,10 @@ final class ParkingEdgeInteractionTests: XCTestCase {
 
         static func make(hover: Bool) throws -> Fixture {
             let fixture = Fixture()
-            fixture.manager.onActivate = { [weak fixture] _, _ in fixture?.activations += 1 }
+            fixture.manager.onActivate = { [weak fixture] _, _ in
+                fixture?.activations += 1
+                return true
+            }
             fixture.manager.canInteract = { [weak fixture] _ in fixture?.allowed == true }
             fixture.manager.apply([fixture.mask(hover: hover)])
             return fixture
@@ -80,6 +91,17 @@ final class ParkingEdgeInteractionTests: XCTestCase {
             try XCTUnwrap(SurfaceCoordinator.shared.visibleSurfaceInfos().first {
                 $0.id == "parking-edge-mask-989001-left"
             }?.window as? ParkingEdgeMaskWindow)
+        }
+
+        func fin() throws -> ParkingEdgeFinWindow {
+            try XCTUnwrap(SurfaceCoordinator.shared.visibleSurfaceInfos().first {
+                $0.id == "parking-edge-fin-989001-left"
+            }?.window as? ParkingEdgeFinWindow)
+        }
+
+        func destroy() {
+            manager.removeAll()
+            dwell.cancelAll()
         }
     }
 
@@ -103,7 +125,7 @@ final class ParkingEdgeInteractionTests: XCTestCase {
 
     func testMaskBlocksFallbackHoverTargetingWithoutTakingKeyboardFocus() throws {
         let fixture = try Fixture.make(hover: false)
-        defer { fixture.manager.removeAll() }
+        defer { fixture.destroy() }
         let window = try fixture.window()
         XCTAssertFalse(window.ignoresMouseEvents)
         XCTAssertFalse(window.canBecomeKey)
@@ -111,9 +133,9 @@ final class ParkingEdgeInteractionTests: XCTestCase {
         XCTAssertTrue(SurfaceCoordinator.shared.containsInteractive(point: fixture.pointer))
     }
 
-    func testClickActivatesImmediatelyWithHoverDisabled() throws {
+    func testClicksActivateImmediatelyAndRepeatedlyWithHoverDisabled() throws {
         let fixture = try Fixture.make(hover: false)
-        defer { fixture.manager.removeAll() }
+        defer { fixture.destroy() }
         let window = try fixture.window()
         let click = try XCTUnwrap(NSEvent.mouseEvent(
             with: .leftMouseDown, location: CGPoint(x: 0.5, y: 400), modifierFlags: [], timestamp: 0,
@@ -121,7 +143,10 @@ final class ParkingEdgeInteractionTests: XCTestCase {
         ))
         window.contentView?.mouseDown(with: click)
         XCTAssertEqual(fixture.activations, 1)
+        window.contentView?.mouseDown(with: click)
+        XCTAssertEqual(fixture.activations, 2)
         XCTAssertNil(window.dwellTask)
+        XCTAssertTrue(fixture.dwell.durations.isEmpty)
     }
 
     func testVerticalMaskHoverAndClickUseCocoaPointerBoundaries() throws {
@@ -133,7 +158,10 @@ final class ParkingEdgeInteractionTests: XCTestCase {
             let window = ParkingEdgeMaskWindow(
                 key: .init(monitorId: .init(displayId: 989_002), side: side),
                 pointerLocation: { pointer.value }, sleep: { _ in }, canInteract: { _ in true },
-                animationsEnabled: { false }, onActivate: { _ in activations += 1 }
+                animationsEnabled: { false }, onActivate: { _ in
+                    activations += 1
+                    return true
+                }
             )
             defer { window.destroy() }
             window.apply(DesiredParkingEdgeMask(
@@ -166,7 +194,7 @@ final class ParkingEdgeInteractionTests: XCTestCase {
 
     func testFinRevealReadsCurrentAnimationPolicyWithoutReapplyingMask() throws {
         let fixture = try Fixture.make(hover: false)
-        defer { fixture.manager.removeAll() }
+        defer { fixture.destroy() }
         let policy = MotionPolicy(animationsEnabled: true)
         fixture.manager.animationsEnabled = { policy.animationsEnabled }
         let window = try fixture.window()
@@ -184,9 +212,9 @@ final class ParkingEdgeInteractionTests: XCTestCase {
         XCTAssertNil(fin.contentView?.layer?.animation(forKey: "parkingEdge.reveal"))
     }
 
-    func testDwellWaitsForOnePointFiveSecondsAndRequiresLeavingBeforeAnotherActivation() async throws {
+    func testDwellWaitsForDefaultIntervalAndFreshTargetBeforeRepeating() async throws {
         let fixture = try Fixture.make(hover: true)
-        defer { fixture.manager.removeAll() }
+        defer { fixture.destroy() }
         let window = try fixture.window()
         let started = expectation(description: "Dwell armed")
         fixture.dwell.onStart = { started.fulfill() }
@@ -200,17 +228,17 @@ final class ParkingEdgeInteractionTests: XCTestCase {
         await firstTask.value
         XCTAssertEqual(fixture.activations, 1)
         window.updateHover()
+        fixture.manager.apply([fixture.mask(hover: true)])
         XCTAssertNil(window.dwellTask)
         XCTAssertEqual(fixture.dwell.durations.count, 1)
 
-        fixture.pointer.x -= 40
-        window.updateHover()
-        fixture.pointer.x += 40
-        let reentered = expectation(description: "New entry armed")
-        fixture.dwell.onStart = { reentered.fulfill() }
-        window.updateHover()
+        let repeated = expectation(description: "Fresh target armed")
+        fixture.dwell.onStart = { repeated.fulfill() }
+        fixture.manager.apply([fixture.mask(hover: true, target: 2)])
         let secondTask = try XCTUnwrap(window.dwellTask)
-        await fulfillment(of: [reentered])
+        await fulfillment(of: [repeated])
+        XCTAssertEqual(fixture.activations, 1)
+        XCTAssertEqual(fixture.dwell.durations, [.milliseconds(1500), .milliseconds(1500)])
         fixture.dwell.complete()
         await secondTask.value
         XCTAssertEqual(fixture.activations, 2)
@@ -219,6 +247,7 @@ final class ParkingEdgeInteractionTests: XCTestCase {
     func testLeavingOrRemovingMaskCancelsPendingDwell() async throws {
         for remove in [false, true] {
             let fixture = try Fixture.make(hover: true)
+            defer { fixture.destroy() }
             let window = try fixture.window()
             let started = expectation(description: "Dwell armed")
             fixture.dwell.onStart = { started.fulfill() }
@@ -235,14 +264,13 @@ final class ParkingEdgeInteractionTests: XCTestCase {
             await task.value
             XCTAssertEqual(fixture.activations, 0)
             XCTAssertNil(window.dwellTask)
-            fixture.manager.removeAll()
         }
     }
 
     func testChangedTargetOrBlockedInputCannotActivateAfterDwell() async throws {
         for changeTarget in [false, true] {
             let fixture = try Fixture.make(hover: true)
-            defer { fixture.manager.removeAll() }
+            defer { fixture.destroy() }
             let window = try fixture.window()
             let started = expectation(description: "Dwell armed")
             fixture.dwell.onStart = { started.fulfill() }
@@ -263,7 +291,7 @@ final class ParkingEdgeInteractionTests: XCTestCase {
 
     func testMovingIntoTransparentFinCornerCancelsContinuousHover() async throws {
         let fixture = try Fixture.make(hover: true)
-        defer { fixture.manager.removeAll() }
+        defer { fixture.destroy() }
         let window = try fixture.window()
         let started = expectation(description: "Dwell armed")
         fixture.dwell.onStart = { started.fulfill() }

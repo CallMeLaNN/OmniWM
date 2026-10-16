@@ -95,6 +95,13 @@ final class MouseWarpHandler: NSObject {
         _ = attemptWarp(from: lastMonitor, location: location, margin: margin)
     }
 
+    func notePointerEdgeCrossing(to target: Monitor.ID) {
+        guard let controller else { return }
+        state.lastMonitorId = target
+        state.lastSampleAt = Date()
+        _ = controller.workspaceManager.setInteractionMonitor(target)
+    }
+
     private func attemptWarp(from sourceMonitor: Monitor, location: CGPoint, margin: CGFloat) -> Bool {
         guard let controller else { return false }
         guard let crossing = MouseWarpGeometry.crossing(
@@ -225,6 +232,7 @@ final class MouseWarpHandler: NSObject {
 
     func noteProgrammaticCursorMove(to location: CGPoint) {
         guard let controller else { return }
+        controller.pointerEdgeBarrier.noteProgrammaticMove(to: location)
         guard let monitor = controller.workspaceManager.monitors.first(where: { $0.frame.contains(location) }) else {
             return
         }

@@ -21,18 +21,27 @@ enum MouseWarpGeometry {
 
     static func crossing(location: CGPoint, frame: CGRect, margin: CGFloat) -> Crossing? {
         if location.x <= frame.minX + margin {
-            return Crossing(direction: .left, entryEdge: .right, ratio: yRatio(location, frame))
+            return crossing(toward: .left, location: location, frame: frame)
         }
         if location.x >= frame.maxX - margin {
-            return Crossing(direction: .right, entryEdge: .left, ratio: yRatio(location, frame))
+            return crossing(toward: .right, location: location, frame: frame)
         }
         if location.y >= frame.maxY - margin {
-            return Crossing(direction: .up, entryEdge: .bottom, ratio: xRatio(location, frame))
+            return crossing(toward: .up, location: location, frame: frame)
         }
         if location.y <= frame.minY + margin {
-            return Crossing(direction: .down, entryEdge: .top, ratio: xRatio(location, frame))
+            return crossing(toward: .down, location: location, frame: frame)
         }
         return nil
+    }
+
+    static func crossing(toward direction: Direction, location: CGPoint, frame: CGRect) -> Crossing {
+        switch direction {
+        case .left: Crossing(direction: .left, entryEdge: .right, ratio: yRatio(location, frame))
+        case .right: Crossing(direction: .right, entryEdge: .left, ratio: yRatio(location, frame))
+        case .up: Crossing(direction: .up, entryEdge: .bottom, ratio: xRatio(location, frame))
+        case .down: Crossing(direction: .down, entryEdge: .top, ratio: xRatio(location, frame))
+        }
     }
 
     static func destinationPoint(on frame: CGRect, entryEdge: Edge, ratio: CGFloat, margin: CGFloat) -> CGPoint {

@@ -166981,7 +166981,9 @@
     },
     "Use Global" : {
 
-    }
+    },
+    "Edge navigation interval" : {},
+    "Hover at a Niri screen edge to move one column after this interval, then repeat while the pointer stays on the edge or preview. Move away to stop." : {}
   },
   "version" : "1.0"
 }
