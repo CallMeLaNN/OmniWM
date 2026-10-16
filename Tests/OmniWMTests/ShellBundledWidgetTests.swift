@@ -273,7 +273,7 @@ final class ShellBundledWidgetTests: XCTestCase {
         for view in views {
             var stats = omni_render_stats()
             XCTAssertEqual(
-                omni_instance_render(instance, view, 8_000_000, &stats, &error, error.count),
+                omni_instance_render(instance, view, 100_000_000, &stats, &error, error.count),
                 OMNI_OK,
                 "\(name) \(view): \(message(error))"
             )

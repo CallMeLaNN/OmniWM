@@ -18,6 +18,7 @@ print $starts "$tag\n";
 close($starts) or die $!;
 sub emit { print encode_json($_[0]), "\n" or die $!; }
 sub finish {
+    $SIG{'TERM'} = 'IGNORE';
     open(my $out, '>', $closed) or die $!;
     print $out $tag;
     close($out) or die $!;

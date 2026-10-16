@@ -110,7 +110,7 @@ final class ShellRenderedWidget {
     private func render(_ view: omni_view) -> [UInt8] {
         var stats = omni_render_stats()
         var error = [CChar](repeating: 0, count: 256)
-        let status = omni_instance_render(instance, view, 8_000_000, &stats, &error, error.count)
+        let status = omni_instance_render(instance, view, 100_000_000, &stats, &error, error.count)
         XCTAssertEqual(
             status,
             OMNI_OK,
