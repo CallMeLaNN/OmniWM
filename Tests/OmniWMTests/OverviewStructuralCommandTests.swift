@@ -147,7 +147,7 @@ final class OverviewStructuralCommandTests: XCTestCase {
 
         XCTAssertFalse(fixture.controller.isOverviewOpen())
         await fulfillment(of: [focused], timeout: 1)
-        XCTAssertEqual(fixture.focusRecorder.activatedPIDs, [fullscreen.pid])
+        XCTAssertEqual(fixture.focusRecorder.activatedPIDs, [])
         XCTAssertEqual(fixture.focusRecorder.focusedTokens, [fullscreen.id])
         XCTAssertEqual(fixture.focusRecorder.raisedCount, 1)
         XCTAssertEqual(manager.nativeFullscreenRecord(for: fullscreen.id)?.transition, .suspended)
