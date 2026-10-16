@@ -7,15 +7,20 @@ import Foundation
 import XCTest
 
 final class InputTapThreadTests: XCTestCase {
-    func testInputTapThreadStartsAndStops() {
+    func testInputTapThreadLifecycleRestart() {
         let thread = InputTapThread()
-        let runLoop = thread.startAndGetRunLoop()
-        XCTAssertNotNil(runLoop)
+        let loop1 = thread.startAndGetRunLoop()
+        XCTAssertNotNil(loop1)
+        thread.stop()
+
+        let loop2 = thread.startAndGetRunLoop()
+        XCTAssertNotNil(loop2)
+        XCTAssertFalse(loop1 === loop2)
         thread.stop()
     }
 
-    func testTapSuppressionStateThreadSafety() {
-        let state = TapSuppressionState()
+    func testTapFilterSnapshotThreadSafety() {
+        let thread = InputTapThread()
         let iterations = 1000
         let group = DispatchGroup()
 
@@ -24,17 +29,17 @@ final class InputTapThreadTests: XCTestCase {
             DispatchQueue.global().async {
                 for j in 0 ..< iterations {
                     if (i + j) % 2 == 0 {
-                        state.update {
-                            $0.capturedInteractionButton = .left
-                            $0.isTrackpadSwipeActive = true
+                        thread.updateFilterSnapshot {
+                            $0.activeCapture = .left
+                            $0.gestureActiveOrLatched = true
                         }
                     } else {
-                        state.update {
-                            $0.capturedInteractionButton = nil
-                            $0.isTrackpadSwipeActive = false
+                        thread.updateFilterSnapshot {
+                            $0.activeCapture = nil
+                            $0.gestureActiveOrLatched = false
                         }
                     }
-                    _ = state.snapshot
+                    _ = thread.filterSnapshot
                 }
                 group.leave()
             }
@@ -44,40 +49,112 @@ final class InputTapThreadTests: XCTestCase {
     }
 
     @MainActor
-    func testProcessTapCallbackOnDedicatedThreadSuppressesCapturedInteraction() throws {
+    func testFastPathPassesUncapturedClicksAndDrags() throws {
         let controller = makeController()
         let handler = controller.mouseEventHandler
         handler.setup()
         defer { handler.cleanup() }
 
         let source = try XCTUnwrap(CGEventSource(stateID: .combinedSessionState))
-        let event = try XCTUnwrap(CGEvent(
+        let leftDown = try XCTUnwrap(CGEvent(
+            mouseEventSource: source,
+            mouseType: .leftMouseDown,
+            mouseCursorPosition: CGPoint(x: 100, y: 100),
+            mouseButton: .left
+        ))
+        XCTAssertFalse(MouseEventHandler.processTapCallback(type: .leftMouseDown, event: leftDown))
+
+        let leftDrag = try XCTUnwrap(CGEvent(
+            mouseEventSource: source,
+            mouseType: .leftMouseDragged,
+            mouseCursorPosition: CGPoint(x: 110, y: 100),
+            mouseButton: .left
+        ))
+        XCTAssertFalse(MouseEventHandler.processTapCallback(type: .leftMouseDragged, event: leftDrag))
+
+        let rightDown = try XCTUnwrap(CGEvent(
+            mouseEventSource: source,
+            mouseType: .rightMouseDown,
+            mouseCursorPosition: CGPoint(x: 100, y: 100),
+            mouseButton: .right
+        ))
+        XCTAssertFalse(MouseEventHandler.processTapCallback(type: .rightMouseDown, event: rightDown))
+    }
+
+    @MainActor
+    func testFastPathPassesUnmodifiedScrollAndTwoFingerTrackpadScroll() throws {
+        let controller = makeController()
+        let handler = controller.mouseEventHandler
+        handler.setup()
+        defer { handler.cleanup() }
+
+        let source = try XCTUnwrap(CGEventSource(stateID: .combinedSessionState))
+        let mouseWheel = try XCTUnwrap(CGEvent(
+            scrollWheelEvent2Source: source,
+            units: .pixel,
+            wheelCount: 1,
+            wheel1: -10,
+            wheel2: 0,
+            wheel3: 0
+        ))
+        XCTAssertFalse(MouseEventHandler.processTapCallback(type: .scrollWheel, event: mouseWheel))
+
+        let trackpadScroll = try XCTUnwrap(CGEvent(
+            scrollWheelEvent2Source: source,
+            units: .pixel,
+            wheelCount: 1,
+            wheel1: -10,
+            wheel2: 0,
+            wheel3: 0
+        ))
+        trackpadScroll.setIntegerValueField(.scrollWheelEventScrollPhase, value: Int64(CGScrollPhase.changed.rawValue))
+
+        handler.inputTapThread.touchCountProvider = { 2 }
+        XCTAssertFalse(MouseEventHandler.processTapCallback(type: .scrollWheel, event: trackpadScroll))
+
+        handler.inputTapThread.touchCountProvider = { 0 }
+        trackpadScroll.setIntegerValueField(.scrollWheelEventScrollPhase, value: 0)
+        trackpadScroll.setIntegerValueField(
+            .scrollWheelEventMomentumPhase,
+            value: Int64(CGScrollPhase.changed.rawValue)
+        )
+        XCTAssertFalse(MouseEventHandler.processTapCallback(type: .scrollWheel, event: trackpadScroll))
+    }
+
+    @MainActor
+    func testAuthoritativePathSuppressesCapturedInteraction() throws {
+        let controller = makeController()
+        let handler = controller.mouseEventHandler
+        handler.setup()
+        defer { handler.cleanup() }
+
+        let source = try XCTUnwrap(CGEventSource(stateID: .combinedSessionState))
+        let drag = try XCTUnwrap(CGEvent(
             mouseEventSource: source,
             mouseType: .leftMouseDragged,
             mouseCursorPosition: CGPoint(x: 100, y: 100),
             mouseButton: .left
         ))
 
-        // When uncaptured: background thread tap callback must NOT suppress
-        XCTAssertFalse(MouseEventHandler.processTapCallback(type: .leftMouseDragged, event: event, isMainThread: false))
+        XCTAssertFalse(MouseEventHandler.processTapCallback(type: .leftMouseDragged, event: drag))
 
-        // When captured: background thread tap callback MUST suppress
-        handler.state.capturedInteractionButton = MouseEventHandler.MouseButton.left
-        XCTAssertTrue(MouseEventHandler.processTapCallback(type: .leftMouseDragged, event: event, isMainThread: false))
+        handler.state.capturedInteractionButton = .left
+        XCTAssertEqual(handler.inputTapThread.filterSnapshot.activeCapture, .left)
+        XCTAssertTrue(MouseEventHandler.processTapCallback(type: .leftMouseDragged, event: drag))
 
-        // On release: background thread tap callback suppresses and clears captured interaction
         let upEvent = try XCTUnwrap(CGEvent(
             mouseEventSource: source,
             mouseType: .leftMouseUp,
             mouseCursorPosition: CGPoint(x: 100, y: 100),
             mouseButton: .left
         ))
-        XCTAssertTrue(MouseEventHandler.processTapCallback(type: .leftMouseUp, event: upEvent, isMainThread: false))
-        XCTAssertNil(handler.tapSuppressionState.snapshot.capturedInteractionButton)
+        XCTAssertTrue(MouseEventHandler.processTapCallback(type: .leftMouseUp, event: upEvent))
+        XCTAssertNil(handler.state.capturedInteractionButton)
+        XCTAssertNil(handler.inputTapThread.filterSnapshot.activeCapture)
     }
 
     @MainActor
-    func testProcessTapCallbackOnDedicatedThreadLeavesNormalScrollingUnsuppressed() throws {
+    func testAuthoritativePathSuppressesTrackpadWhenGestureActiveOrLatched() throws {
         let controller = makeController()
         let handler = controller.mouseEventHandler
         handler.setup()
@@ -92,18 +169,43 @@ final class InputTapThreadTests: XCTestCase {
             wheel2: 0,
             wheel3: 0
         ))
-
-        // Normal scroll with no gesture or modifiers: MUST NOT suppress on background tap thread
-        XCTAssertFalse(MouseEventHandler.processTapCallback(
-            type: .scrollWheel,
-            event: scrollEvent,
-            isMainThread: false
-        ))
-
-        // When trackpad swipe is active: MUST suppress on background tap thread
-        handler.tapSuppressionState.update { $0.isTrackpadSwipeActive = true }
         scrollEvent.setIntegerValueField(.scrollWheelEventScrollPhase, value: Int64(CGScrollPhase.changed.rawValue))
-        XCTAssertTrue(MouseEventHandler.processTapCallback(type: .scrollWheel, event: scrollEvent, isMainThread: false))
+
+        handler.state.gesturePhase = .committed
+        XCTAssertTrue(handler.inputTapThread.filterSnapshot.gestureActiveOrLatched)
+        XCTAssertTrue(MouseEventHandler.processTapCallback(type: .scrollWheel, event: scrollEvent))
+
+        handler.state.gesturePhase = .idle
+        handler.state.consumeTrackpadScrollUntilAllTouchesLift = true
+        XCTAssertTrue(handler.inputTapThread.filterSnapshot.gestureActiveOrLatched)
+        XCTAssertTrue(MouseEventHandler.processTapCallback(type: .scrollWheel, event: scrollEvent))
+
+        handler.state.consumeTrackpadScrollUntilAllTouchesLift = false
+        handler.inputTapThread.touchCountProvider = { 3 }
+        XCTAssertFalse(handler.inputTapThread.filterSnapshot.gestureActiveOrLatched)
+        XCTAssertFalse(MouseEventHandler.processTapCallback(type: .scrollWheel, event: scrollEvent))
+    }
+
+    @MainActor
+    func testOtherMouseButtonClaimedVsUnclaimed() throws {
+        let controller = makeController()
+        let handler = controller.mouseEventHandler
+        handler.setup()
+        defer { handler.cleanup() }
+
+        let source = try XCTUnwrap(CGEventSource(stateID: .combinedSessionState))
+        let event = try XCTUnwrap(CGEvent(
+            mouseEventSource: source,
+            mouseType: .otherMouseDown,
+            mouseCursorPosition: CGPoint(x: 100, y: 100),
+            mouseButton: .center
+        ))
+        event.setIntegerValueField(.mouseEventButtonNumber, value: 5)
+
+        XCTAssertFalse(MouseEventHandler.processTapCallback(type: .otherMouseDown, event: event))
+
+        handler.inputTapThread.updateFilterSnapshot { $0.claimedOtherButtons.insert(5) }
+        XCTAssertFalse(MouseEventHandler.processTapCallback(type: .otherMouseDown, event: event))
     }
 
     @MainActor

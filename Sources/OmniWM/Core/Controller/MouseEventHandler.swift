@@ -9,11 +9,17 @@ final class MouseEventHandler {
     nonisolated(unsafe) weak static var _instance: MouseEventHandler?
 
     weak var controller: WMController?
-    let tapSuppressionState = TapSuppressionState()
     let inputTapThread = InputTapThread()
     var state = MouseInputState() {
         didSet {
-            syncTapSuppressionState()
+            if oldValue.capturedInteractionButton != state.capturedInteractionButton
+                || oldValue.capturedOtherMouseButton != state.capturedOtherMouseButton
+                || oldValue.gesturePhase != state.gesturePhase
+                || oldValue.consumeTrackpadScrollUntilAllTouchesLift != state.consumeTrackpadScrollUntilAllTouchesLift
+                || oldValue.suppressTrackpadMomentumScroll != state.suppressTrackpadMomentumScroll
+            {
+                syncTapFilterSnapshot()
+            }
         }
     }
 
@@ -52,6 +58,9 @@ final class MouseEventHandler {
             self?.resetForMultitouchSourceReplacement()
         }
         multitouchSource = source
+        inputTapThread.touchCountProvider = { [weak mailbox = source.rawFrameMailbox] in
+            mailbox?.activePhysicalFingerCount ?? 0
+        }
         if performanceCounters != nil, current !== source {
             source.beginPerformanceCapture()
         }
@@ -70,6 +79,7 @@ final class MouseEventHandler {
         state.capturedInteractionButton = nil
         state.capturedOtherMouseButton = nil
         tearDownEventTaps()
+        inputTapThread.touchCountProvider = nil
         inputTapThread.stop()
         let retiringMultitouchSource = multitouchSource
         if retiringMultitouchSource?.shutdown() != false {
@@ -100,6 +110,7 @@ final class MouseEventHandler {
             }
         } else {
             let retiringMultitouchSource = multitouchSource
+            inputTapThread.touchCountProvider = nil
             if retiringMultitouchSource?.shutdown() != false {
                 if let retiringMultitouchSource {
                     accumulateRetiredMultitouchPerformance(from: retiringMultitouchSource)
@@ -163,6 +174,7 @@ final class MouseEventHandler {
         state.suppressTrackpadMomentumScroll = false
         state.contactSessions = MultitouchContactSessions()
         clearConsumedTrackpadSessions()
+        inputTapThread.touchCountProvider = nil
     }
 
     func drainTrackpadFrames(for senderId: UInt64, at location: CGPoint) {
@@ -250,24 +262,34 @@ final class MouseEventHandler {
         }
     }
 
-    func syncTapSuppressionState() {
+    func syncTapFilterSnapshot() {
         let capturedButton = state.capturedInteractionButton
-        let capturedOther = state.capturedOtherMouseButton
-        let otherButtons = claimedOtherMouseButtons()
+        var resolvedOtherButtons = claimedOtherMouseButtons()
+        if let capturedOther = state.capturedOtherMouseButton {
+            resolvedOtherButtons.insert(capturedOther)
+        }
+        let otherButtons = resolvedOtherButtons
         let resizeFlags = controller?.settings.gestures.mouseResizeModifierKey.cgEventFlag ?? []
         let scrollFlags = controller?.settings.gestures.scrollModifierKey.cgEventFlag ?? []
-        let swipeActive = isTrackpadSwipeSessionActive
-        let latched = state.consumeTrackpadScrollUntilAllTouchesLift || state.suppressTrackpadMomentumScroll
+        let minFingers: Int
+        if let controller, controller.settings.effectiveTrackpadGesturesEnabled {
+            let minCount = trackpadGestureConfig?.minimumFingerCount ?? 3
+            minFingers = minCount == 0 ? .max : minCount
+        } else {
+            minFingers = .max
+        }
+        let latched = state.gesturePhase != .idle
+            || state.consumeTrackpadScrollUntilAllTouchesLift
+            || state.suppressTrackpadMomentumScroll
         let inputSuppressed = isInputSuppressed
 
-        tapSuppressionState.update { snapshot in
-            snapshot.capturedInteractionButton = capturedButton
-            snapshot.capturedOtherMouseButton = capturedOther
-            snapshot.claimedOtherMouseButtons = otherButtons
-            snapshot.mouseResizeModifierFlags = resizeFlags
-            snapshot.scrollModifierFlags = scrollFlags
-            snapshot.isTrackpadSwipeActive = swipeActive
-            snapshot.isTrackpadLatched = latched
+        inputTapThread.updateFilterSnapshot { snapshot in
+            snapshot.activeCapture = capturedButton
+            snapshot.claimedOtherButtons = otherButtons
+            snapshot.resizeModifier = resizeFlags
+            snapshot.scrollModifier = scrollFlags
+            snapshot.minGestureFingers = minFingers
+            snapshot.gestureActiveOrLatched = latched
             snapshot.isInputSuppressed = inputSuppressed
         }
     }
