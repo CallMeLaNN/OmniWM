@@ -1,5 +1,5 @@
 -- SPDX-License-Identifier: GPL-2.0-only
--- Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+-- Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 local SAMPLES = 30
 local RING = "M12 2.5 A9.5 9.5 0 1 1 12 21.5 A9.5 9.5 0 1 1 12 2.5"
