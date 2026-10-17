@@ -161,6 +161,9 @@ final class OverviewDragSession {
     }
 
     private func updateAutoScrollDragResolution(on monitorId: Monitor.ID) {
+        let stripScroll = stripAutoScrollParameters(at: autoScroll.pointer, on: monitorId)
+        autoScroll.horizontalVelocity = stripScroll.velocity
+        autoScroll.stripWorkspaceId = stripScroll.workspaceId
         let resolution = resolveDragTarget(at: autoScroll.pointer, on: monitorId)
         projection.setDragTarget(resolution.target, for: monitorId)
         updateFeedback(resolution)
