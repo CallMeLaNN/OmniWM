@@ -364,15 +364,14 @@ final class PointerEdgeBarrier: Sendable {
             current.topology.isEnabled = false
             current.recognizer.reset()
         }
-        let runLoop = tapState.withLock { current -> CFRunLoop? in
+        tapState.withLock { current in
             current.stopRequested = true
-            return current.runLoop
+            guard let runLoop = current.runLoop else { return }
+            CFRunLoopPerformBlock(runLoop, CFRunLoopMode.commonModes.rawValue) {
+                CFRunLoopStop(CFRunLoopGetCurrent())
+            }
+            CFRunLoopWakeUp(runLoop)
         }
-        guard let runLoop else { return }
-        CFRunLoopPerformBlock(runLoop, CFRunLoopMode.commonModes.rawValue) {
-            CFRunLoopStop(CFRunLoopGetCurrent())
-        }
-        CFRunLoopWakeUp(runLoop)
     }
 
     private func runTap() {
