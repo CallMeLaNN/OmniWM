@@ -10,41 +10,36 @@ final class WorkspaceBarNativeFullscreenSettingsTests: XCTestCase {
     private static let builtInUUID = "11111111-1111-4111-8111-111111111111"
     private static let externalUUID = "22222222-2222-4222-8222-222222222222"
 
-    func testDefaultsRoundTrip() throws {
+    func testNativeFullscreenVisibilityValuesRoundTrip() throws {
         XCTAssertFalse(SettingsExport.defaults().workspaceBar.hideInNativeFullscreen)
-
-        let data = try SettingsTOMLCodec.encode(.defaults())
-        let toml = String(decoding: data, as: UTF8.self)
-        XCTAssertTrue(toml.contains("hideInNativeFullscreen = false"))
-
-        let decoded = try SettingsTOMLCodec.decode(data)
-        XCTAssertFalse(decoded.workspaceBar.hideInNativeFullscreen)
+        for (value, line) in [
+            (false, "hideInNativeFullscreen = false"),
+            (true, "hideInNativeFullscreen = true")
+        ] {
+            var export = SettingsExport.defaults()
+            export.workspaceBar.hideInNativeFullscreen = value
+            let data = try SettingsTOMLCodec.encode(export)
+            XCTAssertTrue(String(decoding: data, as: UTF8.self).contains(line))
+            let decoded = try SettingsTOMLCodec.decode(data)
+            XCTAssertEqual(decoded.workspaceBar.hideInNativeFullscreen, value)
+        }
     }
 
-    func testNonDefaultRoundTrip() throws {
-        var export = SettingsExport.defaults()
-        export.workspaceBar.hideInNativeFullscreen = true
-
-        let data = try SettingsTOMLCodec.encode(export)
-        XCTAssertTrue(String(decoding: data, as: UTF8.self).contains("hideInNativeFullscreen = true"))
-
-        let decoded = try SettingsTOMLCodec.decode(data)
-        XCTAssertTrue(decoded.workspaceBar.hideInNativeFullscreen)
-    }
-
-    func testMissingKeyRejectsDecode() throws {
-        let toml = String(decoding: try SettingsTOMLCodec.encode(.defaults()), as: UTF8.self)
-        let withoutKey = toml
-            .split(separator: "\n", omittingEmptySubsequences: false)
-            .filter { !$0.contains("hideInNativeFullscreen") }
-            .joined(separator: "\n")
-
-        XCTAssertThrowsError(try SettingsTOMLCodec.decode(Data(withoutKey.utf8))) { error in
-            guard case let DecodingError.keyNotFound(key, context) = error else {
-                return XCTFail("expected keyNotFound, got \(error)")
+    func testMissingRequiredWorkspaceBarKeysRejectDecode() throws {
+        let canonical = String(decoding: try SettingsTOMLCodec.encode(.defaults()), as: UTF8.self)
+        for (key, line) in [
+            ("showLabels", "showLabels = true\n"),
+            ("hideInNativeFullscreen", "hideInNativeFullscreen = false\n")
+        ] {
+            XCTAssertTrue(canonical.contains(line), key)
+            let withoutKey = canonical.replacingOccurrences(of: line, with: "")
+            XCTAssertThrowsError(try SettingsTOMLCodec.decode(Data(withoutKey.utf8))) { error in
+                guard case let DecodingError.keyNotFound(actualKey, context) = error else {
+                    return XCTFail("expected keyNotFound for \(key), got \(error)")
+                }
+                XCTAssertEqual(actualKey.stringValue, key)
+                XCTAssertEqual(context.codingPath.map(\.stringValue), ["workspaceBar"])
             }
-            XCTAssertEqual(key.stringValue, "hideInNativeFullscreen")
-            XCTAssertEqual(context.codingPath.map(\.stringValue), ["workspaceBar"])
         }
     }
 
@@ -97,7 +92,7 @@ final class WorkspaceBarNativeFullscreenSettingsTests: XCTestCase {
     }
 
     @MainActor
-    func testAutoHideDoesNotReleaseReservedLayoutSpace() {
+    func testNativeFullscreenHiddenBarKeepsReservedLayoutSpace() {
         let settings = makeSettingsStore()
         settings.workspaceBar.enabled = true
         settings.workspaceBar.reserveLayoutSpace = true

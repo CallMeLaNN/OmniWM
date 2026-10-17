@@ -11,6 +11,11 @@ final class WorkspaceCatalogMaintenanceTests: XCTestCase {
     func testGarbageCollectionPreservesVisibleEmptyWorkspaceOnEachMonitor() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("OmniWMWorkspaceCatalogMaintenance-\(UUID().uuidString)", isDirectory: true)
+        addTeardownBlock {
+            if FileManager.default.fileExists(atPath: directory.path) {
+                try FileManager.default.removeItem(at: directory)
+            }
+        }
         let settings = SettingsStore(
             persistence: SettingsFilePersistence(directory: directory, startWatching: false, deferSaves: false),
             runtimeState: RuntimeStateStore(directory: directory.appendingPathComponent("state"), deferSaves: false),

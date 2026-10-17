@@ -802,7 +802,7 @@ extension NiriDirectionalOrientationTests {
 
         let workingFrame = controller.insetWorkingFrame(for: sourceMonitor)
         let gap = controller.innerGap(for: sourceMonitor)
-        _ = engine.calculateCombinedLayoutWithVisibility(
+        _ = engine.calculateCombinedLayoutUsingPools(
             in: workspaceId,
             monitor: sourceMonitor,
             gaps: LayoutGaps(
@@ -856,7 +856,7 @@ extension NiriDirectionalOrientationTests {
 
         for offset in sampleOffsets {
             let sampleTime = startTime + offset
-            let layout = fixture.engine.calculateCombinedLayoutWithVisibility(
+            let layout = fixture.engine.calculateCombinedLayoutUsingPools(
                 in: fixture.workspaceId,
                 monitor: fixture.sourceMonitor,
                 gaps: gaps,

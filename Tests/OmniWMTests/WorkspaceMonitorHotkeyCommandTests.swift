@@ -36,7 +36,7 @@ final class WorkspaceMonitorHotkeyCommandTests: XCTestCase {
     }
 
     func testWorkspaceSlotActionsAreRegistered() throws {
-        for slot in ActionCatalog.workspaceSlotRange {
+        for slot in 1 ... 9 {
             let cases: [(command: HotkeyCommand, id: String, title: String, ipcName: IPCCommandName)] = [
                 (
                     .workspace(.switchSlot(slot)),

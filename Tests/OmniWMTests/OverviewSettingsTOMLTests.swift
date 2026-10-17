@@ -252,41 +252,6 @@ final class OverviewSettingsTOMLTests: XCTestCase {
         }
     }
 
-    private func removingValue(in toml: String, table: String, key: String) -> String {
-        transform(toml) { currentTable, line in
-            guard currentTable == table, line.hasPrefix("\(key) = ") else { return line }
-            return nil
-        }
-    }
-
-    private func removingTable(_ table: String, from toml: String) -> String {
-        var currentTable = ""
-        return toml
-            .split(separator: "\n", omittingEmptySubsequences: false)
-            .compactMap { substring -> String? in
-                let line = String(substring)
-                if line.hasPrefix("["), line.hasSuffix("]") {
-                    currentTable = String(line.dropFirst().dropLast())
-                }
-                return currentTable == table ? nil : line
-            }
-            .joined(separator: "\n")
-    }
-
-    private func removingOverviewTables(from toml: String) -> String {
-        var currentTable = ""
-        return toml
-            .split(separator: "\n", omittingEmptySubsequences: false)
-            .compactMap { substring -> String? in
-                let line = String(substring)
-                if line.hasPrefix("["), line.hasSuffix("]") {
-                    currentTable = String(line.dropFirst().dropLast())
-                }
-                return currentTable == "overview" || currentTable.hasPrefix("overview.") ? nil : line
-            }
-            .joined(separator: "\n")
-    }
-
     private func transform(
         _ toml: String,
         _ operation: (_ table: String, _ line: String) -> String?

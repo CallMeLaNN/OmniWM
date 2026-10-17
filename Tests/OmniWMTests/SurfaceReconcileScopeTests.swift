@@ -29,16 +29,6 @@ final class SurfaceReconcileScopeTests: XCTestCase {
         XCTAssertFalse(reconciler.reconcileScheduled)
     }
 
-    func testRestackSchedulesOnlyBorderAndForcesItsOrdering() {
-        let controller = WindowAdmissionTestSupport.controller(prefix: "SurfaceReconcileScopeTests")
-        let reconciler = controller.surfaceReconciler
-
-        reconciler.noteRestackOccurred()
-
-        XCTAssertEqual(reconciler.pendingReconcileScope, .borderOnly)
-        XCTAssertTrue(reconciler.forceOrderingOnNextReconcile)
-    }
-
     func testForcedBorderRestackReordersAppliedAuxiliarySurfaces() {
         let controller = WindowAdmissionTestSupport.controller(prefix: "SurfaceReconcileScopeTests")
         var applies: [AuxiliaryApply] = []
@@ -63,6 +53,8 @@ final class SurfaceReconcileScopeTests: XCTestCase {
         XCTAssertTrue(applies.isEmpty)
 
         reconciler.noteRestackOccurred()
+        XCTAssertEqual(reconciler.pendingReconcileScope, .borderOnly)
+        XCTAssertTrue(reconciler.forceOrderingOnNextReconcile)
         reconciler.reconcileNow()
 
         XCTAssertEqual(

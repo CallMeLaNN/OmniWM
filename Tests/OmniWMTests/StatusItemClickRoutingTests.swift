@@ -12,20 +12,20 @@ final class StatusItemClickRoutingTests: XCTestCase {
         XCTAssertEqual(StatusBarController.labeledImagePosition(showIcon: false, hasStateIcon: true), .imageLeft)
     }
 
-    func testRightClickOpensHiddenIconsBar() {
-        XCTAssertEqual(StatusBarController.clickRoute(isRightClick: true, optionHeld: false), .hiddenIconsBar)
-    }
-
-    func testOptionLeftClickOpensHiddenIconsBar() {
-        XCTAssertEqual(StatusBarController.clickRoute(isRightClick: false, optionHeld: true), .hiddenIconsBar)
-    }
-
-    func testOptionRightClickOpensHiddenIconsBar() {
-        XCTAssertEqual(StatusBarController.clickRoute(isRightClick: true, optionHeld: true), .hiddenIconsBar)
-    }
-
-    func testPlainLeftClickOpensMenu() {
-        XCTAssertEqual(StatusBarController.clickRoute(isRightClick: false, optionHeld: false), .menu)
+    func testClickRoutesForButtonAndOption() {
+        let cases: [(right: Bool, option: Bool, expected: StatusBarController.StatusItemClickRoute)] = [
+            (false, false, .menu),
+            (true, false, .hiddenIconsBar),
+            (false, true, .hiddenIconsBar),
+            (true, true, .hiddenIconsBar)
+        ]
+        for row in cases {
+            XCTAssertEqual(
+                StatusBarController.clickRoute(isRightClick: row.right, optionHeld: row.option),
+                row.expected,
+                "right=\(row.right) option=\(row.option)"
+            )
+        }
     }
 
     func testAccessibilityValueIncludesWorkspaceAppAndRecordingState() {

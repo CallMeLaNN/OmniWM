@@ -74,28 +74,6 @@ final class StatusBarOwnerContractTests: XCTestCase {
         XCTAssertEqual(try savedExport(settings), desired)
     }
 
-    func testBindingRetainsItsMutationOwnerUntilReleased() throws {
-        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        defer { try? FileManager.default.removeItem(at: directory) }
-        weak var owner: SettingsStore?
-        var binding: Binding<Bool>?
-        var fileURL: URL?
-        do {
-            let settings = makeSettings(directory: directory)
-            owner = settings
-            fileURL = settings.settingsFileURL
-            binding = workspaceBinding(settings)
-        }
-
-        XCTAssertNotNil(owner)
-        XCTAssertEqual(binding?.wrappedValue, false)
-        binding?.wrappedValue = true
-        let saved = try SettingsTOMLCodec.decode(Data(contentsOf: XCTUnwrap(fileURL)))
-        XCTAssertTrue(saved.statusBar.showWorkspaceName)
-        binding = nil
-        XCTAssertNil(owner)
-    }
-
     func testBindingObserverInvalidatesBeforeTheSynchronousSave() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -117,24 +95,15 @@ final class StatusBarOwnerContractTests: XCTestCase {
     }
 
     private func workspaceBinding(_ settings: SettingsStore) -> Binding<Bool> {
-        Binding(
-            get: { [settings] in settings.statusBar.showWorkspaceName },
-            set: { [settings] in settings.statusBar.showWorkspaceName = $0 }
-        )
+        Bindable(settings.statusBar).showWorkspaceName
     }
 
     private func appNamesBinding(_ settings: SettingsStore) -> Binding<Bool> {
-        Binding(
-            get: { [settings] in settings.statusBar.showAppNames },
-            set: { [settings] in settings.statusBar.showAppNames = $0 }
-        )
+        Bindable(settings.statusBar).showAppNames
     }
 
     private func workspaceIdBinding(_ settings: SettingsStore) -> Binding<Bool> {
-        Binding(
-            get: { [settings] in settings.statusBar.useWorkspaceId },
-            set: { [settings] in settings.statusBar.useWorkspaceId = $0 }
-        )
+        Bindable(settings.statusBar).useWorkspaceId
     }
 
     private func savedExport(_ settings: SettingsStore) throws -> SettingsExport {

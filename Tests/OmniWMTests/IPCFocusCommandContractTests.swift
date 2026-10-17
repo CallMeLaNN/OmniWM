@@ -82,25 +82,35 @@ final class IPCFocusCommandContractTests: XCTestCase {
     }
 
     func testPayloadFocusCommandsPreserveDecodingErrorKindsSubjectsAndPaths() throws {
-        let payloadFields: [IPCFocusCommandName: String] = [
-            .spatial: "direction", .windowInColumn: "windowIndex", .column: "columnIndex"
+        let payloadFields: [(IPCFocusCommandName, String, String)] = [
+            (.spatial, "direction", "String"),
+            (.windowInColumn, "windowIndex", "Int"),
+            (.column, "columnIndex", "Int")
         ]
-        for (name, field) in payloadFields {
-            let values = [
-                nil,
-                "null",
-                "{}",
-                "false",
-                "[]",
-                #"{"\#(field)":null}"#,
-                #"{"\#(field)":false}"#,
-                #"{"\#(field)":"unknown"}"#
+        for (name, field, valueType) in payloadFields {
+            let cases: [(String?, String, String?, [String])] = [
+                (nil, "keyNotFound", "arguments", []),
+                ("null", "valueNotFound", "Dictionary<String, Any>", ["arguments"]),
+                ("{}", "keyNotFound", field, ["arguments"]),
+                ("false", "typeMismatch", "Dictionary<String, Any>", ["arguments"]),
+                ("[]", "typeMismatch", "Dictionary<String, Any>", ["arguments"]),
+                (#"{"\#(field)":null}"#, "valueNotFound", valueType, ["arguments", field]),
+                (#"{"\#(field)":false}"#, "typeMismatch", valueType, ["arguments", field]),
+                (
+                    #"{"\#(field)":"unknown"}"#,
+                    name == .spatial ? "dataCorrupted" : "typeMismatch",
+                    name == .spatial ? nil : "Int",
+                    ["arguments", field]
+                )
             ]
-            for arguments in values {
+            for (arguments, kind, subject, path) in cases {
                 let suffix = arguments.map { #", "arguments":\#($0)"# } ?? ""
                 let data = Data(#"{"name":"\#(name.rawValue)"\#(suffix)}"#.utf8)
-                let expected = try decodingFailure(IPCCommandRequest.self, data: data)
-                XCTAssertEqual(try decodingFailure(FocusEnvelope.self, data: data), expected)
+                let failure = try decodingFailure(IPCCommandRequest.self, data: data)
+                let label = String(decoding: data, as: UTF8.self)
+                XCTAssertEqual(failure.kind, kind, label)
+                XCTAssertEqual(failure.subject, subject, label)
+                XCTAssertEqual(failure.path, path, label)
             }
         }
     }

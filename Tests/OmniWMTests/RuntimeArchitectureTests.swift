@@ -188,7 +188,7 @@ final class RuntimeArchitectureTests: XCTestCase {
         XCTAssertEqual(plan.focusSession?.systemModalFocusToken, token)
     }
 
-    func testSystemModalFocusChangedClearsToken() {
+    func testSystemModalFocusChangedClearsToken() throws {
         let token = WindowToken(pid: 100, windowId: 42)
         let modalSnapshot = ReconcileSnapshot(
             topologyProfile: TopologyProfile(sortedMonitors: []),
@@ -205,7 +205,8 @@ final class RuntimeArchitectureTests: XCTestCase {
             monitors: []
         )
 
-        XCTAssertNil(plan.focusSession?.systemModalFocusToken)
+        let focusSession = try XCTUnwrap(plan.focusSession)
+        XCTAssertNil(focusSession.systemModalFocusToken)
     }
 
     func testWindowRekeyRekeysSystemModalFocusToken() {
@@ -236,7 +237,7 @@ final class RuntimeArchitectureTests: XCTestCase {
         XCTAssertEqual(plan.focusSession?.systemModalFocusToken, newToken)
     }
 
-    func testWindowRemovalClearsMatchingSystemModalFocusTokenOnly() {
+    func testWindowRemovalClearsMatchingSystemModalFocusTokenOnly() throws {
         let workspaceId = WorkspaceDescriptor.ID()
         let modalToken = WindowToken(pid: 100, windowId: 42)
         let removedToken = WindowToken(pid: 100, windowId: 43)
@@ -256,7 +257,8 @@ final class RuntimeArchitectureTests: XCTestCase {
             monitors: []
         )
 
-        XCTAssertNil(matchingPlan.focusSession?.systemModalFocusToken)
+        let focusSession = try XCTUnwrap(matchingPlan.focusSession)
+        XCTAssertNil(focusSession.systemModalFocusToken)
         XCTAssertEqual(nonmatchingPlan.focusSession?.systemModalFocusToken, modalToken)
     }
 
@@ -3974,99 +3976,38 @@ final class RuntimeArchitectureTests: XCTestCase {
     }
 
     @MainActor
-    func testFocusOnlyInvalidationDoesNotCancelPendingAXFrameObserverThroughControllerWiring() throws {
-        let controller = Self.controller()
-        let workspaceId = try XCTUnwrap(controller.workspaceManager.workspaceId(for: "1", createIfMissing: true))
-        let pid: pid_t = 765_002
-        let windowId = 765_102
-        let axRef = AXWindowRef(element: AXUIElementCreateApplication(pid), windowId: windowId)
-        let token = controller.workspaceManager.addWindow(
-            axRef,
-            pid: pid,
-            windowId: windowId,
-            to: workspaceId
-        )
-        var terminalResults: [AXFrameApplyResult] = []
-
-        controller.axManager.applyFramesParallel(
-            [.init(pid: pid, window: axRef, frame: CGRect(x: 10, y: 20, width: 300, height: 200))]
-        ) { result in
-            terminalResults.append(result)
+    func testNonInvalidatingMutationsPreservePendingAXFrameObserverThroughControllerWiring() throws {
+        enum Mutation { case focus, layout, suppressedHidden }
+        let cases: [(Mutation, pid_t, Int)] = [
+            (.focus, 765_002, 765_102), (.layout, 765_008, 765_108), (.suppressedHidden, 765_003, 765_103)
+        ]
+        for (mutation, pid, windowId) in cases {
+            let controller = Self.controller()
+            let workspaceId = try XCTUnwrap(controller.workspaceManager.workspaceId(for: "1", createIfMissing: true))
+            let axRef = AXWindowRef(element: AXUIElementCreateApplication(pid), windowId: windowId)
+            let token = controller.workspaceManager.addWindow(axRef, pid: pid, windowId: windowId, to: workspaceId)
+            var terminalResults: [AXFrameApplyResult] = []
+            controller.axManager.applyFramesParallel(
+                [.init(pid: pid, window: axRef, frame: CGRect(x: 10, y: 20, width: 300, height: 200))]
+            ) { terminalResults.append($0) }
+            XCTAssertTrue(terminalResults.isEmpty)
+            switch mutation {
+            case .focus:
+                _ = controller.workspaceManager.beginManagedFocusRequest(token, in: workspaceId, requestId: 7)
+            case .layout:
+                controller.workspaceManager.setManualLayoutOverride(.forceFloat, for: token)
+            case .suppressedHidden:
+                controller.withRuntimeFrameJobCancellationSuppressed {
+                    controller.workspaceManager.setHiddenState(
+                        HiddenState(proportionalPosition: .zero, referenceMonitorId: nil, reason: .workspaceInactive),
+                        for: token
+                    )
+                }
+            }
+            XCTAssertTrue(terminalResults.isEmpty)
+            controller.axManager.cancelPendingFrameJobs([(pid, windowId)], reason: "test")
+            XCTAssertEqual(terminalResults.map(\.writeResult.failureReason), [.cancelled])
         }
-        XCTAssertTrue(terminalResults.isEmpty)
-
-        _ = controller.workspaceManager.beginManagedFocusRequest(token, in: workspaceId, requestId: 7)
-        XCTAssertTrue(terminalResults.isEmpty)
-
-        controller.axManager.cancelPendingFrameJobs([(pid, windowId)], reason: "test")
-        XCTAssertEqual(terminalResults.map(\.writeResult.failureReason), [.cancelled])
-    }
-
-    @MainActor
-    func testPureLayoutInvalidationDoesNotCancelPendingAXFrameObserverThroughControllerWiring() throws {
-        let controller = Self.controller()
-        let workspaceId = try XCTUnwrap(controller.workspaceManager.workspaceId(for: "1", createIfMissing: true))
-        let pid: pid_t = 765_008
-        let windowId = 765_108
-        let axRef = AXWindowRef(element: AXUIElementCreateApplication(pid), windowId: windowId)
-        let token = controller.workspaceManager.addWindow(
-            axRef,
-            pid: pid,
-            windowId: windowId,
-            to: workspaceId
-        )
-        var terminalResults: [AXFrameApplyResult] = []
-
-        controller.axManager.applyFramesParallel(
-            [.init(pid: pid, window: axRef, frame: CGRect(x: 10, y: 20, width: 300, height: 200))]
-        ) { result in
-            terminalResults.append(result)
-        }
-        XCTAssertTrue(terminalResults.isEmpty)
-
-        controller.workspaceManager.setManualLayoutOverride(.forceFloat, for: token)
-        XCTAssertTrue(terminalResults.isEmpty)
-
-        controller.axManager.cancelPendingFrameJobs([(pid, windowId)], reason: "test")
-        XCTAssertEqual(terminalResults.map(\.writeResult.failureReason), [.cancelled])
-    }
-
-    @MainActor
-    func testSuppressedLayoutInvalidationDoesNotCancelPendingAXFrameObserverThroughControllerWiring() throws {
-        let controller = Self.controller()
-        let workspaceId = try XCTUnwrap(controller.workspaceManager.workspaceId(for: "1", createIfMissing: true))
-        let pid: pid_t = 765_003
-        let windowId = 765_103
-        let axRef = AXWindowRef(element: AXUIElementCreateApplication(pid), windowId: windowId)
-        let token = controller.workspaceManager.addWindow(
-            axRef,
-            pid: pid,
-            windowId: windowId,
-            to: workspaceId
-        )
-        var terminalResults: [AXFrameApplyResult] = []
-
-        controller.axManager.applyFramesParallel(
-            [.init(pid: pid, window: axRef, frame: CGRect(x: 10, y: 20, width: 300, height: 200))]
-        ) { result in
-            terminalResults.append(result)
-        }
-        XCTAssertTrue(terminalResults.isEmpty)
-
-        controller.withRuntimeFrameJobCancellationSuppressed {
-            controller.workspaceManager.setHiddenState(
-                HiddenState(
-                    proportionalPosition: .zero,
-                    referenceMonitorId: nil,
-                    reason: .workspaceInactive
-                ),
-                for: token
-            )
-        }
-        XCTAssertTrue(terminalResults.isEmpty)
-
-        controller.axManager.cancelPendingFrameJobs([(pid, windowId)], reason: "test")
-        XCTAssertEqual(terminalResults.map(\.writeResult.failureReason), [.cancelled])
     }
 
     @MainActor
@@ -5939,48 +5880,6 @@ final class RuntimeArchitectureTests: XCTestCase {
     }
 
     @MainActor
-    func testNativeFullscreenSpaceObservationSuspendsBeforeFocusObservation() throws {
-        let controller = Self.controller()
-        let ws = try XCTUnwrap(controller.workspaceManager.workspaceId(for: "1", createIfMissing: true))
-        _ = controller.workspaceManager.focusWorkspace(named: "1")
-        controller.niriLayoutHandler.enableNiriLayout()
-
-        let targetToken = controller.workspaceManager.addWindow(
-            AXWindowRef(element: AXUIElementCreateApplication(931_001), windowId: 931_101),
-            pid: 931_001, windowId: 931_101, to: ws
-        )
-        _ = controller.niriEngine?.addWindow(token: targetToken, to: ws, afterSelection: nil)
-
-        let fullscreenSpaceId: UInt64 = 9_310
-        controller.workspaceManager.commitSpaceTopology(
-            SpaceTopology(
-                displays: [
-                    SpaceTopology.DisplaySpaces(
-                        displayIdentifier: "test-display",
-                        spaceIds: [fullscreenSpaceId],
-                        currentSpaceId: fullscreenSpaceId
-                    )
-                ],
-                activeSpaceId: fullscreenSpaceId,
-                fullscreenSpaceIds: [fullscreenSpaceId],
-                windowSpace: [:]
-            )
-        )
-
-        XCTAssertNil(controller.workspaceManager.nativeFullscreenRecord(for: targetToken))
-
-        controller.spaceTracker.noteWindowSpace(
-            windowId: targetToken.windowId,
-            spaceId: fullscreenSpaceId
-        )
-
-        let record = try XCTUnwrap(controller.workspaceManager.nativeFullscreenRecord(for: targetToken))
-        XCTAssertEqual(record.transition, .suspended)
-        XCTAssertEqual(controller.workspaceManager.layoutReason(for: targetToken), .nativeFullscreen)
-        XCTAssertTrue(controller.workspaceManager.observedState(for: targetToken)?.isNativeFullscreen == true)
-    }
-
-    @MainActor
     func testNativeFullscreenSuspendsOnSecondaryDisplayCurrentSpace() throws {
         let controller = Self.controller()
         let ws = try XCTUnwrap(controller.workspaceManager.workspaceId(for: "1", createIfMissing: true))
@@ -6181,6 +6080,8 @@ final class RuntimeArchitectureTests: XCTestCase {
                 windowSpace: [:]
             )
         )
+
+        XCTAssertNil(controller.workspaceManager.nativeFullscreenRecord(for: targetToken))
 
         controller.spaceTracker.noteWindowSpace(
             windowId: targetToken.windowId,

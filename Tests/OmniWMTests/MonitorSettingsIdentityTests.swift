@@ -364,76 +364,82 @@ final class MonitorSettingsIdentityTests: XCTestCase {
         )
     }
 
-    func testAllOverrideTypesPersistUUIDWithoutRuntimeDisplayId() throws {
-        var export = SettingsExport.defaults()
-        export.routing.arrangements = [MonitorArrangement(monitors: [
-            MonitorRoutingSettings(
-                monitorName: "Display",
-                monitorDisplayUUID: displayUUIDA,
-                monitorDisplayId: 7,
-                gridColumn: 0,
-                gridRow: 0
-            )
-        ])]
-        export.monitorBarSettings = [
-            MonitorBarSettings(
-                monitorName: "Display",
-                monitorDisplayUUID: displayUUIDA,
-                monitorDisplayId: 7,
-                enabled: true
-            )
+    func testOverrideIdentityPersistence() throws {
+        let cases: [(String?, CGDirectDisplayID?, String, String)] = [
+            (displayUUIDA, nil, "monitorDisplayUUID =", "monitorDisplayId ="),
+            (nil, 7, "monitorDisplayId =", "monitorDisplayUUID =")
         ]
-        export.monitorOrientationSettings = [
-            MonitorOrientationSettings(
-                monitorName: "Display",
-                monitorDisplayUUID: displayUUIDA,
-                monitorDisplayId: 7,
-                orientation: .horizontal
-            )
-        ]
-        export.monitorNiriSettings = [
-            MonitorNiriSettings(
-                monitorName: "Display",
-                monitorDisplayUUID: displayUUIDA,
-                monitorDisplayId: 7,
-                visibleContainerCount: 2
-            )
-        ]
-        export.monitorDwindleSettings = [
-            MonitorDwindleSettings(
-                monitorName: "Display",
-                monitorDisplayUUID: displayUUIDA,
-                monitorDisplayId: 7,
-                smartSplit: true
-            )
-        ]
-        export.monitorGapSettings = [
-            MonitorGapSettings(
-                monitorName: "Display",
-                monitorDisplayUUID: displayUUIDA,
-                monitorDisplayId: 7,
-                innerGap: 6
-            )
-        ]
+        for (uuid, expectedRuntimeId, persistedKey, absentKey) in cases {
+            var export = SettingsExport.defaults()
+            export.routing.arrangements = [MonitorArrangement(monitors: [
+                MonitorRoutingSettings(
+                    monitorName: "Display",
+                    monitorDisplayUUID: uuid,
+                    monitorDisplayId: 7,
+                    gridColumn: 0,
+                    gridRow: 0
+                )
+            ])]
+            export.monitorBarSettings = [
+                MonitorBarSettings(
+                    monitorName: "Display",
+                    monitorDisplayUUID: uuid,
+                    monitorDisplayId: 7,
+                    enabled: true
+                )
+            ]
+            export.monitorOrientationSettings = [
+                MonitorOrientationSettings(
+                    monitorName: "Display",
+                    monitorDisplayUUID: uuid,
+                    monitorDisplayId: 7,
+                    orientation: .horizontal
+                )
+            ]
+            export.monitorNiriSettings = [
+                MonitorNiriSettings(
+                    monitorName: "Display",
+                    monitorDisplayUUID: uuid,
+                    monitorDisplayId: 7,
+                    visibleContainerCount: 2
+                )
+            ]
+            export.monitorDwindleSettings = [
+                MonitorDwindleSettings(
+                    monitorName: "Display",
+                    monitorDisplayUUID: uuid,
+                    monitorDisplayId: 7,
+                    smartSplit: true
+                )
+            ]
+            export.monitorGapSettings = [
+                MonitorGapSettings(
+                    monitorName: "Display",
+                    monitorDisplayUUID: uuid,
+                    monitorDisplayId: 7,
+                    innerGap: 6
+                )
+            ]
 
-        let data = try SettingsTOMLCodec.encode(export)
-        let toml = String(decoding: data, as: UTF8.self)
-        let decoded = try SettingsTOMLCodec.decode(data)
+            let data = try SettingsTOMLCodec.encode(export)
+            let toml = String(decoding: data, as: UTF8.self)
+            let decoded = try SettingsTOMLCodec.decode(data)
 
-        XCTAssertEqual(toml.components(separatedBy: "monitorDisplayUUID =").count - 1, 6)
-        XCTAssertFalse(toml.contains("monitorDisplayId ="))
-        XCTAssertEqual(decoded.routing.arrangements.first?.monitors.first?.monitorDisplayUUID, displayUUIDA)
-        XCTAssertEqual(decoded.monitorBarSettings.first?.monitorDisplayUUID, displayUUIDA)
-        XCTAssertEqual(decoded.monitorOrientationSettings.first?.monitorDisplayUUID, displayUUIDA)
-        XCTAssertEqual(decoded.monitorNiriSettings.first?.monitorDisplayUUID, displayUUIDA)
-        XCTAssertEqual(decoded.monitorDwindleSettings.first?.monitorDisplayUUID, displayUUIDA)
-        XCTAssertEqual(decoded.monitorGapSettings.first?.monitorDisplayUUID, displayUUIDA)
-        XCTAssertNil(decoded.routing.arrangements.first?.monitors.first?.monitorDisplayId)
-        XCTAssertNil(decoded.monitorBarSettings.first?.monitorDisplayId)
-        XCTAssertNil(decoded.monitorOrientationSettings.first?.monitorDisplayId)
-        XCTAssertNil(decoded.monitorNiriSettings.first?.monitorDisplayId)
-        XCTAssertNil(decoded.monitorDwindleSettings.first?.monitorDisplayId)
-        XCTAssertNil(decoded.monitorGapSettings.first?.monitorDisplayId)
+            XCTAssertEqual(toml.components(separatedBy: persistedKey).count - 1, 6)
+            XCTAssertFalse(toml.contains(absentKey))
+            XCTAssertEqual(decoded.routing.arrangements.first?.monitors.first?.monitorDisplayUUID, uuid)
+            XCTAssertEqual(decoded.monitorBarSettings.first?.monitorDisplayUUID, uuid)
+            XCTAssertEqual(decoded.monitorOrientationSettings.first?.monitorDisplayUUID, uuid)
+            XCTAssertEqual(decoded.monitorNiriSettings.first?.monitorDisplayUUID, uuid)
+            XCTAssertEqual(decoded.monitorDwindleSettings.first?.monitorDisplayUUID, uuid)
+            XCTAssertEqual(decoded.monitorGapSettings.first?.monitorDisplayUUID, uuid)
+            XCTAssertEqual(decoded.routing.arrangements.first?.monitors.first?.monitorDisplayId, expectedRuntimeId)
+            XCTAssertEqual(decoded.monitorBarSettings.first?.monitorDisplayId, expectedRuntimeId)
+            XCTAssertEqual(decoded.monitorOrientationSettings.first?.monitorDisplayId, expectedRuntimeId)
+            XCTAssertEqual(decoded.monitorNiriSettings.first?.monitorDisplayId, expectedRuntimeId)
+            XCTAssertEqual(decoded.monitorDwindleSettings.first?.monitorDisplayId, expectedRuntimeId)
+            XCTAssertEqual(decoded.monitorGapSettings.first?.monitorDisplayId, expectedRuntimeId)
+        }
     }
 
     @MainActor
@@ -494,41 +500,6 @@ final class MonitorSettingsIdentityTests: XCTestCase {
         assertIdentity(try XCTUnwrap(settings.dwindle.monitorOverrides.first), monitor: monitor)
         assertIdentity(try XCTUnwrap(settings.gaps.monitorOverrides.first), monitor: monitor)
         XCTAssertEqual(settings.gaps.monitorOverrides.first?.fullscreenUsesOuterGaps, false)
-    }
-
-    func testAllOverrideTypesPreserveRuntimeIdWhenUUIDIsUnavailable() throws {
-        var export = SettingsExport.defaults()
-        export.routing.arrangements = [MonitorArrangement(monitors: [
-            MonitorRoutingSettings(monitorName: "Display", monitorDisplayId: 7, gridColumn: 0, gridRow: 0)
-        ])]
-        export.monitorBarSettings = [
-            MonitorBarSettings(monitorName: "Display", monitorDisplayId: 7, enabled: true)
-        ]
-        export.monitorOrientationSettings = [
-            MonitorOrientationSettings(monitorName: "Display", monitorDisplayId: 7, orientation: .horizontal)
-        ]
-        export.monitorNiriSettings = [
-            MonitorNiriSettings(monitorName: "Display", monitorDisplayId: 7, visibleContainerCount: 2)
-        ]
-        export.monitorDwindleSettings = [
-            MonitorDwindleSettings(monitorName: "Display", monitorDisplayId: 7, smartSplit: true)
-        ]
-        export.monitorGapSettings = [
-            MonitorGapSettings(monitorName: "Display", monitorDisplayId: 7, innerGap: 6)
-        ]
-
-        let data = try SettingsTOMLCodec.encode(export)
-        let toml = String(decoding: data, as: UTF8.self)
-        let decoded = try SettingsTOMLCodec.decode(data)
-
-        XCTAssertEqual(toml.components(separatedBy: "monitorDisplayId =").count - 1, 6)
-        XCTAssertFalse(toml.contains("monitorDisplayUUID ="))
-        XCTAssertEqual(decoded.routing.arrangements.first?.monitors.first?.monitorDisplayId, 7)
-        XCTAssertEqual(decoded.monitorBarSettings.first?.monitorDisplayId, 7)
-        XCTAssertEqual(decoded.monitorOrientationSettings.first?.monitorDisplayId, 7)
-        XCTAssertEqual(decoded.monitorNiriSettings.first?.monitorDisplayId, 7)
-        XCTAssertEqual(decoded.monitorDwindleSettings.first?.monitorDisplayId, 7)
-        XCTAssertEqual(decoded.monitorGapSettings.first?.monitorDisplayId, 7)
     }
 
     func testPreservingEncodeDoesNotResurrectLegacyRuntimeDisplayId() throws {

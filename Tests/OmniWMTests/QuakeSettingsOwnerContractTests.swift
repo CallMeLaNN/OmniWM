@@ -96,28 +96,18 @@ final class QuakeSettingsOwnerContractTests: XCTestCase {
         XCTAssertNil(settings.quakeTerminalCustomFrame)
     }
 
-    func testRetainedBindingReadsImportsWritesNormalizedValuesAndReleasesSettings() throws {
+    func testSectionBindingReadsImportedAndNormalizedWidth() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
-        weak var weakSettings: SettingsStore?
-        var binding: Binding<Double>?
-        do {
-            let settings = makeSettings(directory: directory)
-            weakSettings = settings
-            binding = Binding(
-                get: { [settings] in settings.quakeTerminal.widthPercent },
-                set: { [settings] in settings.quakeTerminal.widthPercent = $0 }
-            )
-            var values = settings.toExport()
-            values.quakeTerminal.widthPercent = 75
-            settings.applyExport(values)
-            XCTAssertEqual(binding?.wrappedValue, 75)
-        }
-        XCTAssertNotNil(weakSettings)
-        binding?.wrappedValue = .infinity
-        XCTAssertEqual(binding?.wrappedValue, 50)
-        binding = nil
-        XCTAssertNil(weakSettings)
+        let settings = makeSettings(directory: directory)
+        let binding = Bindable(settings.quakeTerminal).widthPercent
+        var values = settings.toExport()
+        values.quakeTerminal.widthPercent = 75
+        settings.applyExport(values)
+        XCTAssertEqual(binding.wrappedValue, 75)
+
+        binding.wrappedValue = .infinity
+        XCTAssertEqual(binding.wrappedValue, 50)
     }
 
     private func preparePriorValues(_ settings: SettingsStore) {

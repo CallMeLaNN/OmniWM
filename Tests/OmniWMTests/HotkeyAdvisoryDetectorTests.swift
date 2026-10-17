@@ -51,50 +51,31 @@ final class HotkeyAdvisoryDetectorTests: XCTestCase {
     }
 
     @MainActor
-    func testAdvisorySuppressedWhenUnassignedWithoutQueryingSystem() {
-        let defaults = HotkeyBindingRegistry.defaults()
-        var current = defaults
-        if let index = current.firstIndex(where: { $0.id == "openCommandPalette" }) {
-            current[index].binding = .unassigned
-        }
-        var queryCount = 0
-        let issues = HotkeyAdvisoryDetector.issues(
-            currentBindings: current,
-            defaults: defaults,
-            systemHotkeyQuery: { _ in
-                queryCount += 1
-                return true
-            }
-        )
-
-        XCTAssertFalse(issues.contains { $0.id == advisoryID })
-        XCTAssertEqual(queryCount, 0)
-    }
-
-    @MainActor
-    func testAdvisorySuppressedWhenAssignedDifferentChordWithoutQueryingSystem() {
-        let defaults = HotkeyBindingRegistry.defaults()
-        var current = defaults
-        if let index = current.firstIndex(where: { $0.id == "openCommandPalette" }) {
-            current[index].binding = .chord(
-                KeyBinding(
-                    keyCode: UInt32(kVK_ANSI_P),
-                    modifiers: UInt32(controlKey | optionKey)
+    func testAdvisorySuppressedForUnassignedOrDifferentChordWithoutQueryingSystem() {
+        for unassigned in [false, true] {
+            let defaults = HotkeyBindingRegistry.defaults()
+            var current = defaults
+            if let index = current.firstIndex(where: { $0.id == "openCommandPalette" }) {
+                current[index].binding = unassigned ? .unassigned : .chord(
+                    KeyBinding(
+                        keyCode: UInt32(kVK_ANSI_P),
+                        modifiers: UInt32(controlKey | optionKey)
+                    )
                 )
-            )
-        }
-        var queryCount = 0
-        let issues = HotkeyAdvisoryDetector.issues(
-            currentBindings: current,
-            defaults: defaults,
-            systemHotkeyQuery: { _ in
-                queryCount += 1
-                return true
             }
-        )
+            var queryCount = 0
+            let issues = HotkeyAdvisoryDetector.issues(
+                currentBindings: current,
+                defaults: defaults,
+                systemHotkeyQuery: { _ in
+                    queryCount += 1
+                    return true
+                }
+            )
 
-        XCTAssertFalse(issues.contains { $0.id == advisoryID })
-        XCTAssertEqual(queryCount, 0)
+            XCTAssertFalse(issues.contains { $0.id == advisoryID })
+            XCTAssertEqual(queryCount, 0)
+        }
     }
 
     @MainActor

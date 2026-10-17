@@ -1040,66 +1040,39 @@ final class OverviewStructuralCommandTests: XCTestCase {
         XCTAssertEqual(fixture.focusRecorder.callCount, 0)
     }
 
-    func testMouseDragInsertsNiriCardBeforeTarget() throws {
-        let fixture = try makeFixture(layouts: [.niri])
-        let workspaceId = fixture.workspaceIds[0]
-        let target = try addManagedWindow(pid: 461_020, windowId: 20, to: workspaceId, fixture: fixture)
-        _ = try addManagedWindow(pid: 461_020, windowId: 21, to: workspaceId, fixture: fixture)
-        let dragged = try addManagedWindow(pid: 461_020, windowId: 22, to: workspaceId, fixture: fixture)
-        let prepared = try prepareDragOverview(fixture)
-        let targetFrame = try XCTUnwrap(prepared.layout.window(for: target)?.overviewFrame)
-        let dropPoint = CGPoint(
-            x: targetFrame.midX,
-            y: targetFrame.maxY - targetFrame.height * 0.1
-        )
+    func testMouseDragInsertsNiriCardAtTargetRegion() throws {
+        let cases: [(Bool, pid_t, Int)] = [(true, 461_020, 20), (false, 461_021, 23)]
+        for (upperRegion, pid, firstWindowId) in cases {
+            let fixture = try makeFixture(layouts: [.niri])
+            let workspaceId = fixture.workspaceIds[0]
+            let target = try addManagedWindow(pid: pid, windowId: firstWindowId, to: workspaceId, fixture: fixture)
+            _ = try addManagedWindow(pid: pid, windowId: firstWindowId + 1, to: workspaceId, fixture: fixture)
+            let dragged = try addManagedWindow(pid: pid, windowId: firstWindowId + 2, to: workspaceId, fixture: fixture)
+            let prepared = try prepareDragOverview(fixture)
+            let targetFrame = try XCTUnwrap(prepared.layout.window(for: target)?.overviewFrame)
+            let dropPoint = CGPoint(
+                x: targetFrame.midX,
+                y: upperRegion ? targetFrame.maxY - targetFrame.height * 0.1 : targetFrame.minY + targetFrame
+                    .height * 0.1
+            )
 
-        withBlockedLayoutRefreshes(fixture) {
-            prepared.overview.drag.beginDrag(on: fixture.monitor.id, handle: dragged, startPoint: .zero)
-            prepared.overview.drag.updateDrag(on: fixture.monitor.id, at: dropPoint)
-            prepared.overview.drag.endDrag(on: fixture.monitor.id, at: dropPoint)
+            withBlockedLayoutRefreshes(fixture) {
+                prepared.overview.drag.beginDrag(on: fixture.monitor.id, handle: dragged, startPoint: .zero)
+                prepared.overview.drag.updateDrag(on: fixture.monitor.id, at: dropPoint)
+                prepared.overview.drag.endDrag(on: fixture.monitor.id, at: dropPoint)
+            }
+
+            let engine = try XCTUnwrap(fixture.controller.niriEngine)
+            let targetNode = try XCTUnwrap(engine.findNode(for: target, in: workspaceId))
+            let targetColumn = try XCTUnwrap(engine.findColumn(containing: targetNode, in: workspaceId))
+            XCTAssertEqual(
+                targetColumn.windowNodes.map(\.token),
+                upperRegion ? [target.id, dragged.id] : [dragged.id, target.id]
+            )
+            XCTAssertEqual(fixture.controller.workspaceManager.workspace(for: dragged.id), workspaceId)
+            XCTAssertEqual(prepared.overview.selectedWindowHandle, dragged)
+            XCTAssertEqual(fixture.focusRecorder.callCount, 0)
         }
-
-        let engine = try XCTUnwrap(fixture.controller.niriEngine)
-        let targetNode = try XCTUnwrap(engine.findNode(for: target, in: workspaceId))
-        let targetColumn = try XCTUnwrap(engine.findColumn(containing: targetNode, in: workspaceId))
-        XCTAssertEqual(
-            targetColumn.windowNodes.map(\.token),
-            [target.id, dragged.id]
-        )
-        XCTAssertEqual(fixture.controller.workspaceManager.workspace(for: dragged.id), workspaceId)
-        XCTAssertEqual(prepared.overview.selectedWindowHandle, dragged)
-        XCTAssertEqual(fixture.focusRecorder.callCount, 0)
-    }
-
-    func testMouseDragInsertsNiriCardAfterTarget() throws {
-        let fixture = try makeFixture(layouts: [.niri])
-        let workspaceId = fixture.workspaceIds[0]
-        let target = try addManagedWindow(pid: 461_021, windowId: 23, to: workspaceId, fixture: fixture)
-        _ = try addManagedWindow(pid: 461_021, windowId: 24, to: workspaceId, fixture: fixture)
-        let dragged = try addManagedWindow(pid: 461_021, windowId: 25, to: workspaceId, fixture: fixture)
-        let prepared = try prepareDragOverview(fixture)
-        let targetFrame = try XCTUnwrap(prepared.layout.window(for: target)?.overviewFrame)
-        let dropPoint = CGPoint(
-            x: targetFrame.midX,
-            y: targetFrame.minY + targetFrame.height * 0.1
-        )
-
-        withBlockedLayoutRefreshes(fixture) {
-            prepared.overview.drag.beginDrag(on: fixture.monitor.id, handle: dragged, startPoint: .zero)
-            prepared.overview.drag.updateDrag(on: fixture.monitor.id, at: dropPoint)
-            prepared.overview.drag.endDrag(on: fixture.monitor.id, at: dropPoint)
-        }
-
-        let engine = try XCTUnwrap(fixture.controller.niriEngine)
-        let targetNode = try XCTUnwrap(engine.findNode(for: target, in: workspaceId))
-        let targetColumn = try XCTUnwrap(engine.findColumn(containing: targetNode, in: workspaceId))
-        XCTAssertEqual(
-            targetColumn.windowNodes.map(\.token),
-            [dragged.id, target.id]
-        )
-        XCTAssertEqual(fixture.controller.workspaceManager.workspace(for: dragged.id), workspaceId)
-        XCTAssertEqual(prepared.overview.selectedWindowHandle, dragged)
-        XCTAssertEqual(fixture.focusRecorder.callCount, 0)
     }
 
     func testMouseDragInsertsNiriWindowAtExactColumnGap() throws {

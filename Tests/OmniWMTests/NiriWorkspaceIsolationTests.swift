@@ -10,38 +10,27 @@ import XCTest
 final class NiriWorkspaceIsolationTests: XCTestCase {
     private let workingFrame = CGRect(x: 0, y: 0, width: 1600, height: 900)
 
-    func testSyncRemovalAffectsOnlyRequestedRootWhenDuplicateAddedToRequestedRootFirst() {
-        let engine = NiriLayoutEngine()
-        let workspaceA = WorkspaceDescriptor.ID()
-        let workspaceB = WorkspaceDescriptor.ID()
-        let token = WindowToken(pid: 930, windowId: 1)
-        _ = engine.addWindow(token: token, to: workspaceA, afterSelection: nil)
-        let nodeInB = engine.addWindow(token: token, to: workspaceB, afterSelection: nil)
+    func testSyncRemovalAffectsOnlyRequestedRootForEitherInsertionOrder() {
+        for requestedFirst in [true, false] {
+            let engine = NiriLayoutEngine()
+            let workspaceA = WorkspaceDescriptor.ID()
+            let workspaceB = WorkspaceDescriptor.ID()
+            let token = WindowToken(pid: 930, windowId: requestedFirst ? 1 : 2)
+            let order = requestedFirst ? [workspaceA, workspaceB] : [workspaceB, workspaceA]
+            var nodeInB: NiriWindow?
+            for workspace in order {
+                let node = engine.addWindow(token: token, to: workspace, afterSelection: nil)
+                if workspace == workspaceB { nodeInB = node }
+            }
 
-        let removed = engine.syncWindows([], in: workspaceA, selectedNodeId: nil)
+            let removed = engine.syncWindows([], in: workspaceA, selectedNodeId: nil)
 
-        XCTAssertEqual(removed, [token])
-        XCTAssertNil(engine.findNode(for: token, in: workspaceA))
-        XCTAssertTrue(engine.findNode(for: token, in: workspaceB) === nodeInB)
-        assertIndexMatchesTree(engine, in: workspaceA)
-        assertIndexMatchesTree(engine, in: workspaceB)
-    }
-
-    func testSyncRemovalAffectsOnlyRequestedRootWhenDuplicateAddedToOtherRootFirst() {
-        let engine = NiriLayoutEngine()
-        let workspaceA = WorkspaceDescriptor.ID()
-        let workspaceB = WorkspaceDescriptor.ID()
-        let token = WindowToken(pid: 930, windowId: 2)
-        let nodeInB = engine.addWindow(token: token, to: workspaceB, afterSelection: nil)
-        _ = engine.addWindow(token: token, to: workspaceA, afterSelection: nil)
-
-        let removed = engine.syncWindows([], in: workspaceA, selectedNodeId: nil)
-
-        XCTAssertEqual(removed, [token])
-        XCTAssertNil(engine.findNode(for: token, in: workspaceA))
-        XCTAssertTrue(engine.findNode(for: token, in: workspaceB) === nodeInB)
-        assertIndexMatchesTree(engine, in: workspaceA)
-        assertIndexMatchesTree(engine, in: workspaceB)
+            XCTAssertEqual(removed, [token])
+            XCTAssertNil(engine.findNode(for: token, in: workspaceA))
+            XCTAssertTrue(engine.findNode(for: token, in: workspaceB) === nodeInB)
+            assertIndexMatchesTree(engine, in: workspaceA)
+            assertIndexMatchesTree(engine, in: workspaceB)
+        }
     }
 
     func testBatchRemovalPreservesOtherRootNodeAndIndex() {

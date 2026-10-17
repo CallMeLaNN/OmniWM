@@ -5,26 +5,16 @@
 import XCTest
 
 final class NiriScrollTrackerTests: XCTestCase {
-    func testWholeTickSurplusBeyondCapIsDiscarded() {
-        var tracker = NiriScrollTracker(tick: 10)
-
-        XCTAssertEqual(tracker.accumulate(1500), 127)
-        XCTAssertEqual(tracker.accumulate(5), 0)
-    }
-
-    func testNegativeWholeTickSurplusBeyondCapIsDiscarded() {
-        var tracker = NiriScrollTracker(tick: 10)
-
-        XCTAssertEqual(tracker.accumulate(-1500), -127)
-        XCTAssertEqual(tracker.accumulate(-5), 0)
-    }
-
-    func testRepeatedCappedBurstsRemainIndependent() {
-        var tracker = NiriScrollTracker(tick: 10)
-
-        XCTAssertEqual(tracker.accumulate(1500), 127)
-        XCTAssertEqual(tracker.accumulate(1500), 127)
-        XCTAssertEqual(tracker.accumulate(5), 0)
+    func testCappedBurstsDiscardWholeTickSurplus() {
+        let cases: [(String, [CGFloat], [Int])] = [
+            ("positive", [1500, 5], [127, 0]),
+            ("negative", [-1500, -5], [-127, 0]),
+            ("repeated", [1500, 1500, 5], [127, 127, 0])
+        ]
+        for (label, inputs, expected) in cases {
+            var tracker = NiriScrollTracker(tick: 10)
+            XCTAssertEqual(inputs.map { tracker.accumulate($0) }, expected, label)
+        }
     }
 
     func testProductionTickDiscardsWholeTickSurplus() {

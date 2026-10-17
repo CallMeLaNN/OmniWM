@@ -308,30 +308,23 @@ final class WorkspaceMoveIPCContractTests: XCTestCase {
         XCTAssertEqual(String(decoding: output.data, as: UTF8.self), "ignored: no_change\n")
     }
 
-    func testWorkspaceAssignmentConflictRendering() throws {
-        let response = IPCResponse.failure(
-            id: "move",
-            kind: .workspace,
-            code: .workspaceAssignmentConflict
-        )
-        let output = try CLIRenderer.responseOutput(response, format: .text)
+    func testWorkspaceConflictRendering() throws {
+        let cases: [(IPCErrorCode, String)] = [
+            (.workspaceAssignmentConflict, "error: workspace_assignment_conflict\n"),
+            (.workspaceStateConflict, "error: workspace_state_conflict\n")
+        ]
+        for (code, expected) in cases {
+            let response = IPCResponse.failure(
+                id: "move",
+                kind: .workspace,
+                code: code
+            )
+            let output = try CLIRenderer.responseOutput(response, format: .text)
 
-        XCTAssertEqual(CLIRenderer.exitCode(for: response), .rejected)
-        XCTAssertEqual(output.destination, .standardOutput)
-        XCTAssertEqual(String(decoding: output.data, as: UTF8.self), "error: workspace_assignment_conflict\n")
-    }
-
-    func testWorkspaceStateConflictRendering() throws {
-        let response = IPCResponse.failure(
-            id: "move",
-            kind: .workspace,
-            code: .workspaceStateConflict
-        )
-        let output = try CLIRenderer.responseOutput(response, format: .text)
-
-        XCTAssertEqual(CLIRenderer.exitCode(for: response), .rejected)
-        XCTAssertEqual(output.destination, .standardOutput)
-        XCTAssertEqual(String(decoding: output.data, as: UTF8.self), "error: workspace_state_conflict\n")
+            XCTAssertEqual(CLIRenderer.exitCode(for: response), .rejected)
+            XCTAssertEqual(output.destination, .standardOutput)
+            XCTAssertEqual(String(decoding: output.data, as: UTF8.self), expected)
+        }
     }
 
     private func parseWorkspaceRequest(_ arguments: [String]) throws -> IPCWorkspaceRequest {

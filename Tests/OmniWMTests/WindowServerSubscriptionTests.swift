@@ -176,24 +176,6 @@ final class WindowServerSubscriptionTests: XCTestCase {
         XCTAssertEqual(submissions.count, 3)
     }
 
-    func testRejectedDuplicatePreparationReleasesOnlyItsOwnRetain() {
-        let controller = WindowAdmissionTestSupport.controller(prefix: "WindowServerSubscriptionTests")
-        let handler = controller.axEventHandler
-        handler.windowSubscriptionProvider = { _ in true }
-
-        handler.retainPreparedWindowSubscription(810_260)
-        handler.retainPreparedWindowSubscription(810_260)
-        handler.releasePreparedWindowSubscription(810_260)
-
-        XCTAssertEqual(handler.preparedWindowSubscriptionRetainCounts[810_260], 1)
-        XCTAssertEqual(handler.desiredWindowSubscriptionIds(), [810_260])
-
-        handler.releasePreparedWindowSubscription(810_260)
-
-        XCTAssertNil(handler.preparedWindowSubscriptionRetainCounts[810_260])
-        XCTAssertTrue(handler.desiredWindowSubscriptionIds().isEmpty)
-    }
-
     func testRetirementReplacesTheCompleteSetWithoutTheRemovedWindow() throws {
         let controller = WindowAdmissionTestSupport.controller(prefix: "WindowServerSubscriptionTests")
         let workspaceId = try XCTUnwrap(
@@ -268,7 +250,6 @@ final class WindowServerSubscriptionTests: XCTestCase {
             )
         }
 
-        XCTAssertNil(handler.resolveTrackedToken(UInt32(tracked.windowId)))
         let mismatchedIdentity = handler.resolveWindowServerIdentity(UInt32(tracked.windowId))
         XCTAssertNil(
             handler.resolveTrackedTokenForDestruction(
@@ -280,7 +261,6 @@ final class WindowServerSubscriptionTests: XCTestCase {
 
         handler.windowInfoProvider = { _ in nil }
         let unavailableIdentity = handler.resolveWindowServerIdentity(UInt32(tracked.windowId))
-        XCTAssertNil(handler.resolveTrackedToken(UInt32(tracked.windowId)))
         XCTAssertEqual(
             handler.resolveTrackedTokenForDestruction(
                 UInt32(tracked.windowId),

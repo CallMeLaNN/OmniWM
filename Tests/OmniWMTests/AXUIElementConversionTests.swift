@@ -6,18 +6,13 @@ import ApplicationServices
 import XCTest
 
 final class AXUIElementConversionTests: XCTestCase {
-    func testMissingValueIsRejected() {
-        XCTAssertNil(AXUIElement.from(nil))
-    }
-
-    func testNonElementCoreFoundationTypesAreRejected() throws {
+    func testMissingAndNonElementCoreFoundationTypesAreRejected() throws {
         var point = CGPoint(x: 10, y: 20)
         let pointValue = try XCTUnwrap(AXValueCreate(.cgPoint, &point))
-
-        XCTAssertNil(AXUIElement.from("AXButton" as CFString))
-        XCTAssertNil(AXUIElement.from(kCFBooleanTrue))
-        XCTAssertNil(AXUIElement.from(kCFNull))
-        XCTAssertNil(AXUIElement.from(pointValue))
+        let values: [CFTypeRef?] = [nil, "AXButton" as CFString, kCFBooleanTrue, kCFNull, pointValue]
+        for value in values {
+            XCTAssertNil(AXUIElement.from(value), String(describing: value))
+        }
     }
 
     func testElementReferenceIdentityIsPreserved() throws {

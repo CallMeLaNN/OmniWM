@@ -210,32 +210,6 @@ final class ShellProviderResourceTransportTests: XCTestCase {
         XCTAssertFalse(inbox.isPending(pending.id, identity: identity))
     }
 
-    func testUnsentEvidenceReportsOnlyWholeFramesAndPartialFrameRetainsItsOwner() throws {
-        let (_, identity) = fixture()
-        let first = ShellServiceID(owner: identity.owner, request: 1)
-        let second = ShellServiceID(owner: identity.owner, request: 2)
-        let actions = ShellProviderActions()
-        actions.activate(identity)
-        XCTAssertNil(actions.append(Data("first\n".utf8), id: first, identity: identity))
-        XCTAssertTrue(actions.cancel(first, identity: identity))
-        XCTAssertFalse(actions.cancel(first, identity: identity))
-        XCTAssertNil(actions.append(Data("second\n".utf8), id: second, identity: identity))
-        _ = actions.takeBatch()
-        XCTAssertFalse(actions.cancel(second, identity: identity))
-        var writer = ShellProviderWriteQueue()
-        try writer.append(Data("first\n".utf8), id: first)
-        try writer.append(Data("second\n".utf8), id: second)
-        var calls = 0
-        XCTAssertEqual(writer.drain { _ in calls += 1
-            return calls == 1 ? .written(1) : .wouldBlock
-        }, .blocked)
-        var unsent: [ShellServiceID] = []
-        XCTAssertEqual(writer.discardUnsent(where: { _ in true }, onDiscard: { unsent.append($0) }), 7)
-        XCTAssertEqual(unsent, [second])
-        XCTAssertEqual(writer.count, 1)
-        XCTAssertFalse(writer.cancel(first))
-    }
-
     private func fixture() -> (ShellProviderInbox, ShellProviderIdentity) {
         let inbox = ShellProviderInbox()
         let identity = ShellProviderIdentity(

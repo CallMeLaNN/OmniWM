@@ -29,10 +29,15 @@ final class OverviewDragPreviewTests: XCTestCase {
         XCTAssertNotNil(ghost.contentView?.layer?.backgroundColor)
         XCTAssertNil(ghost.thumbnail.contents)
 
-        ghost.moveTo(cursorLocation: CGPoint(x: 1200, y: 700))
-        XCTAssertEqual(ghost.frame, CGRect(x: 1210, y: 358, width: 400, height: 332))
-        ghost.moveTo(cursorLocation: CGPoint(x: -900, y: 400))
-        XCTAssertEqual(ghost.frame, CGRect(x: -890, y: 58, width: 400, height: 332))
+        let screens = NSScreen.screens.reduce(CGRect.zero) { $0.union($1.frame) }
+        let cursors = [
+            CGPoint(x: screens.maxX + 1_000, y: screens.maxY + 1_000),
+            CGPoint(x: screens.minX - 1_000, y: screens.minY - 1_000)
+        ]
+        for cursor in cursors {
+            ghost.moveTo(cursorLocation: cursor)
+            XCTAssertEqual(ghost.frame, CGRect(x: cursor.x + 10, y: cursor.y - 342, width: 400, height: 332))
+        }
     }
 
     func testGhostUsesLiveSurfaceCropAndRefitsEachPreviewWithoutChangingPanelSize() throws {

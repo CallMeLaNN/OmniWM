@@ -295,32 +295,16 @@ final class NiriScrollVisibilityTests: XCTestCase {
         XCTAssertEqual(handles[fixture.tokens[4]], .right)
     }
 
-    func testVerticalLiveOverflowOntoUpperNeighborStaysHiddenDuringSettledReveal() {
-        let fixture = makeVerticalNeighborFixture(neighborY: 800)
-        let layout = verticalNeighborLayout(fixture, liveOffset: -200)
-
-        XCTAssertEqual(layout.hiddenHandles[fixture.tokens[0]], .right)
-    }
-
-    func testVerticalLiveOverflowOntoLowerNeighborStaysHiddenDuringSettledReveal() {
-        let fixture = makeVerticalNeighborFixture(neighborY: -800)
-        let layout = verticalNeighborLayout(fixture, liveOffset: 200)
-
-        XCTAssertEqual(layout.hiddenHandles[fixture.tokens[0]], .left)
-    }
-
-    func testVerticalPlaneClampedUpperOverflowStaysHiddenDuringSettledReveal() {
-        let fixture = makeVerticalNeighborFixture(neighborY: 800)
-        let layout = verticalNeighborLayout(fixture, liveOffset: -2_000)
-
-        XCTAssertEqual(layout.hiddenHandles[fixture.tokens[0]], .right)
-    }
-
-    func testVerticalPlaneClampedLowerOverflowStaysHiddenDuringSettledReveal() {
-        let fixture = makeVerticalNeighborFixture(neighborY: -800)
-        let layout = verticalNeighborLayout(fixture, liveOffset: 2_000)
-
-        XCTAssertEqual(layout.hiddenHandles[fixture.tokens[0]], .left)
+    func testVerticalOverflowAtEitherNeighborStaysHiddenDuringSettledReveal() {
+        let cases: [(String, CGFloat, CGFloat, Bool)] = [
+            ("upperLive", 800, -200, true), ("lowerLive", -800, 200, false),
+            ("upperClamped", 800, -2_000, true), ("lowerClamped", -800, 2_000, false)
+        ]
+        for (label, neighborY, offset, hideRight) in cases {
+            let fixture = makeVerticalNeighborFixture(neighborY: neighborY)
+            let layout = verticalNeighborLayout(fixture, liveOffset: offset)
+            XCTAssertEqual(layout.hiddenHandles[fixture.tokens[0]], hideRight ? .right : .left, label)
+        }
     }
 
     func testVerticalSettledRevealRemainsVisibleAtOpenScreenEdge() throws {
@@ -547,6 +531,7 @@ final class NiriScrollVisibilityTests: XCTestCase {
             settledVisibilityOffset: 4000
         )
 
+        XCTAssertEqual(Set(layout.frames.keys), Set(fixture.tokens))
         let viewFrame = fixture.area.viewFrame
         for (token, frame) in layout.frames {
             XCTAssertGreaterThanOrEqual(

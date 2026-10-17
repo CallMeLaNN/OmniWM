@@ -91,7 +91,14 @@ final class MenuBarAutohideHoldTests: XCTestCase {
         XCTAssertTrue(hold.setMenuAccess(true))
         XCTAssertEqual(state.menuBarHideHold, MenuBarHideHold(previous: false, temporarilyVisible: true))
         XCTAssertEqual(menuBar.preference, false)
+        hold.update(hiding: false)
+        XCTAssertEqual(menuBar.calls, [true, false])
+        XCTAssertFalse(menuBar.nativeAutohide)
+        XCTAssertEqual(state.menuBarHideHold, MenuBarHideHold(previous: false, temporarilyVisible: true))
         hold.update(hiding: true)
+        XCTAssertEqual(menuBar.calls, [true, false])
+        XCTAssertFalse(menuBar.nativeAutohide)
+        XCTAssertEqual(state.menuBarHideHold, MenuBarHideHold(previous: false, temporarilyVisible: true))
         XCTAssertTrue(hold.setMenuAccess(false))
 
         XCTAssertTrue(menuBar.nativeAutohide)
@@ -151,19 +158,6 @@ final class MenuBarAutohideHoldTests: XCTestCase {
         XCTAssertEqual(menuBar.calls, [true, false, false])
         XCTAssertFalse(menuBar.nativeAutohide)
         XCTAssertNil(state.menuBarHideHold)
-    }
-
-    func testReturningToAppliedPolicyDuringMenuAccessDiscardsSupersededRequest() {
-        let menuBar = FakeMenuBarAutohide()
-        let hold = MenuBarAutohideHold(system: menuBar.system, runtimeState: store())
-        hold.update(hiding: true)
-        XCTAssertTrue(hold.setMenuAccess(true))
-        hold.update(hiding: false)
-        hold.update(hiding: true)
-        XCTAssertTrue(hold.setMenuAccess(false))
-
-        XCTAssertEqual(menuBar.calls, [true, false, true])
-        XCTAssertTrue(menuBar.nativeAutohide)
     }
 
     func testEnablingFullWidthDuringMenuAccessWaitsUntilRelease() {

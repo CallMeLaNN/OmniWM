@@ -153,62 +153,58 @@ final class ShellLatestWidgetDataTests: XCTestCase {
         await package.close()
     }
 
-    func testClickHandlerReadsLatestMenuAppBeforeItsFirstSubscription() async throws {
-        let latest = ShellLatestWidgetData()
-        let package = ShellWidgetPackage(
-            name: "latest-menu", generation: 1, outbox: ShellWidgetOutbox { _ in }, latestData: latest
-        )
-        let failure = await package.load(source: """
-        function render(ctx)
-            return ui.box{w=ctx.state.seen or 1,h=10,onClick=function(next)
-                local app = next.data.menuApp
-                assert(app.name == "Terminal" and app.bundle == "com.example.terminal")
-                next.state.seen = app.pid
-            end}
-        end
-        """)
-        XCTAssertNil(failure)
-        await package.receive(.bars([key: ShellBarData()]))
-        let beforeValue = await package.latestDataOutput(key)
-        let before = try XCTUnwrap(beforeValue)
-        var data = ShellWidgetData()
-        data.world.menuApp = ShellMenuApp(pid: 42, name: "Editor", bundle: "com.example.editor")
-        latest.publish(data)
-        data.world.menuApp = ShellMenuApp(pid: 43, name: "Terminal", bundle: "com.example.terminal")
-        latest.publish(data)
-        await package.receive(.invoke(key, .bar, action: before.action, sequence: before.sequence, event: ShellEvent()))
-        let after = await package.latestDataOutput(key)
-        XCTAssertEqual(after?.width, 43)
-        await package.close()
-    }
-
     func testLaterHandlerReadsLatestUnobservedDataBeforeTheFirstNewSubscription() async throws {
-        let latest = ShellLatestWidgetData()
-        let package = ShellWidgetPackage(
-            name: "latest",
-            generation: 1,
-            outbox: ShellWidgetOutbox { _ in },
-            latestData: latest
-        )
-        let failure = await package.load(source: """
-        function render(ctx)
-            return ui.box{w=ctx.state.seen or 1,h=10,onClick=function(next)
-                next.state.seen=tonumber(next.data.vars.value)
-            end}
-        end
-        """)
-        XCTAssertNil(failure)
-        await package.receive(.bars([key: ShellBarData()]))
-        let beforeValue = await package.latestDataOutput(key)
-        let before = try XCTUnwrap(beforeValue)
-        var data = ShellWidgetData()
-        data.vars = ["value": "73"]
-        latest.publish(data)
-        await package.receive(.invoke(key, .bar, action: before.action, sequence: before.sequence, event: ShellEvent()))
-        let afterValue = await package.latestDataOutput(key)
-        let after = try XCTUnwrap(afterValue)
-        XCTAssertEqual(after.width, 73)
-        await package.close()
+        var vars = ShellWidgetData()
+        vars.vars = ["value": "73"]
+        var editor = ShellWidgetData()
+        editor.world.menuApp = ShellMenuApp(pid: 42, name: "Editor", bundle: "com.example.editor")
+        var terminal = ShellWidgetData()
+        terminal.world.menuApp = ShellMenuApp(pid: 43, name: "Terminal", bundle: "com.example.terminal")
+        let cases: [(String, String, [ShellWidgetData], Float)] = [
+            ("latest", """
+            function render(ctx)
+                return ui.box{w=ctx.state.seen or 1,h=10,onClick=function(next)
+                    next.state.seen=tonumber(next.data.vars.value)
+                end}
+            end
+            """, [vars], 73),
+            ("latest-menu", """
+            function render(ctx)
+                return ui.box{w=ctx.state.seen or 1,h=10,onClick=function(next)
+                    local app = next.data.menuApp
+                    assert(app.name == "Terminal" and app.bundle == "com.example.terminal")
+                    next.state.seen = app.pid
+                end}
+            end
+            """, [editor, terminal], 43)
+        ]
+        for (name, source, updates, expected) in cases {
+            let latest = ShellLatestWidgetData()
+            let package = ShellWidgetPackage(
+                name: name,
+                generation: 1,
+                outbox: ShellWidgetOutbox { _ in },
+                latestData: latest
+            )
+            addTeardownBlock { await package.close() }
+            let failure = await package.load(source: source)
+            XCTAssertNil(failure)
+            await package.receive(.bars([key: ShellBarData()]))
+            let beforeValue = await package.latestDataOutput(key)
+            let before = try XCTUnwrap(beforeValue)
+            for data in updates { latest.publish(data) }
+            await package.receive(.invoke(
+                key,
+                .bar,
+                action: before.action,
+                sequence: before.sequence,
+                event: ShellEvent()
+            ))
+            let afterValue = await package.latestDataOutput(key)
+            let after = try XCTUnwrap(afterValue)
+            XCTAssertEqual(after.width, expected, name)
+            await package.close()
+        }
     }
 
     func testTriggerAndPopoutUseTheLatestSnapshotWithoutADataWake() async throws {

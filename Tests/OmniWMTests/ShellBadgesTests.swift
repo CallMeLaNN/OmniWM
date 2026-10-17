@@ -112,25 +112,36 @@ final class ShellBadgesTests: XCTestCase {
         XCTAssertTrue(service.bundleIDs.isEmpty)
     }
 
-    func testPublicBadgeMapPreservesLabelsAndOnlyChangesItsDataKey() throws {
+    func testPublicBadgeMapPreservesLabelsAndOnlyChangesItsDataKey() async throws {
         var data = ShellWidgetData()
         data.badges = ["com.example.mail": "99+", "com.example.notes": "●"]
         XCTAssertEqual(data.changedKeys(from: ShellWidgetData()), ShellDataKey.badges.bit)
-        let widget = try ShellRenderedWidget(name: "badge-fixture", source: """
+        let rendered = expectation(description: "Actual package renders badge labels")
+        var renderedStrings: [String] = []
+        let outbox = ShellWidgetOutbox { batch in
+            guard let delivery = batch["badge-fixture"] else { return }
+            XCTAssertNil(delivery.failure)
+            guard !delivery.trees.isEmpty else { return }
+            let text = ShellTextStore()
+            text.ingest(delivery.strings, count: delivery.stringCount)
+            renderedStrings = text.strings
+            rendered.fulfill()
+        }
+        let package = ShellWidgetPackage(name: "badge-fixture", generation: 1, outbox: outbox)
+        addTeardownBlock { await package.close() }
+        let failure = await package.load(source: """
         function render(ctx)
             local badges = ctx.data.badges
             return ui.text{text = badges["com.example.mail"] .. ":" .. badges["com.example.notes"]}
         end
         """)
-        widget.set("badges") { writer in
-            writer.map(data.badges.count)
-            for (bundleID, label) in data.badges {
-                writer.key(bundleID)
-                writer.string(label)
-            }
-        }
-        widget.render(ShellBarData())
-        XCTAssertTrue(widget.strings().contains("99+:●"))
+        XCTAssertNil(failure)
+        await package.receive(.update(data))
+        let key = ShellBarKey(monitor: .init(displayId: 85_002))
+        await package.receive(.bars([key: ShellBarData()]))
+        await fulfillment(of: [rendered], timeout: 2)
+        XCTAssertTrue(renderedStrings.contains("99+:●"))
+        await package.close()
     }
 
     private func makeManager(service: WorkspaceBarBadgeService) throws -> (WMController, WorkspaceBarManager) {

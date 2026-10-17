@@ -74,36 +74,50 @@ final class WindowAdmissionRetryIdentityTests: XCTestCase {
         controller.axEventHandler.cancelCreatedWindowRetry(windowId: windowId)
     }
 
-    func testLaterIdentitylessObservationDoesNotEraseConcreteIdentity() throws {
-        let controller = WindowAdmissionTestSupport.controller()
-        let windowId: UInt32 = 467_977
-        let token = WindowToken(pid: 467_978, windowId: Int(windowId))
-        let axRef = AXWindowRef(element: AXUIElementCreateApplication(token.pid), windowId: token.windowId)
-        XCTAssertTrue(
-            controller.axEventHandler.scheduleCandidateAdmissionRetry(
-                windowId: windowId,
-                pid: token.pid,
-                axRef: axRef,
-                reason: .factsDeferred
+    func testLaterIdentitylessObservationPreservesConcreteCandidate() async throws {
+        let cases: [(UInt32, pid_t, WindowAdmissionPendingReason, Bool)] = [
+            (467_977, 467_978, .factsDeferred, false),
+            (467_405, 467_305, .degenerateGeometry, true)
+        ]
+        for (windowIdValue, pidValue, initialReason, includeAXRef) in cases {
+            let controller = WindowAdmissionTestSupport.controller()
+            let windowId: UInt32 = windowIdValue
+            let token = WindowToken(pid: pidValue, windowId: Int(windowId))
+            let axRef = AXWindowRef(element: AXUIElementCreateApplication(token.pid), windowId: token.windowId)
+            XCTAssertTrue(
+                controller.axEventHandler.scheduleCandidateAdmissionRetry(
+                    windowId: windowId,
+                    pid: token.pid,
+                    axRef: axRef,
+                    reason: initialReason
+                )
             )
-        )
-        let concrete = try XCTUnwrap(controller.axEventHandler.admissionRetryStateByWindowId[windowId])
+            defer { controller.axEventHandler.cancelCreatedWindowRetry(windowId: windowId) }
+            let concrete = try XCTUnwrap(controller.axEventHandler.admissionRetryStateByWindowId[windowId])
 
-        XCTAssertTrue(
-            controller.axEventHandler.scheduleAdmissionRetry(
-                windowId: windowId,
-                expectedToken: nil,
-                reason: .windowInfoMissing,
-                trigger: .create
+            XCTAssertTrue(
+                controller.axEventHandler.scheduleAdmissionRetry(
+                    windowId: windowId,
+                    expectedToken: nil,
+                    axRef: includeAXRef ? axRef : nil,
+                    reason: .windowInfoMissing,
+                    trigger: .create
+                )
             )
-        )
 
-        let retained = try XCTUnwrap(controller.axEventHandler.admissionRetryStateByWindowId[windowId])
-        XCTAssertEqual(retained.attempt, concrete.attempt)
-        XCTAssertEqual(retained.generation, concrete.generation)
-        XCTAssertEqual(retained.expectedToken, token)
-        XCTAssertTrue(CFEqual(retained.axRef?.element, axRef.element))
-        controller.axEventHandler.cancelCreatedWindowRetry(windowId: windowId)
+            let retained = try XCTUnwrap(controller.axEventHandler.admissionRetryStateByWindowId[windowId])
+            XCTAssertEqual(retained.attempt, concrete.attempt)
+            XCTAssertEqual(retained.generation, concrete.generation)
+            XCTAssertEqual(retained.expectedToken, token)
+            XCTAssertTrue(CFEqual(retained.axRef?.element, axRef.element))
+            guard case let .candidate(triggerToken, triggerAXRef, _) = retained.trigger else {
+                return XCTFail("Expected concrete candidate retry")
+            }
+            XCTAssertEqual(triggerToken, token)
+            XCTAssertTrue(CFEqual(triggerAXRef.element, axRef.element))
+            controller.axEventHandler.handleCGSEvent(.destroyed(windowId: windowId, spaceId: 0))
+            await controller.axEventHandler.lifecycleQueries.task?.value
+        }
     }
 
     func testDistinctConcreteIdentityRestartsRetryBudget() throws {

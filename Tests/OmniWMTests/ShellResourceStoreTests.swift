@@ -72,21 +72,28 @@ final class ShellResourceStoreTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: original.path))
     }
 
-    func testPromiseRetirementDiscardsLateOwnedOutput() async throws {
+    func testRetirementDiscardsLateReceivedOutput() async throws {
         let (store, directory) = try fixture()
         defer { try? FileManager.default.removeItem(at: directory) }
         try await store.activate(owner, namespace: namespace)
         let item = descriptor()
         try store.catalog.admit([item], owner: owner)
-        let promise = try await store.promise(item.id, owner: owner)
+        let ingress = try await store.ingressDirectory()
+        addTeardownBlock { await store.finishIngress(ingress) }
+        let operation = ShellResourceOperation()
         _ = await store.retire(owner)
-        try Data("late".utf8).write(to: promise.directory.appendingPathComponent("result"))
+        try Data("late".utf8).write(to: ingress.appendingPathComponent("result"))
+        let received = try ShellResourceReceivedFile.copy(
+            "result", directory: ingress, root: store.directory, operation: operation
+        )
         do {
-            try await store.completePromise(promise, result: .success("result"))
-            XCTFail("late promise was registered")
+            try await store.receive(received, id: item.id, owner: owner, operation: operation)
+            XCTFail("late received output was registered")
         } catch {}
-        XCTAssertFalse(FileManager.default.fileExists(atPath: promise.directory.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: received.directory.path))
         XCTAssertNil(store.catalog.metadata(item.id, owner: owner))
+        await store.finishIngress(ingress)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: ingress.path))
     }
 
     func testProviderWaitsForReadyInputsAndRetainsReleasedInput() async throws {

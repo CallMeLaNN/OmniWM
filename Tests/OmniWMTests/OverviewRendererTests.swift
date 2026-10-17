@@ -176,10 +176,15 @@ final class OverviewRendererTests: XCTestCase {
         let labelFrame = CGRect(x: 20, y: -116, width: 960, height: 32)
         let viewport = CGRect(x: 0, y: -90, width: 1000, height: 800)
 
+        let section = OverviewWorkspaceSection(
+            workspaceId: WorkspaceDescriptor.ID(), name: "Label", windows: [],
+            sectionFrame: sectionFrame, labelFrame: labelFrame, gridFrame: sectionFrame,
+            isActive: false, displayId: nil
+        )
         XCTAssertFalse(OverviewRenderGeometry.shouldRender(frame: sectionFrame, visibleContentRect: viewport))
         XCTAssertTrue(
             OverviewRenderGeometry.shouldRender(
-                frame: sectionFrame.union(labelFrame),
+                frame: OverviewRenderGeometry.sectionCullingFrame(section, progress: 1),
                 visibleContentRect: viewport
             )
         )

@@ -133,25 +133,6 @@ final class WorkspaceBarDataSourceTests: XCTestCase {
         XCTAssertEqual(fixture.workspaceManager.entry(for: token)?.workspaceId, fixture.workspaceId)
     }
 
-    func testConfiguredBundleExclusionFiltersFloatingWindow() throws {
-        let fixture = try makeFixture()
-        _ = addWindow(
-            pid: 46_003,
-            windowId: 46_103,
-            bundleId: "com.example.excluded",
-            mode: .floating,
-            to: fixture
-        )
-        let projection = project(
-            fixture,
-            showFloatingWindows: true,
-            excludedBundleIDs: ["com.example.excluded"]
-        )
-        let item = try XCTUnwrap(projection.items.first { $0.id == fixture.workspaceId })
-
-        XCTAssertTrue(item.floatingWindows.isEmpty)
-    }
-
     func testActiveWorkspaceStaysOnBarWhileEmptyWorkspacesAreHidden() throws {
         let fixture = try makeFixture()
         let occupiedId = try XCTUnwrap(

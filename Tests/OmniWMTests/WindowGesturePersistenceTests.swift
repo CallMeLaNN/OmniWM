@@ -6,11 +6,11 @@ import Foundation
 import XCTest
 
 final class WindowGesturePersistenceTests: XCTestCase {
-    func testWindowGestureKeysAreAdditiveWithinSchemaThree() throws {
+    func testWindowGestureKeysAreAdditiveWithinCurrentSchema() throws {
         let canonical = String(decoding: try SettingsTOMLCodec.encode(.defaults()), as: UTF8.self)
         let data = Data(canonical.components(separatedBy: "\n")
             .filter { !$0.hasPrefix("windowMove") && !$0.hasPrefix("windowResize")
-                && !$0.hasPrefix("windowGestureSensitivity")
+                && !$0.hasPrefix("windowGestureSensitivity") && !$0.hasPrefix("resizePreviewStyle")
             }
             .joined(separator: "\n").utf8)
 
@@ -23,10 +23,11 @@ final class WindowGesturePersistenceTests: XCTestCase {
         XCTAssertEqual(result.export.gestures.windowResizeEnabled, false)
         XCTAssertEqual(result.export.gestures.windowResizeFingerCount, .three)
         XCTAssertEqual(result.export.gestures.windowGestureSensitivity, 1)
+        XCTAssertEqual(result.export.gestures.resizePreviewStyle, .live)
         XCTAssertEqual(try SettingsTOMLCodec.decode(SettingsTOMLCodec.encode(result.export)), result.export)
     }
 
-    func testWindowGestureSettingsRoundTripEverySupportedFingerCount() throws {
+    func testWindowGestureSettingsRoundTripEverySupportedFingerCountAndPreviewStyle() throws {
         for count in GestureFingerCount.allCases {
             var export = SettingsExport.defaults()
             export.gestures.windowMoveEnabled = true
@@ -39,6 +40,15 @@ final class WindowGesturePersistenceTests: XCTestCase {
             XCTAssertEqual(try SettingsTOMLCodec.decode(encoded), export)
             XCTAssertTrue(SettingsTOMLCodec.unknownKeyPaths(in: encoded).isEmpty)
         }
+        for (style, raw) in [(ResizePreviewStyle.live, "live"), (.glass, "glass"), (.snapshot, "snapshot")] {
+            var export = SettingsExport.defaults()
+            export.gestures.resizePreviewStyle = style
+            let encoded = try SettingsTOMLCodec.encode(export)
+            XCTAssertTrue(String(decoding: encoded, as: UTF8.self).contains("resizePreviewStyle = \"\(raw)\""))
+            XCTAssertEqual(try SettingsTOMLCodec.decode(encoded).gestures.resizePreviewStyle, style)
+            XCTAssertEqual(try SettingsTOMLCodec.decode(encoded), export)
+            XCTAssertTrue(SettingsTOMLCodec.unknownKeyPaths(in: encoded).isEmpty)
+        }
     }
 
     func testMalformedWindowGestureValuesRejectDecode() throws {
@@ -47,7 +57,8 @@ final class WindowGesturePersistenceTests: XCTestCase {
             ("windowResizeEnabled", ["1", "\"false\""]),
             ("windowMoveFingerCount", ["1", "5", "true", "\"four\""]),
             ("windowResizeFingerCount", ["1", "5", "false", "\"three\""]),
-            ("windowGestureSensitivity", ["true", "\"fast\""])
+            ("windowGestureSensitivity", ["true", "\"fast\""]),
+            ("resizePreviewStyle", ["1", "true"])
         ] {
             for value in values {
                 let data = try replacingDefault(key, with: value)

@@ -87,19 +87,16 @@ final class ShellRemindersTests: XCTestCase {
         feed.setDemand(both, cadence: .of([(both, nil)]))
         XCTAssertNotNil(controller.onChange)
         XCTAssertNotNil(controller.onRemindersChange)
-        feed.setDemand(ShellDataKey.reminders.bit, cadence: .of([(ShellDataKey.reminders.bit, nil)]))
+        let reminderCadence = ShellDataFeed.Cadence.of([(ShellDataKey.reminders.bit, nil)])
+        XCTAssertEqual(reminderCadence.tick, 0)
+        XCTAssertEqual(reminderCadence.sampling, 0)
+        feed.setDemand(ShellDataKey.reminders.bit, cadence: reminderCadence)
         XCTAssertNil(controller.onChange)
         XCTAssertNotNil(controller.onRemindersChange)
         XCTAssertNil(feed.current.calendar)
         feed.stop()
         XCTAssertNil(controller.onRemindersChange)
         XCTAssertNil(feed.current.reminders)
-    }
-
-    func testReminderOnlyDemandHasNoPollingCadence() {
-        let cadence = ShellDataFeed.Cadence.of([(ShellDataKey.reminders.bit, nil)])
-        XCTAssertEqual(cadence.tick, 0)
-        XCTAssertEqual(cadence.sampling, 0)
     }
 
     func testPublicSnapshotContainsItemsAndVisibleErrors() throws {

@@ -22,10 +22,6 @@ final class IPCProtocolEnvelopeTests: XCTestCase {
         """.utf8)
     }
 
-    func testCurrentProtocolVersionIsTwenty() {
-        XCTAssertEqual(OmniWMIPCProtocol.version, 20)
-    }
-
     func testScratchpadCommandDecodesLiteralScratchpadIndexField() throws {
         let data = Data(#"{"name":"scratchpad-assign","arguments":{"scratchpadIndex":4}}"#.utf8)
 

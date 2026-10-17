@@ -153,13 +153,6 @@ final class ShellDefaultsTests: XCTestCase {
                 XCTAssertFalse(config.trailing.contains(name), profile)
             }
         }
-        try write("profile = \"system\"\nprofiles.system.leading = [\"workspaces\"]\n", to: "shell.toml", in: shell)
-        XCTAssertEqual(ShellConfig.resolve(shellDirectory: shell).leading, ["workspaces"])
-        try ShellBarLayout.reset(shellDirectory: shell)
-        XCTAssertEqual(
-            Array(ShellConfig.resolve(shellDirectory: shell).leading.prefix(3)),
-            ["apple-menu", "app-menu", "omniwm"]
-        )
     }
 
     func testSystemInstallsNativeMaterialBarAndInheritsTheSharedEffectsGallery() throws {
@@ -308,10 +301,17 @@ final class ShellProfileTests: XCTestCase {
         try write("leading = [", to: "shell.toml")
 
         XCTAssertNil(ShellConfig.load(shellDirectory: root))
-        let config = ShellConfig.resolve(shellDirectory: root)
+        var problems: [String] = []
+        let config = ShellConfig.resolve(shellDirectory: root, problems: &problems)
         XCTAssertEqual(config.profile, "default")
         XCTAssertEqual(config.leading, ["menu"])
         XCTAssertEqual(config.trailing, ["clock"])
+        XCTAssertEqual(problems.count, 1)
+        XCTAssertTrue(problems.first?.hasPrefix("\(root.lastPathComponent)/shell.toml: ") == true)
+
+        try write("", to: "shell.toml")
+        try write("leading = [", to: "default/shell.toml")
+        XCTAssertNil(ShellConfig.load(shellDirectory: root))
     }
 
     func testTheShellFolderLayersOverTheProfileWhichLayersOverTheDefault() throws {
@@ -625,14 +625,6 @@ final class ShellProfileTests: XCTestCase {
             "Theme look: [light] accent must be a role name set to \"#RRGGBB\" or \"#RRGGBBAA\""
         ])
 
-        try write("profiles.default.leading = [", to: "shell.toml")
-        problems = []
-        XCTAssertNil(ShellConfig.load(shellDirectory: root, problems: &problems))
-        problems = []
-        XCTAssertEqual(ShellConfig.resolve(shellDirectory: root, problems: &problems).profile, "default")
-        XCTAssertEqual(problems.count, 1)
-        XCTAssertTrue(problems.first?.hasPrefix("\(root.lastPathComponent)/shell.toml: ") == true)
-
         let bundled = try String(contentsOf: XCTUnwrap(ShellDefaults.bundledFile("shell.toml")), encoding: .utf8)
         try write(bundled, to: "default/shell.toml")
         let bundledThemes = try FileManager.default.contentsOfDirectory(
@@ -806,20 +798,16 @@ final class ShellProfileTests: XCTestCase {
         XCTAssertNil(settings.resolved(for: monitor).accentColor)
         XCTAssertNil(settings.resolved(for: monitor).textColor)
 
-        XCTAssertTrue(try ShellProfiles.setValue(
-            red,
-            at: ["profiles", "default", "workspaceBar", "accentColor"],
-            in: root
-        ))
-        XCTAssertTrue(try ShellProfiles.setValue(
-            red,
-            at: ["profiles", "default", "workspaceBar", "textColor"],
-            in: root
-        ))
+        XCTAssertTrue(try ShellProfiles.setNodes([
+            (["profiles", "default", "workspaceBar", "accentColor"], try ShellTOMLText.node(red))
+        ], in: root))
+        XCTAssertTrue(try ShellProfiles.setNodes([
+            (["profiles", "default", "workspaceBar", "textColor"], try ShellTOMLText.node(red))
+        ], in: root))
         settings.profileOverride = try XCTUnwrap(ShellConfig.load(shellDirectory: root)?.barOverride)
         XCTAssertEqual(settings.resolved(for: monitor).accentColor, red)
         XCTAssertEqual(settings.resolved(for: monitor).textColor, red)
-        XCTAssertTrue(try ShellProfiles.reset(["profiles", "default", "workspaceBar"], in: root))
+        XCTAssertTrue(try ShellProfiles.setNodes([(["profiles", "default", "workspaceBar"], nil)], in: root))
         settings.profileOverride = try XCTUnwrap(ShellConfig.load(shellDirectory: root)?.barOverride)
         XCTAssertNil(settings.resolved(for: monitor).accentColor)
         XCTAssertNil(settings.resolved(for: monitor).textColor)
@@ -838,7 +826,9 @@ final class ShellProfileTests: XCTestCase {
         try write("[workspaceBar]\nposition = \"left\"\nheight = 60\n", to: "look/shell.toml")
         try write("profile = \"look\"\n[profiles.look.workspaceBar]\nheight = 80\n", to: "shell.toml")
         let custom = MonitorBarSettings(monitorName: monitor.name, monitorDisplayId: 7, position: .bottom, height: 100)
-        XCTAssertTrue(try ShellProfiles.setValue([custom], at: ["profiles", "look", "monitorBarOverrides"], in: root))
+        XCTAssertTrue(try ShellProfiles.setNodes([
+            (["profiles", "look", "monitorBarOverrides"], try ShellTOMLText.node([custom]))
+        ], in: root))
         let settings = WorkspaceBarSettings()
         settings.height = 24
         settings.update(MonitorBarSettings(monitorName: monitor.name, position: .right, height: 32), for: monitor)
@@ -854,7 +844,7 @@ final class ShellProfileTests: XCTestCase {
         XCTAssertEqual(settings.resolved(for: monitor).position, .right)
         XCTAssertEqual(settings.resolved(for: monitor).height, 32)
         XCTAssertTrue(try ShellProfiles.select("look", in: root))
-        XCTAssertTrue(try ShellProfiles.reset(["profiles", "look", "monitorBarOverrides"], in: root))
+        XCTAssertTrue(try ShellProfiles.setNodes([(["profiles", "look", "monitorBarOverrides"], nil)], in: root))
         settings.profileOverride = try XCTUnwrap(ShellConfig.load(shellDirectory: root)?.barOverride)
         XCTAssertEqual(settings.resolved(for: monitor).position, .left)
         XCTAssertEqual(settings.resolved(for: monitor).height, 80)
@@ -944,11 +934,6 @@ final class ShellProfileTests: XCTestCase {
         let config = try XCTUnwrap(ShellConfig.load(shellDirectory: root))
         XCTAssertEqual(config.profile, ShellDefaults.profile)
         XCTAssertEqual(config.directories, [root, root.appendingPathComponent("default", isDirectory: true)])
-    }
-
-    func testABrokenLayerKeepsThePreviousConfig() throws {
-        try write("leading = [", to: "default/shell.toml")
-        XCTAssertNil(ShellConfig.load(shellDirectory: root))
     }
 
     private func write(_ contents: String, to path: String) throws {

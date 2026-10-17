@@ -159,6 +159,7 @@ final class AppVisibilityLifecycleTraceTests: XCTestCase {
             AppVisibilityTrace.shared.dump()
         )
 
+        XCTAssertEqual(fixture.controller.intentLedger.intent(id: intentId)?.phase, .confirmed)
         let dump = AppVisibilityTrace.shared.dump()
         assertOrdered(
             [

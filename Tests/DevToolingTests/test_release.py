@@ -25,8 +25,16 @@ class ReleaseConfigTests(unittest.TestCase):
         self.version = "0.7.4"
 
     def test_config_requires_explicit_ci_checkout(self):
-        for value in (None, "", str(self.root / "missing"), str(self.root)):
-            with self.subTest(value=value), patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}, clear=True):
+        invalid_git = self.root / "invalid-git"
+        (invalid_git / ".git").mkdir(parents=True)
+        for label, value in (
+            ("unset", None),
+            ("empty", ""),
+            ("nonexistent", str(self.root / "missing")),
+            ("non-Git directory", str(self.root)),
+            ("invalid Git directory", str(invalid_git)),
+        ):
+            with self.subTest(case=label), patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}, clear=True):
                 if value is not None:
                     os.environ["OMNIWM_RELEASE_MAIN_REPO"] = value
                 with self.assertRaisesRegex(RELEASE.ReleaseError, "OMNIWM_RELEASE_MAIN_REPO"):
@@ -36,12 +44,6 @@ class ReleaseConfigTests(unittest.TestCase):
         subprocess.run(["git", "init", self.root], check=True, capture_output=True)
         with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "OMNIWM_RELEASE_MAIN_REPO": str(self.root)}, clear=True):
             self.assertEqual(RELEASE.Config.from_environment().main_repo, self.root)
-
-    def test_config_rejects_invalid_git_directory_in_ci(self):
-        (self.root / ".git").mkdir()
-        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "OMNIWM_RELEASE_MAIN_REPO": str(self.root)}, clear=True):
-            with self.assertRaisesRegex(RELEASE.ReleaseError, "OMNIWM_RELEASE_MAIN_REPO"):
-                RELEASE.Config.from_environment()
 
     def test_cli_reports_missing_ci_checkout_without_traceback(self):
         with patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}, clear=True), patch.object(
@@ -242,47 +244,26 @@ class ReleaseTests(unittest.TestCase):
         self.assertTrue(self.manager.github_write_access("OmniNull/OmniWM")["ok"])
         self.assertEqual(self.runner.run.call_count, 1)
 
-    def test_github_write_access_probes_installation_token_without_pushing(self):
+    def test_github_write_access_probes_token_permissions_without_pushing(self):
         self.manager.remote_url = Mock(return_value="https://github.com/OmniNull/OmniWM.git")
-        self.runner.run.side_effect = [
-            subprocess.CompletedProcess([], 0, "unknown\n", ""),
-            subprocess.CompletedProcess([], 0, "", "Everything up-to-date"),
-        ]
-        self.assertTrue(self.manager.github_write_access("OmniNull/OmniWM")["ok"])
-        self.assertEqual(
-            self.runner.run.call_args.args[0],
-            ["git", "push", "--dry-run", "origin", "origin/main:refs/heads/main"],
-        )
-
-    def test_github_write_access_rejects_denied_installation_token(self):
-        self.manager.remote_url = Mock(return_value="https://github.com/OmniNull/OmniWM.git")
-        self.runner.run.side_effect = [
-            subprocess.CompletedProcess([], 0, "unknown\n", ""),
-            subprocess.CompletedProcess([], 128, "", "Write access to repository not granted"),
-        ]
-        access = self.manager.github_write_access("OmniNull/OmniWM")
-        self.assertFalse(access["ok"])
-        self.assertIn("Write access", access["detail"])
-        self.assertIn("GH_TOKEN/GITHUB_TOKEN", access["detail"])
-        self.assertIn("--dry-run", self.runner.run.call_args.args[0])
-
-    def test_github_write_access_probes_false_actions_permission_without_pushing(self):
-        self.manager.remote_url = Mock(return_value="https://github.com/OmniNull/OmniWM.git")
-        for code, detail in ((0, "Everything up-to-date"), (128, "Write access to repository not granted")):
-            with self.subTest(code=code), patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}):
-                self.runner.run.reset_mock()
-                self.runner.run.side_effect = [
-                    subprocess.CompletedProcess([], 0, "false\n", ""),
-                    subprocess.CompletedProcess([], code, "", detail),
-                ]
-                access = self.manager.github_write_access("OmniNull/OmniWM")
-                self.assertEqual(access["ok"], code == 0)
-                self.assertIn(detail, access["detail"])
-                self.assertEqual(self.runner.run.call_count, 2)
-                self.assertEqual(
-                    self.runner.run.call_args.args[0],
-                    ["git", "push", "--dry-run", "origin", "origin/main:refs/heads/main"],
-                )
+        for actions, permission in (("false", "unknown"), ("true", "false")):
+            for code, detail in ((0, "Everything up-to-date"), (128, "Write access to repository not granted")):
+                with self.subTest(permission=permission, code=code), patch.dict(os.environ, {"GITHUB_ACTIONS": actions}):
+                    self.runner.run.reset_mock()
+                    self.runner.run.side_effect = [
+                        subprocess.CompletedProcess([], 0, permission + "\n", ""),
+                        subprocess.CompletedProcess([], code, "", detail),
+                    ]
+                    access = self.manager.github_write_access("OmniNull/OmniWM")
+                    self.assertEqual(access["ok"], code == 0)
+                    self.assertIn(detail, access["detail"])
+                    if code != 0:
+                        self.assertIn("GH_TOKEN/GITHUB_TOKEN", access["detail"])
+                    self.assertEqual(self.runner.run.call_count, 2)
+                    self.assertEqual(
+                        self.runner.run.call_args.args[0],
+                        ["git", "push", "--dry-run", "origin", "origin/main:refs/heads/main"],
+                    )
 
     def test_github_write_access_does_not_probe_other_repository(self):
         self.manager.remote_url = Mock(return_value="https://github.com/other/repo.git")

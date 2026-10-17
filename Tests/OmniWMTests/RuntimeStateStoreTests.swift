@@ -68,6 +68,9 @@ final class RuntimeStateStoreTests: XCTestCase {
         XCTAssertEqual(dates, dates.sorted())
         XCTAssertEqual(dates.last, 5_000)
         XCTAssertTrue(dates.contains(1_000))
+        let allDates = store.launcherLaunchesSnapshot.values.flatMap { $0.map(\.date.timeIntervalSince1970) }
+        XCTAssertEqual(allDates.count, 1_000)
+        XCTAssertEqual(allDates.min(), 11)
     }
 
     func testLauncherShortcutKeyUsesTheQueryAsTyped() {

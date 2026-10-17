@@ -430,19 +430,32 @@ final class AXFullRescanBoundaryTests: XCTestCase {
         }
     }
 
-    func testCancellationAfterFirstNotificationRetainsFailedRollback() {
-        let windowId = 71_010
-        let element = AXUIElementCreateApplication(71_011)
-        var cancellationChecks = 0
-        var added: [AppAXWindowNotification] = []
-        var removed: [AppAXWindowNotification] = []
-        var pending: [AppAXPendingNotificationRemoval] = []
+    func testNotificationCancellationRollsBackInstalledPhaseOnce() {
+        let cases: [(
+            check: Int,
+            pid: pid_t,
+            windowId: Int,
+            added: [AppAXWindowNotification],
+            removed: [AppAXWindowNotification]
+        )] = [
+            (2, 71_011, 71_010, [.destroyed], [.destroyed]),
+            (
+                4,
+                71_040,
+                71_041,
+                [.destroyed, .miniaturized, .deminiaturized],
+                [.deminiaturized, .miniaturized, .destroyed]
+            )
+        ]
+        for row in cases {
+            let element = AXUIElementCreateApplication(row.pid)
+            var cancellationChecks = 0
+            var added: [AppAXWindowNotification] = []
+            var removed: [AppAXWindowNotification] = []
+            var pendingDeliveries: [[AppAXPendingNotificationRemoval]] = []
 
-        XCTAssertThrowsError(
-            try AppAXWindowNotificationInstaller.install(
-                element: element,
-                windowId: windowId,
-                ownedSubscription: nil,
+            XCTAssertThrowsError(try AppAXWindowNotificationInstaller.install(
+                element: element, windowId: row.windowId, ownedSubscription: nil,
                 addNotification: { notification, _ in
                     added.append(notification)
                     return .success
@@ -453,56 +466,20 @@ final class AXFullRescanBoundaryTests: XCTestCase {
                 },
                 checkCancellation: {
                     cancellationChecks += 1
-                    if cancellationChecks == 2 {
-                        throw CancellationError()
-                    }
+                    if cancellationChecks == row.check { throw CancellationError() }
                 },
-                recordPendingRemovals: { pending.append(contentsOf: $0) }
-            )
-        ) { error in
-            XCTAssertTrue(error is CancellationError)
+                recordPendingRemovals: { pendingDeliveries.append($0) }
+            )) { error in
+                XCTAssertTrue(error is CancellationError)
+            }
+
+            XCTAssertEqual(cancellationChecks, row.check)
+            XCTAssertEqual(added, row.added)
+            XCTAssertEqual(removed, row.removed)
+            XCTAssertEqual(pendingDeliveries.count, 1)
+            XCTAssertEqual(pendingDeliveries.first?.map(\.notification), row.removed)
+            XCTAssertTrue(pendingDeliveries.first?.allSatisfy { CFEqual($0.element, element) } == true)
         }
-
-        XCTAssertEqual(added, [.destroyed])
-        XCTAssertEqual(removed, [.destroyed])
-        XCTAssertEqual(pending.map(\.notification), [.destroyed])
-        XCTAssertTrue(pending.first.map { CFEqual($0.element, element) } == true)
-    }
-
-    func testCancellationAfterLifecycleInstallationRollsBackInReverseOrderOnce() {
-        let element = AXUIElementCreateApplication(71_040)
-        var cancellationChecks = 0
-        var added: [AppAXWindowNotification] = []
-        var removed: [AppAXWindowNotification] = []
-        var pendingDeliveries: [[AppAXPendingNotificationRemoval]] = []
-
-        XCTAssertThrowsError(try AppAXWindowNotificationInstaller.install(
-            element: element,
-            windowId: 71_041,
-            ownedSubscription: nil,
-            addNotification: { notification, _ in
-                added.append(notification)
-                return .success
-            },
-            removeNotification: { notification in
-                removed.append(notification)
-                return .cannotComplete
-            },
-            checkCancellation: {
-                cancellationChecks += 1
-                if cancellationChecks == 4 { throw CancellationError() }
-            },
-            recordPendingRemovals: { pendingDeliveries.append($0) }
-        )) { error in
-            XCTAssertTrue(error is CancellationError)
-        }
-
-        XCTAssertEqual(cancellationChecks, 4)
-        XCTAssertEqual(added, [.destroyed, .miniaturized, .deminiaturized])
-        XCTAssertEqual(removed, [.deminiaturized, .miniaturized, .destroyed])
-        XCTAssertEqual(pendingDeliveries.count, 1)
-        XCTAssertEqual(pendingDeliveries.first?.map(\.notification), [.deminiaturized, .miniaturized, .destroyed])
-        XCTAssertTrue(pendingDeliveries.first?.allSatisfy { CFEqual($0.element, element) } == true)
     }
 
     func testAuthoritativeBindingPrunesOrphanStateAndPreservesExactWorldTarget() throws {
@@ -760,41 +737,26 @@ final class AXFullRescanBoundaryTests: XCTestCase {
         XCTAssertFalse(suppression.contains(orphanWindowId))
     }
 
-    func testRefreshedDifferentElementInvalidatesFrameRequest() {
-        let generations = LockedWindowGenerationMap()
-        let windowId = 71_025
-        let cachedElement = AXUIElementCreateApplication(71_026)
-        let replacementElement = AXUIElementCreateApplication(71_027)
-        let requestGeneration = generations.nextGeneration(for: windowId)
-
-        XCTAssertFalse(
-            AppAXContext.acceptsRefreshedFrameElement(
-                cachedElement: cachedElement,
-                refreshedElement: replacementElement,
-                windowId: windowId,
-                requestGeneration: requestGeneration,
-                generations: generations
+    func testRefreshedFrameElementIdentityControlsGenerationCurrentness() {
+        let cases: [(same: Bool, windowId: Int, cachedPID: pid_t, refreshedPID: pid_t, accepted: Bool, current: Bool)] =
+            [
+                (false, 71_025, 71_026, 71_027, false, false),
+                (true, 71_028, 71_029, 71_029, true, true)
+            ]
+        for row in cases {
+            let generations = LockedWindowGenerationMap()
+            let cached = AXUIElementCreateApplication(row.cachedPID)
+            let refreshed = row.same ? cached : AXUIElementCreateApplication(row.refreshedPID)
+            let generation = generations.nextGeneration(for: row.windowId)
+            XCTAssertEqual(
+                AppAXContext.acceptsRefreshedFrameElement(
+                    cachedElement: cached, refreshedElement: refreshed, windowId: row.windowId,
+                    requestGeneration: generation, generations: generations
+                ),
+                row.accepted
             )
-        )
-        XCTAssertFalse(generations.isCurrent(requestGeneration, for: windowId))
-    }
-
-    func testRefreshedSameElementKeepsFrameRequestCurrent() {
-        let generations = LockedWindowGenerationMap()
-        let windowId = 71_028
-        let element = AXUIElementCreateApplication(71_029)
-        let requestGeneration = generations.nextGeneration(for: windowId)
-
-        XCTAssertTrue(
-            AppAXContext.acceptsRefreshedFrameElement(
-                cachedElement: element,
-                refreshedElement: element,
-                windowId: windowId,
-                requestGeneration: requestGeneration,
-                generations: generations
-            )
-        )
-        XCTAssertTrue(generations.isCurrent(requestGeneration, for: windowId))
+            XCTAssertEqual(generations.isCurrent(generation, for: row.windowId), row.current)
+        }
     }
 
     func testFrameWriteUsesExpectedElementWithoutAppCacheEntry() {
@@ -1031,145 +993,78 @@ final class AXFullRescanBoundaryTests: XCTestCase {
         }
     }
 
-    func testExactRemovalPreservesInterposedSameIdIncarnation() {
-        let pid: pid_t = 71_049
-        let windowId = 71_050
-        let retired = AXWindowRef(
-            element: AXUIElementCreateApplication(pid),
-            windowId: windowId
-        )
-        let interposed = AXWindowRef(
-            element: AXUIElementCreateApplication(pid + 1),
-            windowId: windowId
-        )
-
-        $appThreadToken.withValue(AppThreadToken(pid: pid)) {
-            let windows = ThreadGuardedValue([windowId: interposed.element])
-            let subscription = AppAXWindowSubscription(
-                windowId: windowId,
-                element: interposed.element,
-                notifications: .lifecycle
+    func testExactRemovalRespectsCacheAndSubscriptionIdentities() {
+        let cases: [(subscriptionMatches: Bool, pid: pid_t, windowId: Int, pending: Set<AppAXWindowNotification>)] = [
+            (false, 71_049, 71_050, []),
+            (true, 71_051, 71_052, [.destroyed, .miniaturized, .deminiaturized])
+        ]
+        for row in cases {
+            let cached = AXUIElementCreateApplication(row.subscriptionMatches ? row.pid : row.pid + 1)
+            let subscribed = row.subscriptionMatches ? AXUIElementCreateApplication(row.pid + 1) : cached
+            let expected = AXWindowRef(
+                element: row.subscriptionMatches ? subscribed : AXUIElementCreateApplication(row.pid),
+                windowId: row.windowId
             )
-            let subscriptions = ThreadGuardedValue([windowId: subscription])
-            let pending = ThreadGuardedValue([AppAXPendingNotificationRemoval]())
-            defer {
-                windows.destroy()
-                subscriptions.destroy()
-                pending.destroy()
+            $appThreadToken.withValue(AppThreadToken(pid: row.pid)) {
+                let windows = ThreadGuardedValue([row.windowId: cached])
+                let subscription = AppAXWindowSubscription(
+                    windowId: row.windowId, element: subscribed, notifications: .lifecycle
+                )
+                let subscriptions = ThreadGuardedValue([row.windowId: subscription])
+                let pending = ThreadGuardedValue([AppAXPendingNotificationRemoval]())
+                defer {
+                    windows.destroy()
+                    subscriptions.destroy()
+                    pending.destroy()
+                }
+
+                let outcome = AppAXContext.removeExactWindowState(
+                    expectedWindow: expected, windows: windows, subscribedWindows: subscriptions,
+                    pendingNotificationRemovals: pending, observerKey: nil
+                )
+
+                XCTAssertFalse(outcome.removedCachedWindow)
+                XCTAssertEqual(outcome.removedSubscription, row.subscriptionMatches)
+                XCTAssertTrue(windows[row.windowId].map { CFEqual($0, cached) } == true)
+                if row.subscriptionMatches {
+                    XCTAssertNil(subscriptions[row.windowId])
+                } else {
+                    XCTAssertTrue(subscriptions[row.windowId].map { CFEqual($0.element, subscribed) } == true)
+                    XCTAssertTrue(pending.value.isEmpty)
+                }
+                XCTAssertEqual(Set(pending.value.map(\.notification)), row.pending)
             }
-
-            let outcome = AppAXContext.removeExactWindowState(
-                expectedWindow: retired,
-                windows: windows,
-                subscribedWindows: subscriptions,
-                pendingNotificationRemovals: pending,
-                observerKey: nil
-            )
-
-            XCTAssertFalse(outcome.removedCachedWindow)
-            XCTAssertFalse(outcome.removedSubscription)
-            XCTAssertTrue(windows[windowId].map { CFEqual($0, interposed.element) } == true)
-            XCTAssertTrue(subscriptions[windowId].map { CFEqual($0.element, interposed.element) } == true)
-            XCTAssertTrue(pending.value.isEmpty)
         }
     }
 
-    func testExactRemovalDistinguishesSubscriptionOnlyDivergence() {
-        let pid: pid_t = 71_051
-        let windowId = 71_052
-        let cached = AXUIElementCreateApplication(pid)
-        let subscribed = AXWindowRef(
-            element: AXUIElementCreateApplication(pid + 1),
-            windowId: windowId
-        )
-
-        $appThreadToken.withValue(AppThreadToken(pid: pid)) {
-            let windows = ThreadGuardedValue([windowId: cached])
-            let subscription = AppAXWindowSubscription(
-                windowId: windowId,
-                element: subscribed.element,
-                notifications: .lifecycle
+    func testFullRescanEnumerationRoutesByEvidenceAndPolicy() {
+        let cases: [(
+            label: String,
+            policy: NSApplication.ActivationPolicy,
+            evidence: Bool,
+            context: Bool,
+            preserved: Bool,
+            expected: FullRescanEnumerationRoute?
+        )] = [
+            ("regular discovery", .regular, true, false, false, .persistent),
+            ("accessory context", .accessory, false, true, false, .persistent),
+            ("accessory preserved", .accessory, false, false, true, .persistent),
+            ("regular empty", .regular, false, false, false, .oneShot),
+            ("accessory empty", .accessory, false, false, false, nil),
+            ("prohibited all", .prohibited, true, true, true, nil),
+            ("accessory discovery", .accessory, true, false, false, .persistent),
+            ("prohibited discovery", .prohibited, true, false, false, nil)
+        ]
+        for row in cases {
+            XCTAssertEqual(
+                AXWindowInspectionContext.fullRescanEnumerationRoute(
+                    activationPolicy: row.policy, hasDiscoveryEvidence: row.evidence,
+                    hasContext: row.context, hasPreservedState: row.preserved
+                ),
+                row.expected,
+                row.label
             )
-            let subscriptions = ThreadGuardedValue([windowId: subscription])
-            let pending = ThreadGuardedValue([AppAXPendingNotificationRemoval]())
-            defer {
-                windows.destroy()
-                subscriptions.destroy()
-                pending.destroy()
-            }
-
-            let outcome = AppAXContext.removeExactWindowState(
-                expectedWindow: subscribed,
-                windows: windows,
-                subscribedWindows: subscriptions,
-                pendingNotificationRemovals: pending,
-                observerKey: nil
-            )
-
-            XCTAssertFalse(outcome.removedCachedWindow)
-            XCTAssertTrue(outcome.removedSubscription)
-            XCTAssertTrue(windows[windowId].map { CFEqual($0, cached) } == true)
-            XCTAssertNil(subscriptions[windowId])
-            XCTAssertEqual(Set(pending.value.map(\.notification)), Set(AppAXWindowNotification.allCases))
         }
-    }
-
-    func testFullRescanRoutesEvidenceAndPreservedStateToPersistentContexts() {
-        XCTAssertEqual(
-            AXWindowInspectionContext.fullRescanEnumerationRoute(
-                activationPolicy: .regular,
-                hasDiscoveryEvidence: true,
-                hasContext: false,
-                hasPreservedState: false
-            ),
-            .persistent
-        )
-        XCTAssertEqual(
-            AXWindowInspectionContext.fullRescanEnumerationRoute(
-                activationPolicy: .accessory,
-                hasDiscoveryEvidence: false,
-                hasContext: true,
-                hasPreservedState: false
-            ),
-            .persistent
-        )
-        XCTAssertEqual(
-            AXWindowInspectionContext.fullRescanEnumerationRoute(
-                activationPolicy: .accessory,
-                hasDiscoveryEvidence: false,
-                hasContext: false,
-                hasPreservedState: true
-            ),
-            .persistent
-        )
-    }
-
-    func testFullRescanRoutesOnlyEvidenceFreeRegularAppsToOneShotProbes() {
-        XCTAssertEqual(
-            AXWindowInspectionContext.fullRescanEnumerationRoute(
-                activationPolicy: .regular,
-                hasDiscoveryEvidence: false,
-                hasContext: false,
-                hasPreservedState: false
-            ),
-            .oneShot
-        )
-        XCTAssertNil(
-            AXWindowInspectionContext.fullRescanEnumerationRoute(
-                activationPolicy: .accessory,
-                hasDiscoveryEvidence: false,
-                hasContext: false,
-                hasPreservedState: false
-            )
-        )
-        XCTAssertNil(
-            AXWindowInspectionContext.fullRescanEnumerationRoute(
-                activationPolicy: .prohibited,
-                hasDiscoveryEvidence: true,
-                hasContext: true,
-                hasPreservedState: true
-            )
-        )
     }
 
     func testCandidateManageabilityUsesCapturedGeometryEvidence() {
@@ -1455,17 +1350,37 @@ final class AXFullRescanBoundaryTests: XCTestCase {
         XCTAssertEqual(queryCount, 0)
     }
 
-    func testFullscreenButtonEvidenceTreatsMissingSentinelsAsAbsent() throws {
-        let noValue = try XCTUnwrap(axBoundaryErrorValue(.noValue))
-        let unsupported = try XCTUnwrap(axBoundaryErrorValue(.attributeUnsupported))
-        let values: [Any?] = [nil, kCFNull, NSNull(), noValue, unsupported]
-
-        for value in values {
-            guard case .absent = AXWindowService.fullscreenButtonEvidence(value) else {
-                XCTFail("Expected absent fullscreen-button evidence")
-                continue
+    func testFullscreenButtonEvidenceOutcomeMatrix() throws {
+        enum Outcome { case absent, failed, present }
+        var point = CGPoint(x: 10, y: 20)
+        let pointValue = try XCTUnwrap(AXValueCreate(.cgPoint, &point))
+        let element = AXUIElementCreateApplication(72_035)
+        let cases: [(label: String, value: Any?, outcome: Outcome, succeeded: Bool, resolved: Bool)] = [
+            ("nil", nil, .absent, true, false),
+            ("CFNull", kCFNull, .absent, true, false),
+            ("NSNull", NSNull(), .absent, true, false),
+            ("no value", try XCTUnwrap(axBoundaryErrorValue(.noValue)), .absent, true, false),
+            ("unsupported", try XCTUnwrap(axBoundaryErrorValue(.attributeUnsupported)), .absent, true, false),
+            ("cannot complete", try XCTUnwrap(axBoundaryErrorValue(.cannotComplete)), .failed, false, false),
+            ("invalid element", try XCTUnwrap(axBoundaryErrorValue(.invalidUIElement)), .failed, false, false),
+            ("failure", try XCTUnwrap(axBoundaryErrorValue(.failure)), .failed, false, false),
+            ("point value", pointValue, .failed, false, false),
+            ("string", "unexpected", .failed, false, false),
+            ("AX element", element, .present, true, true)
+        ]
+        for row in cases {
+            let evidence = AXWindowService.fullscreenButtonEvidence(row.value)
+            switch (row.outcome, evidence) {
+            case (.absent, .absent),
+                 (.failed, .failed):
+                break
+            case let (.present, .present(resolved)):
+                XCTAssertTrue(CFEqual(element, resolved), row.label)
+            default:
+                XCTFail("Unexpected fullscreen-button evidence: \(row.label)")
             }
-            XCTAssertFalse(AXWindowService.resolvedAttribute(value))
+            XCTAssertEqual(evidence.succeeded, row.succeeded, row.label)
+            XCTAssertEqual(AXWindowService.resolvedAttribute(row.value), row.resolved, row.label)
         }
     }
 
@@ -1488,40 +1403,6 @@ final class AXFullRescanBoundaryTests: XCTestCase {
         XCTAssertNil(inputs.minSize)
         XCTAssertNil(inputs.maxSize)
         XCTAssertEqual(AXWindowService.resolvedSizeConstraints(inputs), .fixed(size: currentSize))
-    }
-
-    func testFullscreenButtonEvidencePreservesFailures() throws {
-        var point = CGPoint(x: 10, y: 20)
-        let pointValue = try XCTUnwrap(AXValueCreate(.cgPoint, &point))
-        let values: [Any] = [
-            try XCTUnwrap(axBoundaryErrorValue(.cannotComplete)),
-            try XCTUnwrap(axBoundaryErrorValue(.invalidUIElement)),
-            try XCTUnwrap(axBoundaryErrorValue(.failure)),
-            pointValue,
-            "unexpected"
-        ]
-
-        for value in values {
-            let evidence = AXWindowService.fullscreenButtonEvidence(value)
-            guard case .failed = evidence else {
-                XCTFail("Expected failed fullscreen-button evidence")
-                continue
-            }
-            XCTAssertFalse(evidence.succeeded)
-            XCTAssertFalse(AXWindowService.resolvedAttribute(value))
-        }
-    }
-
-    func testFullscreenButtonEvidenceAcceptsOnlyAXUIElement() {
-        let element = AXUIElementCreateApplication(72_035)
-        let evidence = AXWindowService.fullscreenButtonEvidence(element)
-
-        guard case let .present(resolvedElement) = evidence else {
-            return XCTFail("Expected present fullscreen-button evidence")
-        }
-        XCTAssertTrue(CFEqual(element, resolvedElement))
-        XCTAssertTrue(evidence.succeeded)
-        XCTAssertTrue(AXWindowService.resolvedAttribute(element))
     }
 
     func testMissingFullscreenButtonErrorWrapperClassifiesActivityMonitorShapeAsFloating() throws {
@@ -1561,23 +1442,6 @@ final class AXFullRescanBoundaryTests: XCTestCase {
         XCTAssertEqual(decision.source, .heuristic)
         XCTAssertEqual(decision.heuristicReasons, [.missingFullscreenButton])
         XCTAssertNil(decision.deferredReason)
-    }
-
-    func testCapturedConstraintParserUsesObservedSizeForFixedWindow() {
-        let size = CGSize(width: 420, height: 280)
-
-        let constraints = AXWindowService.resolvedSizeConstraints(
-            AXWindowConstraintInputs(
-                hasGrowArea: false,
-                hasZoomButton: false,
-                subrole: kAXDialogSubrole as String,
-                minSize: nil,
-                maxSize: nil,
-                currentSize: size
-            )
-        )
-
-        XCTAssertEqual(constraints, .fixed(size: size))
     }
 
     func testCapturedConstraintParserPreservesExplicitBounds() {
@@ -2116,29 +1980,28 @@ final class AXFullRescanBoundaryTests: XCTestCase {
         XCTAssertEqual(maximumActive, 1)
     }
 
-    func testGenerationMoveInvalidatesLateOldWindowResult() {
-        let generations = LockedWindowGenerationMap()
-        let oldWindowId = 72_017
-        let newWindowId = 72_018
-        let inFlightGeneration = generations.nextGeneration(for: oldWindowId)
+    func testGenerationMoveInvalidatesPriorResultsAcrossDestinationStates() {
+        let cases: [(advanced: Bool, old: Int, new: Int)] = [
+            (false, 72_017, 72_018), (true, 72_027, 72_028)
+        ]
+        for row in cases {
+            let generations = LockedWindowGenerationMap()
+            let oldGeneration = generations.nextGeneration(for: row.old)
+            var destinationGeneration: UInt64?
+            if row.advanced {
+                _ = generations.nextGeneration(for: row.new)
+                destinationGeneration = generations.nextGeneration(for: row.new)
+            }
 
-        generations.invalidateAndMoveValue(from: oldWindowId, to: newWindowId)
+            generations.invalidateAndMoveValue(from: row.old, to: row.new)
 
-        XCTAssertFalse(generations.isCurrent(inFlightGeneration, for: oldWindowId))
-        XCTAssertFalse(generations.isCurrent(inFlightGeneration, for: newWindowId))
-    }
-
-    func testGenerationMoveInvalidatesExistingDestinationResult() {
-        let generations = LockedWindowGenerationMap()
-        let oldWindowId = 72_027
-        let newWindowId = 72_028
-        _ = generations.nextGeneration(for: oldWindowId)
-        _ = generations.nextGeneration(for: newWindowId)
-        let destinationGeneration = generations.nextGeneration(for: newWindowId)
-
-        generations.invalidateAndMoveValue(from: oldWindowId, to: newWindowId)
-
-        XCTAssertFalse(generations.isCurrent(destinationGeneration, for: newWindowId))
+            if let destinationGeneration {
+                XCTAssertFalse(generations.isCurrent(destinationGeneration, for: row.new))
+            } else {
+                XCTAssertFalse(generations.isCurrent(oldGeneration, for: row.old))
+                XCTAssertFalse(generations.isCurrent(oldGeneration, for: row.new))
+            }
+        }
     }
 
     func testSuppressionMoveRetainsNewWindowAndClearsOldWindow() {
@@ -2485,89 +2348,65 @@ final class AXFullRescanBoundaryTests: XCTestCase {
         }
     }
 
-    func testDeferredFullRescanCannotApplyAfterWindowChangesWorkspace() async throws {
-        let controller = WindowAdmissionTestSupport.controller()
-        let source = try XCTUnwrap(controller.workspaceManager.workspaceId(for: "1", createIfMissing: true))
-        let destination = try XCTUnwrap(controller.workspaceManager.workspaceId(for: "2", createIfMissing: true))
-        let pid: pid_t = 2_147_483_497
-        let windowId = 72_399
-        let token = controller.workspaceManager.addWindow(
-            AXWindowRef(element: AXUIElementCreateApplication(pid), windowId: windowId),
-            pid: pid, windowId: windowId, to: source, mode: .tiling
-        )
-        let refresh = controller.layoutRefreshController
-        defer { refresh.resetState() }
-        let entered = expectation(description: "inventory read awaiting result")
-        let gate = AXBoundaryAsyncGate()
-        controller.axManager.fullRescanWindowInfoProvider = { ids in
-            entered.fulfill()
-            await gate.wait()
-            return Dictionary(uniqueKeysWithValues: ids.map {
-                ($0, WindowServerInfo(id: $0, pid: pid, level: 0, frame: .zero))
-            })
-        }
-        refresh.beginPerformanceCapture()
-        refresh.layoutState.pendingRefresh = .init(
-            kind: .fullRescan, reason: .appLaunched,
-            rescanScope: .targeted(appPIDs: [pid], nativeSpaceIds: [])
-        )
-        refresh.startNextRefreshIfNeeded()
-        await fulfillment(of: [entered], timeout: 1)
-        let active = try XCTUnwrap(refresh.layoutState.activeRefreshTask)
-        refresh.layoutState.inventoryStabilityHoldFullRescans = true
-        controller.workspaceManager.setWorkspace(for: token, to: destination)
-        await gate.releaseAll()
-        await active.value
-        XCTAssertEqual(refresh.performanceSnapshot()?.refreshesIncomplete, 1)
-        XCTAssertEqual(refresh.performanceSnapshot()?.refreshesCompleted, 0)
-        XCTAssertEqual(controller.workspaceManager.workspace(for: token), destination)
-        XCTAssertNotNil(controller.workspaceManager.entry(for: token))
-        XCTAssertFalse(refresh.layoutState.didExecuteEffectPlan)
-    }
+    func testDeferredFullRescanRejectsStaleWorkspaceAndMinimizedState() async throws {
+        let cases: [(minimize: Bool, pid: pid_t, windowId: Int)] = [
+            (false, 2_147_483_497, 72_399),
+            (true, 2_147_483_496, 72_398)
+        ]
+        for row in cases {
+            let controller = WindowAdmissionTestSupport.controller()
+            let manager = controller.workspaceManager
+            let source = try XCTUnwrap(manager.workspaceId(for: "1", createIfMissing: true))
+            let destination = try XCTUnwrap(manager.workspaceId(for: "2", createIfMissing: true))
+            let token = WindowToken(pid: row.pid, windowId: row.windowId)
+            manager.addWindow(
+                WindowAdmissionTestSupport.axRef(for: token),
+                pid: token.pid, windowId: token.windowId, to: source, mode: .tiling
+            )
+            let refresh = controller.layoutRefreshController
+            defer {
+                refresh.resetState()
+                controller.axManager.cleanup()
+            }
+            let entered = expectation(description: "Inventory read awaiting result")
+            let gate = AXBoundaryAsyncGate()
+            addTeardownBlock {
+                await gate.releaseAll()
+            }
+            controller.axManager.fullRescanWindowInfoProvider = { ids in
+                entered.fulfill()
+                await gate.wait()
+                return Dictionary(uniqueKeysWithValues: ids.map {
+                    ($0, WindowServerInfo(id: $0, pid: token.pid, level: 0, frame: .zero))
+                })
+            }
+            refresh.beginPerformanceCapture()
+            refresh.layoutState.pendingRefresh = .init(
+                kind: .fullRescan, reason: .appLaunched,
+                rescanScope: .targeted(appPIDs: [token.pid], nativeSpaceIds: [])
+            )
+            refresh.startNextRefreshIfNeeded()
+            await fulfillment(of: [entered], timeout: 1)
+            let active = try XCTUnwrap(refresh.layoutState.activeRefreshTask)
+            refresh.layoutState.inventoryStabilityHoldFullRescans = true
+            if row.minimize {
+                controller.axEventHandler.updateWindowMinimizedState(true, token: token, requestRefresh: false)
+            } else {
+                manager.setWorkspace(for: token, to: destination)
+            }
+            await gate.releaseAll()
+            await active.value
 
-    func testDeferredFullRescanCannotApplyAfterWindowIsMinimized() async throws {
-        let controller = WindowAdmissionTestSupport.controller()
-        let manager = controller.workspaceManager
-        let workspaceId = try XCTUnwrap(manager.workspaceId(for: "1", createIfMissing: true))
-        let token = WindowToken(pid: 2_147_483_496, windowId: 72_398)
-        manager.addWindow(
-            WindowAdmissionTestSupport.axRef(for: token),
-            pid: token.pid,
-            windowId: token.windowId,
-            to: workspaceId
-        )
-        let refresh = controller.layoutRefreshController
-        defer {
-            refresh.resetState()
-            controller.axManager.cleanup()
+            XCTAssertEqual(refresh.performanceSnapshot()?.refreshesIncomplete, 1)
+            XCTAssertEqual(refresh.performanceSnapshot()?.refreshesCompleted, 0)
+            let entry = try XCTUnwrap(manager.entry(for: token))
+            if row.minimize {
+                XCTAssertTrue(entry.observedState.isMinimized)
+            } else {
+                XCTAssertEqual(manager.workspace(for: token), destination)
+            }
+            XCTAssertFalse(refresh.layoutState.didExecuteEffectPlan)
         }
-        let entered = expectation(description: "Inventory read awaiting result")
-        let gate = AXBoundaryAsyncGate()
-        controller.axManager.fullRescanWindowInfoProvider = { ids in
-            entered.fulfill()
-            await gate.wait()
-            return Dictionary(uniqueKeysWithValues: ids.map {
-                ($0, WindowServerInfo(id: $0, pid: token.pid, level: 0, frame: .zero))
-            })
-        }
-        refresh.beginPerformanceCapture()
-        refresh.layoutState.pendingRefresh = .init(
-            kind: .fullRescan,
-            reason: .appLaunched,
-            rescanScope: .targeted(appPIDs: [token.pid], nativeSpaceIds: [])
-        )
-        refresh.startNextRefreshIfNeeded()
-        await fulfillment(of: [entered], timeout: 1)
-        let active = try XCTUnwrap(refresh.layoutState.activeRefreshTask)
-        refresh.layoutState.inventoryStabilityHoldFullRescans = true
-        controller.axEventHandler.updateWindowMinimizedState(true, token: token, requestRefresh: false)
-        await gate.releaseAll()
-        await active.value
-
-        XCTAssertEqual(refresh.performanceSnapshot()?.refreshesIncomplete, 1)
-        XCTAssertEqual(refresh.performanceSnapshot()?.refreshesCompleted, 0)
-        XCTAssertTrue(try XCTUnwrap(manager.entry(for: token)).observedState.isMinimized)
-        XCTAssertFalse(refresh.layoutState.didExecuteEffectPlan)
     }
 }
 
@@ -2783,6 +2622,13 @@ final class AXRunLoopTimeoutBoundaryTests: XCTestCase {
             }
         }
         thread.start()
+        defer {
+            thread.runInLoopAsync { _ in
+                cacheBox.windows?.destroy()
+                cacheBox.subscriptions?.destroy()
+                CFRunLoopStop(CFRunLoopGetCurrent())
+            }
+        }
         XCTAssertEqual(ready.wait(timeout: .now() + 1), .success)
 
         let committed = try await thread.runInLoop(timeout: .seconds(1)) { job in
@@ -2818,11 +2664,6 @@ final class AXRunLoopTimeoutBoundaryTests: XCTestCase {
         }
 
         XCTAssertTrue(committed)
-        thread.runInLoopAsync { _ in
-            cacheBox.windows?.destroy()
-            cacheBox.subscriptions?.destroy()
-            CFRunLoopStop(CFRunLoopGetCurrent())
-        }
     }
 
     func testRebindCachePreservesInterposedSourceIncarnation() async throws {
@@ -2866,6 +2707,13 @@ final class AXRunLoopTimeoutBoundaryTests: XCTestCase {
             }
         }
         thread.start()
+        defer {
+            thread.runInLoopAsync { _ in
+                cacheBox.windows?.destroy()
+                cacheBox.subscriptions?.destroy()
+                CFRunLoopStop(CFRunLoopGetCurrent())
+            }
+        }
         XCTAssertEqual(ready.wait(timeout: .now() + 1), .success)
 
         let preserved = try await thread.runInLoop(timeout: .seconds(1)) { job in
@@ -2908,10 +2756,5 @@ final class AXRunLoopTimeoutBoundaryTests: XCTestCase {
         }
 
         XCTAssertTrue(preserved)
-        thread.runInLoopAsync { _ in
-            cacheBox.windows?.destroy()
-            cacheBox.subscriptions?.destroy()
-            CFRunLoopStop(CFRunLoopGetCurrent())
-        }
     }
 }

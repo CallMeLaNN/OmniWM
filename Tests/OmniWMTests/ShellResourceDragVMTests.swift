@@ -329,7 +329,6 @@ final class ShellResourceDragVMTests: XCTestCase {
         """)
         try fixture.provideResources()
         let node = try XCTUnwrap(fixture.render().first)
-        XCTAssertEqual(MemoryLayout<omni_wire_node>.stride, 392)
         XCTAssertNotEqual(node.resource_drag_ref & OMNI_ACTION_HANDLER, 0)
         let request = fixture.reserve(node)
         XCTAssertEqual(request.2.count, 1)

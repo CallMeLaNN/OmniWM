@@ -6,17 +6,6 @@ import Foundation
 import XCTest
 
 final class ShellSpringDynamicsTests: XCTestCase {
-    func testInitialVelocitySurvivesARetargetWithDifferentDisplacementAndSpring() {
-        let previous = ShellSpringDynamics.velocity(
-            at: 0.17, displacement: -80, initialVelocity: 140, spring: .init(mass: 1, stiffness: 220, damping: 18)
-        )
-        XCTAssertNotEqual(previous, 0)
-        let retargeted = ShellSpringDynamics.velocity(
-            at: 0, displacement: 35, initialVelocity: previous, spring: .init(mass: 2, stiffness: 400, damping: 12)
-        )
-        XCTAssertEqual(retargeted, previous)
-    }
-
     func testUndampedVelocityMatchesHarmonicMotion() {
         for time in [0.0, 0.1, 0.5, 1.0, 2.0] {
             let velocity = ShellSpringDynamics.velocity(
@@ -27,6 +16,21 @@ final class ShellSpringDynamicsTests: XCTestCase {
     }
 
     func testCriticalAndOverdampedClosedForms() {
+        XCTAssertEqual(
+            ShellSpringDynamics.velocity(
+                at: 0, displacement: -3, initialVelocity: 4, spring: .init(mass: 2, stiffness: 8, damping: 8)
+            ),
+            4
+        )
+        let previous = ShellSpringDynamics.velocity(
+            at: 0.17, displacement: -80, initialVelocity: 140, spring: .init(mass: 1, stiffness: 220, damping: 18)
+        )
+        XCTAssertNotEqual(previous, 0)
+        let retargeted = ShellSpringDynamics.velocity(
+            at: 0, displacement: 35, initialVelocity: previous, spring: .init(mass: 2, stiffness: 400, damping: 12)
+        )
+        XCTAssertEqual(retargeted, previous)
+
         for time in [0.0, 0.1, 0.5, 1.0, 2.0] {
             let critical = ShellSpringDynamics.velocity(
                 at: time, displacement: -3, initialVelocity: 4, spring: .init(mass: 2, stiffness: 8, damping: 8)

@@ -692,66 +692,49 @@ final class DurableParkTests: XCTestCase {
         XCTAssertNotEqual(laterRequest.requestId, retryRequest.requestId)
     }
 
-    func testAnimationSupersessionStillRequiresVisibleAXSettlementOnReveal() throws {
-        let manager = AXManager()
-        defer { manager.cleanup() }
-        let pid: pid_t = 965_001
-        let windowId = 965_101
-        let token = WindowToken(pid: pid, windowId: windowId)
-        let target = AXFrameApplicationTarget(
-            pid: pid,
-            window: AXWindowRef(
-                element: AXUIElementCreateApplication(pid),
-                windowId: windowId
-            ),
-            frame: CGRect(x: 2559, y: 16, width: 800, height: 600)
-        )
-        let staleRequest = try XCTUnwrap(manager.prepareParkFrameApplications([target]).first)
+    func testParkStatesRequireVisibleAXSettlementOnReveal() throws {
+        let cases: [(verified: Bool, pid: pid_t, windowId: Int)] = [
+            (false, 965_001, 965_101),
+            (true, 966_001, 966_101)
+        ]
+        for row in cases {
+            let manager = AXManager()
+            defer { manager.cleanup() }
+            let token = WindowToken(pid: row.pid, windowId: row.windowId)
+            let target = AXFrameApplicationTarget(
+                pid: row.pid,
+                window: AXWindowRef(
+                    element: AXUIElementCreateApplication(row.pid), windowId: row.windowId
+                ),
+                frame: CGRect(x: 2559, y: 16, width: 800, height: 600)
+            )
+            let request = try XCTUnwrap(manager.prepareParkFrameApplications([target]).first)
+            if row.verified {
+                XCTAssertTrue(
+                    manager.processParkFrameApplyResults([
+                        WindowAdmissionTestSupport.successfulFrameResult(request: request)
+                    ]).isEmpty
+                )
+                XCTAssertEqual(manager.verifiedParkFrame(for: row.windowId), target.frame)
+            } else {
+                manager.markParkPending(target)
+                XCTAssertNil(manager.pendingParkFrameRequest(for: row.windowId))
+                XCTAssertTrue(manager.pendingParkWindowIds.contains(row.windowId))
+            }
 
-        manager.markParkPending(target)
-
-        XCTAssertNil(manager.pendingParkFrameRequest(for: windowId))
-        XCTAssertTrue(manager.pendingParkWindowIds.contains(windowId))
-        XCTAssertEqual(
-            manager.cancelParkFrameJobs([(pid: pid, windowId: windowId)], reason: "revealed"),
-            [token]
-        )
-        XCTAssertFalse(manager.pendingParkWindowIds.contains(windowId))
-        XCTAssertTrue(
-            manager.processParkFrameApplyResults([
-                WindowAdmissionTestSupport.successfulFrameResult(request: staleRequest)
-            ]).isEmpty
-        )
-        XCTAssertNil(manager.verifiedParkFrame(for: windowId))
-    }
-
-    func testVerifiedParkStillRequiresVisibleAXSettlementOnReveal() throws {
-        let manager = AXManager()
-        defer { manager.cleanup() }
-        let pid: pid_t = 966_001
-        let windowId = 966_101
-        let token = WindowToken(pid: pid, windowId: windowId)
-        let target = AXFrameApplicationTarget(
-            pid: pid,
-            window: AXWindowRef(
-                element: AXUIElementCreateApplication(pid),
-                windowId: windowId
-            ),
-            frame: CGRect(x: 2559, y: 16, width: 800, height: 600)
-        )
-        let request = try XCTUnwrap(manager.prepareParkFrameApplications([target]).first)
-        XCTAssertTrue(
-            manager.processParkFrameApplyResults([
-                WindowAdmissionTestSupport.successfulFrameResult(request: request)
-            ]).isEmpty
-        )
-        XCTAssertEqual(manager.verifiedParkFrame(for: windowId), target.frame)
-
-        XCTAssertEqual(
-            manager.cancelParkFrameJobs([(pid: pid, windowId: windowId)], reason: "revealed"),
-            [token]
-        )
-        XCTAssertNil(manager.verifiedParkFrame(for: windowId))
+            XCTAssertEqual(
+                manager.cancelParkFrameJobs([(pid: row.pid, windowId: row.windowId)], reason: "revealed"),
+                [token]
+            )
+            XCTAssertFalse(manager.pendingParkWindowIds.contains(row.windowId))
+            XCTAssertNil(manager.verifiedParkFrame(for: row.windowId))
+            XCTAssertTrue(
+                manager.processParkFrameApplyResults([
+                    WindowAdmissionTestSupport.successfulFrameResult(request: request)
+                ]).isEmpty
+            )
+            XCTAssertNil(manager.verifiedParkFrame(for: row.windowId))
+        }
     }
 
     func testVerifiedParkDeduplicatesOnlyExactIdentityAndTargetWithoutTouchingFrameLedger() throws {

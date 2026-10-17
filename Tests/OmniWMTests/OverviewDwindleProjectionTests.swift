@@ -71,33 +71,23 @@ final class OverviewDwindleProjectionTests: XCTestCase {
         XCTAssertTrue(projection.groups.isEmpty)
     }
 
-    func testProjectionPromotesEligibleMemberWhenActiveMemberIsIneligible() {
-        let fixture = makeGroupedFixture()
-        let projection = DwindleOverviewWorkspaceProjection(
-            engine: fixture.engine,
-            workspaceId: fixture.workspaceId,
-            eligibleTokens: [fixture.first, fixture.standalone]
-        )
+    func testProjectionExcludesEachIneligibleGroupRole() {
+        for excludeActive in [true, false] {
+            let fixture = makeGroupedFixture()
+            let retained = excludeActive ? fixture.first : fixture.second
+            let excluded = excludeActive ? fixture.second : fixture.first
+            let projection = DwindleOverviewWorkspaceProjection(
+                engine: fixture.engine,
+                workspaceId: fixture.workspaceId,
+                eligibleTokens: [retained, fixture.standalone]
+            )
 
-        XCTAssertTrue(projection.includes(fixture.first))
-        XCTAssertFalse(projection.includes(fixture.second))
-        XCTAssertTrue(projection.includes(fixture.standalone))
-        XCTAssertEqual(Set(projection.frames.keys), [fixture.first, fixture.standalone])
-        XCTAssertTrue(projection.groups.isEmpty)
-    }
-
-    func testProjectionExcludesIneligibleInactiveMemberFromGroups() {
-        let fixture = makeGroupedFixture()
-        let projection = DwindleOverviewWorkspaceProjection(
-            engine: fixture.engine,
-            workspaceId: fixture.workspaceId,
-            eligibleTokens: [fixture.second, fixture.standalone]
-        )
-
-        XCTAssertFalse(projection.includes(fixture.first))
-        XCTAssertTrue(projection.includes(fixture.second))
-        XCTAssertEqual(Set(projection.frames.keys), [fixture.second, fixture.standalone])
-        XCTAssertTrue(projection.groups.isEmpty)
+            XCTAssertTrue(projection.includes(retained))
+            XCTAssertFalse(projection.includes(excluded))
+            XCTAssertTrue(projection.includes(fixture.standalone))
+            XCTAssertEqual(Set(projection.frames.keys), [retained, fixture.standalone])
+            XCTAssertTrue(projection.groups.isEmpty)
+        }
     }
 
     @MainActor

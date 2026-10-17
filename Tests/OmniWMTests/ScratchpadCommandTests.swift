@@ -25,13 +25,15 @@ final class ScratchpadCommandTests: XCTestCase {
         }
     }
 
-    func testCommandNameMapping() {
-        XCTAssertEqual(IPCCommandRequest.scratchpad(.assign(index: 4)).name, .scratchpad(.assign))
-        XCTAssertEqual(IPCCommandRequest.scratchpad(.toggle(index: 4)).name, .scratchpad(.toggle))
-    }
-
     func testCommandJSONRoundTripCarriesIndex() throws {
-        for request in [IPCCommandRequest.scratchpad(.assign(index: 2)), .scratchpad(.toggle(index: 10))] {
+        let cases: [(IPCCommandRequest, IPCCommandName)] = [
+            (.scratchpad(.assign(index: 2)), .scratchpad(.assign)),
+            (.scratchpad(.toggle(index: 10)), .scratchpad(.toggle)),
+            (.scratchpad(.assign(index: 4)), .scratchpad(.assign)),
+            (.scratchpad(.toggle(index: 4)), .scratchpad(.toggle))
+        ]
+        for (request, expectedName) in cases {
+            XCTAssertEqual(request.name, expectedName)
             let data = try JSONEncoder().encode(request)
             XCTAssertEqual(try JSONDecoder().decode(IPCCommandRequest.self, from: data), request)
         }
@@ -74,14 +76,6 @@ final class ScratchpadCommandTests: XCTestCase {
 
         XCTAssertEqual(router.handle(.scratchpad(.toggle(index: 11))), .invalidArguments)
         XCTAssertEqual(router.handle(.scratchpad(.assign(index: 0))), .invalidArguments)
-    }
-
-    @MainActor
-    func testRouterReportsEmptySlotAsNotFound() {
-        let controller = WMController(settings: makeSettingsStore())
-        let router = IPCCommandRouter(controller: controller, sessionToken: "test")
-
-        XCTAssertEqual(router.handle(.scratchpad(.toggle(index: 1))), .notFound)
     }
 
     func testLabelsRoundTripThroughTOML() throws {

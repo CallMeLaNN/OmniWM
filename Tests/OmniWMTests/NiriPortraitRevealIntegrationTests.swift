@@ -363,7 +363,7 @@ final class NiriPortraitRevealIntegrationTests: XCTestCase {
     ) throws {
         let gap = fixture.controller.innerGap(for: fixture.sourceMonitor)
         let workingFrame = fixture.controller.insetWorkingFrame(for: fixture.sourceMonitor)
-        let layout = fixture.engine.calculateCombinedLayoutWithVisibility(
+        let layout = fixture.engine.calculateCombinedLayoutUsingPools(
             in: fixture.workspaceId,
             monitor: fixture.sourceMonitor,
             gaps: LayoutGaps(

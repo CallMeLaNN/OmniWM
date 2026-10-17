@@ -452,7 +452,7 @@ final class DwindleGroupingEngineTests: XCTestCase {
         XCTAssertEqual(oldFrames[second], sourceFrame)
         XCTAssertEqual(previousTargets[second], sourceFrame)
         XCTAssertEqual(
-            engine.calculateAnimatedFrames(baseFrames: newFrames, in: workspace, at: 100)[second],
+            engine.presentedFrames(in: workspace, at: 100)[second],
             sourceFrame
         )
     }
@@ -488,7 +488,7 @@ final class DwindleGroupingEngineTests: XCTestCase {
         XCTAssertEqual(oldFrames[second], groupedFrame)
         XCTAssertEqual(previousTargets[second], groupedFrame)
         XCTAssertEqual(
-            engine.calculateAnimatedFrames(baseFrames: newFrames, in: workspace, at: 100)[second],
+            engine.presentedFrames(in: workspace, at: 100)[second],
             groupedFrame
         )
     }

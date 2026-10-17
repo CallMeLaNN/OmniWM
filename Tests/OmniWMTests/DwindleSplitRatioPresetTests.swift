@@ -104,16 +104,28 @@ final class DwindleSplitRatioPresetTests: XCTestCase {
     }
 
     func testMinimumWidthClampsPresetAndReportsNoChange() {
-        let (engine, ws, first, second) = makeEngine(screen: screen)
-        engine.updateWindowConstraints(
-            for: second,
-            constraints: WindowSizeConstraints(minSize: CGSize(width: 450, height: 0), maxSize: .zero, isFixed: false)
-        )
-        engine.setSelectedNode(engine.findNode(for: first, in: ws), in: ws)
-
-        XCTAssertTrue(engine.cycleSplitRatio(forward: true, in: ws))
-        XCTAssertEqual(engine.root(for: ws)?.splitRatio ?? 0, 1.1, accuracy: 1e-6)
-        XCTAssertFalse(engine.cycleSplitRatio(forward: true, in: ws))
-        XCTAssertEqual(engine.root(for: ws)?.splitRatio ?? 0, 1.1, accuracy: 1e-6)
+        let cases: [(String, CGSize?, CGSize, CGFloat, Bool, Double)] = [
+            ("first backward with gap", CGSize(width: 600, height: 1), CGSize(width: 1, height: 1), 8, false, 1.208),
+            ("second forward without gap", nil, CGSize(width: 450, height: 0), 0, true, 1.1)
+        ]
+        for (label, firstMinimum, secondMinimum, gap, forward, expectedRatio) in cases {
+            let (engine, ws, first, second) = makeEngine(screen: screen, innerGap: gap)
+            if let firstMinimum {
+                engine.updateWindowConstraints(
+                    for: first,
+                    constraints: WindowSizeConstraints(minSize: firstMinimum, maxSize: .zero, isFixed: false)
+                )
+            }
+            engine.updateWindowConstraints(
+                for: second,
+                constraints: WindowSizeConstraints(minSize: secondMinimum, maxSize: .zero, isFixed: false)
+            )
+            _ = engine.calculateLayout(for: ws, screen: screen)
+            engine.setSelectedNode(engine.findNode(for: first, in: ws), in: ws)
+            XCTAssertTrue(engine.cycleSplitRatio(forward: forward, in: ws), label)
+            XCTAssertEqual(engine.root(for: ws)?.splitRatio ?? 0, expectedRatio, accuracy: 1e-6, label)
+            XCTAssertFalse(engine.cycleSplitRatio(forward: forward, in: ws), label)
+            XCTAssertEqual(engine.root(for: ws)?.splitRatio ?? 0, expectedRatio, accuracy: 1e-6, label)
+        }
     }
 }

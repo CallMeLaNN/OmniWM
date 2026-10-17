@@ -57,27 +57,6 @@ final class WorkspaceBarShellTargetTests: XCTestCase {
         XCTAssertNil(resolve("everything"))
     }
 
-    func testABarWithoutShellWidgetsOnlyMeasuresItsPadding() {
-        let snapshot = WorkspaceBarSnapshot(
-            projection: WorkspaceBarProjection(
-                items: [WorkspaceBarItem(
-                    id: WorkspaceDescriptor.ID(),
-                    name: "1",
-                    rawName: "1",
-                    isFocused: true,
-                    tiledWindows: [],
-                    floatingWindows: []
-                )],
-                scratchpads: [WorkspaceBarScratchpadItem(index: 1, label: nil, windows: [], isVisible: true)]
-            ),
-            backgroundOpacity: 1,
-            barHeight: 24
-        )
-        let view = NSHostingView(rootView: WorkspaceBarMeasurementView(snapshot: snapshot))
-        view.layoutSubtreeIfNeeded()
-        XCTAssertEqual(view.fittingSize.width, 8, accuracy: 0.5)
-    }
-
     func testBarStyleClicksMapToNativeBarActions() throws {
         let id = IPCWindowOpaqueID.encode(pid: 41, windowId: 7, sessionToken: "session")
         let click = { (text: String) in

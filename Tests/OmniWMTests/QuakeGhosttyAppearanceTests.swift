@@ -6,21 +6,13 @@ import AppKit
 import XCTest
 
 final class QuakeGhosttyAppearanceTests: XCTestCase {
-    func testRegularGlassSentinel() {
-        let appearance = makeAppearance(backgroundBlur: -1)
-
-        XCTAssertEqual(appearance.glassStyle, .regular)
-    }
-
-    func testClearGlassSentinel() {
-        let appearance = makeAppearance(backgroundBlur: -2)
-
-        XCTAssertEqual(appearance.glassStyle, .clear)
-    }
-
-    func testNonGlassValuesDoNotProduceGlassStyle() {
-        for backgroundBlur in [Int16.min, -3, 0, 1, 20, Int16.max] {
-            XCTAssertNil(makeAppearance(backgroundBlur: backgroundBlur).glassStyle)
+    func testBackgroundBlurValuesMapToLiteralGlassStyles() {
+        let cases: [(Int16, QuakeGhosttyGlassStyle?)] = [
+            (-1, .regular), (-2, .clear), (.min, nil), (-3, nil),
+            (0, nil), (1, nil), (20, nil), (.max, nil)
+        ]
+        for (blur, expected) in cases {
+            XCTAssertEqual(makeAppearance(backgroundBlur: blur).glassStyle, expected)
         }
     }
 
@@ -58,18 +50,13 @@ final class QuakeGhosttyAppearanceTests: XCTestCase {
     }
 
     func testQuakeOverrideOwnsEveryBackgroundEffectMode() {
-        for effect in QuakeTerminalBackgroundEffect.allCases {
-            XCTAssertEqual(
-                QuakeGhosttyConfigBuilder.overrideContent(
-                    opacity: 0.8,
-                    backgroundEffect: effect
-                ),
-                """
-                background-opacity = 0.80
-                background-blur = \(effect.ghosttyBackgroundBlurValue)
-
-                """
-            )
+        let cases: [(QuakeTerminalBackgroundEffect, String)] = [
+            (.standardBlur, "background-opacity = 0.80\nbackground-blur = false\n"),
+            (.glassRegular, "background-opacity = 0.80\nbackground-blur = macos-glass-regular\n"),
+            (.glassClear, "background-opacity = 0.80\nbackground-blur = macos-glass-clear\n")
+        ]
+        for (effect, expected) in cases {
+            XCTAssertEqual(QuakeGhosttyConfigBuilder.overrideContent(opacity: 0.8, backgroundEffect: effect), expected)
         }
     }
 

@@ -164,51 +164,44 @@ final class AppVisibilityDiagnosticsTests: XCTestCase {
         XCTAssertTrue(report.contains("dwindle=excluded:1,missing:0,unexpected:1,match:false"), report)
     }
 
-    func testParkAuditExcludesMacOSHiddenWindowsFromVisibleAndStrayClassification() throws {
-        let controller = makeController()
-        let workspaceId = try XCTUnwrap(
-            controller.workspaceManager.workspaceId(for: "1", createIfMissing: true)
-        )
-        let token = addWindow(pid: 881_003, windowId: 881_103, workspaceId: workspaceId, controller: controller)
-        controller.workspaceManager.setAppHidden(true, pid: token.pid, source: .service)
-        ParkVisibilityAudit.shared.beginCapture()
-        defer { ParkVisibilityAudit.shared.endCapture() }
-
-        controller.layoutRefreshController.auditParkVisibility(displayId: 1)
-
-        let dump = ParkVisibilityAudit.shared.dump()
-        XCTAssertTrue(dump.contains("visible=[]"))
-        XCTAssertTrue(dump.contains("strays=none"))
-        XCTAssertTrue(dump.contains("parked=0 appHidden=1"))
-    }
-
-    func testParkAuditConservativelyExcludesAXFencedWindowsDuringDesynchronization() throws {
-        let controller = makeController()
-        let workspaceId = try XCTUnwrap(
-            controller.workspaceManager.workspaceId(for: "1", createIfMissing: true)
-        )
-        let token = addWindow(pid: 881_004, windowId: 881_104, workspaceId: workspaceId, controller: controller)
-        controller.axManager.setMacOSAppHidden(
-            true,
-            pid: token.pid,
-            entries: [(pid: token.pid, windowId: token.windowId)]
-        )
-        defer {
-            controller.axManager.setMacOSAppHidden(
-                false,
-                pid: token.pid,
-                entries: [(pid: token.pid, windowId: token.windowId)]
+    func testParkAuditExcludesEachAppHiddenAuthority() throws {
+        for worldHidden in [true, false] {
+            let controller = makeController()
+            let workspaceId = try XCTUnwrap(
+                controller.workspaceManager.workspaceId(for: "1", createIfMissing: true)
             )
+            let token = addWindow(
+                pid: worldHidden ? 881_003 : 881_004,
+                windowId: worldHidden ? 881_103 : 881_104,
+                workspaceId: workspaceId,
+                controller: controller
+            )
+            if worldHidden {
+                controller.workspaceManager.setAppHidden(true, pid: token.pid, source: .service)
+            } else {
+                controller.axManager.setMacOSAppHidden(
+                    true, pid: token.pid, entries: [(pid: token.pid, windowId: token.windowId)]
+                )
+            }
+            defer {
+                if worldHidden {
+                    controller.workspaceManager.setAppHidden(false, pid: token.pid, source: .service)
+                } else {
+                    controller.axManager.setMacOSAppHidden(
+                        false, pid: token.pid, entries: [(pid: token.pid, windowId: token.windowId)]
+                    )
+                }
+            }
+            ParkVisibilityAudit.shared.beginCapture()
+            defer { ParkVisibilityAudit.shared.endCapture() }
+
+            controller.layoutRefreshController.auditParkVisibility(displayId: 1)
+
+            let dump = ParkVisibilityAudit.shared.dump()
+            XCTAssertTrue(dump.contains("visible=[]"))
+            XCTAssertTrue(dump.contains("strays=none"))
+            XCTAssertTrue(dump.contains("parked=0 appHidden=1"))
         }
-        ParkVisibilityAudit.shared.beginCapture()
-        defer { ParkVisibilityAudit.shared.endCapture() }
-
-        controller.layoutRefreshController.auditParkVisibility(displayId: 1)
-
-        let dump = ParkVisibilityAudit.shared.dump()
-        XCTAssertTrue(dump.contains("visible=[]"))
-        XCTAssertTrue(dump.contains("strays=none"))
-        XCTAssertTrue(dump.contains("parked=0 appHidden=1"))
     }
 
     private func makeController() -> WMController {

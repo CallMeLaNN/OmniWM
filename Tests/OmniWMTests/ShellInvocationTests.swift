@@ -158,24 +158,6 @@ final class ShellInvocationTests: XCTestCase {
         await package.close()
     }
 
-    func testCoalescedChangedSamplesCannotMovePastSealedEndedInvocation() throws {
-        let box = ShellGestureBox()
-        func gesture(_ id: UInt64) -> ShellGestureBox.Gesture {
-            var event = ShellEvent()
-            event.kind = .gesture
-            event.phase = .changed
-            event.invocationID = id
-            event.dx = Double(id)
-            return ShellGestureBox.Gesture(bar: bar, view: .bar, action: 1, sequence: 1, event: event)
-        }
-        let first = try XCTUnwrap(box.post(gesture(1)))
-        XCTAssertNil(box.post(gesture(2)))
-        box.seal()
-        let later = try XCTUnwrap(box.post(gesture(4)))
-        XCTAssertEqual(first.take()?.event.invocationID, 2)
-        XCTAssertEqual(later.take()?.event.invocationID, 4)
-    }
-
     func testStaleHostRejectionSettlesTheOriginatingGesture() throws {
         let resources = ShellResources(motion: MotionPolicy(animationsEnabled: false))
         let host = ShellWidgetHost(

@@ -50,6 +50,11 @@ final class NativeFullscreenSlotProjectionTests: XCTestCase {
         let initial = try XCTUnwrap(fixture.controller.surfaceReconciler.appliedScene.placeholders.first)
         XCTAssertEqual(initial.originalToken, fixture.token)
         XCTAssertFalse(initial.visible)
+        let resolution = try XCTUnwrap(
+            fixture.controller.surfaceReconciler.nativeFullscreenDiagnosticsSnapshot().resolutions.first
+        )
+        XCTAssertEqual(resolution.originalToken, fixture.token)
+        XCTAssertEqual(resolution.reason, .projectionMissingHidden)
 
         let frame = CGRect(x: 120, y: 80, width: 640, height: 480)
         fixture.controller.surfaceReconciler.applyAcceptedNativeFullscreenSlots(
@@ -131,20 +136,6 @@ final class NativeFullscreenSlotProjectionTests: XCTestCase {
             fixture.controller.workspaceManager.nativeFullscreenLifecycleDiagnosticsSnapshot().records.first
         )
         XCTAssertEqual(hiddenLifecycle.displayShowingFullscreen, true)
-    }
-
-    func testMissingProjectionReasonMatchesHiddenAppliedState() throws {
-        let fixture = try makeFixture()
-
-        fixture.controller.surfaceReconciler.reconcileNow()
-
-        let applied = try XCTUnwrap(fixture.controller.surfaceReconciler.appliedScene.placeholders.first)
-        let resolution = try XCTUnwrap(
-            fixture.controller.surfaceReconciler.nativeFullscreenDiagnosticsSnapshot().resolutions.first
-        )
-        XCTAssertFalse(applied.visible)
-        XCTAssertEqual(resolution.originalToken, fixture.token)
-        XCTAssertEqual(resolution.reason, .projectionMissingHidden)
     }
 
     func testHiddenSlotReasonMatchesHiddenAppliedState() throws {
@@ -537,6 +528,10 @@ final class NativeFullscreenSlotProjectionTests: XCTestCase {
             displayId: fixture.monitor.displayId,
             displayContext: displayContext(for: fixture.monitor)
         )
+        XCTAssertTrue(
+            fixture.controller.surfaceReconciler.nativeFullscreenState.projectedWorkspaceIds
+                .contains(fixture.workspaceId)
+        )
         fixture.controller.hasStartedServices = false
         fixture.controller.surfaceReconciler.applyAcceptedNativeFullscreenSlots(
             [
@@ -551,10 +546,15 @@ final class NativeFullscreenSlotProjectionTests: XCTestCase {
             displayContext: displayContext(for: fixture.monitor)
         )
 
+        XCTAssertFalse(
+            fixture.controller.surfaceReconciler.nativeFullscreenState.projectedWorkspaceIds
+                .contains(fixture.workspaceId)
+        )
         fixture.controller.hasStartedServices = true
         fixture.controller.surfaceReconciler.reconcileNow()
 
         let applied = try XCTUnwrap(fixture.controller.surfaceReconciler.appliedScene.placeholders.first)
+        XCTAssertEqual(applied.frame, .zero)
         XCTAssertNotEqual(applied.frame, previousFrame)
         XCTAssertNotEqual(applied.frame, rejectedFrame)
         XCTAssertFalse(applied.visible)
@@ -588,6 +588,9 @@ final class NativeFullscreenSlotProjectionTests: XCTestCase {
         let controller = WMController(settings: settings)
         addTeardownBlock { @MainActor [controller] in
             controller.nativeFullscreenPlaceholderManager.removeAll()
+            if FileManager.default.fileExists(atPath: root.path) {
+                try FileManager.default.removeItem(at: root)
+            }
         }
         controller.hasStartedServices = true
         let monitor = Monitor(

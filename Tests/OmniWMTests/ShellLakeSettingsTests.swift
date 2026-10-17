@@ -143,26 +143,35 @@ final class ShellLakeSettingsTests: XCTestCase {
     }
 
     func testAdmissionAndPersistenceErrorsStayVisible() throws {
-        let rejected = try fixture(reject: true)
-        rejected.render(ShellBarData())
-        rejected.invoke(try action("Seconds", in: rejected))
-        rejected.render(ShellBarData())
-        XCTAssertTrue(rejected.strings().contains("Configuration queue is full"))
-
-        let pending = try fixture()
-        pending.render(ShellBarData())
-        pending.invoke(try action("Seconds", in: pending))
-        pending.render(ShellBarData())
-        XCTAssertTrue(pending.strings().contains("Saving…"))
-        var writer = ShellValueWriter()
-        writer.map(0)
-        var error = [CChar](repeating: 0, count: 512)
-        XCTAssertEqual(writer.bytes.withUnsafeBufferPointer {
-            omni_instance_trigger(pending.instance, $0.baseAddress, $0.count, 25_000_000, &error, error.count)
-        }, OMNI_OK)
-        pending.render(ShellBarData())
-        XCTAssertTrue(pending.strings().contains("Disk is full"))
-        XCTAssertFalse(pending.strings().contains("Saving…"))
+        for textCommit in [false, true] {
+            var event = ShellEvent(kind: textCommit ? .textCommit : .click)
+            event.text = "Asia/Tokyo"
+            let rejected = try fixture(reject: true)
+            rejected.render(ShellBarData())
+            let rejectedAction = textCommit
+                ? try textInput("Edit Zone", in: rejected).content.inputCommitAction
+                : try action("Seconds", in: rejected)
+            rejected.invoke(rejectedAction, event: event)
+            rejected.render(ShellBarData())
+            XCTAssertTrue(rejected.strings().contains("Configuration queue is full"))
+            let pending = try fixture()
+            pending.render(ShellBarData())
+            let pendingAction = textCommit
+                ? try textInput("Edit Zone", in: pending).content.inputCommitAction
+                : try action("Seconds", in: pending)
+            pending.invoke(pendingAction, event: event)
+            pending.render(ShellBarData())
+            XCTAssertTrue(pending.strings().contains("Saving…"))
+            var writer = ShellValueWriter()
+            writer.map(0)
+            var error = [CChar](repeating: 0, count: 512)
+            XCTAssertEqual(writer.bytes.withUnsafeBufferPointer {
+                omni_instance_trigger(pending.instance, $0.baseAddress, $0.count, 25_000_000, &error, error.count)
+            }, OMNI_OK)
+            pending.render(ShellBarData())
+            XCTAssertTrue(pending.strings().contains("Disk is full"))
+            XCTAssertFalse(pending.strings().contains("Saving…"))
+        }
     }
 
     func testCatalogPagesKeepTheSettingsTreeBounded() throws {
@@ -323,36 +332,6 @@ final class ShellLakeSettingsTests: XCTestCase {
             XCTAssertEqual(globalNumber("lastOperation", widget), root ? 6 : 5)
             XCTAssertTrue(globalBool("lastArrayMatches", widget))
             XCTAssertEqual(globalNumber("lastCount", widget), 2)
-        }
-    }
-
-    func testTextAdmissionSchemaAndPersistenceFailuresUseExistingNotice() throws {
-        let rejected = try fixture(reject: true)
-        rejected.render(ShellBarData())
-        var commit = ShellEvent(kind: .textCommit)
-        commit.text = "Asia/Tokyo"
-        rejected.invoke(try textInput("Edit Zone", in: rejected).content.inputCommitAction, event: commit)
-        rejected.render(ShellBarData())
-        XCTAssertTrue(rejected.strings().contains("Configuration queue is full"))
-        for (value, message) in [
-            (String(repeating: "x", count: 65), "Invalid option value"),
-            ("Asia/Tokyo", "Disk is full")
-        ] {
-            let widget = try fixture()
-            widget.render(ShellBarData())
-            commit.text = value
-            widget.invoke(try textInput("Edit Zone", in: widget).content.inputCommitAction, event: commit)
-            widget.render(ShellBarData())
-            XCTAssertTrue(widget.strings().contains("Saving…"))
-            var writer = ShellValueWriter()
-            writer.map(0)
-            var error = [CChar](repeating: 0, count: 512)
-            XCTAssertEqual(writer.bytes.withUnsafeBufferPointer {
-                omni_instance_trigger(widget.instance, $0.baseAddress, $0.count, 25_000_000, &error, error.count)
-            }, OMNI_OK)
-            widget.render(ShellBarData())
-            XCTAssertTrue(widget.strings().contains(message))
-            XCTAssertFalse(widget.strings().contains("Saving…"))
         }
     }
 

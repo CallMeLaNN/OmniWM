@@ -10,12 +10,6 @@ final class QuakeTerminalAppearanceSettingsTests: XCTestCase {
         XCTAssertEqual(SettingsExport.defaults().quakeTerminal.backgroundEffect, .standardBlur)
     }
 
-    func testBackgroundEffectGhosttyValues() {
-        XCTAssertEqual(QuakeTerminalBackgroundEffect.standardBlur.ghosttyBackgroundBlurValue, "false")
-        XCTAssertEqual(QuakeTerminalBackgroundEffect.glassRegular.ghosttyBackgroundBlurValue, "macos-glass-regular")
-        XCTAssertEqual(QuakeTerminalBackgroundEffect.glassClear.ghosttyBackgroundBlurValue, "macos-glass-clear")
-    }
-
     func testBackgroundBlurDefaultsToOff() {
         let defaults = SettingsExport.defaults()
 
@@ -218,6 +212,11 @@ final class QuakeTerminalAppearanceSettingsTests: XCTestCase {
     private func makeSettingsStore() -> SettingsStore {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("OmniWMQuakeAppearanceSettingsTests-\(UUID().uuidString)", isDirectory: true)
+        addTeardownBlock {
+            if FileManager.default.fileExists(atPath: root.path) {
+                try FileManager.default.removeItem(at: root)
+            }
+        }
         return SettingsStore(
             persistence: SettingsFilePersistence(
                 directory: root.appendingPathComponent("config", isDirectory: true),

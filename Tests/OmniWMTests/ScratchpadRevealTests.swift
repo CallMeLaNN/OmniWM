@@ -138,7 +138,7 @@ final class ScratchpadRevealTests: XCTestCase {
         }
     }
 
-    func testShiftClickingAScratchpadPillTogglesItsScratchpad() throws {
+    func testShellScratchpadMoveRequestTogglesItsScratchpad() throws {
         let fixture = try makeFixture()
         let token = addFloatingWindow(pid: 971_031, windowId: 971_131, to: fixture)
         XCTAssertEqual(assign(token, to: 3, in: fixture), .executed)
@@ -178,6 +178,9 @@ final class ScratchpadRevealTests: XCTestCase {
         let fixture = try makeFixture()
 
         XCTAssertEqual(fixture.controller.toggleScratchpad(9), .notFound)
+        XCTAssertNil(fixture.controller.workspaceManager.revealedScratchpadIndex())
+        let router = IPCCommandRouter(controller: fixture.controller, sessionToken: "test")
+        XCTAssertEqual(router.handle(.scratchpad(.toggle(index: 1))), .notFound)
         XCTAssertNil(fixture.controller.workspaceManager.revealedScratchpadIndex())
     }
 
@@ -1355,20 +1358,16 @@ final class ScratchpadRevealTests: XCTestCase {
         XCTAssertEqual(fixture.controller.workspaceManager.scratchpadIndex(for: fullscreen), 5)
     }
 
-    func testReturningScratchpadMemberToNiriReleasesOnlyThatMember() throws {
-        try verifyReturningScratchpadMemberToLayout(.niri)
+    func testReturningScratchpadMemberToEitherLayoutReleasesOnlyThatMember() throws {
+        for dwindle in [false, true] {
+            try verifyReturningScratchpadMemberToLayout(dwindle ? .dwindle : .niri)
+        }
     }
 
-    func testReturningScratchpadMemberToDwindleReleasesOnlyThatMember() throws {
-        try verifyReturningScratchpadMemberToLayout(.dwindle)
-    }
-
-    func testReturningLastRevealedScratchpadMemberToTilingClearsRevealedSlot() throws {
-        try verifyReturningLastScratchpadMemberToTiling(parkBeforeTransition: false)
-    }
-
-    func testDeferredTilingTransitionAfterParkingClearsScratchpadHiding() throws {
-        try verifyReturningLastScratchpadMemberToTiling(parkBeforeTransition: true)
+    func testReturningLastScratchpadMemberClearsRevealedSlotBeforeOrAfterParking() throws {
+        for parked in [false, true] {
+            try verifyReturningLastScratchpadMemberToTiling(parkBeforeTransition: parked)
+        }
     }
 
     private func verifyReturningScratchpadMemberToLayout(_ layout: LayoutType) throws {

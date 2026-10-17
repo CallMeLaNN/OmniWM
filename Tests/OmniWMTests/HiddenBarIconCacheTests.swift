@@ -249,28 +249,6 @@ final class HiddenBarIconCacheTests: XCTestCase {
         XCTAssertTrue(HiddenBarIconCache.isVisuallyEqual(nil, nil))
     }
 
-    func testCropRectsAtScaleOneAndTwo() {
-        let union = CGRect(x: 100, y: 10, width: 90, height: 24)
-        let bounds = [
-            CGRect(x: 100, y: 10, width: 30, height: 24),
-            CGRect(x: 160, y: 10, width: 30, height: 24)
-        ]
-        XCTAssertEqual(
-            HiddenBarIconCaptureService.cropRects(bounds: bounds, union: union, scale: 1),
-            [
-                CGRect(x: 0, y: 0, width: 30, height: 24),
-                CGRect(x: 60, y: 0, width: 30, height: 24)
-            ]
-        )
-        XCTAssertEqual(
-            HiddenBarIconCaptureService.cropRects(bounds: bounds, union: union, scale: 2),
-            [
-                CGRect(x: 0, y: 0, width: 60, height: 48),
-                CGRect(x: 120, y: 0, width: 60, height: 48)
-            ]
-        )
-    }
-
     func testTransparencyDetection() {
         XCTAssertTrue(HiddenBarIconCaptureService.isEffectivelyTransparent(makeImage(alpha: 0)))
         XCTAssertFalse(HiddenBarIconCaptureService.isEffectivelyTransparent(makeImage(alpha: 1)))

@@ -206,7 +206,11 @@ final class InputTapThreadTests: XCTestCase {
         let controller = makeController()
         let handler = controller.mouseEventHandler
         handler.setup()
-        defer { handler.cleanup() }
+        handler.beginPerformanceCapture()
+        defer {
+            _ = handler.endPerformanceCapture()
+            handler.cleanup()
+        }
 
         let source = try XCTUnwrap(CGEventSource(stateID: .combinedSessionState))
         let event = try XCTUnwrap(CGEvent(
@@ -218,9 +222,11 @@ final class InputTapThreadTests: XCTestCase {
         event.setIntegerValueField(.mouseEventButtonNumber, value: 5)
 
         XCTAssertFalse(MouseEventHandler.processTapCallback(type: .otherMouseDown, event: event))
+        XCTAssertEqual(handler.performanceSnapshot()?.cgEvents, 0)
 
         handler.inputTapThread.updateFilterSnapshot { $0.claimedOtherButtons.insert(5) }
         XCTAssertFalse(MouseEventHandler.processTapCallback(type: .otherMouseDown, event: event))
+        XCTAssertEqual(handler.performanceSnapshot()?.cgEvents, 1)
     }
 
     @MainActor

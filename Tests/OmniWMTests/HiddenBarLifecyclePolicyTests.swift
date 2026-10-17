@@ -201,8 +201,6 @@ final class HiddenBarLifecyclePolicyTests: XCTestCase {
         hiddenBar.observation.onRunningApplicationsRefreshForTests = { refreshes += 1 }
         hiddenBar.setup()
 
-        // Queue the refresh directly so cleanup retires its generation before
-        // it can run, without relying on the timing of the observer-event hop.
         let queuedRefresh = try XCTUnwrap(hiddenBar.observation.queueRunningApplicationsRefreshForTests())
         hiddenBar.cleanup()
         await queuedRefresh.value
@@ -214,15 +212,6 @@ final class HiddenBarLifecyclePolicyTests: XCTestCase {
         let refreshed = await waitUntil { refreshes >= 1 }
         XCTAssertTrue(refreshed)
         hiddenBar.cleanup()
-    }
-
-    func testLaunchCaptureStaysAllowedDuringAnotherAppsReveal() {
-        let effectiveHidden = HiddenBarConcealmentPolicy.effectiveHiddenBundleIDs(
-            configured: ["revealed", "newly-launched", "concealed"],
-            temporarilyRevealed: ["revealed"],
-            pendingCapture: ["newly-launched"]
-        )
-        XCTAssertEqual(effectiveHidden, ["concealed"])
     }
 
     func testOpenMenuDoesNotConsumeRehideTime() {
@@ -257,18 +246,21 @@ final class HiddenBarLifecyclePolicyTests: XCTestCase {
             previousMenuOpen: false,
             menuOpen: false
         )
+        XCTAssertEqual(remaining, .seconds(3))
         remaining = HiddenBarMenuGuardPolicy.rehideRemaining(
             remaining: remaining,
             elapsed: .seconds(4),
             previousMenuOpen: false,
             menuOpen: true
         )
+        XCTAssertEqual(remaining, .seconds(3))
         remaining = HiddenBarMenuGuardPolicy.rehideRemaining(
             remaining: remaining,
             elapsed: .seconds(3),
             previousMenuOpen: true,
             menuOpen: false
         )
+        XCTAssertEqual(remaining, .seconds(3))
         remaining = HiddenBarMenuGuardPolicy.rehideRemaining(
             remaining: remaining,
             elapsed: .seconds(3),

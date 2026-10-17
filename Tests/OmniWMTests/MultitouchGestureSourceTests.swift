@@ -29,42 +29,6 @@ final class MultitouchGestureSourceTests: XCTestCase {
         XCTAssertEqual(result.activeCount, 0)
     }
 
-    func testFirstContactBeginsGesture() throws {
-        let result = MultitouchGestureSource.makeSnapshot(
-            frame: frame([(0.5, 0.5), (0.55, 0.5), (0.6, 0.5)]),
-            location: location,
-            previousActiveCount: 0
-        )
-        let snapshot = try XCTUnwrap(result.snapshot)
-        XCTAssertEqual(snapshot.phaseRawValue, NSEvent.Phase.began.rawValue)
-        XCTAssertEqual(result.activeCount, 3)
-        XCTAssertEqual(snapshot.touches.count, 3)
-        XCTAssertEqual(snapshot.location, location)
-    }
-
-    func testContinuedContactReportsChanged() throws {
-        let result = MultitouchGestureSource.makeSnapshot(
-            frame: frame([(0.4, 0.5), (0.45, 0.5), (0.5, 0.5)]),
-            location: location,
-            previousActiveCount: 3
-        )
-        let snapshot = try XCTUnwrap(result.snapshot)
-        XCTAssertEqual(snapshot.phaseRawValue, NSEvent.Phase.changed.rawValue)
-        XCTAssertEqual(result.activeCount, 3)
-    }
-
-    func testFingerLiftEndsGestureCleanly() throws {
-        let result = MultitouchGestureSource.makeSnapshot(
-            frame: frame([]),
-            location: location,
-            previousActiveCount: 3
-        )
-        let snapshot = try XCTUnwrap(result.snapshot)
-        XCTAssertEqual(snapshot.phaseRawValue, NSEvent.Phase.ended.rawValue)
-        XCTAssertTrue(snapshot.touches.isEmpty)
-        XCTAssertEqual(result.activeCount, 0)
-    }
-
     func testPartialLiftStillReportsLoweredCount() throws {
         let result = MultitouchGestureSource.makeSnapshot(
             frame: frame([(0.4, 0.5), (0.45, 0.5)]),
@@ -136,6 +100,9 @@ final class MultitouchGestureSourceTests: XCTestCase {
             previousActiveCount: previousActiveCount
         )
         XCTAssertEqual(try XCTUnwrap(down.snapshot).phaseRawValue, NSEvent.Phase.began.rawValue)
+        XCTAssertEqual(down.activeCount, 3)
+        XCTAssertEqual(try XCTUnwrap(down.snapshot).touches.count, 3)
+        XCTAssertEqual(try XCTUnwrap(down.snapshot).location, location)
         previousActiveCount = down.activeCount
 
         let move = MultitouchGestureSource.makeSnapshot(
@@ -144,6 +111,7 @@ final class MultitouchGestureSourceTests: XCTestCase {
             previousActiveCount: previousActiveCount
         )
         XCTAssertEqual(try XCTUnwrap(move.snapshot).phaseRawValue, NSEvent.Phase.changed.rawValue)
+        XCTAssertEqual(move.activeCount, 3)
         previousActiveCount = move.activeCount
 
         let lift = MultitouchGestureSource.makeSnapshot(
@@ -152,6 +120,7 @@ final class MultitouchGestureSourceTests: XCTestCase {
             previousActiveCount: previousActiveCount
         )
         XCTAssertEqual(try XCTUnwrap(lift.snapshot).phaseRawValue, NSEvent.Phase.ended.rawValue)
+        XCTAssertTrue(try XCTUnwrap(lift.snapshot).touches.isEmpty)
         XCTAssertEqual(lift.activeCount, 0)
     }
 }

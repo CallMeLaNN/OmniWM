@@ -1626,7 +1626,7 @@ final class ShellWidgetClickTests: XCTestCase {
         XCTAssertEqual(harness.host.dataDemand, 0)
     }
 
-    func testAFailingWidgetDemandsAllDataUntilItRecovers() async throws {
+    func testSampledNetworkWidgetRendersWithoutUnrelatedDataDemand() async throws {
         executionTimeAllowance = 60
         let harness =
             try harness("function render(ctx) return ui.box{ w = 10 + ctx.data.network.down * 0, h = 10 } end")

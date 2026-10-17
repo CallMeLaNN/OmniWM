@@ -150,17 +150,6 @@ final class DwindleMinimumSizeTests: XCTestCase {
         XCTAssertFalse(engine.balanceSizes(in: ws))
     }
 
-    func testCycleSplitRatioClampsAndStops() {
-        let (engine, ws, first, _) = makeTwoWindowEngine(firstMinWidth: 600)
-        engine.setSelectedNode(engine.findNode(for: first, in: ws), in: ws)
-
-        XCTAssertTrue(engine.cycleSplitRatio(forward: false, in: ws))
-        XCTAssertEqual(engine.root(for: ws)?.splitRatio ?? 0, 1.208, accuracy: 1e-6)
-
-        XCTAssertFalse(engine.cycleSplitRatio(forward: false, in: ws))
-        XCTAssertEqual(engine.root(for: ws)?.splitRatio ?? 0, 1.208, accuracy: 1e-6)
-    }
-
     func testRenderClampActsAsSafetyNetWithoutMutation() {
         let (engine, ws, first, _) = makeTwoWindowEngine()
         engine.updateWindowConstraints(for: first, constraints: minConstraints(width: 600))

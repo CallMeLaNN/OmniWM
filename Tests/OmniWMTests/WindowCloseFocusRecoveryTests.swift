@@ -383,43 +383,28 @@ final class WindowCloseFocusRecoveryTests: XCTestCase {
         try await Self.verifyDelayedSameAppFacts(order: .destroyThenFocus)
     }
 
-    func testMouseFocusBypassesPendingDestroyHold() async throws {
-        let fixture = try Self.makeFixture()
-        defer { Self.stop(fixture) }
+    func testAuthoritativeFocusRoutesBypassPendingDestroyHold() async throws {
+        for mouseIntent in [true, false] {
+            let fixture = try Self.makeFixture()
+            defer { Self.stop(fixture) }
 
-        await Self.closeFocusedWindow(in: fixture)
-        fixture.controller.axEventHandler.noteMouseFocusIntent(token: fixture.remoteToken)
-        XCTAssertTrue(
-            fixture.controller.axEventHandler.handleAppActivation(
-                pid: fixture.pid,
-                source: .focusedWindowChanged
+            await Self.closeFocusedWindow(in: fixture)
+            if mouseIntent {
+                fixture.controller.axEventHandler.noteMouseFocusIntent(token: fixture.remoteToken)
+            }
+            XCTAssertTrue(
+                fixture.controller.axEventHandler.handleAppActivation(
+                    pid: fixture.pid,
+                    source: mouseIntent ? .focusedWindowChanged : .workspaceDidActivateApplication
+                )
             )
-        )
-        fixture.controller.eventIntake.drainNow()
+            fixture.controller.eventIntake.drainNow()
 
-        XCTAssertEqual(fixture.controller.activeWorkspace()?.id, fixture.remoteWorkspaceId)
-        XCTAssertEqual(fixture.controller.workspaceManager.selectedManagedToken, fixture.remoteToken)
-        XCTAssertNil(fixture.controller.intentLedger.openSameAppCloseProbe())
-        await fixture.controller.axEventHandler.awaitPendingManagedReplacementBursts(for: [fixture.pid])
-    }
-
-    func testExplicitAppActivationBypassesPendingDestroyHold() async throws {
-        let fixture = try Self.makeFixture()
-        defer { Self.stop(fixture) }
-
-        await Self.closeFocusedWindow(in: fixture)
-        XCTAssertTrue(
-            fixture.controller.axEventHandler.handleAppActivation(
-                pid: fixture.pid,
-                source: .workspaceDidActivateApplication
-            )
-        )
-        fixture.controller.eventIntake.drainNow()
-
-        XCTAssertEqual(fixture.controller.activeWorkspace()?.id, fixture.remoteWorkspaceId)
-        XCTAssertEqual(fixture.controller.workspaceManager.selectedManagedToken, fixture.remoteToken)
-        XCTAssertNil(fixture.controller.intentLedger.openSameAppCloseProbe())
-        await fixture.controller.axEventHandler.awaitPendingManagedReplacementBursts(for: [fixture.pid])
+            XCTAssertEqual(fixture.controller.activeWorkspace()?.id, fixture.remoteWorkspaceId)
+            XCTAssertEqual(fixture.controller.workspaceManager.selectedManagedToken, fixture.remoteToken)
+            XCTAssertNil(fixture.controller.intentLedger.openSameAppCloseProbe())
+            await fixture.controller.axEventHandler.awaitPendingManagedReplacementBursts(for: [fixture.pid])
+        }
     }
 
     func testMatchedReplacementReplaysCurrentHeldSameAppFocus() async throws {

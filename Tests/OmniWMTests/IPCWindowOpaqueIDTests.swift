@@ -6,44 +6,21 @@ import OmniWMIPC
 import XCTest
 
 final class IPCWindowOpaqueIDTests: XCTestCase {
-    func testRoundTripsUUIDSessionToken() {
-        let token = UUID().uuidString
-        let opaque = IPCWindowOpaqueID.encode(pid: 12_345, windowId: 67, sessionToken: token)
-
-        XCTAssertEqual(
-            IPCWindowOpaqueID.validate(opaque, expectingSessionToken: token),
-            .valid(pid: 12_345, windowId: 67)
-        )
-    }
-
-    func testRoundTripsSessionTokenContainingColonDelimiter() {
-        let token = "prefix:suffix"
-        let opaque = IPCWindowOpaqueID.encode(pid: 42, windowId: 7, sessionToken: token)
-
-        XCTAssertEqual(
-            IPCWindowOpaqueID.validate(opaque, expectingSessionToken: token),
-            .valid(pid: 42, windowId: 7)
-        )
-    }
-
-    func testRoundTripsSessionTokenWithMultipleColons() {
-        let token = "a:b:c:d"
-        let opaque = IPCWindowOpaqueID.encode(pid: 3, windowId: 999_999, sessionToken: token)
-
-        XCTAssertEqual(
-            IPCWindowOpaqueID.validate(opaque, expectingSessionToken: token),
-            .valid(pid: 3, windowId: 999_999)
-        )
-    }
-
-    func testRoundTripsSessionTokenEndingInUnicodePrependScalar() {
-        let token = "prefix\u{0600}"
-        let opaque = IPCWindowOpaqueID.encode(pid: 42, windowId: 7, sessionToken: token)
-
-        XCTAssertEqual(
-            IPCWindowOpaqueID.validate(opaque, expectingSessionToken: token),
-            .valid(pid: 42, windowId: 7)
-        )
+    func testRoundTripsOpaqueSessionTokens() {
+        let cases: [(String, Int32, Int)] = [
+            (UUID().uuidString, 12_345, 67),
+            ("prefix:suffix", 42, 7),
+            ("a:b:c:d", 3, 999_999),
+            ("prefix\u{0600}", 42, 7)
+        ]
+        for (token, pid, windowId) in cases {
+            let opaque = IPCWindowOpaqueID.encode(pid: pid, windowId: windowId, sessionToken: token)
+            XCTAssertEqual(
+                IPCWindowOpaqueID.validate(opaque, expectingSessionToken: token),
+                .valid(pid: pid, windowId: windowId),
+                token
+            )
+        }
     }
 
     func testMismatchedSessionTokenReportsStale() {

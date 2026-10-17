@@ -86,7 +86,7 @@ final class StatusMenuPanelTests: XCTestCase {
         XCTAssertTrue(screen.insetBy(dx: 8, dy: 8).contains(frame))
     }
 
-    func testSubmenuClampsToScreenWithoutMovingRoot() {
+    func testSubmenuFallsBackToLeftScreenInset() {
         let screen = CGRect(x: 0, y: 100, width: 500, height: 500)
         let root = CGRect(x: 200, y: 108, width: 280, height: 484)
         let frame = StatusMenuGeometry.submenuFrame(
@@ -97,6 +97,7 @@ final class StatusMenuPanelTests: XCTestCase {
         )
 
         XCTAssertTrue(screen.insetBy(dx: 8, dy: 8).contains(frame))
+        XCTAssertEqual(frame.minX, screen.minX + 8)
         XCTAssertEqual(frame.minY, screen.minY + 8)
     }
 

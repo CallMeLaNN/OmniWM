@@ -17,6 +17,11 @@ final class ConfigDiagnosticsTests: XCTestCase {
         let base = String(decoding: try SettingsTOMLCodec.encode(makeExport()), as: UTF8.self)
         let data = Data(("bogusKey = 1\n" + base).utf8)
         XCTAssertTrue(SettingsTOMLCodec.unknownKeyPaths(in: data).contains("bogusKey"))
+        let target = "notchMode = \"moveBelowMenuBar\""
+        let range = try XCTUnwrap(base.range(of: target))
+        let withNotchAware = Data(base.replacingCharacters(in: range, with: target + "\nnotchAware = true").utf8)
+        XCTAssertTrue(SettingsTOMLCodec.unknownKeyPaths(in: withNotchAware).contains("workspaceBar.notchAware"))
+        XCTAssertEqual(try SettingsTOMLCodec.decode(withNotchAware).workspaceBar.notchMode, .moveBelowMenuBar)
     }
 
     func testEmptyDataHasNoUnknownKeys() {

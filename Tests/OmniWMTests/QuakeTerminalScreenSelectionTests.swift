@@ -150,6 +150,11 @@ final class QuakeTerminalScreenSelectionTests: XCTestCase {
     ) -> QuakeTerminalController {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("OmniWMQuakeScreenTests-\(UUID().uuidString)", isDirectory: true)
+        addTeardownBlock {
+            if FileManager.default.fileExists(atPath: root.path) {
+                try FileManager.default.removeItem(at: root)
+            }
+        }
         let settings = SettingsStore(
             persistence: SettingsFilePersistence(
                 directory: root.appendingPathComponent("config", isDirectory: true),

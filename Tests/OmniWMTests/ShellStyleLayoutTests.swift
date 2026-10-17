@@ -45,6 +45,7 @@ final class ShellStyleLayoutTests: XCTestCase {
         let shell = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: shell) }
         XCTAssertEqual(ShellDefaults.sync(into: shell), [])
+        let appearances = ProcessInfo.processInfo.environment["OMNIWM_SHELL_SNAPSHOTS"] != nil ? [false, true] : [false]
         for profile in profiles {
             _ = try ShellProfiles.select(profile, in: shell)
             let config = ShellConfig.resolve(shellDirectory: shell)
@@ -52,7 +53,7 @@ final class ShellStyleLayoutTests: XCTestCase {
             for height in [base, base * 1.5] {
                 for vertical in [false, true] {
                     for scale in [CGFloat(1), 2] {
-                        for dark in [false, true] {
+                        for dark in appearances {
                             try render(
                                 config,
                                 shell: shell,

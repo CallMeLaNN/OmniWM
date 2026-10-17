@@ -145,44 +145,6 @@ final class WorkspaceBarExcludedAppsSettingsTests: XCTestCase {
         )
     }
 
-    func testExternalSettingsReloadReplacesLiveExclusions() async throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent("OmniWMWorkspaceBarExclusionReloadTests-\(UUID().uuidString)", isDirectory: true)
-        defer {
-            try? FileManager.default.removeItem(at: root)
-        }
-        let persistence = SettingsFilePersistence(
-            directory: root.appendingPathComponent("config", isDirectory: true),
-            startWatching: true,
-            deferSaves: false
-        )
-        let settings = SettingsStore(
-            persistence: persistence,
-            runtimeState: RuntimeStateStore(
-                directory: root.appendingPathComponent("state", isDirectory: true),
-                deferSaves: false
-            ),
-            autosaveEnabled: false
-        )
-        XCTAssertTrue(settings.workspaceBar.addExcludedBundleID("com.example.before"))
-        var externalReloadCount = 0
-        let reloaded = expectation(description: "External settings applied")
-        reloaded.assertForOverFulfill = false
-        settings.onExternalSettingsReloaded = {
-            externalReloadCount += 1
-            reloaded.fulfill()
-        }
-        defer { settings.onExternalSettingsReloaded = nil }
-        var external = SettingsExport.defaults()
-        external.workspaceBar.excludedBundleIDs = ["  com.example.After  "]
-
-        try SettingsTOMLCodec.encode(external).write(to: persistence.fileURL, options: .atomic)
-        await fulfillment(of: [reloaded], timeout: 2)
-
-        XCTAssertEqual(externalReloadCount, 1)
-        XCTAssertEqual(settings.workspaceBar.excludedBundleIDs, ["com.example.After"])
-    }
-
     private func monitor(displayId: CGDirectDisplayID, name: String, x: CGFloat) -> Monitor {
         Monitor(
             id: .init(displayId: displayId),

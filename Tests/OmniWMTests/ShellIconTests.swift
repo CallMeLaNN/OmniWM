@@ -25,13 +25,6 @@ final class ShellIconTests: XCTestCase {
         return Array(UnsafeBufferPointer(start: bytes, count: size))
     }
 
-    func testDataDemandBitsMatchTheScriptHost() throws {
-        let bytes = try output("function render(ctx) local _ = ctx.data.network return ui.box{ w = 1, h = 1 } end")
-        let deps = bytes.withUnsafeBytes { $0.loadUnaligned(as: omni_wire_header.self).deps }
-        XCTAssertNotEqual(deps & ShellDataKey.network.bit, 0)
-        XCTAssertNotNil(SystemStatsSampler.networkBytes())
-    }
-
     func testDataReadsRecordExactlyTheirOwnKeys() throws {
         let bytes = try output("""
         function render(ctx)

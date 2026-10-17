@@ -8,7 +8,7 @@ import XCTest
 
 @MainActor
 final class ShellSpringContinuityTests: XCTestCase {
-    func testSpringRecipeBuildsNativeSpringBeforeCurveParsing() throws {
+    func testSpringRecipeValidatesBoundsAndScalesNativeDurationBySpeed() throws {
         let motion = try XCTUnwrap(ShellMotion(recipe: "spring:0.31:0.22"))
         XCTAssertEqual(motion, .spring(response: 0.31, bounce: 0.22))
         let animation = try XCTUnwrap(ShellAnimation(motion: motion, speed: 2).make("opacity") as? CASpringAnimation)

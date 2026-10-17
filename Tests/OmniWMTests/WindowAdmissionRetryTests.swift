@@ -88,42 +88,6 @@ final class WindowAdmissionRetryTests: XCTestCase {
         await controller.axEventHandler.lifecycleQueries.task?.value
     }
 
-    func testCreateRetryCannotReplaceConcreteCandidateTrigger() async throws {
-        let controller = WindowAdmissionTestSupport.controller()
-        let windowId: UInt32 = 467_405
-        let token = WindowToken(pid: 467_305, windowId: Int(windowId))
-        let axRef = AXWindowRef(element: AXUIElementCreateApplication(token.pid), windowId: token.windowId)
-        XCTAssertTrue(
-            controller.axEventHandler.scheduleCandidateAdmissionRetry(
-                windowId: windowId,
-                pid: token.pid,
-                axRef: axRef,
-                reason: .degenerateGeometry
-            )
-        )
-
-        XCTAssertTrue(
-            controller.axEventHandler.scheduleAdmissionRetry(
-                windowId: windowId,
-                expectedToken: nil,
-                axRef: axRef,
-                reason: .windowInfoMissing,
-                trigger: .create
-            )
-        )
-
-        let state = try XCTUnwrap(controller.axEventHandler.admissionRetryStateByWindowId[windowId])
-        XCTAssertEqual(state.expectedToken, token)
-        XCTAssertTrue(CFEqual(state.axRef?.element, axRef.element))
-        guard case let .candidate(triggerToken, triggerAXRef, _) = state.trigger else {
-            return XCTFail("Expected concrete candidate retry")
-        }
-        XCTAssertEqual(triggerToken, token)
-        XCTAssertTrue(CFEqual(triggerAXRef.element, axRef.element))
-        controller.axEventHandler.handleCGSEvent(.destroyed(windowId: windowId, spaceId: 0))
-        await controller.axEventHandler.lifecycleQueries.task?.value
-    }
-
     func testDeferredDiscoveryCandidateRetainsRetryTriggerWhenDrained() async throws {
         let controller = WindowAdmissionTestSupport.controller()
         let windowId: UInt32 = 467_805

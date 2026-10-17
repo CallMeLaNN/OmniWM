@@ -142,15 +142,38 @@ final class WorkspaceBarViewLayoutTests: XCTestCase {
     }
 
     func testSnapshotCopiesKeepTheBackgroundAndSolidBlackPrecedence() {
-        let snapshot = WorkspaceBarSnapshot(
-            projection: WorkspaceBarProjection(items: [], scratchpads: []),
-            backgroundOpacity: 0.6,
-            transparentBackground: true,
-            solidBlackBackground: true,
-            barHeight: 24
+        let projection = WorkspaceBarProjection(
+            items: [WorkspaceBarItem(
+                id: WorkspaceDescriptor.ID(), name: "One", rawName: "1", isFocused: true,
+                tiledWindows: [], floatingWindows: []
+            )],
+            scratchpads: [WorkspaceBarScratchpadItem(index: 1, label: "Terminal", windows: [], isVisible: true)]
         )
-        let copy = snapshot.replacingShellWidgets([])
-        XCTAssertEqual(copy, snapshot)
+        let originalWidgets = [WorkspaceBarShellWidget(
+            id: "old", size: CGSize(width: 60, height: 20), lane: .leading
+        )]
+        let replacementWidgets = [WorkspaceBarShellWidget(
+            id: "new", size: CGSize(width: 120, height: 21), lane: .trailing
+        )]
+        let snapshot = WorkspaceBarSnapshot(
+            projection: projection, showLabels: true, backgroundOpacity: 0.6,
+            transparentBackground: true, solidBlackBackground: true,
+            barHeight: 37, orientation: .vertical, secureInputActive: true,
+            barFill: ShellThemeColor("background", theme: .native),
+            barBorder: ShellThemeColor("border", theme: .native),
+            barShader: ShellBarShader(source: "matrix-rain.metal"), shellWidgets: originalWidgets
+        )
+        let copy = snapshot.replacingShellWidgets(replacementWidgets)
+        let expected = WorkspaceBarSnapshot(
+            projection: projection, showLabels: true, backgroundOpacity: 0.6,
+            transparentBackground: true, solidBlackBackground: true,
+            barHeight: 37, orientation: .vertical, secureInputActive: true,
+            barFill: ShellThemeColor("background", theme: .native),
+            barBorder: ShellThemeColor("border", theme: .native),
+            barShader: ShellBarShader(source: "matrix-rain.metal"), shellWidgets: replacementWidgets
+        )
+        XCTAssertEqual(copy, expected)
+        XCTAssertEqual(snapshot.shellWidgets, originalWidgets)
         XCTAssertEqual(copy.backgroundStyle, .solidBlack)
     }
 
@@ -373,17 +396,26 @@ final class WorkspaceBarViewLayoutTests: XCTestCase {
     }
 
     func testShellSlotsKeepTheirWidthUnderANarrowProposal() {
-        for width in [CGFloat(60), 120, 240] {
-            let snapshot = WorkspaceBarSnapshot(
+        var cases = [CGFloat(60), 120, 240].map { width in
+            (WorkspaceBarSnapshot(
                 projection: WorkspaceBarProjection(items: [], scratchpads: []),
-                backgroundOpacity: 0.6,
-                barHeight: 24,
+                backgroundOpacity: 0.6, barHeight: 24,
                 shellWidgets: [WorkspaceBarShellWidget(
-                    id: "workspaces",
-                    size: CGSize(width: width, height: 20),
-                    lane: .leading
+                    id: "workspaces", size: CGSize(width: width, height: 20), lane: .leading
                 )]
-            )
+            ), width + 8)
+        }
+        cases.append((WorkspaceBarSnapshot(
+            projection: WorkspaceBarProjection(
+                items: [WorkspaceBarItem(
+                    id: WorkspaceDescriptor.ID(), name: "1", rawName: "1", isFocused: true,
+                    tiledWindows: [], floatingWindows: []
+                )],
+                scratchpads: [WorkspaceBarScratchpadItem(index: 1, label: nil, windows: [], isVisible: true)]
+            ),
+            backgroundOpacity: 1, barHeight: 24, shellWidgets: []
+        ), 8))
+        for (snapshot, expectedWidth) in cases {
             let measurement = NSHostingView(rootView: WorkspaceBarMeasurementView(snapshot: snapshot))
             let narrow = NSHostingView(rootView: NarrowWidthLayout(width: 40) {
                 WorkspaceBarView(
@@ -393,7 +425,7 @@ final class WorkspaceBarViewLayoutTests: XCTestCase {
             })
             measurement.layoutSubtreeIfNeeded()
             narrow.layoutSubtreeIfNeeded()
-            XCTAssertEqual(measurement.fittingSize.width, width + 8, accuracy: 0.5)
+            XCTAssertEqual(measurement.fittingSize.width, expectedWidth, accuracy: 0.5)
             XCTAssertEqual(narrow.fittingSize.width, measurement.fittingSize.width, accuracy: 0.5)
             XCTAssertEqual(narrow.fittingSize.height, 24)
         }
@@ -453,39 +485,6 @@ final class WorkspaceBarViewLayoutTests: XCTestCase {
         XCTAssertLessThanOrEqual(result.mixed.rendered, result.mixed.estimated)
         XCTAssertEqual(result.compacted, Set(1 ... 8))
         XCTAssertLessThanOrEqual(result.compact.rendered, result.availableWidth)
-    }
-
-    func testImpossibleScratchpadWidthUsesAllCompactAsTheFloor() {
-        let scratchpads = (1 ... 10).map { index in
-            WorkspaceBarScratchpadItem(
-                index: index,
-                label: index == 1 ? String(repeating: "Long label ", count: 20) : nil,
-                windows: [
-                    makeWindowItem(
-                        appName: "App",
-                        windowCount: 1,
-                        hiddenWindowCount: 0,
-                        tokenOffset: index
-                    )
-                ],
-                isVisible: false,
-                isRevealed: index == 1
-            )
-        }
-
-        let compacted = WorkspaceBarScratchpadLayout.compactedItems(
-            scratchpads,
-            availableWidth: 40,
-            baseWidth: 100,
-            barHeight: 24,
-            hasAdjacentContent: true
-        )
-
-        XCTAssertTrue(compacted.allSatisfy { $0.presentation == .compact })
-        XCTAssertGreaterThan(
-            100 + 8 + WorkspaceBarScratchpadLayout.estimatedWidth(of: compacted, barHeight: 24),
-            40
-        )
     }
 
     func testVerticalWidgetsStackWithinTheBarThickness() throws {

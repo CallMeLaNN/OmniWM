@@ -122,31 +122,23 @@ final class SpatialNeighborTokenTests: XCTestCase {
         XCTAssertEqual(result, centered)
     }
 
-    func testEmptyCandidatesReturnsNil() {
-        let result = pick(
-            from: CGRect(x: 0, y: 0, width: 100, height: 100),
-            [],
-            direction: .right,
-            targetFrame: CGRect(x: 1000, y: 0, width: 1000, height: 1000)
-        )
-        XCTAssertNil(result)
-    }
-
     func testEmptyCandidatesDoNotComputeTargetFrame() {
-        var computed = false
-        func targetFrame() -> CGRect {
-            computed = true
-            return CGRect(x: 1000, y: 0, width: 1000, height: 1000)
-        }
+        for source in [nil, CGRect(x: 0, y: 0, width: 100, height: 100)] {
+            var computed = false
+            func targetFrame() -> CGRect {
+                computed = true
+                return CGRect(x: 1000, y: 0, width: 1000, height: 1000)
+            }
 
-        let result = WorkspaceNavigationHandler.spatialNeighborToken(
-            from: nil,
-            candidates: [(token: WindowToken, frame: CGRect)](),
-            direction: .right,
-            targetFrame: targetFrame()
-        )
-        XCTAssertNil(result)
-        XCTAssertFalse(computed)
+            let result = WorkspaceNavigationHandler.spatialNeighborToken(
+                from: source,
+                candidates: [(token: WindowToken, frame: CGRect)](),
+                direction: .right,
+                targetFrame: targetFrame()
+            )
+            XCTAssertNil(result)
+            XCTAssertFalse(computed)
+        }
     }
 
     func testNegativeOriginStackedMonitorsDownPicksTopMost() {

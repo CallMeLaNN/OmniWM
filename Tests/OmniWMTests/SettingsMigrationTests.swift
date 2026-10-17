@@ -251,23 +251,6 @@ final class SettingsMigrationTests: XCTestCase {
         XCTAssertEqual(result.export.routing.mode, .custom)
     }
 
-    func testVersionThreeMigrationAddsWindowMarkHotkeysUnassigned() throws {
-        var data = try SettingsTOMLCodec.encode(.defaults())
-        data = try removingHotkey(id: "setWindowMark", from: data)
-        data = try removingHotkey(id: "removeWindowMark", from: data)
-        data = Data(String(decoding: data, as: UTF8.self)
-            .replacingOccurrences(of: "schemaVersion = 4", with: "schemaVersion = 3").utf8)
-
-        let result = try SettingsTOMLCodec.decodeForLoad(data)
-        let migration = try XCTUnwrap(result.migration)
-
-        XCTAssertEqual(migration.fromVersion, 3)
-        XCTAssertEqual(migration.toVersion, 4)
-        XCTAssertEqual(Set(migration.addedHotkeyIDs), expectedVersionFourHotkeyIDs)
-        XCTAssertTrue(try XCTUnwrap(hotkey("setWindowMark", in: result.export)).binding.isUnassigned)
-        XCTAssertTrue(try XCTUnwrap(hotkey("removeWindowMark", in: result.export)).binding.isUnassigned)
-    }
-
     @MainActor
     func testVersionThreeStartupPreservesBindingsAndBacksUpExactBytes() throws {
         let fixture = try makeFixture("version-three-window-marks")

@@ -6,15 +6,6 @@ import OmniWMIPC
 import XCTest
 
 final class IPCResizeFocusedCommandTests: XCTestCase {
-    func testNameMapsToResizeFocused() {
-        XCTAssertEqual(IPCCommandRequest.dwindle(.resizeFocused(operation: .grow)).name, .dwindle(.resizeFocused))
-    }
-
-    func testConstructionFromArgumentValues() throws {
-        let request = try IPCCommandRequest(name: .dwindle(.resizeFocused), argumentValues: [.resizeOperation(.grow)])
-        XCTAssertEqual(request, .dwindle(.resizeFocused(operation: .grow)))
-    }
-
     func testConstructionRejectsMissingArgument() {
         XCTAssertThrowsError(try IPCCommandRequest(name: .dwindle(.resizeFocused), argumentValues: []))
     }

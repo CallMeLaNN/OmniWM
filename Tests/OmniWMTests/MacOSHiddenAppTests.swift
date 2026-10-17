@@ -690,6 +690,10 @@ final class MacOSHiddenAppTests: XCTestCase {
 
         XCTAssertEqual(windows.first { $0.pid == orderedOutToken.pid }?.isVisible, false)
         XCTAssertEqual(windows.first { $0.pid == orderedInToken.pid }?.isVisible, true)
+        let visibleWindows = router.windowsResult(
+            IPCQueryRequest(name: .windows, selectors: IPCQuerySelectors(visible: true))
+        ).windows
+        XCTAssertEqual(visibleWindows.compactMap(\.pid), [orderedInToken.pid])
     }
 
     func testIPCWindowVisibilityTreatsUnknownOrderedInStateAsVisible() throws {
@@ -705,34 +709,6 @@ final class MacOSHiddenAppTests: XCTestCase {
         let windows = router.windowsResult(IPCQueryRequest(name: .windows)).windows
 
         XCTAssertEqual(windows.first { $0.pid == token.pid }?.isVisible, true)
-    }
-
-    func testIPCWindowVisibilitySelectorExcludesOrderedOutWindows() throws {
-        let controller = makeController()
-        let workspaceId = try XCTUnwrap(
-            controller.workspaceManager.workspaceId(for: "1", createIfMissing: true)
-        )
-        _ = controller.workspaceManager.focusWorkspace(named: "1")
-        let orderedOutToken = addWindow(
-            pid: 880_044,
-            windowId: 880_144,
-            to: workspaceId,
-            controller: controller
-        )
-        let orderedInToken = addWindow(
-            pid: 880_045,
-            windowId: 880_145,
-            to: workspaceId,
-            controller: controller
-        )
-        let router = IPCQueryRouter(controller: controller, appVersion: nil, sessionToken: "ordered-in-tests")
-        router.windowOrderedInProvider = { $0 != UInt32(orderedOutToken.windowId) }
-
-        let visibleWindows = router.windowsResult(
-            IPCQueryRequest(name: .windows, selectors: IPCQuerySelectors(visible: true))
-        ).windows
-
-        XCTAssertEqual(visibleWindows.compactMap(\.pid), [orderedInToken.pid])
     }
 
     private func makeController(

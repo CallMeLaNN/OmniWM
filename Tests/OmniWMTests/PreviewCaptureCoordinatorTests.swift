@@ -68,32 +68,39 @@ final class PreviewCaptureCoordinatorTests: XCTestCase {
     }
 
     func testSufficientOnlyConsumerRejectsFramesShortOnEitherAxis() async throws {
-        let driver = OverviewPreviewTestDriver()
-        let overview = driver.makeCapture()
-        let swipe = driver.makeCapture(consumer: .workspaceSwipe, adoptsProvisionalPreviews: false)
-        let window = handle(1)
-        overview.reconcile(represented: [window], visible: [request(window, width: 800, height: 200)])
-        await driver.waitForStarts(1)
-        driver.completeAllStarts()
-        let wide = try makeOverviewPreviewFrame(width: 800, height: 200)
-        try await publish(wide, for: window, into: overview, driver: driver)
+        for (width, height) in [(800, 200), (200, 800)] {
+            let driver = OverviewPreviewTestDriver()
+            let overview = driver.makeCapture()
+            let swipe = driver.makeCapture(consumer: .workspaceSwipe, adoptsProvisionalPreviews: false)
+            defer {
+                overview.clear()
+                swipe.clear()
+                driver.completeAllStarts()
+            }
+            let window = handle(1)
+            overview.reconcile(represented: [window], visible: [request(window, width: width, height: height)])
+            await driver.waitForStarts(1)
+            driver.completeAllStarts()
+            let wide = try makeOverviewPreviewFrame(width: width, height: height)
+            try await publish(wide, for: window, into: overview, driver: driver)
 
-        swipe.reconcile(
-            represented: [window],
-            visible: [request(window, width: 400, height: 300)],
-            retainingUnrepresentedPreviews: true,
-            firstFrameOnly: true
-        )
+            swipe.reconcile(
+                represented: [window],
+                visible: [request(window, width: 400, height: 300)],
+                retainingUnrepresentedPreviews: true,
+                firstFrameOnly: true
+            )
 
-        XCTAssertNil(swipe.preview(for: window))
-        XCTAssertTrue(swipe.hasPendingFirstFrames)
-        guard swipe.hasPendingFirstFrames else { return }
-        await driver.waitForStarts(2)
-        XCTAssertTrue(driver.streams[1].request.handle === window)
-        driver.completeAllStarts()
-        overview.clear()
-        swipe.clear()
-        await driver.waitForStops(2)
+            XCTAssertNil(swipe.preview(for: window))
+            XCTAssertTrue(swipe.hasPendingFirstFrames)
+            guard swipe.hasPendingFirstFrames else { continue }
+            await driver.waitForStarts(2)
+            XCTAssertTrue(driver.streams[1].request.handle === window)
+            driver.completeAllStarts()
+            overview.clear()
+            swipe.clear()
+            await driver.waitForStops(2)
+        }
     }
 
     func testSharedBudgetEvictsLeastRecentIdleFramesAndKeepsActiveConsumerFrames() async throws {

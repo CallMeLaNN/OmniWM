@@ -6,23 +6,6 @@ import Foundation
 import XCTest
 
 final class WorkspaceBarNotchModeSettingsTests: XCTestCase {
-    @MainActor
-    func testRightOfNotchRoundTripsAndAppliesSettings() throws {
-        var export = SettingsExport.defaults()
-        export.workspaceBar.notchMode = .rightOfNotch
-        export.monitorBarSettings = [
-            MonitorBarSettings(monitorName: "Built-in", notchMode: .rightOfNotch)
-        ]
-        let decoded = try SettingsTOMLCodec.decode(SettingsTOMLCodec.encode(export))
-        XCTAssertEqual(decoded.workspaceBar.notchMode, .rightOfNotch)
-        XCTAssertEqual(decoded.monitorBarSettings.first?.notchMode, .rightOfNotch)
-
-        let settings = makeSettingsStore()
-        settings.applyExport(decoded)
-        XCTAssertEqual(settings.workspaceBar.notchMode, .rightOfNotch)
-        XCTAssertEqual(settings.workspaceBar.export().notchMode, .rightOfNotch)
-    }
-
     func testNotchModeRoundTrips() throws {
         XCTAssertEqual(SettingsExport.defaults().workspaceBar.notchMode, .moveBelowMenuBar)
 
@@ -59,23 +42,17 @@ final class WorkspaceBarNotchModeSettingsTests: XCTestCase {
         XCTAssertNil(decoded.monitorBarSettings[1].notchActiveZoneWidth)
     }
 
-    func testLegacyNotchAwareKeySurfacesAsUnknownKey() throws {
-        let withLegacyKey = try defaultsWithReplacements(
-            ("notchMode = \"moveBelowMenuBar\"", "notchMode = \"moveBelowMenuBar\"\nnotchAware = true")
-        )
-
-        XCTAssertTrue(SettingsTOMLCodec.unknownKeyPaths(in: withLegacyKey).contains("workspaceBar.notchAware"))
-        XCTAssertEqual(try SettingsTOMLCodec.decode(withLegacyKey).workspaceBar.notchMode, .moveBelowMenuBar)
-    }
-
     @MainActor
     func testApplyExportClampsNotchActiveZoneWidth() {
         let settings = makeSettingsStore()
 
         var export = SettingsExport.defaults()
+        export.workspaceBar.notchMode = .rightOfNotch
         export.workspaceBar.notchActiveZoneWidth = 12
         settings.applyExport(export)
         XCTAssertEqual(settings.workspaceBar.notchActiveZoneWidth, 100)
+        XCTAssertEqual(settings.workspaceBar.notchMode, .rightOfNotch)
+        XCTAssertEqual(settings.workspaceBar.export().notchMode, .rightOfNotch)
 
         export.workspaceBar.notchActiveZoneWidth = 9999
         settings.applyExport(export)
@@ -113,14 +90,6 @@ final class WorkspaceBarNotchModeSettingsTests: XCTestCase {
         let resolved = settings.workspaceBar.resolved(for: monitor)
         XCTAssertEqual(resolved.notchMode, .off)
         XCTAssertEqual(resolved.notchActiveZoneWidth, 300)
-    }
-
-    private func defaultsWithReplacements(_ replacements: (String, String)...) throws -> Data {
-        var toml = String(decoding: try SettingsTOMLCodec.encode(.defaults()), as: UTF8.self)
-        for (target, replacement) in replacements {
-            toml = toml.replacingOccurrences(of: target, with: replacement)
-        }
-        return Data(toml.utf8)
     }
 
     @MainActor

@@ -11,11 +11,19 @@ final class SkyLightTransactionScopeTests: XCTestCase {
         var created = false
         skyLight.withTransactionScope {
             XCTAssertNil(skyLight.scopedTransaction)
-            skyLight.withTransaction { _ in }
-            created = skyLight.scopedTransaction != nil
-            skyLight.withTransactionScope {
-                skyLight.withTransaction { _ in }
+            var first: CFTypeRef?
+            skyLight.withTransaction { first = $0 }
+            created = first != nil
+            XCTAssertTrue(skyLight.scopedTransaction === first)
+            skyLight.withTransaction { second in
+                XCTAssertTrue(second === first)
             }
+            skyLight.withTransactionScope {
+                skyLight.withTransaction { nested in
+                    XCTAssertTrue(nested === first)
+                }
+            }
+            XCTAssertTrue(skyLight.scopedTransaction === first)
         }
         XCTAssertNil(skyLight.scopedTransaction)
         try XCTSkipUnless(created, "WindowServer transactions unavailable")

@@ -55,6 +55,17 @@ final class CommandPaletteCommandSearchTests: XCTestCase {
         let reversed = Array(items.reversed())
 
         XCTAssertEqual(CommandPaletteSearch.filterCommandItems(reversed, query: "  ").map(\.id), items.map(\.id))
+
+        let literalItems = [
+            item(id: "focus-alpha", title: "Alpha", category: .focus),
+            item(id: "workspace-beta", title: "Beta"),
+            item(id: "workspace-alpha-b", title: "Alpha"),
+            item(id: "workspace-alpha-a", title: "Alpha")
+        ]
+        XCTAssertEqual(
+            CommandPaletteSearch.filterCommandItems(literalItems, query: "  ").map(\.id),
+            ["workspace-alpha-a", "workspace-alpha-b", "workspace-beta", "focus-alpha"]
+        )
     }
 
     func testSearchFindsCatalogMetadataCategoryLayoutAndConfiguredShortcut() {
@@ -99,6 +110,7 @@ final class CommandPaletteCommandSearchTests: XCTestCase {
         id: String,
         title: String,
         localizedTitle: String? = nil,
+        category: HotkeyCategory = .workspace,
         keywords: [String] = [],
         shortcutSearchTerms: [String] = []
     ) -> CommandPaletteCommandItem {
@@ -109,7 +121,7 @@ final class CommandPaletteCommandSearchTests: XCTestCase {
                 title: title,
                 localizedTitle: localizedTitle ?? title,
                 keywords: keywords,
-                category: .workspace,
+                category: category,
                 visibility: .normal,
                 layoutCompatibility: .shared,
                 defaultBinding: .unassigned,

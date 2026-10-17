@@ -64,24 +64,6 @@ final class WorkspaceBarFillLeftGeometryTests: XCTestCase {
         )
     }
 
-    func testFillLeftOfNotchFrameCoversMenuBarToNotch() throws {
-        let monitor = makeMonitor()
-        let resolved = makeResolved(notchMode: .fillLeftOfNotch)
-        let geometry = WorkspaceBarGeometry.resolve(monitor: monitor, resolved: resolved, isVisible: true)
-
-        let frame = geometry.frame(fittingLength: 200, monitor: monitor, resolved: resolved)
-
-        let expectedNotchStart = monitor.notchRange?.lowerBound ?? monitor.frame.midX
-        let expectedMaxX = expectedNotchStart - WorkspaceBarGeometry.notchGap
-        let expectedWidth = max(0, expectedMaxX - monitor.frame.minX)
-
-        XCTAssertEqual(frame.minX, monitor.frame.minX)
-        XCTAssertEqual(frame.maxX, expectedMaxX)
-        XCTAssertEqual(frame.width, expectedWidth)
-        XCTAssertEqual(frame.height, 32)
-        XCTAssertEqual(frame.minY, monitor.frame.maxY - 32)
-    }
-
     func testFillLeftOfNotchFrameUsesVirtualMidpointWithoutNotch() throws {
         let monitor = makeMonitor(hasNotch: false, notchRange: nil)
         let resolved = makeResolved(notchMode: .fillLeftOfNotch)

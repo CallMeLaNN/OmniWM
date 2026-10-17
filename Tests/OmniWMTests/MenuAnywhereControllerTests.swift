@@ -32,9 +32,14 @@ final class MenuAnywhereControllerTests: XCTestCase {
         }
         let menu = rootedMenu()
 
+        let delegate: NSMenuDelegate = controller
+        delegate.menuWillOpen?(menu)
+        XCTAssertEqual(loadCount, 0)
+
         controller.menuNeedsUpdate(menu)
         controller.menuNeedsUpdate(menu)
 
+        delegate.menuWillOpen?(menu)
         XCTAssertEqual(loadCount, 1)
         XCTAssertFalse(menu.autoenablesItems)
         XCTAssertEqual(menu.items.count, 2)
@@ -118,12 +123,6 @@ final class MenuAnywhereControllerTests: XCTestCase {
         XCTAssertEqual(loadCount, 0)
         XCTAssertTrue(menu.items.isEmpty)
         XCTAssertFalse(menu.autoenablesItems)
-    }
-
-    func testControllerDoesNotImplementMenuWillOpen() {
-        let controller = MenuAnywhereController { _, _, _ in .unavailable }
-
-        XCTAssertFalse(controller.responds(to: #selector(NSMenuDelegate.menuWillOpen(_:))))
     }
 
     func testAnchoredRootLoadsExplicitAppAndCleansItemsAfterTracking() {

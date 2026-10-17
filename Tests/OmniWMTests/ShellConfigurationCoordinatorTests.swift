@@ -5,6 +5,7 @@ import Foundation
 import Observation
 @testable import OmniWM
 import Synchronization
+import TOML
 import XCTest
 
 @MainActor
@@ -226,7 +227,6 @@ final class ShellConfigurationCoordinatorTests: XCTestCase {
         XCTAssertEqual(coordinator.catalog, catalog)
         XCTAssertNil(coordinator.metadataError)
 
-        coordinator.invalidatePreviews()
         try await coordinator.refresh()
         XCTAssertEqual(coordinator.widgetSchemas["clock"]?.options["date"]?.kind, .number)
         XCTAssertEqual(coordinator.catalog?.settings?.options["width"]?.maximum, 200)
@@ -421,6 +421,187 @@ final class ShellConfigurationCoordinatorTests: XCTestCase {
         XCTAssertEqual(coordinator.revision, revision + 1)
         try await coordinator.refresh()
         XCTAssertEqual(coordinator.revision, revision + 1)
+    }
+
+    func testSavingRewritesOnlyTheProfilesLayoutKeysAndResetRestoresTheProfile() async throws {
+        let shell = try barFixture()
+        try writeBarFile("""
+        # my shell
+        profile = "default"
+        profiles.default.trailing = [
+            "clock",
+            "mine",
+        ]
+
+        [weather]
+        city = "Toronto"
+        """, to: "shell.toml", in: shell)
+        let coordinator = ShellConfigurationCoordinator(shellDirectory: shell)
+        try await coordinator.refresh()
+        let initial = try XCTUnwrap(coordinator.barLayout)
+        XCTAssertTrue(initial.customized)
+        XCTAssertEqual(initial.trailing, ["clock", "mine"])
+
+        try await coordinator.editBar {
+            $0.remove("mine")
+            $0.add("weather", to: .leading)
+        }
+        XCTAssertEqual(try parsedBarConfiguration(shell), [
+            "profile": .string("default"),
+            "profiles": .table(["default": .table([
+                "leading": .array([.string("workspaces"), .string("weather")]),
+                "center": .array([]),
+                "trailing": .array([.string("clock")])
+            ])]),
+            "weather": .table(["city": .string("Toronto")])
+        ])
+        let saved = try XCTUnwrap(coordinator.barLayout)
+        XCTAssertEqual(saved.leading, ["workspaces", "weather"])
+        XCTAssertEqual(saved.trailing, ["clock"])
+
+        try await coordinator.resetBarLayout()
+        XCTAssertEqual(try parsedBarConfiguration(shell), [
+            "profile": .string("default"),
+            "weather": .table(["city": .string("Toronto")])
+        ])
+        let reset = try XCTUnwrap(coordinator.barLayout)
+        XCTAssertFalse(reset.customized)
+        XCTAssertEqual(reset.trailing, ["clock"])
+    }
+
+    func testEachProfileKeepsItsOwnLayout() async throws {
+        let shell = try barFixture()
+        try writeBarFile("leading = [\"clock\"]\ntrailing = []", to: "styled/shell.toml", in: shell)
+        try writeBarFile("profile = \"styled\"", to: "shell.toml", in: shell)
+        let coordinator = ShellConfigurationCoordinator(shellDirectory: shell)
+        try await coordinator.refresh()
+        XCTAssertEqual(coordinator.config.profile, "styled")
+        try await coordinator.editBar { $0.add("weather", to: .center) }
+        XCTAssertEqual(try parsedBarConfiguration(shell), [
+            "profile": .string("styled"),
+            "profiles": .table(["styled": .table([
+                "leading": .array([.string("clock")]),
+                "center": .array([.string("weather")]),
+                "trailing": .array([])
+            ])])
+        ])
+        let styled = try XCTUnwrap(coordinator.barLayout)
+        XCTAssertEqual(styled.leading, ["clock"])
+        XCTAssertEqual(styled.center, ["weather"])
+        XCTAssertTrue(styled.customized)
+
+        let selectedDefault = try await coordinator.selectProfile(ShellDefaults.profile)
+        XCTAssertTrue(selectedDefault)
+        let plain = try XCTUnwrap(coordinator.barLayout)
+        XCTAssertEqual(plain.leading, ["workspaces"])
+        XCTAssertEqual(plain.center, [])
+        XCTAssertFalse(plain.customized)
+        try await coordinator.resetBarLayout()
+        let selectedStyled = try await coordinator.selectProfile("styled")
+        XCTAssertTrue(selectedStyled)
+        XCTAssertEqual(coordinator.barLayout?.center, ["weather"])
+    }
+
+    func testABrokenLayerBlocksEditingInsteadOfSavingFallbackLists() async throws {
+        let shell = try barFixture()
+        let original = "profiles.default.leading = [\"clock\"]\nprofiles.default.theme = \"dusk\"\n"
+        try Data(original.utf8).write(to: shell.appendingPathComponent("shell.toml"))
+        let coordinator = ShellConfigurationCoordinator(shellDirectory: shell)
+        try await coordinator.refresh()
+        try writeBarFile("leading = [", to: "default/shell.toml", in: shell)
+
+        do {
+            try await coordinator.refresh()
+            XCTFail("A broken layer must not load")
+        } catch let unreadable as ShellBarLayout.Unreadable {
+            XCTAssertTrue(unreadable.problem.hasPrefix("default/shell.toml"), unreadable.problem)
+        } catch {
+            XCTFail("Expected unreadable layer, got \(error)")
+        }
+        do {
+            try await coordinator.editBar { $0.remove("clock") }
+            XCTFail("A broken layer must block editing")
+        } catch let unreadable as ShellBarLayout.Unreadable {
+            XCTAssertTrue(unreadable.problem.hasPrefix("default/shell.toml"), unreadable.problem)
+        } catch {
+            XCTFail("Expected unreadable layer, got \(error)")
+        }
+        XCTAssertEqual(try Data(contentsOf: shell.appendingPathComponent("shell.toml")), Data(original.utf8))
+    }
+
+    func testBarEditsPreserveOutsideLayoutChanges() async throws {
+        let shell = try barFixture()
+        try writeBarFile("profiles.default.trailing = [\"clock\", \"weather\", \"mine\"]", to: "shell.toml", in: shell)
+        let coordinator = ShellConfigurationCoordinator(shellDirectory: shell)
+        try await coordinator.refresh()
+        XCTAssertEqual(coordinator.barLayout?.trailing, ["clock", "weather", "mine"])
+
+        let outside = "profiles.default.trailing = [\"mine\", \"clock\"]\nprofiles.default.center = [\"weather\"]\n"
+        try Data(outside.utf8).write(to: shell.appendingPathComponent("shell.toml"))
+        XCTAssertEqual(try Data(contentsOf: shell.appendingPathComponent("shell.toml")), Data(outside.utf8))
+        try await coordinator.editBar { $0.remove("clock") }
+        let saved = try XCTUnwrap(coordinator.barLayout)
+        XCTAssertEqual(saved.center, ["weather"])
+        XCTAssertEqual(saved.trailing, ["mine"])
+        try await coordinator.editBar { $0.add("clock", to: .center) }
+        XCTAssertEqual(coordinator.barLayout?.center, ["weather", "clock"])
+    }
+
+    func testResetBarLayoutRestoresSystemMenuPrefixAndRemovesLaneOverrides() async throws {
+        let shell = try fixture()
+        defer { try? FileManager.default.removeItem(at: shell) }
+        let coordinator = ShellConfigurationCoordinator(shellDirectory: shell)
+        try await coordinator.refresh()
+        let selected = try await coordinator.selectProfile("system")
+        XCTAssertTrue(selected)
+        let selectedTheme = try await coordinator.selectTheme("nocturne")
+        XCTAssertTrue(selectedTheme)
+        try await coordinator.editBar { $0.leading = ["workspaces"] }
+        XCTAssertEqual(coordinator.config.leading, ["workspaces"])
+
+        try await coordinator.resetBarLayout()
+
+        XCTAssertEqual(Array(coordinator.config.leading.prefix(3)), ["apple-menu", "app-menu", "omniwm"])
+        let document = try parsedBarConfiguration(shell)
+        XCTAssertEqual(document["profile"], .string("system"))
+        guard case let .table(profiles)? = document["profiles"],
+              case let .table(profile)? = profiles["system"]
+        else {
+            return XCTFail("Expected retained system profile theme")
+        }
+        XCTAssertNil(profile["leading"])
+        XCTAssertNil(profile["center"])
+        XCTAssertNil(profile["trailing"])
+        XCTAssertEqual(profile["theme"], .string("nocturne"))
+    }
+
+    private func barFixture() throws -> URL {
+        let shell = try fixture()
+        addTeardownBlock {
+            if FileManager.default.fileExists(atPath: shell.path) {
+                try FileManager.default.removeItem(at: shell)
+            }
+        }
+        try writeBarFile(
+            "leading = [\"workspaces\"]\ntrailing = [\"clock\"]\nhiddenBarWidget = \"hidden-bar\"",
+            to: "default/shell.toml",
+            in: shell
+        )
+        try writeBarFile("function render(ctx) return ui.box{} end", to: "widgets/mine/init.luau", in: shell)
+        return shell
+    }
+
+    private func writeBarFile(_ contents: String, to path: String, in shell: URL) throws {
+        let url = shell.appendingPathComponent(path)
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data((contents + "\n").utf8).write(to: url)
+    }
+
+    private func parsedBarConfiguration(_ shell: URL) throws -> [String: TOMLNode] {
+        try TOMLDecoder().decode(
+            [String: TOMLNode].self,
+            from: Data(contentsOf: shell.appendingPathComponent("shell.toml"))
+        )
     }
 
     private func fixture() throws -> URL {

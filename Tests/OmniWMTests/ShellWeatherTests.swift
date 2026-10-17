@@ -345,12 +345,15 @@ final class ShellDataFeedDemandTests: XCTestCase {
         XCTAssertNil(feed.current.cpu)
         XCTAssertEqual(feed.current.memory, 0)
 
+        _ = feed.cpuMeter.usage(of: CPUTicks(busy: 0, idle: 0), at: -CPUMeter.window)
         feed.setDemand(ShellDataKey.cpu.bit, cadence: .of([(ShellDataKey.cpu.bit, nil)]))
-        XCTAssertNil(feed.current.cpu)
+        XCTAssertNotNil(feed.current.cpu)
+        XCTAssertFalse(feed.cpuMeter.isDue(at: 0))
 
         feed.setDemand(ShellDataKey.memory.bit, cadence: .of([(ShellDataKey.memory.bit, nil)]))
         XCTAssertGreaterThan(feed.current.memory, 0)
         XCTAssertNil(feed.current.cpu)
+        XCTAssertTrue(feed.cpuMeter.isDue(at: 0))
 
         feed.setDemand(0, cadence: .of([]))
         XCTAssertEqual(feed.current.memory, 0)
@@ -442,7 +445,6 @@ final class ShellWidgetPackageRenderTests: XCTestCase {
     }
 
     func testUnboundedWidgetIntervalsClampToADay() async {
-        let bar = ShellBarKey(monitor: Monitor.ID(displayId: 92_403))
         let package = ShellWidgetPackage(name: "test", generation: 1, outbox: ShellWidgetOutbox { _ in })
         let failure = await package.load(source: """
         interval = math.huge
@@ -453,20 +455,12 @@ final class ShellWidgetPackageRenderTests: XCTestCase {
         XCTAssertNil(failure)
         let declared = await package.declaration.interval
         XCTAssertEqual(declared, ShellWidgetDeclaration.maximumInterval)
+        await package.close()
         guard declared == ShellWidgetDeclaration.maximumInterval else { return }
         XCTAssertEqual(
             ShellDataFeed.Cadence.of([(ShellDataKey.clock.bit, declared)]).tick,
             Int(ShellWidgetDeclaration.maximumInterval)
         )
-        await package.receive(.interval(declared))
-        await package.receive(.bars([bar: ShellBarData()]))
-        var data = ShellWidgetData()
-        data.clock = "12:00"
-        await package.receive(.update(data))
-        data.clock = "12:01"
-        await package.receive(.update(data))
-        await package.close()
-
         let undefined = ShellWidgetPackage(name: "nan", generation: 1, outbox: ShellWidgetOutbox { _ in })
         let undefinedFailure = await undefined.load(source: "interval = 0/0\nfunction render(ctx) return ui.box{} end")
         XCTAssertNil(undefinedFailure)

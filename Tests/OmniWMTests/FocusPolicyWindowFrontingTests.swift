@@ -7,38 +7,27 @@ import XCTest
 
 @MainActor
 final class FocusPolicyWindowFrontingTests: XCTestCase {
-    func testWindowFrontingIsAllowedWithoutLeases() {
-        let engine = FocusPolicyEngine()
-        XCTAssertTrue(engine.evaluate(.windowFronting).allowsFocusChange)
-    }
-
-    func testForeignTransientUILeaseDeniesWindowFronting() {
-        let engine = FocusPolicyEngine()
-        engine.beginLease(
-            owner: .foreignTransientUI,
-            reason: "foreign_menu",
-            suppressesFocusFollowsMouse: true,
-            duration: nil
-        )
-
-        let decision = engine.evaluate(.windowFronting)
-        XCTAssertFalse(decision.allowsFocusChange)
-        XCTAssertEqual(decision.reason, "foreign_menu")
-
-        engine.endLease(owner: .foreignTransientUI)
-        XCTAssertTrue(engine.evaluate(.windowFronting).allowsFocusChange)
-    }
-
-    func testUnrelatedLeasesDoNotBlockWindowFronting() {
-        let engine = FocusPolicyEngine()
-        engine.beginLease(
-            owner: .windowCloseFocusRecovery,
-            reason: "close_recovery",
-            suppressesFocusFollowsMouse: true,
-            duration: nil
-        )
-
-        XCTAssertTrue(engine.evaluate(.windowFronting).allowsFocusChange)
+    func testWindowFrontingLeaseControls() {
+        let cases: [(label: String, owner: FocusPolicyLeaseOwner?, reason: String?, allowed: Bool)] = [
+            ("no lease", nil, nil, true),
+            ("unrelated recovery", .windowCloseFocusRecovery, "close_recovery", true),
+            ("foreign UI", .foreignTransientUI, "foreign_menu", false)
+        ]
+        for row in cases {
+            let engine = FocusPolicyEngine()
+            if let owner = row.owner, let reason = row.reason {
+                engine.beginLease(
+                    owner: owner, reason: reason, suppressesFocusFollowsMouse: true, duration: nil
+                )
+            }
+            let decision = engine.evaluate(.windowFronting)
+            XCTAssertEqual(decision.allowsFocusChange, row.allowed, row.label)
+            if row.owner == .foreignTransientUI {
+                XCTAssertEqual(decision.reason, "foreign_menu")
+                engine.endLease(owner: .foreignTransientUI)
+                XCTAssertTrue(engine.evaluate(.windowFronting).allowsFocusChange)
+            }
+        }
     }
 
     func testForeignTransientUIOutranksOtherLeases() {

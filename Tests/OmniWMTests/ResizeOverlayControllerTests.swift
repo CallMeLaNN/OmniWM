@@ -26,19 +26,15 @@ final class ResizeOverlayControllerTests: XCTestCase {
     }
 
     func testGlassNeverCaptures() {
-        var captured = false
         let token = WindowToken(pid: 1002, windowId: 103)
-        let overlay = makeOverlay(currentFrames: [token: frame(x: 0, width: 400)]) { _, _ in
-            captured = true
-            return nil
-        }
+        let overlay = makeOverlay(currentFrames: [token: frame(x: 0, width: 400)])
 
         overlay.begin(workspaceId: WorkspaceDescriptor.ID(), style: .glass, pointerDriven: true)
         overlay.update([change(token, frame(x: 0, width: 300))])
 
         XCTAssertNotNil(overlay.panels[token])
         XCTAssertTrue(overlay.captureTasks.isEmpty)
-        XCTAssertFalse(captured)
+        XCTAssertEqual(overlay.panels[token]?.isVisible, true)
         overlay.reset()
     }
 
@@ -54,17 +50,18 @@ final class ResizeOverlayControllerTests: XCTestCase {
         overlay.reset()
     }
 
-    func testSnapshotShowsCapturedImage() async {
+    func testSnapshotShowsCapturedImage() async throws {
         let token = WindowToken(pid: 1004, windowId: 105)
         let overlay = makeOverlay(currentFrames: [token: frame(x: 0, width: 400)]) { _, _ in CGImage.blank() }
+        defer { overlay.reset() }
 
         overlay.begin(workspaceId: WorkspaceDescriptor.ID(), style: .snapshot, pointerDriven: true)
         overlay.update([change(token, frame(x: 0, width: 300))])
-        let capture = overlay.captureTasks[token]
-        await capture?.value
+        let capture = try XCTUnwrap(overlay.captureTasks[token])
+        XCTAssertEqual(overlay.panels[token]?.showsSnapshot, false)
+        await capture.value
 
         XCTAssertEqual(overlay.panels[token]?.showsSnapshot, true)
-        overlay.reset()
     }
 
     func testLiveStyleNeverStarts() {
@@ -93,8 +90,8 @@ final class ResizeOverlayControllerTests: XCTestCase {
         XCTAssertFalse(overlay.isActive)
     }
 
-    func testMouseResizeMovesPanelsWithoutFrameWrites() async throws {
-        let fixture = try makeLayoutFixture()
+    func testMouseResizeDefersFrameSubmissionsUntilRelease() async throws {
+        let fixture = try makeLayoutFixture(animationsEnabled: false)
         let mouse = fixture.controller.mouseEventHandler
         let resized = try XCTUnwrap(fixture.engine.findNode(for: fixture.left, in: fixture.workspaceId))
         let frame = try XCTUnwrap(resized.renderedFrame ?? resized.frame)
@@ -111,19 +108,27 @@ final class ResizeOverlayControllerTests: XCTestCase {
 
         XCTAssertLessThan(try XCTUnwrap(overlay.panels[fixture.left]?.frame.width), frame.width)
         XCTAssertNotNil(overlay.panels[fixture.right])
-        XCTAssertEqual(frameApplications(fixture), 0)
+        XCTAssertEqual(frameApplicationEvents(fixture).count, 0)
 
+        fixture.controller.hasStartedServices = true
         mouse.completeActiveResize()
+        XCTAssertFalse(fixture.controller.workspaceManager.animationDriver.hasMotion(in: fixture.workspaceId))
+        let releaseState = fixture.controller.layoutRefreshController.layoutState
+        XCTAssertTrue(
+            releaseState.activeRefresh?.reason == .interactiveGesture
+                || releaseState.pendingRefresh?.reason == .interactiveGesture
+        )
         XCTAssertFalse(mouse.state.isResizing)
         XCTAssertTrue(overlay.settlesOnLayout)
-        XCTAssertEqual(frameApplications(fixture), 0)
-        await drainRefreshes(fixture)
-        XCTAssertGreaterThan(frameApplications(fixture), 0)
+        XCTAssertEqual(frameApplicationEvents(fixture).count, 0)
+        try await drainRefreshes(fixture)
+        XCTAssertGreaterThan(frameApplicationEvents(fixture).count, 0)
+        XCTAssertTrue(frameApplicationEvents(fixture).contains { $0.contains(" event=outcome=") })
         XCTAssertFalse(overlay.isTracking(fixture.workspaceId))
         overlay.reset()
     }
 
-    func testKeyboardResizeAnimatesPanelsAndWritesOnceSettled() async throws {
+    func testKeyboardResizeAnimatesPanelsAndSubmitsFramesAfterSettlement() async throws {
         let fixture = try makeLayoutFixture()
         fixture.controller.settings.gestures.resizePreviewStyle = .glass
         let handler = fixture.controller.layoutRefreshController.niriHandler
@@ -137,16 +142,19 @@ final class ResizeOverlayControllerTests: XCTestCase {
         ))
         let overlay = fixture.controller.resizeOverlay
         XCTAssertTrue(overlay.isTracking(fixture.workspaceId))
-        await drainRefreshes(fixture)
-        XCTAssertEqual(frameApplications(fixture), 0, "relayout during the animation must be held")
+        try await drainRefreshes(fixture)
+        XCTAssertEqual(frameApplicationEvents(fixture).count, 0, "relayout during the animation must be held")
         XCTAssertTrue(overlay.isTracking(fixture.workspaceId))
 
+        let heldFrames = overlay.panels.mapValues(\.frame)
         handler.tickScrollAnimation(targetTime: CACurrentMediaTime() + 0.03, displayId: fixture.monitor.displayId)
+        XCTAssertNotEqual(overlay.panels.mapValues(\.frame), heldFrames)
         XCTAssertFalse(overlay.panels.isEmpty)
-        XCTAssertEqual(frameApplications(fixture), 0)
+        XCTAssertEqual(frameApplicationEvents(fixture).count, 0)
 
         handler.tickScrollAnimation(targetTime: CACurrentMediaTime() + 5, displayId: fixture.monitor.displayId)
-        XCTAssertGreaterThan(frameApplications(fixture), 0)
+        XCTAssertGreaterThan(frameApplicationEvents(fixture).count, 0)
+        XCTAssertTrue(frameApplicationEvents(fixture).contains { $0.contains(" event=outcome=") })
         XCTAssertFalse(overlay.isTracking(fixture.workspaceId))
         overlay.reset()
     }
@@ -168,8 +176,21 @@ final class ResizeOverlayControllerTests: XCTestCase {
         let right: WindowToken
     }
 
-    private func makeLayoutFixture() throws -> LayoutFixture {
+    private func makeLayoutFixture(animationsEnabled: Bool = true) throws -> LayoutFixture {
         let controller = WindowAdmissionTestSupport.controller(prefix: "ResizeOverlayControllerTests")
+        let directory = controller.settings.settingsFileURL.deletingLastPathComponent().deletingLastPathComponent()
+        addTeardownBlock { @MainActor in
+            controller.hasStartedServices = false
+            controller.hotkeys.stop()
+            controller.mouseEventHandler.cleanup()
+            controller.resizeOverlay.reset()
+            controller.layoutRefreshController.resetState()
+            if FileManager.default.fileExists(atPath: directory.path) {
+                try FileManager.default.removeItem(at: directory)
+            }
+        }
+        controller.setAnimationsEnabled(animationsEnabled)
+        XCTAssertEqual(controller.motionPolicy.snapshot().animationsEnabled, animationsEnabled)
         let monitor = Monitor(
             id: .init(displayId: 92),
             displayId: 92,
@@ -182,6 +203,10 @@ final class ResizeOverlayControllerTests: XCTestCase {
         let workspaceId = try XCTUnwrap(controller.workspaceManager.workspaceId(for: "1", createIfMissing: true))
         _ = controller.workspaceManager.focusWorkspace(named: "1")
         controller.niriLayoutHandler.enableNiriLayout()
+        controller.layoutRefreshController.resetState()
+        XCTAssertNil(controller.layoutRefreshController.layoutState.activeRefreshTask)
+        XCTAssertNil(controller.layoutRefreshController.layoutState.activeRefresh)
+        XCTAssertNil(controller.layoutRefreshController.layoutState.pendingRefresh)
         controller.layoutRefreshController.displayLinkActivationForTests = { _ in true }
         let engine = try XCTUnwrap(controller.niriEngine)
 
@@ -209,11 +234,27 @@ final class ResizeOverlayControllerTests: XCTestCase {
         )
     }
 
-    private func drainRefreshes(_ fixture: LayoutFixture) async {
-        let state = fixture.controller.layoutRefreshController.layoutState
-        for _ in 0 ..< 200 where state.activeRefreshTask != nil || state.pendingRefresh != nil {
-            await state.activeRefreshTask?.value
-            await Task.yield()
+    private enum RefreshDrainFailure: Error {
+        case unfinished
+    }
+
+    private func drainRefreshes(_ fixture: LayoutFixture) async throws {
+        let refreshController = fixture.controller.layoutRefreshController
+        var completed = 0
+        try Task.checkCancellation()
+        while let task = refreshController.layoutState.activeRefreshTask {
+            try Task.checkCancellation()
+            guard completed < 200 else {
+                XCTFail("Layout refresh chain exceeded 200 completed tasks")
+                throw RefreshDrainFailure.unfinished
+            }
+            await task.value
+            completed += 1
+        }
+        let state = refreshController.layoutState
+        guard state.activeRefreshTask == nil, state.activeRefresh == nil, state.pendingRefresh == nil else {
+            XCTFail("Layout refresh work remains without an active task")
+            throw RefreshDrainFailure.unfinished
         }
     }
 
@@ -221,8 +262,8 @@ final class ResizeOverlayControllerTests: XCTestCase {
         LayoutFrameChange(token: token, frame: frame, forceApply: false)
     }
 
-    private func frameApplications(_ fixture: LayoutFixture) -> Int {
-        FrameApplyTrace.shared.dump().split(separator: "\n").count { line in
+    private func frameApplicationEvents(_ fixture: LayoutFixture) -> [Substring] {
+        FrameApplyTrace.shared.dump().split(separator: "\n").filter { line in
             !line.contains("cancelled") && [fixture.left, fixture.right]
                 .contains { line.contains("win=\($0.windowId) ") }
         }
@@ -238,6 +279,7 @@ final class ResizeOverlayControllerTests: XCTestCase {
         capture: ResizeOverlayController.ImageCapture? = nil
     ) -> ResizeOverlayController {
         ResizeOverlayController(
+            previews: PreviewCaptureCoordinator(ownedWindowRegistry: OwnedWindowRegistry()),
             captureAccessAllowed: { captureAllowed },
             captureImage: capture ?? { _, _ in nil },
             currentFrame: { currentFrames[$0] }

@@ -58,6 +58,7 @@ final class MultitouchFrameMailboxTests: XCTestCase {
         let deliveries = mailbox.take().deliveries
         XCTAssertLessThanOrEqual(deliveries.count, mailbox.capacity)
         XCTAssertEqual(deliveries.map(\.kind), [.began, .ended, .began, .ended])
+        XCTAssertEqual(deliveries.map(\.frame.timestamp), [16, 17, 18, 19])
     }
 
     func testEndAtCapacityEvictsACompleteGestureInsteadOfStrandingBegin() {
@@ -266,6 +267,9 @@ final class MultitouchFrameMailboxTests: XCTestCase {
         }
         let batch = mailbox.take()
         XCTAssertEqual(batch.contacts.sessions[0], 10)
+        XCTAssertEqual(batch.deliveries.map(\.kind), [.began, .ended])
+        XCTAssertEqual(batch.deliveries.map(\.frame.timestamp), [9, 9.01])
+        XCTAssertEqual(batch.deliveries.map(\.contactSession), [10, 10])
         XCTAssertLessThanOrEqual(batch.deliveries.count, 3)
         XCTAssertTrue(batch.deliveries.allSatisfy { $0.contactSession == 10 })
         mailbox.activate(generation: 8)

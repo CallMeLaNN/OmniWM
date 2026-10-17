@@ -1736,43 +1736,36 @@ final class TrackpadWorkspaceGestureTests: XCTestCase {
         handler.handleAppVisibilityChanged()
     }
 
-    func testWorkspaceOnlyNiriGestureDoesNotClaimViewportWhileArmed() throws {
-        let fixture = try makeFixture()
-        sendFrame(fixture, phase: .began, fingers: 3, x: 0.5, y: 0.2, at: 100)
-
-        XCTAssertTrue(fixture.controller.mouseEventHandler.isTrackpadSwipeSessionActive)
-        XCTAssertFalse(fixture.controller.mouseEventHandler.isViewportGestureActive)
-
-        sendFrame(fixture, phase: .ended, fingers: 0, x: 0, y: 0, at: 100.01)
-    }
-
-    func testDwindleWorkspaceGestureDoesNotClaimViewportWhileArmed() throws {
-        let fixture = try makeFixture(scrollGestureEnabled: true, enableNiri: false)
-        fixture.controller.settings.workspaces.configurations = fixture.controller.settings.workspaces.configurations
-            .map {
-                $0.with(layoutType: .dwindle)
+    func testNonColumnContextsDoNotClaimViewportWhileArmed() throws {
+        let cases: [(
+            label: String,
+            workspaceFingers: GestureFingerCount,
+            scrollEnabled: Bool,
+            enableNiri: Bool,
+            fingers: Int
+        )] = [
+            ("workspace-only Niri", .three, false, true, 3),
+            ("Dwindle", .three, true, false, 3),
+            ("distinct workspace fingers", .four, true, true, 4)
+        ]
+        for row in cases {
+            let fixture = try makeFixture(
+                workspaceFingers: row.workspaceFingers,
+                scrollGestureEnabled: row.scrollEnabled,
+                columnFingers: .three,
+                enableNiri: row.enableNiri
+            )
+            if !row.enableNiri {
+                fixture.controller.settings.workspaces.configurations = fixture.controller.settings.workspaces
+                    .configurations
+                    .map { $0.with(layoutType: .dwindle) }
+                fixture.controller.enableDwindleLayout()
             }
-        fixture.controller.enableDwindleLayout()
-        sendFrame(fixture, phase: .began, fingers: 3, x: 0.5, y: 0.2, at: 100)
-
-        XCTAssertTrue(fixture.controller.mouseEventHandler.isTrackpadSwipeSessionActive)
-        XCTAssertFalse(fixture.controller.mouseEventHandler.isViewportGestureActive)
-
-        sendFrame(fixture, phase: .ended, fingers: 0, x: 0, y: 0, at: 100.01)
-    }
-
-    func testDistinctWorkspaceFingerCountDoesNotClaimViewportWhileArmed() throws {
-        let fixture = try makeFixture(
-            workspaceFingers: .four,
-            scrollGestureEnabled: true,
-            columnFingers: .three
-        )
-        sendFrame(fixture, phase: .began, fingers: 4, x: 0.5, y: 0.2, at: 100)
-
-        XCTAssertTrue(fixture.controller.mouseEventHandler.isTrackpadSwipeSessionActive)
-        XCTAssertFalse(fixture.controller.mouseEventHandler.isViewportGestureActive)
-
-        sendFrame(fixture, phase: .ended, fingers: 0, x: 0, y: 0, at: 100.01)
+            sendFrame(fixture, phase: .began, fingers: row.fingers, x: 0.5, y: 0.2, at: 100)
+            XCTAssertTrue(fixture.controller.mouseEventHandler.isTrackpadSwipeSessionActive, row.label)
+            XCTAssertFalse(fixture.controller.mouseEventHandler.isViewportGestureActive, row.label)
+            sendFrame(fixture, phase: .ended, fingers: 0, x: 0, y: 0, at: 100.01)
+        }
     }
 
     func testWorkspaceSwipeSeparatesSessionFromViewportPredicate() throws {

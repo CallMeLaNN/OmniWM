@@ -7,52 +7,28 @@ import XCTest
 
 @MainActor
 final class WorkspaceBarIconOverrideUITests: XCTestCase {
-    func testSelectionStoresStandardizedAbsolutePathAndRefreshesResolver() {
-        let settings = makeSettingsStore()
-        var refreshes: [Bool] = []
-        let selectedURL = URL(fileURLWithPath: "/tmp/OmniWMIcons/../custom.icns")
-
-        XCTAssertTrue(
-            WorkspaceBarIconOverrideEdits.applySelection(
-                selectedURL,
-                bundleID: "  com.example.App \n",
-                settings: settings,
-                refresh: { refreshes.append($0) }
-            )
-        )
-        XCTAssertEqual(
-            settings.workspaceBar.iconOverrideValue(for: "COM.EXAMPLE.APP"),
-            "/tmp/custom.icns"
-        )
-        XCTAssertEqual(refreshes, [true])
-    }
-
-    func testBundledResourceSelectionStoresLocatorAndRefreshesResolver() {
-        let settings = makeSettingsStore()
-        var refreshes: [Bool] = []
-
-        XCTAssertTrue(
-            WorkspaceBarIconOverrideEdits.applySource(
-                .bundleResource("AppIconDark"),
-                bundleID: " com.cmuxterm.app ",
-                settings: settings,
-                refresh: { refreshes.append($0) }
-            )
-        )
-
-        XCTAssertEqual(
-            settings.workspaceBar.iconOverrideValue(for: "COM.CMUXTERM.APP"),
-            "bundle-resource:AppIconDark"
-        )
-        XCTAssertEqual(refreshes, [true])
+    func testSourcesStoreLocatorsAndRefreshResolver() {
+        let cases: [(WorkspaceBarIconOverrideSource, String, String, String)] = [
+            (.bundleResource("AppIconDark"), " com.cmuxterm.app ", "COM.CMUXTERM.APP", "bundle-resource:AppIconDark"),
+            (.file("/tmp/custom.icns"), "  com.example.App \n", "COM.EXAMPLE.APP", "/tmp/custom.icns")
+        ]
+        for (source, bundleID, lookupID, expected) in cases {
+            let settings = makeSettingsStore()
+            var refreshes: [Bool] = []
+            XCTAssertTrue(WorkspaceBarIconOverrideEdits.applySource(
+                source, bundleID: bundleID, settings: settings, refresh: { refreshes.append($0) }
+            ))
+            XCTAssertEqual(settings.workspaceBar.iconOverrideValue(for: lookupID), expected)
+            XCTAssertEqual(refreshes, [true])
+        }
     }
 
     func testReselectingSamePathForcesReloadWithoutMutatingSettings() {
         let settings = makeSettingsStore()
-        let selectedURL = URL(fileURLWithPath: "/tmp/custom.icns")
+        let selectedPath = "/tmp/custom.icns"
         XCTAssertTrue(
             settings.workspaceBar.setIconOverride(
-                selectedURL.standardizedFileURL.path,
+                selectedPath,
                 for: "com.example.App"
             )
         )
@@ -60,8 +36,8 @@ final class WorkspaceBarIconOverrideUITests: XCTestCase {
         var refreshes: [Bool] = []
 
         XCTAssertFalse(
-            WorkspaceBarIconOverrideEdits.applySelection(
-                selectedURL,
+            WorkspaceBarIconOverrideEdits.applySource(
+                .file(selectedPath),
                 bundleID: "COM.EXAMPLE.APP",
                 settings: settings,
                 refresh: { refreshes.append($0) }
@@ -72,27 +48,15 @@ final class WorkspaceBarIconOverrideUITests: XCTestCase {
         XCTAssertEqual(refreshes, [true])
     }
 
-    func testCancelledAndInvalidSelectionsDoNotMutateOrRefresh() {
+    func testBlankBundleIDDoesNotMutateOrRefresh() {
         let settings = makeSettingsStore()
         var refreshes: [Bool] = []
-
         XCTAssertFalse(
-            WorkspaceBarIconOverrideEdits.applySelection(
-                nil,
-                bundleID: "com.example.App",
-                settings: settings,
-                refresh: { refreshes.append($0) }
+            WorkspaceBarIconOverrideEdits.applySource(
+                .file("/tmp/custom.icns"), bundleID: " \n",
+                settings: settings, refresh: { refreshes.append($0) }
             )
         )
-        XCTAssertFalse(
-            WorkspaceBarIconOverrideEdits.applySelection(
-                URL(fileURLWithPath: "/tmp/custom.icns"),
-                bundleID: " \n",
-                settings: settings,
-                refresh: { refreshes.append($0) }
-            )
-        )
-
         XCTAssertTrue(settings.workspaceBar.iconOverrides.isEmpty)
         XCTAssertTrue(refreshes.isEmpty)
     }

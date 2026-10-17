@@ -233,7 +233,7 @@ final class NiriSettledCoverageTests: NiriInteractionTestCase {
         XCTAssertNil(engine.interactiveResize)
         XCTAssertEqual(state.viewOffset, -1_241, accuracy: 0.001)
 
-        let layout = engine.calculateCombinedLayoutWithVisibility(
+        let layout = engine.calculateCombinedLayoutUsingPools(
             in: workspaceId,
             monitor: sourceMonitor,
             gaps: LayoutGaps(horizontal: 16, vertical: 16),

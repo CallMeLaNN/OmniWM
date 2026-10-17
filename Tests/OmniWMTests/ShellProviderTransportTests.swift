@@ -276,7 +276,7 @@ final class ShellProviderTransportTests: XCTestCase {
         }
         XCTAssertEqual(blocked, .blocked)
         XCTAssertEqual(queue.pendingBytes, 11)
-        XCTAssertFalse(queue.cancel(request(identity, 1)))
+        XCTAssertEqual(queue.discardUnsent(where: { $0 == request(identity, 1) }), 0)
         XCTAssertEqual(queue.drain { bytes in output.append(contentsOf: bytes)
             return .written(bytes.count)
         }, .empty)
@@ -303,7 +303,7 @@ final class ShellProviderTransportTests: XCTestCase {
             return .written(bytes.count)
         }, .yielded)
         XCTAssertEqual(written, 65_536)
-        XCTAssertTrue(queue.cancel(request(identity, 2)))
+        XCTAssertEqual(queue.discardUnsent(where: { $0 == request(identity, 2) }), 65_536)
         XCTAssertEqual(queue.pendingBytes, 14 * 65_536)
         XCTAssertEqual(queue.drain { _ in .written(0) }, .failed("Invalid provider write progress"))
         queue.removeAll()

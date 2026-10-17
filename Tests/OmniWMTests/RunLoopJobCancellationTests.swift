@@ -119,21 +119,15 @@ final class RunLoopJobCancellationTests: XCTestCase {
         XCTAssertFalse(job.isCancelled)
         XCTAssertNoThrow(try job.checkCancellation())
 
+        job.schedule { _ in }
+
         job.cancel()
         job.cancel()
 
+        XCTAssertNil(job.takeScheduledBody())
         XCTAssertTrue(job.isCancelled)
         XCTAssertThrowsError(try job.checkCancellation()) { error in
             XCTAssertTrue(error is CancellationError)
         }
-    }
-
-    func testCancelAfterScheduleDropsBodyExactlyOnce() {
-        let job = RunLoopJob()
-        job.schedule { _ in }
-
-        job.cancel()
-
-        XCTAssertNil(job.takeScheduledBody())
     }
 }

@@ -83,92 +83,62 @@ final class WorkspaceDeletionEngineCleanupTests: XCTestCase {
         XCTAssertEqual(engine.selectedNode(in: workspaceB)?.id, selectionB)
     }
 
-    func testDwindleRemoveLayoutPreservesOtherWorkspaceIndexForStaleToken() {
-        let engine = DwindleLayoutEngine()
-        let workspaceA = WorkspaceDescriptor.ID()
-        let workspaceB = WorkspaceDescriptor.ID()
-        let token = WindowToken(pid: 904, windowId: 1)
-        let minSize = CGSize(width: 200, height: 150)
-        engine.addWindow(token: token, to: workspaceA, activeWindowFrame: nil)
-        engine.addWindow(token: token, to: workspaceB, activeWindowFrame: nil)
-        engine.updateWindowConstraints(
-            for: token,
-            constraints: WindowSizeConstraints(minSize: minSize, maxSize: .zero, isFixed: false)
-        )
+    func testDwindleRemoveLayoutPreservesDuplicateInOtherWorkspace() {
+        let cases: [(removedIndex: Int, pid: pid_t, minimum: CGSize)] = [
+            (0, 904, CGSize(width: 200, height: 150)),
+            (1, 907, CGSize(width: 240, height: 180))
+        ]
+        for row in cases {
+            let engine = DwindleLayoutEngine()
+            let workspaces = [WorkspaceDescriptor.ID(), WorkspaceDescriptor.ID()]
+            let token = WindowToken(pid: row.pid, windowId: 1)
+            let leaves = workspaces.map { engine.addWindow(token: token, to: $0, activeWindowFrame: nil) }
+            engine.updateWindowConstraints(
+                for: token,
+                constraints: WindowSizeConstraints(minSize: row.minimum, maxSize: .zero, isFixed: false)
+            )
+            let removed = workspaces[row.removedIndex]
+            let survivingIndex = 1 - row.removedIndex
+            let survivor = workspaces[survivingIndex]
 
-        engine.removeLayout(for: workspaceA)
+            engine.removeLayout(for: removed)
 
-        XCTAssertNil(engine.root(for: workspaceA))
-        XCTAssertNotNil(engine.findNode(for: token, in: workspaceB))
-        XCTAssertTrue(engine.containsWindow(token, in: workspaceB))
-        XCTAssertEqual(engine.constraints(for: token).minSize, minSize)
+            XCTAssertNil(engine.root(for: removed))
+            XCTAssertTrue(engine.findNode(for: token, in: survivor) === leaves[survivingIndex])
+            XCTAssertTrue(engine.containsWindow(token, in: survivor))
+            XCTAssertEqual(engine.windowCount(in: survivor), 1)
+            XCTAssertEqual(engine.constraints(for: token).minSize, row.minimum)
+        }
     }
 
-    func testDwindleRemoveLayoutKeepsDuplicateTokenIsolatedInSurvivingWorkspace() {
-        let engine = DwindleLayoutEngine()
-        let workspaceA = WorkspaceDescriptor.ID()
-        let workspaceB = WorkspaceDescriptor.ID()
-        let token = WindowToken(pid: 907, windowId: 1)
-        let minSize = CGSize(width: 240, height: 180)
-        let leafInA = engine.addWindow(token: token, to: workspaceA, activeWindowFrame: nil)
-        engine.addWindow(token: token, to: workspaceB, activeWindowFrame: nil)
-        engine.updateWindowConstraints(
-            for: token,
-            constraints: WindowSizeConstraints(minSize: minSize, maxSize: .zero, isFixed: false)
-        )
+    func testDwindleSyncPreservesDuplicateInOtherWorkspace() {
+        let cases: [(removedIndex: Int, pid: pid_t, minimum: CGSize)] = [
+            (0, 908, CGSize(width: 220, height: 160)),
+            (1, 909, CGSize(width: 260, height: 170))
+        ]
+        for row in cases {
+            let engine = DwindleLayoutEngine()
+            let workspaces = [WorkspaceDescriptor.ID(), WorkspaceDescriptor.ID()]
+            let token = WindowToken(pid: row.pid, windowId: 1)
+            let leaves = workspaces.map { engine.addWindow(token: token, to: $0, activeWindowFrame: nil) }
+            engine.updateWindowConstraints(
+                for: token,
+                constraints: WindowSizeConstraints(minSize: row.minimum, maxSize: .zero, isFixed: false)
+            )
+            let removedWorkspace = workspaces[row.removedIndex]
+            let survivingIndex = 1 - row.removedIndex
+            let survivor = workspaces[survivingIndex]
 
-        engine.removeLayout(for: workspaceB)
+            let removed = engine.syncWindows([], in: removedWorkspace, focusedToken: nil)
 
-        XCTAssertNil(engine.root(for: workspaceB))
-        XCTAssertTrue(engine.findNode(for: token, in: workspaceA) === leafInA)
-        XCTAssertTrue(engine.containsWindow(token, in: workspaceA))
-        XCTAssertEqual(engine.windowCount(in: workspaceA), 1)
-        XCTAssertEqual(engine.constraints(for: token).minSize, minSize)
-    }
-
-    func testDwindleSyncPrunesStaleDuplicateLeafWithoutTouchingIndexedRoot() {
-        let engine = DwindleLayoutEngine()
-        let workspaceA = WorkspaceDescriptor.ID()
-        let workspaceB = WorkspaceDescriptor.ID()
-        let token = WindowToken(pid: 908, windowId: 1)
-        let minSize = CGSize(width: 220, height: 160)
-        engine.addWindow(token: token, to: workspaceA, activeWindowFrame: nil)
-        let leafInB = engine.addWindow(token: token, to: workspaceB, activeWindowFrame: nil)
-        engine.updateWindowConstraints(
-            for: token,
-            constraints: WindowSizeConstraints(minSize: minSize, maxSize: .zero, isFixed: false)
-        )
-
-        let removed = engine.syncWindows([], in: workspaceA, focusedToken: nil)
-
-        XCTAssertEqual(removed, [token])
-        XCTAssertFalse(engine.containsWindow(token, in: workspaceA))
-        XCTAssertEqual(engine.windowCount(in: workspaceA), 0)
-        XCTAssertTrue(engine.findNode(for: token, in: workspaceB) === leafInB)
-        XCTAssertTrue(engine.containsWindow(token, in: workspaceB))
-        XCTAssertEqual(engine.constraints(for: token).minSize, minSize)
-    }
-
-    func testDwindleSyncRemovalKeepsDuplicateTokenIsolatedInOtherWorkspace() {
-        let engine = DwindleLayoutEngine()
-        let workspaceA = WorkspaceDescriptor.ID()
-        let workspaceB = WorkspaceDescriptor.ID()
-        let token = WindowToken(pid: 909, windowId: 1)
-        let minSize = CGSize(width: 260, height: 170)
-        let leafInA = engine.addWindow(token: token, to: workspaceA, activeWindowFrame: nil)
-        engine.addWindow(token: token, to: workspaceB, activeWindowFrame: nil)
-        engine.updateWindowConstraints(
-            for: token,
-            constraints: WindowSizeConstraints(minSize: minSize, maxSize: .zero, isFixed: false)
-        )
-
-        let removed = engine.syncWindows([], in: workspaceB, focusedToken: nil)
-
-        XCTAssertEqual(removed, [token])
-        XCTAssertFalse(engine.containsWindow(token, in: workspaceB))
-        XCTAssertTrue(engine.findNode(for: token, in: workspaceA) === leafInA)
-        XCTAssertTrue(engine.containsWindow(token, in: workspaceA))
-        XCTAssertEqual(engine.constraints(for: token).minSize, minSize)
+            XCTAssertEqual(removed, [token])
+            XCTAssertFalse(engine.containsWindow(token, in: removedWorkspace))
+            XCTAssertEqual(engine.windowCount(in: removedWorkspace), 0)
+            XCTAssertTrue(engine.findNode(for: token, in: survivor) === leaves[survivingIndex])
+            XCTAssertTrue(engine.containsWindow(token, in: survivor))
+            XCTAssertEqual(engine.windowCount(in: survivor), 1)
+            XCTAssertEqual(engine.constraints(for: token).minSize, row.minimum)
+        }
     }
 
     func testDwindleSiblingPromotionLeavesOtherWorkspaceTreeIsolated() {
@@ -196,52 +166,40 @@ final class WorkspaceDeletionEngineCleanupTests: XCTestCase {
         XCTAssertEqual(engine.constraints(for: token).minSize, minSize)
     }
 
-    func testDwindleRekeyInRequestedWorkspaceLeavesDuplicateInOtherWorkspace() {
-        let engine = DwindleLayoutEngine()
-        let workspaceA = WorkspaceDescriptor.ID()
-        let workspaceB = WorkspaceDescriptor.ID()
-        let oldToken = WindowToken(pid: 914, windowId: 1)
-        let newToken = WindowToken(pid: 914, windowId: 2)
-        let minSize = CGSize(width: 250, height: 155)
-        engine.addWindow(token: oldToken, to: workspaceA, activeWindowFrame: nil)
-        let leafInB = engine.addWindow(token: oldToken, to: workspaceB, activeWindowFrame: nil)
-        engine.updateWindowConstraints(
-            for: oldToken,
-            constraints: WindowSizeConstraints(minSize: minSize, maxSize: .zero, isFixed: false)
-        )
+    func testDwindleScopedRekeyPreservesDuplicateAcrossInsertionOrders() {
+        let cases: [(reverse: Bool, pid: pid_t, minimum: CGSize)] = [
+            (false, 914, CGSize(width: 250, height: 155)),
+            (true, 915, CGSize(width: 270, height: 165))
+        ]
+        for row in cases {
+            let engine = DwindleLayoutEngine()
+            let workspaceA = WorkspaceDescriptor.ID()
+            let workspaceB = WorkspaceDescriptor.ID()
+            let oldToken = WindowToken(pid: row.pid, windowId: 1)
+            let newToken = WindowToken(pid: row.pid, windowId: 2)
+            let first = row.reverse ? workspaceB : workspaceA
+            let second = row.reverse ? workspaceA : workspaceB
+            let firstLeaf = engine.addWindow(token: oldToken, to: first, activeWindowFrame: nil)
+            let secondLeaf = engine.addWindow(token: oldToken, to: second, activeWindowFrame: nil)
+            let leafInA = row.reverse ? secondLeaf : firstLeaf
+            let leafInB = row.reverse ? firstLeaf : secondLeaf
+            engine.updateWindowConstraints(
+                for: oldToken,
+                constraints: WindowSizeConstraints(minSize: row.minimum, maxSize: .zero, isFixed: false)
+            )
+            XCTAssertTrue(engine.findNode(for: oldToken, in: workspaceA) === leafInA)
 
-        XCTAssertTrue(engine.rekeyWindow(from: oldToken, to: newToken, in: workspaceA))
+            XCTAssertTrue(engine.rekeyWindow(from: oldToken, to: newToken, in: workspaceA))
 
-        XCTAssertTrue(engine.findNode(for: oldToken, in: workspaceB) === leafInB)
-        XCTAssertTrue(engine.containsWindow(newToken, in: workspaceA))
-        XCTAssertFalse(engine.containsWindow(oldToken, in: workspaceA))
-        XCTAssertEqual(engine.constraints(for: oldToken).minSize, minSize)
-        XCTAssertEqual(engine.constraints(for: newToken).minSize, minSize)
-    }
-
-    func testDwindleRekeyMovesOnlyLocalLeafAndKeepsOtherWorkspaceToken() {
-        let engine = DwindleLayoutEngine()
-        let workspaceA = WorkspaceDescriptor.ID()
-        let workspaceB = WorkspaceDescriptor.ID()
-        let oldToken = WindowToken(pid: 915, windowId: 1)
-        let newToken = WindowToken(pid: 915, windowId: 2)
-        let minSize = CGSize(width: 270, height: 165)
-        let leafInB = engine.addWindow(token: oldToken, to: workspaceB, activeWindowFrame: nil)
-        let leafInA = engine.addWindow(token: oldToken, to: workspaceA, activeWindowFrame: nil)
-        engine.updateWindowConstraints(
-            for: oldToken,
-            constraints: WindowSizeConstraints(minSize: minSize, maxSize: .zero, isFixed: false)
-        )
-        XCTAssertTrue(engine.findNode(for: oldToken, in: workspaceA) === leafInA)
-
-        XCTAssertTrue(engine.rekeyWindow(from: oldToken, to: newToken, in: workspaceA))
-
-        XCTAssertNil(engine.findNode(for: oldToken, in: workspaceA))
-        XCTAssertTrue(engine.findNode(for: oldToken, in: workspaceB) === leafInB)
-        XCTAssertTrue(engine.findNode(for: newToken, in: workspaceA) === leafInA)
-        XCTAssertTrue(engine.containsWindow(oldToken, in: workspaceB))
-        XCTAssertEqual(engine.constraints(for: oldToken).minSize, minSize)
-        XCTAssertEqual(engine.constraints(for: newToken).minSize, minSize)
+            XCTAssertNil(engine.findNode(for: oldToken, in: workspaceA))
+            XCTAssertTrue(engine.findNode(for: oldToken, in: workspaceB) === leafInB)
+            XCTAssertTrue(engine.findNode(for: newToken, in: workspaceA) === leafInA)
+            XCTAssertTrue(engine.containsWindow(oldToken, in: workspaceB))
+            XCTAssertTrue(engine.containsWindow(newToken, in: workspaceA))
+            XCTAssertFalse(engine.containsWindow(oldToken, in: workspaceA))
+            XCTAssertEqual(engine.constraints(for: oldToken).minSize, row.minimum)
+            XCTAssertEqual(engine.constraints(for: newToken).minSize, row.minimum)
+        }
     }
 
     func testDwindleSingleRootRekeyMovesIndexAndConstraints() {
@@ -559,6 +517,11 @@ final class WorkspaceDeletionEngineCleanupTests: XCTestCase {
     private func makeController() -> WMController {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("OmniWMWorkspaceDeletionTests-\(UUID().uuidString)", isDirectory: true)
+        addTeardownBlock {
+            if FileManager.default.fileExists(atPath: root.path) {
+                try FileManager.default.removeItem(at: root)
+            }
+        }
         let settings = SettingsStore(
             persistence: SettingsFilePersistence(
                 directory: root.appendingPathComponent("config", isDirectory: true),

@@ -69,10 +69,13 @@ final class ShellFrameTraceTests: XCTestCase {
     }
 
     @MainActor
-    func testInactiveCaptureDoesNotInstallDisplayLinks() {
+    func testInactiveCaptureDoesNotInstallDisplayLinks() throws {
+        guard let screen = NSScreen.main, screen.displayId != nil else {
+            throw XCTSkip("A main screen with a display ID is unavailable")
+        }
         ShellFrameTrace.shared.endCapture()
         ShellFrameTraceDisplayLink.stop()
-        ShellFrameTraceDisplayLink.prepare(screen: NSScreen.main)
+        ShellFrameTraceDisplayLink.prepare(screen: screen)
         XCTAssertEqual(ShellFrameTraceDisplayLink.count, 0)
     }
 

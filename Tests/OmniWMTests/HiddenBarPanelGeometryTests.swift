@@ -44,7 +44,10 @@ final class HiddenBarPanelGeometryTests: XCTestCase {
     func testContourStaysInsidePanelAndOwnsItsJoin() throws {
         for edge in [PopupAttachment.Edge.below, .above, .left, .right] {
             let vertical = edge == .left || edge == .right
-            for span in [CGFloat(116), 140, 141, 164, 300] {
+            let cases: [(span: CGFloat, ears: Bool, squaresBar: Bool)] = [
+                (116, false, true), (140, false, true), (141, true, false), (164, true, false), (300, true, false)
+            ]
+            for (span, expectedEars, expectedSquaresBar) in cases {
                 let bar = CGRect(x: 500, y: 350, width: vertical ? 24 : span, height: vertical ? span : 24)
                 let size = vertical ? CGSize(width: 24, height: 100) : CGSize(width: 100, height: 24)
                 let layout = attachedPlacement(bar: bar, edge: edge).layout(size: size)
@@ -54,7 +57,8 @@ final class HiddenBarPanelGeometryTests: XCTestCase {
                 XCTAssertTrue(bounds.contains(contour.boundingRect), "\(edge) \(span)")
                 XCTAssertTrue(contour.contains(CGPoint(x: layout.body.midX, y: layout.body.midY)), "\(edge) \(span)")
                 XCTAssertTrue(contour.contains(CGPoint(x: seam.midX, y: seam.midY)), "\(edge) \(span)")
-                XCTAssertNotEqual(layout.hasEars, layout.squaresBar, "\(edge) \(span)")
+                XCTAssertEqual(layout.hasEars, expectedEars, "\(edge) \(span)")
+                XCTAssertEqual(layout.squaresBar, expectedSquaresBar, "\(edge) \(span)")
             }
         }
     }
@@ -185,14 +189,10 @@ final class HiddenBarPanelGeometryTests: XCTestCase {
         XCTAssertEqual(size, CGSize(width: 30 * 3 + 8, height: 20 + 4))
     }
 
-    func testBarSizeWrapsWhenExceedingMaxWidth() throws {
-        let size = try luauSize([30, 30, 30], detachedPlacement(maxContentWidth: 70))
-        XCTAssertEqual(size.height, 20 * 2 + 2 + 4)
-        XCTAssertEqual(size.width, 30 + 30 + 8)
-    }
-
     func testRowRangesGreedyBoundaries() throws {
-        XCTAssertEqual(try luauSize([30, 30, 30], detachedPlacement(maxContentWidth: 70)).height, 2 * 20 + 2 + 4)
+        let width70 = try luauSize([30, 30, 30], detachedPlacement(maxContentWidth: 70))
+        XCTAssertEqual(width70.height, 2 * 20 + 2 + 4)
+        XCTAssertEqual(width70.width, 68)
         XCTAssertEqual(try luauSize([30, 30, 30], detachedPlacement(maxContentWidth: 59)).height, 3 * 20 + 2 * 2 + 4)
     }
 

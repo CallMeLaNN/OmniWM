@@ -25,32 +25,21 @@ final class WorkspaceMoveIPCIntegrationTests: XCTestCase {
         let outcome: WorkspaceMonitorMoveOutcome
     }
 
-    func testBridgeMapsWorkspaceAssignmentConflict() {
-        let response = IPCApplicationBridge.response(
-            for: .workspaceAssignmentConflict,
-            id: "workspace-move",
-            kind: .workspace
-        )
-
-        XCTAssertFalse(response.ok)
-        XCTAssertEqual(response.id, "workspace-move")
-        XCTAssertEqual(response.kind, .workspace)
-        XCTAssertEqual(response.status, .error)
-        XCTAssertEqual(response.code, .workspaceAssignmentConflict)
-    }
-
-    func testBridgeMapsWorkspaceStateConflict() {
-        let response = IPCApplicationBridge.response(
-            for: .workspaceStateConflict,
-            id: "workspace-move",
-            kind: .workspace
-        )
-
-        XCTAssertFalse(response.ok)
-        XCTAssertEqual(response.id, "workspace-move")
-        XCTAssertEqual(response.kind, .workspace)
-        XCTAssertEqual(response.status, .error)
-        XCTAssertEqual(response.code, .workspaceStateConflict)
+    func testBridgeMapsWorkspaceConflicts() {
+        let cases: [(result: ExternalCommandResult, expectedCode: IPCErrorCode)] = [
+            (.workspaceAssignmentConflict, .workspaceAssignmentConflict),
+            (.workspaceStateConflict, .workspaceStateConflict)
+        ]
+        for row in cases {
+            let response = IPCApplicationBridge.response(
+                for: row.result, id: "workspace-move", kind: .workspace
+            )
+            XCTAssertFalse(response.ok)
+            XCTAssertEqual(response.id, "workspace-move")
+            XCTAssertEqual(response.kind, .workspace)
+            XCTAssertEqual(response.status, .error)
+            XCTAssertEqual(response.code, row.expectedCode)
+        }
     }
 
     func testBridgeMapsNoChangeToIgnoredStatus() {

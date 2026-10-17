@@ -303,26 +303,6 @@ final class NativeFocusAdmissionTests: XCTestCase {
         XCTAssertTrue(operations.values.isEmpty)
     }
 
-    func testExactExternalFocusAdmissionSkipsNiriCreateActivationAfterRelayout() async throws {
-        let operations = FocusOperationRecorder()
-        let (controller, workspaceId) = try await Self.niriController(operations: operations)
-        let manager = controller.workspaceManager
-        let token = WindowToken(pid: 510_011, windowId: 510_012)
-        XCTAssertTrue(manager.recordExternalFocus(pid: token.pid, windowId: token.windowId))
-
-        controller.axEventHandler.trackPreparedCreate(
-            Self.preparedCreate(token: token, workspaceId: workspaceId)
-        )
-        await WindowAdmissionTestSupport.drainLayoutRefreshes(controller)
-
-        XCTAssertEqual(manager.nativeManagedFocusToken, token)
-        XCTAssertEqual(manager.selectedManagedToken, token)
-        XCTAssertNil(manager.pendingFocusedToken)
-        XCTAssertNil(controller.intentLedger.activeManagedRequest)
-        XCTAssertTrue(controller.intentLedger.entries.isEmpty)
-        XCTAssertTrue(operations.values.isEmpty)
-    }
-
     func testDifferentNiriCreateStillPerformsNormalActivationAfterAdoptedFocus() async throws {
         let operations = FocusOperationRecorder()
         let (controller, workspaceId) = try await Self.niriController(operations: operations)
@@ -338,6 +318,11 @@ final class NativeFocusAdmissionTests: XCTestCase {
             Self.preparedCreate(token: focusedToken, workspaceId: workspaceId)
         )
         await WindowAdmissionTestSupport.drainLayoutRefreshes(controller)
+        XCTAssertEqual(manager.nativeManagedFocusToken, focusedToken)
+        XCTAssertEqual(manager.selectedManagedToken, focusedToken)
+        XCTAssertNil(manager.pendingFocusedToken)
+        XCTAssertNil(controller.intentLedger.activeManagedRequest)
+        XCTAssertTrue(controller.intentLedger.entries.isEmpty)
         XCTAssertTrue(operations.values.isEmpty)
 
         let newToken = WindowToken(pid: 510_015, windowId: 510_016)

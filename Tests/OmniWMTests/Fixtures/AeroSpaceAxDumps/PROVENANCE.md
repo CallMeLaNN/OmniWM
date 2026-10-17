@@ -1,6 +1,6 @@
 # AeroSpace AX dump corpus
 
-125 real-app accessibility dumps vendored from the AeroSpace window manager, used as a differential
+118 real-app accessibility dumps vendored from the AeroSpace window manager, used as a differential
 corpus for OmniWM's window classifier. Each file is one captured window: its AX attribute tree, the
 owning app's activation policy and bundle id, its CoreGraphics window level, and AeroSpace's own
 classification of it (`Aero.AxUiElementWindowType`: `window` | `dialog` | `popup`).
@@ -16,9 +16,9 @@ They are data files, not source, so the repository's mandatory GPL header does n
 
 ## Local modifications
 
-The upstream `axDumps/scenario_firefox_google_meet_share_window/` subdirectory was flattened into this
-directory with a `scenario_gmeet_share_` filename prefix, so the loader can do a single flat scan. File
-contents are unmodified. Upstream's `README.md` files were not copied.
+This subset retains the 118 dumps consumed by the classifier corpus. Eight upstream captures without
+the required root `Aero.windowLevel` and without expectations are omitted. Retained file contents are
+unmodified. Upstream's `README.md` files were not copied.
 
 ## How these are used
 

@@ -23,6 +23,8 @@ final class PresentationActionContractTests: XCTestCase {
             XCTAssertEqual(spec.title, title)
             XCTAssertEqual(command.displayName, title)
             XCTAssertEqual(command.layoutCompatibility, .shared)
+            XCTAssertEqual(spec.layoutCompatibility, .shared)
+            XCTAssertNotNil(spec.ipcDescriptor)
             XCTAssertEqual(spec.defaultBinding, expected.binding)
             XCTAssertEqual(spec.category, .focus)
             XCTAssertEqual(spec.visibility, .normal)

@@ -533,6 +533,12 @@ final class NativeFullscreenPlaceholderDiagnosticsTests: XCTestCase {
 
         XCTAssertTrue(synchronized.frameSynchronized)
         XCTAssertFalse(desynchronized.frameSynchronized)
+        let beyondOnePixel = panelDiagnostics(
+            skyLightCaptureExcluded: nil,
+            panelFrame: CGRect(x: 10, y: 10, width: 181.5, height: 64),
+            windowFrame: CGRect(x: 10, y: 10, width: 182.25, height: 64)
+        )
+        XCTAssertFalse(beyondOnePixel.frameSynchronized)
     }
 
     func testReportIdentifiesTemporaryEntryLoss() {

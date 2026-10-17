@@ -65,33 +65,6 @@ final class IssueReporterTests: XCTestCase {
         XCTAssertFalse(fallback.contains("body="))
     }
 
-    func testRequestRewriteSuggestsWithoutMutatingFields() async {
-        let engine = FakeIssueEngine(rewriteResult: .success(RewrittenIssue(title: "Clean title", body: "Clean body")))
-        let model = makeModel(engine: engine)
-        model.title = "rough title"
-        model.actual = "rough body"
-        await model.requestRewrite()
-        XCTAssertEqual(model.suggestion, RewrittenIssue(title: "Clean title", body: "Clean body"))
-        XCTAssertEqual(model.title, "rough title")
-        XCTAssertEqual(model.actual, "rough body")
-        XCTAssertNil(model.polishedBody)
-        XCTAssertEqual(model.phase, .editing)
-        XCTAssertNil(model.errorMessage)
-    }
-
-    func testApplyRewriteSetsTitleAndPolishedBody() async {
-        let engine = FakeIssueEngine(rewriteResult: .success(RewrittenIssue(title: "Clean title", body: "Clean body")))
-        let model = makeModel(engine: engine)
-        model.title = "rough title"
-        model.actual = "rough body"
-        await model.requestRewrite()
-        model.applyRewrite()
-        XCTAssertEqual(model.title, "Clean title")
-        XCTAssertEqual(model.polishedBody, "Clean body")
-        XCTAssertEqual(model.submissionBody, "Clean body")
-        XCTAssertNil(model.suggestion)
-    }
-
     func testRequestRewriteForwardsHotkeyContextToEngine() async {
         let engine = FakeIssueEngine()
         let context = "KNOWN SHORTCUTS:\n- \"shift+o\" is bound to: Toggle Overview"
@@ -226,7 +199,17 @@ final class IssueReporterTests: XCTestCase {
         model.title = "rough title"
         model.actual = "rough body"
         await model.requestRewrite()
+        XCTAssertEqual(model.suggestion, RewrittenIssue(title: "Clean title", body: "Clean body"))
+        XCTAssertEqual(model.title, "rough title")
+        XCTAssertEqual(model.actual, "rough body")
+        XCTAssertNil(model.polishedBody)
+        XCTAssertEqual(model.phase, .editing)
+        XCTAssertNil(model.errorMessage)
         model.applyRewrite()
+        XCTAssertEqual(model.title, "Clean title")
+        XCTAssertEqual(model.polishedBody, "Clean body")
+        XCTAssertEqual(model.submissionBody, "Clean body")
+        XCTAssertNil(model.suggestion)
         let reloaded = ReportIssueViewModel(engine: FakeIssueEngine(), loadDraft: { saved })
         XCTAssertEqual(reloaded.polishedBody, "Clean body")
         XCTAssertEqual(reloaded.submissionBody, "Clean body")

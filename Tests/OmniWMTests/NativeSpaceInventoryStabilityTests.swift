@@ -6,111 +6,63 @@ import XCTest
 
 final class NativeSpaceInventoryStabilityTests: XCTestCase {
     @MainActor
-    func testTopologyInventoryTaskTerminatesAfterOneGlobalFallback() async throws {
-        let controller = WindowAdmissionTestSupport.controller()
-        let manager = controller.serviceLifecycleManager
-        let refreshController = controller.layoutRefreshController
-        let terminalSample = XCTestExpectation(description: "Fallback observation sampled")
-        let sleepEntries = (0 ..< (NativeSpaceInventoryStabilityGate.globalFallbackObservationCount - 1)).map {
-            XCTestExpectation(description: "Topology sleep \($0)")
-        }
-        let probe = NativeSpaceInventoryTestProbe(sleepEntries: sleepEntries)
-        var sampleCount = 0
-        defer {
-            manager.topologyInventory.cancel()
-            probe.resumeAll()
-            _ = manager.topologyInventory.endPerformanceCapture()
-            refreshController.resetState()
-            controller.isLockScreenActive = false
-        }
-        manager.topologyInventory.sampleProvider = {
-            sampleCount += 1
-            if sampleCount == NativeSpaceInventoryStabilityGate.globalFallbackObservationCount {
-                terminalSample.fulfill()
-            }
-            XCTAssertLessThanOrEqual(sampleCount, NativeSpaceInventoryStabilityGate.globalFallbackObservationCount)
-            return nil
-        }
-        manager.topologyInventory.sleeper = { _ in await probe.sleep() }
-        manager.topologyInventory.beginPerformanceCapture()
-        controller.isLockScreenActive = true
-
-        manager.handleActiveSpaceDidChange()
-        for entry in sleepEntries {
-            await fulfillment(of: [entry], timeout: 2)
-            try probe.resumeNext()
-        }
-        await fulfillment(of: [terminalSample], timeout: 2)
-
-        let terminalSnapshot = try XCTUnwrap(manager.topologyInventory.performanceSnapshot())
-        XCTAssertEqual(
-            terminalSnapshot.topologySamples,
-            UInt64(NativeSpaceInventoryStabilityGate.globalFallbackObservationCount)
-        )
-        XCTAssertEqual(terminalSnapshot.topologyGlobalFallbacks, 1)
-        XCTAssertEqual(terminalSnapshot.globalFallbackTerminations, 1)
-        XCTAssertEqual(terminalSnapshot.lastTopologyTerminalReason, .globalFallback)
-        XCTAssertFalse(refreshController.layoutState.inventoryStabilityBarrierActive)
-
-        XCTAssertEqual(sampleCount, NativeSpaceInventoryStabilityGate.globalFallbackObservationCount)
-        XCTAssertEqual(probe.sleepCount, sleepEntries.count)
-        XCTAssertTrue(probe.isEmpty)
-    }
-
-    @MainActor
-    func testOscillatingTopologyInventoryTaskTerminatesAfterOneGlobalFallback() async throws {
-        let controller = WindowAdmissionTestSupport.controller()
-        let manager = controller.serviceLifecycleManager
-        let refreshController = controller.layoutRefreshController
+    func testUnavailableOrOscillatingInventoryTerminatesAfterOneGlobalFallback() async throws {
         let first = try XCTUnwrap(NativeSpaceTopologySample(topology: makeTopology(currentSpaceId: 1)))
         let second = try XCTUnwrap(NativeSpaceTopologySample(topology: makeTopology(currentSpaceId: 2)))
-        var returnsFirst = true
-        let terminalSample = XCTestExpectation(description: "Fallback observation sampled")
-        let sleepEntries = (0 ..< (NativeSpaceInventoryStabilityGate.globalFallbackObservationCount - 1)).map {
-            XCTestExpectation(description: "Topology sleep \($0)")
-        }
-        let probe = NativeSpaceInventoryTestProbe(sleepEntries: sleepEntries)
-        var sampleCount = 0
-        defer {
-            manager.topologyInventory.cancel()
-            probe.resumeAll()
-            _ = manager.topologyInventory.endPerformanceCapture()
-            refreshController.resetState()
-            controller.isLockScreenActive = false
-        }
-        manager.topologyInventory.sampleProvider = {
-            sampleCount += 1
-            if sampleCount == NativeSpaceInventoryStabilityGate.globalFallbackObservationCount {
-                terminalSample.fulfill()
+        let cases: [(label: String, samples: [NativeSpaceTopologySample?])] = [
+            ("unavailable", [nil]),
+            ("oscillating", [first, second])
+        ]
+        for row in cases {
+            let controller = WindowAdmissionTestSupport.controller()
+            let manager = controller.serviceLifecycleManager
+            let refreshController = controller.layoutRefreshController
+            let terminalSample = XCTestExpectation(description: "Fallback observation sampled")
+            let sleepEntries = (0 ..< (NativeSpaceInventoryStabilityGate.globalFallbackObservationCount - 1)).map {
+                XCTestExpectation(description: "Topology sleep \($0)")
             }
-            XCTAssertLessThanOrEqual(sampleCount, NativeSpaceInventoryStabilityGate.globalFallbackObservationCount)
-            defer { returnsFirst.toggle() }
-            return returnsFirst ? first : second
+            let probe = NativeSpaceInventoryTestProbe(sleepEntries: sleepEntries)
+            var sampleCount = 0
+            defer {
+                manager.topologyInventory.cancel()
+                probe.resumeAll()
+                _ = manager.topologyInventory.endPerformanceCapture()
+                refreshController.resetState()
+                controller.isLockScreenActive = false
+            }
+            manager.topologyInventory.sampleProvider = {
+                sampleCount += 1
+                if sampleCount == NativeSpaceInventoryStabilityGate.globalFallbackObservationCount {
+                    terminalSample.fulfill()
+                }
+                XCTAssertLessThanOrEqual(sampleCount, NativeSpaceInventoryStabilityGate.globalFallbackObservationCount)
+                return row.samples[(sampleCount - 1) % row.samples.count]
+            }
+            manager.topologyInventory.sleeper = { _ in await probe.sleep() }
+            manager.topologyInventory.beginPerformanceCapture()
+            controller.isLockScreenActive = true
+
+            manager.handleActiveSpaceDidChange()
+            for entry in sleepEntries {
+                await fulfillment(of: [entry], timeout: 2)
+                try probe.resumeNext()
+            }
+            await fulfillment(of: [terminalSample], timeout: 2)
+
+            let terminalSnapshot = try XCTUnwrap(manager.topologyInventory.performanceSnapshot())
+            XCTAssertEqual(
+                terminalSnapshot.topologySamples,
+                UInt64(NativeSpaceInventoryStabilityGate.globalFallbackObservationCount)
+            )
+            XCTAssertEqual(terminalSnapshot.topologyGlobalFallbacks, 1)
+            XCTAssertEqual(terminalSnapshot.globalFallbackTerminations, 1)
+            XCTAssertEqual(terminalSnapshot.lastTopologyTerminalReason, .globalFallback)
+            XCTAssertFalse(refreshController.layoutState.inventoryStabilityBarrierActive)
+
+            XCTAssertEqual(sampleCount, NativeSpaceInventoryStabilityGate.globalFallbackObservationCount)
+            XCTAssertEqual(probe.sleepCount, sleepEntries.count)
+            XCTAssertTrue(probe.isEmpty)
         }
-        manager.topologyInventory.sleeper = { _ in await probe.sleep() }
-        manager.topologyInventory.beginPerformanceCapture()
-        controller.isLockScreenActive = true
-
-        manager.handleActiveSpaceDidChange()
-        for entry in sleepEntries {
-            await fulfillment(of: [entry], timeout: 2)
-            try probe.resumeNext()
-        }
-        await fulfillment(of: [terminalSample], timeout: 2)
-
-        let terminalSnapshot = try XCTUnwrap(manager.topologyInventory.performanceSnapshot())
-        XCTAssertEqual(
-            terminalSnapshot.topologySamples,
-            UInt64(NativeSpaceInventoryStabilityGate.globalFallbackObservationCount)
-        )
-        XCTAssertEqual(terminalSnapshot.topologyGlobalFallbacks, 1)
-        XCTAssertEqual(terminalSnapshot.globalFallbackTerminations, 1)
-        XCTAssertEqual(terminalSnapshot.lastTopologyTerminalReason, .globalFallback)
-        XCTAssertFalse(refreshController.layoutState.inventoryStabilityBarrierActive)
-
-        XCTAssertEqual(sampleCount, NativeSpaceInventoryStabilityGate.globalFallbackObservationCount)
-        XCTAssertEqual(probe.sleepCount, sleepEntries.count)
-        XCTAssertTrue(probe.isEmpty)
     }
 
     @MainActor
@@ -380,119 +332,36 @@ final class NativeSpaceInventoryStabilityTests: XCTestCase {
         ))
     }
 
-    func testMainDisplayIdentifierResolvesToExpectedMainDisplayUUID() throws {
-        let mainUUID = "11111111-1111-1111-1111-111111111111"
-        let secondaryUUID = "22222222-2222-2222-2222-222222222222"
-        let sample = try XCTUnwrap(NativeSpaceTopologySample(topology: makeTopology(
-            displays: [
-                .init(displayIdentifier: "Main", spaceIds: [1, 2], currentSpaceId: 1),
-                .init(displayIdentifier: secondaryUUID, spaceIds: [3, 4], currentSpaceId: 3)
-            ],
-            activeSpaceId: 1
-        )))
-
-        XCTAssertTrue(sample.matchesExpectedDisplays(
-            count: 2,
-            displayUUIDs: [mainUUID, secondaryUUID],
-            displayUUIDAliases: ["Main": mainUUID]
-        ))
-        XCTAssertFalse(sample.matchesExpectedDisplays(
-            count: 2,
-            displayUUIDs: [mainUUID, secondaryUUID]
-        ))
-    }
-
-    func testNumericDisplayIdentifierResolvesToExpectedDisplayUUID() throws {
-        let firstUUID = "11111111-1111-1111-1111-111111111111"
-        let secondUUID = "22222222-2222-2222-2222-222222222222"
-        let sample = try XCTUnwrap(NativeSpaceTopologySample(topology: makeTopology(
-            displays: [
-                .init(displayIdentifier: "1", spaceIds: [1, 2], currentSpaceId: 1),
-                .init(displayIdentifier: "2", spaceIds: [3, 4], currentSpaceId: 3)
-            ],
-            activeSpaceId: 1
-        )))
-
-        XCTAssertTrue(sample.matchesExpectedDisplays(
-            count: 2,
-            displayUUIDs: [firstUUID, secondUUID],
-            displayUUIDAliases: ["1": firstUUID, "2": secondUUID]
-        ))
-        XCTAssertFalse(sample.matchesExpectedDisplays(
-            count: 2,
-            displayUUIDs: [firstUUID, secondUUID],
-            displayUUIDAliases: ["1": firstUUID]
-        ))
-    }
-
-    func testActiveOnlyStableNoOpRequestsNeitherEventNorRescan() {
-        let topology = makeTopology()
-        let request = NativeSpaceInventoryRequest(
-            reason: .activeSpaceChanged,
-            baseline: topology
-        )
-        let resolution = request.resolution(for: topology)
-
-        XCTAssertFalse(resolution.recordsActiveSpaceChange)
-        XCTAssertNil(resolution.rescanReason)
-    }
-
-    func testActiveOnlyStableDeltaRequestsEventAndRescan() {
-        let request = NativeSpaceInventoryRequest(
-            reason: .activeSpaceChanged,
-            baseline: makeTopology(currentSpaceId: 1)
-        )
-        let changed = makeTopology(currentSpaceId: 2)
-        let resolution = request.resolution(for: changed)
-
-        XCTAssertTrue(resolution.recordsActiveSpaceChange)
-        XCTAssertEqual(resolution.rescanReason, .activeSpaceChanged)
-    }
-
-    func testUnlockSurvivesCoalescedNoOpActiveSpaceNotification() {
-        let topology = makeTopology()
-        var request = NativeSpaceInventoryRequest(
-            reason: .unlock,
-            baseline: topology
-        )
-
-        request.merge(reason: .activeSpaceChanged)
-        let resolution = request.resolution(for: topology)
-
-        XCTAssertFalse(resolution.recordsActiveSpaceChange)
-        XCTAssertEqual(resolution.rescanReason, .unlock)
-        XCTAssertFalse(request.reconcilesWorkspaceMonitorState)
-    }
-
-    func testMonitorChangeSurvivesCoalescedUnlockAndNoOpActiveSpaceNotification() {
-        let topology = makeTopology()
-        var request = NativeSpaceInventoryRequest(
-            reason: .activeSpaceChanged,
-            baseline: topology
-        )
-
-        request.merge(reason: .unlock)
-        request.merge(reason: .monitorConfigurationChanged)
-        request.merge(reason: .activeSpaceChanged)
-        let resolution = request.resolution(for: topology)
-
-        XCTAssertFalse(resolution.recordsActiveSpaceChange)
-        XCTAssertEqual(resolution.rescanReason, .monitorConfigurationChanged)
-        XCTAssertTrue(request.reconcilesWorkspaceMonitorState)
-    }
-
-    func testCoalescedActiveSpaceDeltaRecordsEventWithoutReplacingUnlockReason() {
-        var request = NativeSpaceInventoryRequest(
-            reason: .unlock,
-            baseline: makeTopology(currentSpaceId: 1)
-        )
-
-        request.merge(reason: .activeSpaceChanged)
-        let changed = makeTopology(currentSpaceId: 2)
-        let resolution = request.resolution(for: changed)
-
-        XCTAssertTrue(resolution.recordsActiveSpaceChange)
-        XCTAssertEqual(resolution.rescanReason, .unlock)
+    func testInventoryRequestCoalescingMatrix() {
+        let cases: [(
+            label: String,
+            initial: RefreshReason,
+            merged: [RefreshReason],
+            currentSpace: UInt64,
+            recordsEvent: Bool,
+            rescan: RefreshReason?,
+            reconcilesMonitors: Bool
+        )] = [
+            ("active no-op", .activeSpaceChanged, [], 1, false, nil, false),
+            ("active delta", .activeSpaceChanged, [], 2, true, .activeSpaceChanged, false),
+            ("unlock no-op", .unlock, [.activeSpaceChanged], 1, false, .unlock, false),
+            (
+                "monitor precedence", .activeSpaceChanged,
+                [.unlock, .monitorConfigurationChanged, .activeSpaceChanged], 1, false, .monitorConfigurationChanged,
+                true
+            ),
+            ("unlock with active delta", .unlock, [.activeSpaceChanged], 2, true, .unlock, false)
+        ]
+        for row in cases {
+            var request = NativeSpaceInventoryRequest(reason: row.initial, baseline: makeTopology(currentSpaceId: 1))
+            for reason in row.merged {
+                request.merge(reason: reason)
+            }
+            let resolution = request.resolution(for: makeTopology(currentSpaceId: row.currentSpace))
+            XCTAssertEqual(resolution.recordsActiveSpaceChange, row.recordsEvent, row.label)
+            XCTAssertEqual(resolution.rescanReason, row.rescan, row.label)
+            XCTAssertEqual(request.reconcilesWorkspaceMonitorState, row.reconcilesMonitors, row.label)
+        }
     }
 
     func testScopeIncludesPIDsKnownOnSelectedSpacesBeforeOrAfterRefresh() {

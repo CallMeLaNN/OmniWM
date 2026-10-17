@@ -167,32 +167,22 @@ final class SettingsTOMLCodecTests: XCTestCase {
     }
 
     func testTOMLRejectsMissingRequiredKey() throws {
-        let withoutKey = try canonicalDefaultLines { lines in
-            let index = try XCTUnwrap(lines.firstIndex { $0.hasPrefix("followsMouse = ") })
-            lines.remove(at: index)
-        }
-
-        XCTAssertThrowsError(try SettingsTOMLCodec.decode(withoutKey)) { error in
-            guard case let DecodingError.keyNotFound(key, context) = error else {
-                return XCTFail("expected keyNotFound, got \(error)")
+        for (key, parent, line) in [
+            ("followsMouse", "focus", "followsMouse = "),
+            ("raiseOnMouseFocus", "focus", "raiseOnMouseFocus = "),
+            ("fullscreenUsesOuterGaps", "gaps", "fullscreenUsesOuterGaps = false")
+        ] {
+            let withoutKey = try canonicalDefaultLines { lines in
+                let index = try XCTUnwrap(lines.firstIndex { $0.hasPrefix(line) })
+                lines.remove(at: index)
             }
-            XCTAssertEqual(key.stringValue, "followsMouse")
-            XCTAssertEqual(context.codingPath.map(\.stringValue), ["focus"])
-        }
-    }
-
-    func testTOMLRejectsMissingRaiseOnMouseFocus() throws {
-        let withoutKey = try canonicalDefaultLines { lines in
-            let index = try XCTUnwrap(lines.firstIndex { $0.hasPrefix("raiseOnMouseFocus = ") })
-            lines.remove(at: index)
-        }
-
-        XCTAssertThrowsError(try SettingsTOMLCodec.decode(withoutKey)) { error in
-            guard case let DecodingError.keyNotFound(key, context) = error else {
-                return XCTFail("expected keyNotFound, got \(error)")
+            XCTAssertThrowsError(try SettingsTOMLCodec.decode(withoutKey), key) { error in
+                guard case let DecodingError.keyNotFound(found, context) = error else {
+                    return XCTFail("expected keyNotFound, got \(error)")
+                }
+                XCTAssertEqual(found.stringValue, key)
+                XCTAssertEqual(context.codingPath.map(\.stringValue), [parent])
             }
-            XCTAssertEqual(key.stringValue, "raiseOnMouseFocus")
-            XCTAssertEqual(context.codingPath.map(\.stringValue), ["focus"])
         }
     }
 
@@ -210,21 +200,6 @@ final class SettingsTOMLCodecTests: XCTestCase {
 
         XCTAssertTrue(String(decoding: data, as: UTF8.self).contains("raiseOnMouseFocus = true"))
         XCTAssertTrue(try SettingsTOMLCodec.decode(data).focus.raiseOnMouseFocus)
-    }
-
-    func testTOMLRejectsMissingFullscreenOuterGapPolicy() throws {
-        let withoutKey = try canonicalDefaultLines { lines in
-            let index = try XCTUnwrap(lines.firstIndex(of: "fullscreenUsesOuterGaps = false"))
-            lines.remove(at: index)
-        }
-
-        XCTAssertThrowsError(try SettingsTOMLCodec.decode(withoutKey)) { error in
-            guard case let DecodingError.keyNotFound(key, context) = error else {
-                return XCTFail("expected keyNotFound, got \(error)")
-            }
-            XCTAssertEqual(key.stringValue, "fullscreenUsesOuterGaps")
-            XCTAssertEqual(context.codingPath.map(\.stringValue), ["gaps"])
-        }
     }
 
     func testTOMLRejectsCorruptSystemHyperTrigger() throws {
@@ -569,16 +544,6 @@ final class SettingsTOMLCodecTests: XCTestCase {
         }
     }
 
-    func testUnsupportedMouseMoveModifierRejectsDecode() throws {
-        let data = try defaultsWithReplacements(
-            ("mouseMoveModifierKey = \"option\"\n", "mouseMoveModifierKey = \"shift\"\n")
-        )
-
-        XCTAssertThrowsError(try SettingsTOMLCodec.decode(data)) { error in
-            XCTAssertTrue(SettingsTOMLCodec.diagnosticDescription(for: error).contains("gestures.mouseMoveModifierKey"))
-        }
-    }
-
     @MainActor
     func testMouseMoveModifierStoreMappingRoundTrips() {
         let source = makeSettingsStore()
@@ -711,30 +676,6 @@ final class SettingsTOMLCodecTests: XCTestCase {
         settings.gestures.scrollSensitivity = 101
         XCTAssertEqual(settings.gestures.scrollSensitivity, 100)
         XCTAssertEqual(settings.toExport().gestures.scrollSensitivity, 100)
-    }
-
-    @MainActor
-    func testUnsupportedWorkspaceSwipeValuesRejectDecode() throws {
-        let cases: [(replacement: (String, String), keyPath: String)] = [
-            (
-                ("workspaceSwipeFingerCount = 3\n", "workspaceSwipeFingerCount = 5\n"),
-                "gestures.workspaceSwipeFingerCount"
-            ),
-            (
-                ("workspaceSwipeAxis = \"vertical\"\n", "workspaceSwipeAxis = \"diagonal\"\n"),
-                "gestures.workspaceSwipeAxis"
-            )
-        ]
-
-        for testCase in cases {
-            let data = try defaultsWithReplacements(testCase.replacement)
-            XCTAssertThrowsError(try SettingsTOMLCodec.decode(data), testCase.keyPath) { error in
-                XCTAssertTrue(
-                    SettingsTOMLCodec.diagnosticDescription(for: error).contains(testCase.keyPath),
-                    testCase.keyPath
-                )
-            }
-        }
     }
 
     @MainActor
@@ -886,6 +827,7 @@ final class SettingsTOMLCodecTests: XCTestCase {
 
     func testUnknownEnumValueRejectsWholeFile() throws {
         let cases: [(line: String, invalid: String, key: String)] = [
+            ("resizePreviewStyle = \"live\"", "resizePreviewStyle = \"unsupported\"", "gestures.resizePreviewStyle"),
             ("defaultLayoutType = \"\(LayoutType.niri.rawValue)\"", "defaultLayoutType = \"bsp\"", "defaultLayoutType"),
             ("lockModifier = \"\(FocusLockModifier.off.rawValue)\"", "lockModifier = \"hyper\"", "lockModifier"),
             ("mode = \"\(MonitorRoutingMode.macOS.rawValue)\"", "mode = \"sideways\"", "routing.mode"),
@@ -923,7 +865,7 @@ final class SettingsTOMLCodecTests: XCTestCase {
             (
                 "mouseMoveModifierKey = \"\(MouseMoveModifierKey.option.rawValue)\"",
                 "mouseMoveModifierKey = \"shift\"",
-                "mouseMoveModifierKey"
+                "gestures.mouseMoveModifierKey"
             ),
             (
                 "mouseResizeModifierKey = \"\(MouseResizeModifierKey.option.rawValue)\"",
@@ -944,7 +886,7 @@ final class SettingsTOMLCodecTests: XCTestCase {
             (
                 "workspaceSwipeAxis = \"\(WorkspaceSwipeAxis.vertical.rawValue)\"",
                 "workspaceSwipeAxis = \"diagonal\"",
-                "workspaceSwipeAxis"
+                "gestures.workspaceSwipeAxis"
             ),
             (
                 "position = \"\(QuakeTerminalPosition.center.rawValue)\"",
@@ -961,7 +903,13 @@ final class SettingsTOMLCodecTests: XCTestCase {
                 "monitorMode = \"everywhere\"",
                 "monitorMode"
             ),
-            ("mode = \"\(AppearanceMode.dark.rawValue)\"", "mode = \"sepia\"", "appearance.mode")
+            ("mode = \"\(AppearanceMode.dark.rawValue)\"", "mode = \"sepia\"", "appearance.mode"),
+            (
+                "workspaceSwipeFingerCount = 3\n",
+                "workspaceSwipeFingerCount = 5\n",
+                "gestures.workspaceSwipeFingerCount"
+            ),
+            ("revealModifier = \"off\"", "revealModifier = \"garbage\"", "workspaceBar.revealModifier")
         ]
         let defaults = String(decoding: try SettingsTOMLCodec.encode(.defaults()), as: UTF8.self)
         XCTAssertNoThrow(try SettingsTOMLCodec.decode(Data(defaults.utf8)))
@@ -991,14 +939,24 @@ final class SettingsTOMLCodecTests: XCTestCase {
         ]
         let toml = String(decoding: try SettingsTOMLCodec.encode(export), as: UTF8.self)
         XCTAssertEqual(toml.components(separatedBy: "singleWindowFit = \"container_primary_span\"").count, 3)
-
-        let invalid = toml.replacingOccurrences(
-            of: "singleWindowFit = \"container_primary_span\"",
-            with: "singleWindowFit = \"stretch\""
-        )
-
-        XCTAssertThrowsError(try SettingsTOMLCodec.decode(Data(invalid.utf8))) { error in
-            XCTAssertTrue(SettingsTOMLCodec.diagnosticDescription(for: error).contains("singleWindowFit"))
+        XCTAssertNoThrow(try SettingsTOMLCodec.decode(Data(toml.utf8)))
+        for table in ["monitorNiriOverrides", "monitorDwindleOverrides"] {
+            var lines = toml.components(separatedBy: "\n")
+            let header = try XCTUnwrap(lines.firstIndex(of: "[[\(table)]]"))
+            let value = try XCTUnwrap(lines.indices.dropFirst(header + 1).first {
+                lines[$0] == "singleWindowFit = \"container_primary_span\""
+            })
+            lines[value] = "singleWindowFit = \"stretch\""
+            let invalid = Data(lines.joined(separator: "\n").utf8)
+            XCTAssertThrowsError(try SettingsTOMLCodec.decode(invalid), table) { error in
+                guard case let DecodingError.dataCorrupted(context) = error else {
+                    return XCTFail("expected invalid singleWindowFit, got \(error)")
+                }
+                XCTAssertEqual(context.codingPath.count, 3)
+                XCTAssertEqual(context.codingPath.first?.stringValue, table)
+                XCTAssertEqual(context.codingPath.dropFirst().first?.intValue, 0)
+                XCTAssertEqual(context.codingPath.last?.stringValue, "singleWindowFit")
+            }
         }
     }
 

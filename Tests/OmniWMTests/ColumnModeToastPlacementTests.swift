@@ -135,6 +135,7 @@ private final class ColumnModeToastManualSleeper {
     private var waiters: [CheckedContinuation<Void, Never>] = []
 
     func sleep(for _: Duration) async throws {
+        try Task.checkCancellation()
         if permits > 0 {
             permits -= 1
         } else {

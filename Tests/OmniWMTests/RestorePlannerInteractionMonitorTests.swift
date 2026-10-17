@@ -6,22 +6,14 @@ import CoreGraphics
 import XCTest
 
 final class RestorePlannerInteractionMonitorTests: XCTestCase {
-    func testMissingInteractionSelectsPrimaryBelowSecondary() {
-        let (primary, secondary) = monitors(secondaryOrigin: CGPoint(x: 0, y: 1440))
-
-        for monitors in [[primary, secondary], [secondary, primary]] {
-            let plan = plan(monitors: monitors)
-
-            XCTAssertEqual(plan.interactionMonitorId, primary.id)
-            XCTAssertNil(plan.previousInteractionMonitorId)
-        }
-    }
-
-    func testMissingInteractionSelectsPrimaryRightOfSecondary() {
-        let (primary, secondary) = monitors(secondaryOrigin: CGPoint(x: -3440, y: 0))
-
-        for monitors in [[primary, secondary], [secondary, primary]] {
-            XCTAssertEqual(plan(monitors: monitors).interactionMonitorId, primary.id)
+    func testMissingInteractionSelectsPrimaryAcrossOriginsAndInputOrders() {
+        for origin in [CGPoint(x: 0, y: 1440), CGPoint(x: -3440, y: 0)] {
+            let (primary, secondary) = monitors(secondaryOrigin: origin)
+            for monitors in [[primary, secondary], [secondary, primary]] {
+                let plan = plan(monitors: monitors)
+                XCTAssertEqual(plan.interactionMonitorId, primary.id)
+                XCTAssertNil(plan.previousInteractionMonitorId)
+            }
         }
     }
 
@@ -39,28 +31,18 @@ final class RestorePlannerInteractionMonitorTests: XCTestCase {
         }
     }
 
-    func testConnectedSecondaryInteractionAndPreviousArePreserved() {
-        let (primary, secondary) = monitors(secondaryOrigin: CGPoint(x: 0, y: 1440))
-        let plan = plan(
-            monitors: [primary, secondary],
-            interactionMonitorId: secondary.id,
-            previousInteractionMonitorId: primary.id
-        )
-
-        XCTAssertEqual(plan.interactionMonitorId, secondary.id)
-        XCTAssertEqual(plan.previousInteractionMonitorId, primary.id)
-    }
-
-    func testStalePreviousInteractionIsCleared() {
-        let (primary, secondary) = monitors(secondaryOrigin: CGPoint(x: 0, y: 1440))
-        let plan = plan(
-            monitors: [primary, secondary],
-            interactionMonitorId: secondary.id,
-            previousInteractionMonitorId: Monitor.ID(displayId: primary.displayId &+ 2)
-        )
-
-        XCTAssertEqual(plan.interactionMonitorId, secondary.id)
-        XCTAssertNil(plan.previousInteractionMonitorId)
+    func testConnectedInteractionPreservesValidPreviousAndClearsStalePrevious() {
+        for stalePrevious in [false, true] {
+            let (primary, secondary) = monitors(secondaryOrigin: CGPoint(x: 0, y: 1440))
+            let previous = stalePrevious ? Monitor.ID(displayId: primary.displayId &+ 2) : primary.id
+            let plan = plan(
+                monitors: [primary, secondary],
+                interactionMonitorId: secondary.id,
+                previousInteractionMonitorId: previous
+            )
+            XCTAssertEqual(plan.interactionMonitorId, secondary.id)
+            XCTAssertEqual(plan.previousInteractionMonitorId, stalePrevious ? nil : primary.id)
+        }
     }
 
     func testAbsentPrimaryUsesGeometricOrderRegardlessOfInputOrder() {

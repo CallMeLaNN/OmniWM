@@ -48,6 +48,7 @@ final class ShellMenuAppTests: XCTestCase {
             bundle: app.bundleIdentifier ?? ""
         ))
         XCTAssertEqual(frontmostReads, 1)
+        XCTAssertNil(controller.shellMenuApp(frontmost: nil))
     }
 
     func testMissingManagedMetadataDoesNotBorrowFrontmostIdentity() throws {
@@ -63,11 +64,6 @@ final class ShellMenuAppTests: XCTestCase {
         XCTAssertEqual(controller.shellMenuApp(frontmost: frontmost()), ShellMenuApp(pid: pid, name: "", bundle: ""))
         XCTAssertFalse(controller.appInfoCache.hasCachedInfo(for: pid))
         XCTAssertEqual(frontmostReads, 0)
-    }
-
-    func testNoManagedSelectionAndNoFrontmostAppProducesNoMenuTarget() {
-        let controller = WindowAdmissionTestSupport.controller(prefix: "OmniWMShellMenuAppTests")
-        XCTAssertNil(controller.shellMenuApp(frontmost: nil))
     }
 
     func testMenuAppIdentityChangesInvalidateOnlyItsOwnDataKey() {

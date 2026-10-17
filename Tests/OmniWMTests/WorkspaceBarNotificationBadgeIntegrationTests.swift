@@ -52,10 +52,6 @@ final class WorkspaceBarNotificationBadgeIntegrationTests: XCTestCase {
                         window("com.example.overflow", id: 7)
                     ],
                     isVisible: false, presentation: .expanded
-                ),
-                WorkspaceBarScratchpadItem(
-                    index: 2, label: nil, windows: [window("com.example.compact", id: 8)],
-                    isVisible: false, presentation: .compact
                 )
             ]
         )])

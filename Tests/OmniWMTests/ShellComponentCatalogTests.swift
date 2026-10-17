@@ -69,19 +69,25 @@ final class ShellComponentCatalogTests: XCTestCase {
     }
 
     func testInvalidSchemasAndReservedOptionsFailWithReasons() throws {
-        for option in [
-            "type = \"number\"\ndefault = 4\nmin = 8", "type = \"number\"\nstep = 0",
-            "type = \"number\"\nmin = 3\nmax = 1", "type = \"choice\"",
-            "type = \"boolean\"\ndefault = \"yes\"", "type = \"string\"\nmaxLength = -1"
-        ] {
+        let cases = [
+            ("type = \"number\"\ndefault = 4\nmin = 8", "broken option value: invalid default"),
+            ("type = \"number\"\nstep = 0", "broken option value: invalid step"),
+            ("type = \"number\"\nmin = 3\nmax = 1", "broken option value: min is greater than max"),
+            ("type = \"choice\"", "broken option value needs choices"),
+            ("type = \"boolean\"\ndefault = \"yes\"", "broken option value: invalid default"),
+            ("type = \"string\"\nmaxLength = -1", "broken option value: invalid maxLength")
+        ]
+        for (option, expectedReason) in cases {
             try component("broken", manifest: "views = [\"compact\"]\n[options.value]\n" + option)
             XCTAssertThrowsError(try ShellComponentCatalog.load("broken", directories: [root])) { error in
-                XCTAssertTrue(error.localizedDescription.contains("broken"))
+                XCTAssertEqual(error.localizedDescription, expectedReason)
             }
         }
         for key in ShellComponentCatalog.reservedOptions {
             try component("broken", manifest: "views = [\"compact\"]\n[options.\(key)]\ntype = \"boolean\"")
-            XCTAssertThrowsError(try ShellComponentCatalog.load("broken", directories: [root]))
+            XCTAssertThrowsError(try ShellComponentCatalog.load("broken", directories: [root])) { error in
+                XCTAssertEqual(error.localizedDescription, "broken: reserved or invalid option name \(key)")
+            }
         }
     }
 

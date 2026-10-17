@@ -374,18 +374,12 @@ final class OverviewBehaviorTests: XCTestCase {
             firstMidpoint,
             accuracy: 0.0001
         )
-        XCTAssertFalse(
-            OverviewLayoutCalculator.scrollOffsetBounds(layout: zoomedSecond, screenFrame: screenFrame)
-                .contains(secondDesiredOffset)
+        let bounds = OverviewLayoutCalculator.scrollOffsetBounds(
+            layout: zoomedSecond,
+            screenFrame: screenFrame
         )
-        XCTAssertEqual(
-            zoomedSecond.scrollOffset,
-            OverviewLayoutCalculator.clampedScrollOffset(
-                secondDesiredOffset,
-                layout: zoomedSecond,
-                screenFrame: screenFrame
-            )
-        )
+        XCTAssertLessThan(secondDesiredOffset, bounds.lowerBound)
+        XCTAssertEqual(zoomedSecond.scrollOffset, bounds.lowerBound)
     }
 
     func testSelectionSearchZoomRemovalSequenceMaintainsViewportInvariants() throws {
@@ -1003,26 +997,32 @@ final class OverviewBehaviorTests: XCTestCase {
         }
     }
 
-    func testPostCloseFocusHandoffIsDiscardedAfterNewerAppActivationIntent() throws {
-        let fixture = try makeRuntimeOverviewFixture(windowCount: 1)
-        let handoffScheduler = OverviewPostCloseHandoffScheduler()
-        var environment = fixture.environment
-        environment.schedulePostCloseHandoff = handoffScheduler.schedule
-        let overview = OverviewController(
-            wmController: fixture.controller,
-            motionPolicy: fixture.controller.motionPolicy,
-            environment: environment
-        )
-        overview.prepareOpenState()
-        overview.onAnimationComplete(state: .open)
-        var activatedHandle: WindowHandle?
-        overview.onActivateWindow = { handle, _ in activatedHandle = handle }
+    func testNewOrReusedAppActivationsDiscardPostCloseFocusHandoff() throws {
+        for reusedIntent in [false, true] {
+            let fixture = try makeRuntimeOverviewFixture(windowCount: 1)
+            let handoffScheduler = OverviewPostCloseHandoffScheduler()
+            var environment = fixture.environment
+            environment.schedulePostCloseHandoff = handoffScheduler.schedule
+            let overview = OverviewController(
+                wmController: fixture.controller,
+                motionPolicy: fixture.controller.motionPolicy,
+                environment: environment
+            )
+            overview.prepareOpenState()
+            overview.onAnimationComplete(state: .open)
+            var activatedHandle: WindowHandle?
+            overview.onActivateWindow = { handle, _ in activatedHandle = handle }
 
-        overview.input.dismissToSelection(animated: false)
-        _ = fixture.controller.intentLedger.registerActivateApp(pid: 91_299)
-        handoffScheduler.runNext()
+            if reusedIntent {
+                _ = fixture.controller.intentLedger.registerActivateApp(pid: 91_299)
+            }
 
-        XCTAssertNil(activatedHandle)
+            overview.input.dismissToSelection(animated: false)
+            _ = fixture.controller.intentLedger.registerActivateApp(pid: 91_299)
+            handoffScheduler.runNext()
+
+            XCTAssertNil(activatedHandle)
+        }
     }
 
     func testPostCloseFocusHandoffIsDiscardedAfterIntentLedgerReset() throws {
@@ -1092,29 +1092,6 @@ final class OverviewBehaviorTests: XCTestCase {
             return XCTFail("Expected service stop to close the in-flight overview")
         }
         XCTAssertEqual(handoffScheduler.count, 0)
-    }
-
-    func testPostCloseFocusHandoffIsDiscardedAfterReusedAppActivationIntent() throws {
-        let fixture = try makeRuntimeOverviewFixture(windowCount: 1)
-        let handoffScheduler = OverviewPostCloseHandoffScheduler()
-        var environment = fixture.environment
-        environment.schedulePostCloseHandoff = handoffScheduler.schedule
-        let overview = OverviewController(
-            wmController: fixture.controller,
-            motionPolicy: fixture.controller.motionPolicy,
-            environment: environment
-        )
-        overview.prepareOpenState()
-        overview.onAnimationComplete(state: .open)
-        var activatedHandle: WindowHandle?
-        overview.onActivateWindow = { handle, _ in activatedHandle = handle }
-        _ = fixture.controller.intentLedger.registerActivateApp(pid: 91_299)
-
-        overview.input.dismissToSelection(animated: false)
-        _ = fixture.controller.intentLedger.registerActivateApp(pid: 91_299)
-        handoffScheduler.runNext()
-
-        XCTAssertNil(activatedHandle)
     }
 
     func testPostCloseFocusHandoffIsDiscardedAfterNewerFocusIntentDuringClosing() throws {
@@ -2633,15 +2610,25 @@ final class OverviewBehaviorTests: XCTestCase {
         fixture.environment.onThumbnailCaptureStarted = {
             captureStarts += 1
         }
+        let driver = OverviewPreviewTestDriver()
+        let capture = driver.makeCapture(hasCaptureAccess: { true })
         let overview = OverviewController(
             wmController: fixture.controller,
             motionPolicy: fixture.controller.motionPolicy,
-            environment: fixture.environment
+            environment: fixture.environment,
+            previewCapture: capture
         )
-        overview.prepareOpenState()
-        overview.onAnimationComplete(state: .open)
+        defer {
+            overview.dismiss(animated: false)
+            capture.clear()
+            driver.completeAllStarts()
+        }
+        overview.open()
         XCTAssertEqual(titleReads, 2)
         XCTAssertEqual(frameReads, 2)
+
+        XCTAssertGreaterThan(captureStarts, 0)
+        let initialCaptureStarts = captureStarts
 
         titleReads = 0
         frameReads = 0
@@ -2650,7 +2637,7 @@ final class OverviewBehaviorTests: XCTestCase {
 
         XCTAssertEqual(titleReads, 0)
         XCTAssertEqual(frameReads, 0)
-        XCTAssertEqual(captureStarts, 0)
+        XCTAssertEqual(captureStarts, initialCaptureStarts)
     }
 
     func testDismissedOverviewRejectsLatePreviewFrame() async throws {

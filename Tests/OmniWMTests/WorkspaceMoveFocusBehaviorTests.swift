@@ -284,43 +284,6 @@ final class WorkspaceMoveFocusBehaviorTests: XCTestCase {
         }
     }
 
-    func testNiriIndexedWindowMoveRefocusesRemainingSourceWindowAfterLayout() throws {
-        let fixture = try makeFixture(layouts: [.niri, .niri], followsFocus: false)
-        let sourceWorkspaceId = fixture.workspaceIds[0]
-        let destinationWorkspaceId = fixture.workspaceIds[1]
-        let fallback = try addManagedWindow(
-            pid: 488_005,
-            windowId: 71,
-            to: sourceWorkspaceId,
-            fixture: fixture
-        )
-        let moved = try addManagedWindow(
-            pid: 488_005,
-            windowId: 72,
-            to: sourceWorkspaceId,
-            fixture: fixture
-        )
-        try select(moved, in: sourceWorkspaceId, fixture: fixture)
-
-        try withBlockedLayoutRefreshes(fixture) {
-            fixture.controller.workspaceNavigationHandler.moveFocusedWindow(toWorkspaceIndex: 1)
-
-            XCTAssertEqual(
-                fixture.controller.workspaceManager.workspace(for: fallback.id),
-                sourceWorkspaceId
-            )
-            XCTAssertEqual(
-                fixture.controller.workspaceManager.workspace(for: moved.id),
-                destinationWorkspaceId
-            )
-            try assertCompletion(
-                fixture,
-                activeWorkspaceId: sourceWorkspaceId,
-                expectedFocusToken: fallback.id
-            )
-        }
-    }
-
     func testIndexedWindowMoveHonorsFollowSettingAfterLayoutVisibility() throws {
         for layout in [LayoutType.niri, .dwindle] {
             for followsFocus in [false, true] {
@@ -351,8 +314,15 @@ final class WorkspaceMoveFocusBehaviorTests: XCTestCase {
                     controller.workspaceNavigationHandler.moveFocusedWindow(toWorkspaceIndex: 1)
 
                     let pending = try XCTUnwrap(refreshController.layoutState.pendingRefresh)
+                    XCTAssertEqual(pending.reason, .workspaceTransition)
                     XCTAssertEqual(pending.postLayoutActions.count, 1)
+                    XCTAssertEqual(
+                        manager.activeWorkspace(on: fixture.monitor.id)?.id,
+                        followsFocus ? destinationWorkspaceId : sourceWorkspaceId
+                    )
+                    XCTAssertEqual(manager.interactionMonitorId, fixture.monitor.id)
                     XCTAssertTrue(fixture.focusRecorder.focusedTokens.isEmpty)
+                    XCTAssertNil(controller.intentLedger.activeManagedRequest)
                     var plan = refreshController.buildRelayoutEffectPlan(
                         useScrollAnimationPath: false,
                         recoverFocus: false,

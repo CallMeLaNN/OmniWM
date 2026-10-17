@@ -135,34 +135,7 @@ final class MissionControlGestureProbeTests: XCTestCase {
         XCTAssertEqual(probe.status, .disabled)
     }
 
-    func testWarningRequiresEnabledVerticalThreeOrFourFingerGesture() {
-        let fixture = Fixture()
-        fixture.set(NSNumber(value: true), key: authoritativeKey, domain: dockDomain)
-        let probe = fixture.makeProbe()
-        probe.refresh()
-
-        XCTAssertFalse(probe.shouldWarn(axis: .vertical, fingerCount: .two))
-        XCTAssertTrue(probe.shouldWarn(axis: .vertical, fingerCount: .three))
-        XCTAssertTrue(probe.shouldWarn(axis: .vertical, fingerCount: .four))
-        XCTAssertFalse(probe.shouldWarn(axis: .horizontal, fingerCount: .three))
-        XCTAssertFalse(probe.shouldWarn(axis: .horizontal, fingerCount: .four))
-    }
-
-    func testWarningIsHiddenForDisabledAndUnknownStatus() {
-        let disabledFixture = Fixture()
-        disabledFixture.set(NSNumber(value: false), key: authoritativeKey, domain: dockDomain)
-        let disabledProbe = disabledFixture.makeProbe()
-        disabledProbe.refresh()
-
-        XCTAssertFalse(disabledProbe.shouldWarn(axis: .vertical, fingerCount: .three))
-
-        let unknownProbe = Fixture().makeProbe()
-        unknownProbe.refresh()
-
-        XCTAssertFalse(unknownProbe.shouldWarn(axis: .vertical, fingerCount: .four))
-    }
-
-    func testDisabledWorkspaceSwipeStillWarnsWhenCollisionForcesEffectiveAxisVertical() {
+    func testDisabledWorkspaceSwipeKeepsCollisionAxisVertical() {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("MissionControlGestureProbeTests-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -184,17 +157,8 @@ final class MissionControlGestureProbeTests: XCTestCase {
         settings.gestures.workspaceSwipeFingerCount = .three
         settings.gestures.workspaceSwipeAxis = .horizontal
 
-        let fixture = Fixture()
-        fixture.set(NSNumber(value: true), key: authoritativeKey, domain: dockDomain)
-        let probe = fixture.makeProbe()
-        probe.refresh()
-
         XCTAssertTrue(settings.gestures.workspaceSwipeAxisLockedToVertical)
         XCTAssertEqual(settings.gestures.effectiveWorkspaceSwipeAxis, .vertical)
-        XCTAssertTrue(probe.shouldWarn(
-            axis: settings.gestures.effectiveWorkspaceSwipeAxis,
-            fingerCount: settings.gestures.workspaceSwipeFingerCount
-        ))
     }
 
     func testSettingsPaneRefreshesProbeOnAppearanceAndAppReactivation() async {

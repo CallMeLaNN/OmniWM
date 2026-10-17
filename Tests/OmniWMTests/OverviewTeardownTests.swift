@@ -19,37 +19,26 @@ final class OverviewTeardownTests: XCTestCase {
     }
 
     func testDetachedFinalReleaseCleansUpOnMainActor() async {
-        let controller = WindowAdmissionTestSupport.controller(prefix: "OverviewTeardown")
-        let record = OverviewDestructionRecord()
-        let owner = makeOwner(controller: controller, record: record, start: true)
+        let cases: [(start: Bool, expected: [String])] = [
+            (true, ["removeMonitor:true", "destroyed:true"]),
+            (false, ["destroyed:true"])
+        ]
+        for row in cases {
+            let controller = WindowAdmissionTestSupport.controller(prefix: "OverviewTeardown")
+            let record = OverviewDestructionRecord()
+            let owner = makeOwner(controller: controller, record: record, start: row.start)
 
-        let releasedOnMainThread = await Task.detached {
-            owner.withLock { overview in
-                overview = nil
-                return Thread.isMainThread
-            }
-        }.value
-        await fulfillment(of: [record.completed], timeout: 5)
+            let releasedOnMainThread = await Task.detached {
+                owner.withLock { overview in
+                    overview = nil
+                    return Thread.isMainThread
+                }
+            }.value
+            await fulfillment(of: [record.completed], timeout: 5)
 
-        XCTAssertFalse(releasedOnMainThread)
-        XCTAssertEqual(record.events.withLock { $0 }, ["removeMonitor:true", "destroyed:true"])
-    }
-
-    func testUnstartedDetachedFinalReleaseDestroysStoredStateOnMainActor() async {
-        let controller = WindowAdmissionTestSupport.controller(prefix: "OverviewTeardown")
-        let record = OverviewDestructionRecord()
-        let owner = makeOwner(controller: controller, record: record, start: false)
-
-        let releasedOnMainThread = await Task.detached {
-            owner.withLock { overview in
-                overview = nil
-                return Thread.isMainThread
-            }
-        }.value
-        await fulfillment(of: [record.completed], timeout: 5)
-
-        XCTAssertFalse(releasedOnMainThread)
-        XCTAssertEqual(record.events.withLock { $0 }, ["destroyed:true"])
+            XCTAssertFalse(releasedOnMainThread)
+            XCTAssertEqual(record.events.withLock { $0 }, row.expected)
+        }
     }
 
     private func makeOwner(

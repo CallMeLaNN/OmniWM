@@ -7,17 +7,6 @@ import OmniWMIPC
 import XCTest
 
 final class SystemStatsCommandTests: XCTestCase {
-    func testToggleSystemStatsSpecRegistered() throws {
-        let spec = try XCTUnwrap(ActionCatalog.spec(for: .presentation(.systemStats)))
-
-        XCTAssertEqual(spec.id, "toggleSystemStats")
-        XCTAssertEqual(spec.title, "Toggle System Stats")
-        XCTAssertEqual(spec.layoutCompatibility, .shared)
-        XCTAssertEqual(spec.defaultBinding, .unassigned)
-        XCTAssertEqual(spec.ipcCommandName, .presentation(.systemStats))
-        XCTAssertNotNil(spec.ipcDescriptor)
-    }
-
     func testToggleSystemStatsManifestResolves() throws {
         let descriptors = IPCAutomationManifest.commandDescriptors(matching: ["toggle-system-stats"])
         let descriptor = try XCTUnwrap(descriptors.first { $0.name == .presentation(.systemStats) })

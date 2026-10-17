@@ -127,31 +127,17 @@ final class MonitorRoutingTests: XCTestCase {
         XCTAssertEqual(adjacent(from: c, .right, layout: layout, monitors: monitors, wrap: false), .edge)
     }
 
-    func testSourceWithoutEntryFallsBackToMacOS() {
+    func testInvalidCustomLayoutsFallBackToMacOS() {
         let a = makeMonitor(1, "A")
         let b = makeMonitor(2, "B")
         let monitors = [a, b]
-        let layout = [routing(2, "B", 1, 0)]
-
-        XCTAssertEqual(adjacent(from: a, .right, layout: layout, monitors: monitors), .fallBackToMacOS)
-    }
-
-    func testIncompleteLayoutFallsBackWhenSourceHasEntry() {
-        let a = makeMonitor(1, "A")
-        let b = makeMonitor(2, "B")
-        let monitors = [a, b]
-        let layout = [routing(1, "A", 0, 0)]
-
-        XCTAssertEqual(adjacent(from: a, .right, layout: layout, monitors: monitors), .fallBackToMacOS)
-    }
-
-    func testDuplicateCellsFallBackToMacOS() {
-        let a = makeMonitor(1, "A")
-        let b = makeMonitor(2, "B")
-        let monitors = [a, b]
-        let layout = [routing(1, "A", 0, 0), routing(2, "B", 0, 0)]
-
-        XCTAssertEqual(adjacent(from: a, .right, layout: layout, monitors: monitors), .fallBackToMacOS)
+        for (label, layout) in [
+            ("missing source", [routing(2, "B", 1, 0)]),
+            ("missing destination", [routing(1, "A", 0, 0)]),
+            ("duplicate cell", [routing(1, "A", 0, 0), routing(2, "B", 0, 0)])
+        ] {
+            XCTAssertEqual(adjacent(from: a, .right, layout: layout, monitors: monitors), .fallBackToMacOS, label)
+        }
     }
 
     func testDisconnectedEntriesIgnored() {
