@@ -23,7 +23,7 @@ final class IPCProtocolEnvelopeTests: XCTestCase {
     }
 
     func testCurrentProtocolVersionIsTwenty() {
-        XCTAssertEqual(OmniWMIPCProtocol.version, 20)
+        XCTAssertEqual(OmniWMIPCProtocol.version, 21)
     }
 
     func testScratchpadCommandDecodesLiteralScratchpadIndexField() throws {
@@ -223,7 +223,7 @@ final class IPCProtocolEnvelopeTests: XCTestCase {
             XCTAssertEqual(response.kind, kind == "query" ? .query : .version)
             XCTAssertEqual(response.ok, kind == "version")
             XCTAssertEqual(response.code, kind == "query" ? .protocolMismatch : nil)
-            XCTAssertEqual(protocolVersion(in: response), 20)
+            XCTAssertEqual(protocolVersion(in: response), 21)
         }
 
         await connection.stop()
@@ -268,7 +268,7 @@ final class IPCProtocolEnvelopeTests: XCTestCase {
 
     func testVersionResultCarriesTheBuildFingerprintOnTheWire() throws {
         let result = IPCVersionResult(
-            protocolVersion: 20,
+            protocolVersion: 21,
             appVersion: "0.6.5",
             gitHash: "5a82c1f5",
             buildConfiguration: "release",
