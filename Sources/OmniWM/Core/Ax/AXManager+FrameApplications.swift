@@ -50,13 +50,39 @@ extension AXManager {
         }
     }
 
-    func applyParkFramesParallel(_ frames: [AXFrameApplicationTarget]) {
+    func applyParkFramesParallel(_ frames: [AXFrameApplicationTarget], afterFrameWritesOf windowIds: Set<Int> = []) {
         let writable = framesAllowedToWrite(frames)
         guard !writable.isEmpty else { return }
-        dispatchParkFrameApplications(parkLedger.prepareParkFrameApplications(
+        let requests = parkLedger.prepareParkFrameApplications(
             writable,
             currentFrame: frameLedger.lastAppliedFrame
-        ))
+        )
+        let awaitedWindowIds = windowIds.filter(isAwaitingFrameWrite)
+        guard !awaitedWindowIds.isEmpty else {
+            dispatchParkFrameApplications(requests)
+            return
+        }
+        deferredParkRequests += requests
+        deferredParkAwaitedWindowIds.formUnion(awaitedWindowIds)
+        if deferredParkTimeout == nil {
+            deferredParkTimeout = Task { [weak self] in
+                do { try await Task.sleep(for: .milliseconds(250)) } catch { return }
+                self?.releaseDeferredParkFrames(force: true)
+            }
+        }
+    }
+
+    func releaseDeferredParkFrames(force: Bool = false) {
+        deferredParkAwaitedWindowIds = deferredParkAwaitedWindowIds.filter(isAwaitingFrameWrite)
+        guard force || deferredParkAwaitedWindowIds.isEmpty else { return }
+        let requests = deferredParkRequests.filter {
+            parkLedger.pendingParkFrameRequest(for: $0.windowId)?.requestId == $0.requestId
+        }
+        deferredParkRequests = []
+        deferredParkAwaitedWindowIds = []
+        deferredParkTimeout?.cancel()
+        deferredParkTimeout = nil
+        dispatchParkFrameApplications(requests)
     }
 
     private func framesAllowedToWrite(

@@ -104,7 +104,8 @@ extension LayoutRefreshController {
     func applyParkPositionPlans(
         _ plans: [WindowPositionPlan],
         movablePlans: [WindowPositionPlan],
-        animationTick: Bool
+        animationTick: Bool,
+        afterFrameWritesOf awaitedWindowIds: Set<Int> = []
     ) {
         guard let controller, !plans.isEmpty else { return }
         let plans = plans.filter { !controller.workspaceManager.isWindowSuppressedByMacOS($0.entry.token) }
@@ -127,7 +128,8 @@ extension LayoutRefreshController {
             }
         }
 
-        if !movablePlans.isEmpty {
+        let waitsForFrameWrites = awaitedWindowIds.contains(where: controller.axManager.isAwaitingFrameWrite)
+        if !movablePlans.isEmpty, !waitsForFrameWrites {
             controller.axManager.applyPositionsViaSkyLight(
                 movablePlans.map { SkyLightPositionTarget(token: $0.entry.token, frame: $0.frame) },
                 allowInactive: true, tracingPark: true
@@ -151,7 +153,8 @@ extension LayoutRefreshController {
         controller.axManager.applyParkFramesParallel(
             plans.map {
                 AXFrameApplicationTarget(pid: $0.entry.pid, window: $0.entry.axRef, frame: $0.frame)
-            }
+            },
+            afterFrameWritesOf: awaitedWindowIds
         )
     }
 }
