@@ -9,7 +9,9 @@ extension WMController {
     func updateWindowSwitcherSettings() {
         hotkeys.configureWindowSwitcher(settings.windowSwitcher.export())
         refreshHotkeyFailureSnapshots()
-        if !settings.windowSwitcher.enabled { windowSwitcherControllerStorage?.dismiss() }
+        guard !settings.windowSwitcher.enabled else { return }
+        windowSwitcherControllerStorage?.shutdown()
+        windowSwitcherControllerStorage = nil
     }
 
     func invalidateOverviewDeferredActionsForServiceStop() {

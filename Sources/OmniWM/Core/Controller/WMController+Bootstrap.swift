@@ -27,6 +27,7 @@ extension WMController {
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
                 if case .begin = action {
+                    guard settings.windowSwitcher.enabled else { return }
                     windowSwitcherController.handle(action, generation: generation)
                 } else {
                     windowSwitcherControllerStorage?.handle(action, generation: generation)

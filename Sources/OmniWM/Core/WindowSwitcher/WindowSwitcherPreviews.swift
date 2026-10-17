@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
-/// Keeps each window's preview stable for one switcher session while capture
-/// refreshes its cache independently for the next opening.
 @MainActor
 struct WindowSwitcherPreviews {
     private var frames: [WindowHandle: OverviewPreviewFrame] = [:]

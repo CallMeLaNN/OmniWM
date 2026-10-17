@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Observation
 
@@ -14,17 +14,6 @@ extension SettingsExport {
         var shortcuts: WindowSwitcherShortcuts {
             WindowSwitcherShortcuts(commandTab: commandTab, optionTab: optionTab)
         }
-    }
-}
-
-extension SettingsExport.WindowSwitcher {
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        enabled = try container.decode(Bool.self, forKey: .enabled)
-        scope = try container.decode(WindowSwitcherScope.self, forKey: .scope)
-        commandTab = try container.decodeIfPresent(WindowSwitcherShortcutScope.self, forKey: .commandTab) ?? .remembered
-        optionTab = try container.decodeIfPresent(WindowSwitcherShortcutScope.self, forKey: .optionTab) ?? .disabled
-        showFooter = try container.decodeIfPresent(Bool.self, forKey: .showFooter) ?? true
     }
 }
 

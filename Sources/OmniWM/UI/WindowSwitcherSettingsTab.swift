@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import SwiftUI
 
@@ -14,9 +14,18 @@ struct WindowSwitcherSettingsTab: View {
                     .onChange(of: settings.windowSwitcher.enabled) { _, _ in
                         controller.updateWindowSwitcherSettings()
                     }
+                SettingsCaption(
+                    localized: "Hold Command or Option and press Tab to cycle windows. Shift reverses, release selects, and Escape cancels."
+                )
                 if settings.windowSwitcher.enabled {
                     shortcutControls
+                    SettingsCaption(
+                        localized: "Each shortcut opens its assigned workspace scope. Last Used Scope remembers your choice."
+                    )
                     Toggle("Show Switcher Footer", isOn: Bindable(settings.windowSwitcher).showFooter)
+                    SettingsCaption(
+                        localized: "The footer shows the scope button and window count. S changes scope; W closes the selected window."
+                    )
                 }
                 if settings.windowSwitcher.enabled, controller.hotkeysEnabled,
                    settings.windowSwitcher.export().shortcuts.isEnabled,
@@ -26,20 +35,10 @@ struct WindowSwitcherSettingsTab: View {
                         localized: "The window switcher could not capture keyboard input. Check Input Monitoring permission and restart OmniWM."
                     )
                 }
-            }
-
-            Section("About") {
-                Text(
-                    "Hold Command or Option and press Tab to cycle windows. Shift reverses, release selects, and Escape cancels."
+                SettingsCaption(
+                    localized: "Previews require Screen Recording permission. Disable matching shortcuts in AltTab."
                 )
-                Text("Each shortcut opens its assigned workspace scope. Last Used Scope remembers your choice.")
-                Text(
-                    "The footer shows the scope button and window count. S changes scope; W closes the selected window."
-                )
-                Text("Previews require Screen Recording permission. Disable matching shortcuts in AltTab.")
             }
-            .font(.footnote)
-            .foregroundColor(.secondary)
         }
         .formStyle(.grouped)
     }

@@ -5,7 +5,7 @@ sidebar:
   order: 8
 ---
 
-Enable **Settings → Window Switcher → Enable Window Switcher** to cycle through windows with thumbnail previews. The feature is off by default. Disable matching shortcuts in AltTab before enabling it.
+Enable **Settings → Window Switcher → Enable Window Switcher** to cycle through windows with thumbnail previews. The feature is off by default. Disable matching shortcuts in AltTab before enabling it. Unreleased: available when building from `main`.
 
 ## Shortcuts and workspace scope
 
@@ -33,7 +33,7 @@ Windows follow their layout order within each workspace: Niri column and tile or
 
 Previews fill each card and stay sharp. A short, subtle fade behind the bottom caption and a text shadow improve readability. Absolute paths are shortened to their final component; hovering over the card shows the full original title.
 
-Cards wrap into additional rows at maximum width. When the grid exceeds the available screen height, scroll vertically with a mouse or trackpad. Keyboard navigation brings the selected card into view. Only visible, non-minimized cards request previews. Capture streams stop when the switcher closes, while a bounded thumbnail cache remains available for the next opening. Cached previews appear immediately and refresh in place. Minimized windows keep their last captured preview, or show a Minimized label if none is available.
+Cards wrap into additional rows at maximum width. When the grid exceeds the available screen height, scroll vertically with a mouse or trackpad. Keyboard navigation brings the selected card into view. Only visible, non-minimized cards request previews. Capture streams stop when the switcher closes, while a bounded thumbnail cache remains available for the next opening. Cached previews appear immediately and stay the same for the rest of that opening; the cache refreshes for the next opening. Minimized windows keep their last captured preview, or show a Minimized label if none is available.
 
 :::note
 Thumbnails require Screen Recording permission. Without it, window titles and keyboard selection remain available. Some offscreen or native fullscreen windows may show an unavailable-preview label.

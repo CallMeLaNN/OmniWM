@@ -59,6 +59,7 @@ enum SettingsSearchIndex {
         case .layouts: ["spacing", "gaps", "margins", "niri", "dwindle", "columns", "tiling"]
         case .monitors: ["monitors", "displays", "screens", "routing"]
         case .appRules: ["app rules", "float", "tile", "bundle", "match"]
+        case .windowSwitcher: ["alt-tab", "command-tab", "option-tab", "app switcher", "previews"]
         case .hotkeys: ["hotkeys", "keyboard", "shortcuts", "hyper", "commands"]
         case .advanced: ["config", "toml", "luau", "ipc", "cli", "terminal"]
         default: [section.rawValue]

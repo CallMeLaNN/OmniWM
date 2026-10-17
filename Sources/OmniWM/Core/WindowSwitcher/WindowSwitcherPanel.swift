@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import QuartzCore
@@ -61,7 +61,6 @@ final class WindowSwitcherPanel: NSPanel {
         animationBehavior = .none
         effectView.state = .active
         effectView.wantsLayer = true
-        // Mask the material and window shadow as well as the visible background.
         effectView.maskImage = Self.backgroundMask
         contentView = effectView
         scrollView.drawsBackground = false
@@ -262,8 +261,6 @@ final class WindowSwitcherPanel: NSPanel {
     }
 
     private func reportVisibleItems() {
-        // The viewport exists before the panel is ordered on screen, allowing
-        // its initial cards to be captured without exposing loading previews.
         let visible = scrollView.documentVisibleRect
         let displayed = zip(items, tiles).compactMap { item, tile -> WindowSwitcherItem? in
             if tile.frame.intersects(visible) { return item }

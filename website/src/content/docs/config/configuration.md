@@ -77,6 +77,7 @@ The full schema is documented key by key in the [Settings Reference](/config/set
 | [`[dwindle]`](/config/settings-reference/#dwindle) | Dwindle (BSP) layout options |
 | [`[borders]`](/config/settings-reference/#borders) | Focused-window border |
 | [`[overview]`](/config/settings-reference/#overview) | Overview zoom and colors |
+| [`[windowSwitcher]`](/config/settings-reference/#windowswitcher) | Command-Tab / Option-Tab window switcher |
 | [`[workspaceBar]`](/config/settings-reference/#workspacebar) | Workspace bar appearance and behavior |
 | [`[gestures]`](/config/settings-reference/#gestures) | Mouse and trackpad gestures |
 | [`[statusBar]`](/config/settings-reference/#statusbar) | Menu bar icon extras |

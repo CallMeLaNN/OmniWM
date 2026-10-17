@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import QuartzCore
@@ -161,8 +161,6 @@ final class WindowSwitcherTile: NSView {
         preview = frame
         thumbnail.contents = frame?.surface
         thumbnail.frame = frame.map { frame in
-            // Position the full surface behind a clip using its captured content
-            // bounds. This keeps IOSurface padding outside the visible card.
             let rect = frame.contentsRect
             let contentWidth = CGFloat(frame.surface.width) * rect.width
             let contentHeight = CGFloat(frame.surface.height) * rect.height

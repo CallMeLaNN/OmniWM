@@ -222,6 +222,18 @@ Zoom and colors for the Overview.
 | `windowBorders.hovered` | color table | `0.4, 0.6, 1.0, 1.0` | Border for the hovered window. |
 | `windowBorders.selected` | color table | `0.3, 0.8, 0.4, 1.0` | Border for the selected window. |
 
+## windowSwitcher
+
+The [window switcher](/features/window-switcher/). The table is optional; when absent, every key takes its default. Unreleased: available when building from `main`.
+
+| Key | Type | Default | Description |
+| --- | --- | --- | --- |
+| `enabled` | boolean | `false` | Takes over Command-Tab and Option-Tab, as assigned below, through OmniWM's input event tap. |
+| `commandTab` | string | `"activeWorkspace"` | Scope Command-Tab opens: `activeWorkspace`, `allWorkspaces`, `remembered` (the last scope chosen with S), or `disabled` (leaves the macOS app switcher). |
+| `optionTab` | string | `"allWorkspaces"` | Scope Option-Tab opens. Same values as `commandTab`. |
+| `scope` | string | `"allWorkspaces"` | The remembered scope, saved when you press S or click the scope button: `allWorkspaces` or `activeWorkspace`. |
+| `showFooter` | boolean | `true` | Shows the scope button and window count. |
+
 ## workspaceBar
 
 The per-monitor workspace bar. Per-monitor exceptions live in [`monitorBarOverrides`](#per-monitor-overrides). A [shell profile or theme](/omnishell/configuration/profiles-palettes/#profile-settings) can override most of these keys in its own `[workspaceBar]`. Unreleased: available when building from `main`.

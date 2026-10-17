@@ -155,7 +155,7 @@ final class WMController {
     )
     @ObservationIgnored
     private(set) lazy var commandPaletteController: CommandPaletteController = .init(motionPolicy: motionPolicy)
-    @ObservationIgnored private(set) var windowSwitcherControllerStorage: WindowSwitcherController?
+    @ObservationIgnored var windowSwitcherControllerStorage: WindowSwitcherController?
     var windowSwitcherController: WindowSwitcherController {
         if let windowSwitcherControllerStorage { return windowSwitcherControllerStorage }
         let switcher = WindowSwitcherController(controller: self)

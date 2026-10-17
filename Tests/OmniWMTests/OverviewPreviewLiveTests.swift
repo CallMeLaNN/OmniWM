@@ -85,8 +85,6 @@ final class OverviewPreviewLiveTests: XCTestCase {
         for update in 1 ... 5 {
             let nextReady = expectation(description: "updated native preview \(update)")
             signal.withLock { $0 = nextReady }
-            // Keep the first landscape frame alive while the producer draws
-            // portrait frames into its pool. Its pixels and crop must not change.
             panel.setContentSize(CGSize(width: 160, height: 320))
             quadrants.swapped.toggle()
             quadrants.needsDisplay = true
@@ -156,7 +154,6 @@ final class OverviewPreviewLiveTests: XCTestCase {
         guard ProcessInfo.processInfo.environment["OMNIWM_RUN_OVERVIEW_PREVIEW_LIVE_TESTS"] == "1" else {
             throw XCTSkip("Live preview checks require OMNIWM_RUN_OVERVIEW_PREVIEW_LIVE_TESTS=1")
         }
-        // currentProcess exposes only this test's windows and needs no TCC grant.
         _ = NSApplication.shared
         let panel = NSPanel(
             contentRect: CGRect(x: 100, y: 100, width: 320, height: 320),
@@ -216,7 +213,6 @@ final class OverviewPreviewLiveTests: XCTestCase {
         let narrowed = try await captureFirstFrame(originalWindow)
         XCTAssertEqual(narrowed.contentsRect, CGRect(x: 0, y: 0, width: 1, height: 1))
 
-        // Exercise the real layer-backed card as well as the capture metadata.
         let item = WindowSwitcherItem(
             handle: handle, title: "Resize", appName: "Test", icon: nil,
             workspaceName: "1", isMinimized: false

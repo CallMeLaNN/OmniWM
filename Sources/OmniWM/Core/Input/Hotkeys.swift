@@ -273,10 +273,6 @@ final class HotkeyCenter {
 
 extension HotkeyCenter {
     private func handleHyperTriggerEvent(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
-        if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
-            windowSwitcherInput.reset()
-            onWindowSwitcherAction?(.cancel, windowSwitcherInput.generation)
-        }
         let switcherDecision = windowSwitcherInput.handle(
             type: type,
             keyCode: Int(event.getIntegerValueField(.keyboardEventKeycode)),

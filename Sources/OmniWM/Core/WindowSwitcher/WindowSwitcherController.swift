@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 
@@ -30,10 +30,10 @@ final class WindowSwitcherController {
     private var generation: UInt64 = 0
     private(set) var isVisible = false
 
-    init(controller: WMController) {
+    init(controller: WMController, previewCapture: OverviewThumbnailCapture? = nil) {
         self.controller = controller
         panel = WindowSwitcherPanel(ownedWindowRegistry: controller.ownedWindowRegistry)
-        capture = OverviewThumbnailCapture(consumer: .windowSwitcher)
+        capture = previewCapture ?? OverviewThumbnailCapture(consumer: .windowSwitcher)
         capture.onPreview = { [weak self] handle, frame in
             guard let self, isVisible else { return }
             panel.updatePreview(previews.preview(for: handle, candidate: frame), for: handle)
@@ -43,7 +43,7 @@ final class WindowSwitcherController {
         }
         panel.onSelect = { [weak self] token in
             self?.selection.select(token)
-            self?.commit()
+            self?.commit(focusOrigin: .pointerSelection)
         }
         panel.onToggleScope = { [weak self] in self?.handle(.toggleScope) }
         panel.onClose = { [weak self] token in self?.close(token) }
@@ -80,7 +80,7 @@ final class WindowSwitcherController {
         case .close:
             if let token = selection.selected { close(token) }
         case .commit:
-            commit()
+            commit(focusOrigin: .keyboardOrProgrammatic)
         case .cancel:
             dismiss()
         }
@@ -111,7 +111,7 @@ final class WindowSwitcherController {
            let target = scopedItems().first(where: { $0.handle.id == token })?.handle
         {
             dismiss()
-            activate(target)
+            activate(target, focusOrigin: .keyboardOrProgrammatic)
             return
         }
         isVisible = true
@@ -167,7 +167,6 @@ final class WindowSwitcherController {
         {
             let byToken = Dictionary(uniqueKeysWithValues: entries.map { ($0.token, $0) })
             var seen: Set<WindowToken> = []
-            // Tree order includes every member of a tabbed tile; floating windows follow.
             return (root.collectAllWindows() + entries.map(\.token)).compactMap { token in
                 guard seen.insert(token).inserted else { return nil }
                 return byToken[token]
@@ -232,24 +231,12 @@ final class WindowSwitcherController {
         guard isVisible, !isReconcilingPreviews else { return }
         let pending = capture.hasPendingFirstFrames
         panel.setCapturePending(pending)
-        // Cached sessions can appear immediately. On a cold start, keep the
-        // panel offscreen until captures arrive or fail, so no loading state
-        // flashes. The input session remains active for commit and cancellation.
         guard previews.isReady(for: previewHandles) || !pending else { return }
         panel.present()
     }
 
     func refreshWindows() {
-        guard let controller else { return }
-        guard isVisible else {
-            capture.reconcile(
-                represented: Set(controller.workspaceManager.allEntries().compactMap {
-                    controller.workspaceManager.handle(for: $0.token)
-                }),
-                visible: []
-            )
-            return
-        }
+        guard isVisible else { return }
         reconcileItems()
         render()
     }
@@ -261,20 +248,27 @@ final class WindowSwitcherController {
         selection.select(token)
         render()
         if !controller.windowActionHandler.closeWindow(handle: target.handle) { NSSound.beep() }
-        // The workspace event removes the card only after the application closes its window.
     }
 
-    private func commit() {
+    private func commit(focusOrigin: ManagedFocusOrigin) {
         guard isVisible else { return }
         let target = scopedItems().first { $0.handle.id == selection.selected }?.handle
         dismiss()
         guard let target else { return }
-        activate(target)
+        activate(target, focusOrigin: focusOrigin)
     }
 
-    private func activate(_ target: WindowHandle) {
+    private func activate(_ target: WindowHandle, focusOrigin: ManagedFocusOrigin) {
         guard let controller else { return }
-        if !controller.windowActionHandler.activateExplicitlySelectedWindow(handle: target) { NSSound.beep() }
+        if !controller.windowActionHandler.focusWindowFromBar(handle: target, focusOrigin: focusOrigin) {
+            NSSound.beep()
+        }
+    }
+
+    func shutdown() {
+        dismiss()
+        capture.releaseCache(reason: .shutdown)
+        panel.close()
     }
 
     func dismiss() {
