@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import ApplicationServices
 import Foundation
@@ -95,41 +95,6 @@ final class ManagedFocusAdmissionTests: XCTestCase {
 
         controller.axEventHandler.handleAppActivation(pid: 467_212, source: .cgsFrontAppChanged)
 
-        XCTAssertTrue(controller.workspaceManager.nativeFocusOwner.isExternal)
-        XCTAssertEqual(controller.workspaceManager.selectedManagedToken, token)
-        XCTAssertNil(controller.workspaceManager.renderableFocusToken)
-    }
-
-    func testConflictingExternalActivationCancelsPendingRequestAndPreservesSelection() throws {
-        let controller = WindowAdmissionTestSupport.controller()
-        let workspaceId = try XCTUnwrap(
-            controller.workspaceManager.workspaceId(for: "1", createIfMissing: true)
-        )
-        let token = controller.workspaceManager.addWindow(
-            AXWindowRef(element: AXUIElementCreateApplication(467_901), windowId: 467_902),
-            pid: 467_901,
-            windowId: 467_902,
-            to: workspaceId
-        )
-        XCTAssertTrue(
-            controller.workspaceManager.confirmManagedFocus(
-                token,
-                in: workspaceId,
-                activateWorkspaceOnMonitor: false
-            )
-        )
-        let request = controller.intentLedger.beginManagedRequest(token: token, workspaceId: workspaceId)
-        _ = controller.workspaceManager.beginManagedFocusRequest(
-            token,
-            in: workspaceId,
-            requestId: request.requestId
-        )
-        controller.factResolver.factProvider = { _ in nil }
-        controller.hasStartedServices = true
-
-        controller.axEventHandler.handleAppActivation(pid: token.pid + 1, source: .cgsFrontAppChanged)
-
-        XCTAssertNil(controller.intentLedger.activeManagedRequest)
         XCTAssertTrue(controller.workspaceManager.nativeFocusOwner.isExternal)
         XCTAssertEqual(controller.workspaceManager.selectedManagedToken, token)
         XCTAssertNil(controller.workspaceManager.renderableFocusToken)

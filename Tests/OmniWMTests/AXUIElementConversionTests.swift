@@ -1,23 +1,18 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import ApplicationServices
 @testable import OmniWM
 import XCTest
 
 final class AXUIElementConversionTests: XCTestCase {
-    func testMissingValueIsRejected() {
-        XCTAssertNil(AXUIElement.from(nil))
-    }
-
-    func testNonElementCoreFoundationTypesAreRejected() throws {
+    func testMissingAndNonElementCoreFoundationTypesAreRejected() throws {
         var point = CGPoint(x: 10, y: 20)
         let pointValue = try XCTUnwrap(AXValueCreate(.cgPoint, &point))
-
-        XCTAssertNil(AXUIElement.from("AXButton" as CFString))
-        XCTAssertNil(AXUIElement.from(kCFBooleanTrue))
-        XCTAssertNil(AXUIElement.from(kCFNull))
-        XCTAssertNil(AXUIElement.from(pointValue))
+        let values: [CFTypeRef?] = [nil, "AXButton" as CFString, kCFBooleanTrue, kCFNull, pointValue]
+        for value in values {
+            XCTAssertNil(AXUIElement.from(value), String(describing: value))
+        }
     }
 
     func testElementReferenceIdentityIsPreserved() throws {

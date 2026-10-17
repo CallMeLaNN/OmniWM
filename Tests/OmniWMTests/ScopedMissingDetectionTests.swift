@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWM
@@ -45,63 +45,43 @@ final class ScopedMissingDetectionTests: XCTestCase {
         )
     }
 
-    func testSeenIneligibleTokenClearsItsMissCount() throws {
-        let (controller, workspaceId) = try makeFixture()
-        let observedToken = WindowToken(pid: 468_112, windowId: 468_113)
-        let scopedToken = WindowToken(pid: 468_114, windowId: 468_115)
-        track([observedToken, scopedToken], in: workspaceId, controller: controller)
+    func testSeenTokenClearsItsMissCountAcrossEligibility() throws {
+        for observedTokenIsEligible in [true, false] {
+            let (controller, workspaceId) = try makeFixture()
+            let observedToken = WindowToken(pid: 468_112, windowId: 468_113)
+            let scopedToken = WindowToken(pid: 468_114, windowId: 468_115)
+            track([observedToken, scopedToken], in: workspaceId, controller: controller)
 
-        XCTAssertTrue(
-            controller.layoutRefreshController.confirmedMissingEntries(
-                keys: [],
-                eligibleKeys: [observedToken],
-                requiredConsecutiveMisses: 2
-            ).isEmpty
-        )
-        XCTAssertTrue(
-            controller.layoutRefreshController.confirmedMissingEntries(
-                keys: [observedToken, scopedToken],
-                eligibleKeys: [scopedToken],
-                requiredConsecutiveMisses: 2
-            ).isEmpty
-        )
-        XCTAssertTrue(
-            controller.layoutRefreshController.confirmedMissingEntries(
-                keys: [],
-                eligibleKeys: [observedToken],
-                requiredConsecutiveMisses: 2
-            ).isEmpty
-        )
-        XCTAssertEqual(
-            controller.layoutRefreshController.confirmedMissingEntries(
-                keys: [],
-                eligibleKeys: [observedToken],
-                requiredConsecutiveMisses: 2
-            ).map(\.token),
-            [observedToken]
-        )
-    }
-
-    func testTwoEligibleMissesConfirmRemoval() throws {
-        let (controller, workspaceId) = try makeFixture()
-        let token = WindowToken(pid: 468_104, windowId: 468_105)
-        track([token], in: workspaceId, controller: controller)
-
-        XCTAssertTrue(
-            controller.layoutRefreshController.confirmedMissingEntries(
-                keys: [],
-                eligibleKeys: [token],
-                requiredConsecutiveMisses: 2
-            ).isEmpty
-        )
-        XCTAssertEqual(
-            controller.layoutRefreshController.confirmedMissingEntries(
-                keys: [],
-                eligibleKeys: [token],
-                requiredConsecutiveMisses: 2
-            ).map(\.token),
-            [token]
-        )
+            XCTAssertTrue(
+                controller.layoutRefreshController.confirmedMissingEntries(
+                    keys: [],
+                    eligibleKeys: [observedToken],
+                    requiredConsecutiveMisses: 2
+                ).isEmpty
+            )
+            XCTAssertTrue(
+                controller.layoutRefreshController.confirmedMissingEntries(
+                    keys: [observedToken, scopedToken],
+                    eligibleKeys: observedTokenIsEligible ? [observedToken] : [scopedToken],
+                    requiredConsecutiveMisses: 2
+                ).isEmpty
+            )
+            XCTAssertTrue(
+                controller.layoutRefreshController.confirmedMissingEntries(
+                    keys: [],
+                    eligibleKeys: [observedToken],
+                    requiredConsecutiveMisses: 2
+                ).isEmpty
+            )
+            XCTAssertEqual(
+                controller.layoutRefreshController.confirmedMissingEntries(
+                    keys: [],
+                    eligibleKeys: [observedToken],
+                    requiredConsecutiveMisses: 2
+                ).map(\.token),
+                [observedToken]
+            )
+        }
     }
 
     func testTargetedRescanPreservesOnlyHiddenWindowsWithMatchingWindowServerOwner() throws {
@@ -314,42 +294,6 @@ final class ScopedMissingDetectionTests: XCTestCase {
         XCTAssertFalse(
             controller.layoutRefreshController
                 .consumeNativeFullscreenRestoredFrameApply(for: oldToken)
-        )
-    }
-
-    func testSeenEligibleTokenClearsItsMissCount() throws {
-        let (controller, workspaceId) = try makeFixture()
-        let token = WindowToken(pid: 468_110, windowId: 468_111)
-        track([token], in: workspaceId, controller: controller)
-
-        XCTAssertTrue(
-            controller.layoutRefreshController.confirmedMissingEntries(
-                keys: [],
-                eligibleKeys: [token],
-                requiredConsecutiveMisses: 2
-            ).isEmpty
-        )
-        XCTAssertTrue(
-            controller.layoutRefreshController.confirmedMissingEntries(
-                keys: [token],
-                eligibleKeys: [token],
-                requiredConsecutiveMisses: 2
-            ).isEmpty
-        )
-        XCTAssertTrue(
-            controller.layoutRefreshController.confirmedMissingEntries(
-                keys: [],
-                eligibleKeys: [token],
-                requiredConsecutiveMisses: 2
-            ).isEmpty
-        )
-        XCTAssertEqual(
-            controller.layoutRefreshController.confirmedMissingEntries(
-                keys: [],
-                eligibleKeys: [token],
-                requiredConsecutiveMisses: 2
-            ).map(\.token),
-            [token]
         )
     }
 

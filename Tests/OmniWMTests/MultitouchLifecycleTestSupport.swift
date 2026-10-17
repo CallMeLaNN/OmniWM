@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import CoreHID
 import Foundation
 import IOKit
 @testable import OmniWM
+import XCTest
 
 @MainActor
 final class ManualMultitouchSleeper {
@@ -16,8 +17,14 @@ final class ManualMultitouchSleeper {
     private(set) var requestedDurations: [Duration] = []
     private var nextId: UInt64 = 0
     private var waiters: [Waiter] = []
-    private var requestWaiters: [(count: Int, continuation: CheckedContinuation<Void, Never>)] = []
-    private var wakeWaiters: [UInt64: CheckedContinuation<Void, Never>] = [:]
+    private var requestWaiters: [(count: Int, expectation: XCTestExpectation)] = []
+    private var wakeWaiters: [UInt64: XCTestExpectation] = [:]
+
+    private enum WaitFailure: Error {
+        case missingRequest(expected: Int, actual: Int)
+        case noPendingSleep
+        case wakeDidNotComplete(UInt64)
+    }
 
     var pendingCount: Int {
         waiters.count
@@ -32,7 +39,7 @@ final class ManualMultitouchSleeper {
                 waiters.append(Waiter(id: id, continuation: continuation))
                 resumeRequestWaiters()
             }
-            wakeWaiters.removeValue(forKey: id)?.resume()
+            wakeWaiters.removeValue(forKey: id)?.fulfill()
             try Task.checkCancellation()
         } onCancel: {
             Task { @MainActor [weak self] in
@@ -41,41 +48,55 @@ final class ManualMultitouchSleeper {
         }
     }
 
-    func waitForRequests(_ count: Int) async {
+    func waitForRequests(_ count: Int) async throws {
         guard requestedDurations.count < count else { return }
-        await withCheckedContinuation { requestWaiters.append((count, $0)) }
+        let requested = XCTestExpectation(description: "Multitouch sleep request \(count)")
+        requestWaiters.append((count, requested))
+        defer { requestWaiters.removeAll { $0.expectation === requested } }
+        guard await XCTWaiter.fulfillment(of: [requested], timeout: 2) == .completed,
+              requestedDurations.count >= count
+        else {
+            throw WaitFailure.missingRequest(expected: count, actual: requestedDurations.count)
+        }
     }
 
-    func waitForScheduledSleep(of source: MultitouchGestureSource) async {
+    func waitForScheduledSleep(of source: MultitouchGestureSource) async throws {
         guard waiters.isEmpty, source.diagnosticsSnapshot().nextRetryDelay != nil else { return }
-        await waitForRequests(requestedDurations.count + 1)
+        try await waitForRequests(requestedDurations.count + 1)
     }
 
-    func resumeNext() async {
-        guard !waiters.isEmpty else { return }
-        await wake(waiters.removeFirst())
+    func resumeNext() async throws {
+        guard !waiters.isEmpty else { throw WaitFailure.noPendingSleep }
+        try await wake(waiters.removeFirst())
     }
 
     func resumeAll() async {
         let pending = waiters
         waiters.removeAll(keepingCapacity: false)
         for waiter in pending {
-            await wake(waiter)
+            do {
+                try await wake(waiter)
+            } catch {
+                XCTFail("Multitouch sleep cleanup did not complete: \(error)")
+            }
         }
     }
 
-    private func wake(_ waiter: Waiter) async {
-        await withCheckedContinuation { woke in
-            wakeWaiters[waiter.id] = woke
-            waiter.continuation.resume()
+    private func wake(_ waiter: Waiter) async throws {
+        let woke = XCTestExpectation(description: "Multitouch sleep \(waiter.id) returned")
+        wakeWaiters[waiter.id] = woke
+        defer { wakeWaiters.removeValue(forKey: waiter.id) }
+        waiter.continuation.resume()
+        guard await XCTWaiter.fulfillment(of: [woke], timeout: 2) == .completed else {
+            throw WaitFailure.wakeDidNotComplete(waiter.id)
         }
     }
 
     private func resumeRequestWaiters() {
         let ready = requestWaiters.filter { $0.count <= requestedDurations.count }
         requestWaiters.removeAll { $0.count <= requestedDurations.count }
-        for (_, waiter) in ready {
-            waiter.resume()
+        for (_, expected) in ready {
+            expected.fulfill()
         }
     }
 

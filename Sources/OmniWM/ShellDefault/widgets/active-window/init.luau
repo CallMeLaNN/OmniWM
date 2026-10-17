@@ -1,5 +1,5 @@
 -- SPDX-License-Identifier: GPL-2.0-only
--- Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+-- Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 local function chip(style: BarStyle, props, square: boolean)
     local size = math.max(16, style.height - 4)

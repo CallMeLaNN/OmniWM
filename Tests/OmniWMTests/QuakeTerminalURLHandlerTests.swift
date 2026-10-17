@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 import GhosttyKit
@@ -24,32 +24,18 @@ final class QuakeTerminalURLHandlerTests: XCTestCase {
         }
     }
 
-    func testBlocksFilesCustomSchemesAndRelativeTargetsWithoutFallback() {
-        for string in [
+    func testRejectsUnsafeOSC8TargetsWithoutFallback() {
+        let targets = [
             "file:///tmp/payload.command", "file:///Applications/Terminal.app",
             "file:///tmp/document.txt", "javascript:alert(1)", "data:text/html,hello",
-            "vscode://file/tmp/example", "/tmp/payload.command", "example.com"
-        ] {
+            "vscode://file/tmp/example", "/tmp/payload.command", "example.com",
+            "", "https:", "https:relative", "https://", "mailto:", "https://example.com/%zz"
+        ] + ["\0", "\n", "\r", "\t", " ", "\u{0085}", "\u{200B}", "\u{202E}", "\u{2028}", "\u{FEFF}"].map {
+            "https://example.com/\($0)target"
+        }
+        for string in targets {
             XCTAssertTrue(handle(string) { _ in
                 XCTFail("Opened \(string)")
-                return true
-            })
-        }
-    }
-
-    func testBlocksMalformedWebAndMailTargets() {
-        for string in ["", "https:", "https:relative", "https://", "mailto:", "https://example.com/%zz"] {
-            XCTAssertTrue(handle(string) { _ in
-                XCTFail("Opened \(string)")
-                return true
-            })
-        }
-    }
-
-    func testBlocksControlWhitespaceAndInvisibleCharacters() {
-        for character in ["\0", "\n", "\r", "\t", " ", "\u{0085}", "\u{200B}", "\u{202E}", "\u{2028}", "\u{FEFF}"] {
-            XCTAssertTrue(handle("https://example.com/\(character)target") { _ in
-                XCTFail("Opened a target containing unsafe characters")
                 return true
             })
         }

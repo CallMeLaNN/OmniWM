@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import CoreGraphics
 @testable import OmniWM
@@ -10,52 +10,27 @@ final class QuakeTerminalPositionTests: XCTestCase {
     private let windowSize = CGSize(width: 500, height: 300)
     private let builtInVisibleFrame = CGRect(x: 0, y: 0, width: 1728, height: 1084)
 
-    func testBottomInitialOriginStartsBelowVisibleFrameOnOffsetMonitor() {
-        let initial = QuakeTerminalPosition.bottom.initialOrigin(
-            visibleFrame: offsetVisibleFrame,
-            windowSize: windowSize
+    func testCenterOriginsOnOffsetMonitor() {
+        XCTAssertEqual(
+            QuakeTerminalPosition.center.initialOrigin(visibleFrame: offsetVisibleFrame, windowSize: windowSize),
+            CGPoint(x: 450, y: 1300)
         )
-        XCTAssertEqual(initial.y, offsetVisibleFrame.minY - windowSize.height)
+        XCTAssertEqual(
+            QuakeTerminalPosition.center.finalOrigin(visibleFrame: offsetVisibleFrame, windowSize: windowSize),
+            CGPoint(x: 450, y: 1300)
+        )
     }
 
-    func testCenterInitialOriginEqualsFinalOnOffsetMonitor() {
-        let initial = QuakeTerminalPosition.center.initialOrigin(
-            visibleFrame: offsetVisibleFrame,
-            windowSize: windowSize
-        )
-        let final = QuakeTerminalPosition.center.finalOrigin(
-            visibleFrame: offsetVisibleFrame,
-            windowSize: windowSize
-        )
-        XCTAssertEqual(initial, final)
-    }
-
-    func testTopOriginsIncludeVisibleFrameOriginY() {
-        let initial = QuakeTerminalPosition.top.initialOrigin(
-            visibleFrame: offsetVisibleFrame,
-            windowSize: windowSize
-        )
-        let final = QuakeTerminalPosition.top.finalOrigin(
-            visibleFrame: offsetVisibleFrame,
-            windowSize: windowSize
-        )
-        XCTAssertEqual(initial.y, offsetVisibleFrame.maxY)
-        XCTAssertEqual(final.y, offsetVisibleFrame.maxY - windowSize.height)
-    }
-
-    func testSideOriginsAreVerticallyCenteredOnOffsetMonitor() {
-        let expectedY = (
-            offsetVisibleFrame.origin.y + (offsetVisibleFrame.height - windowSize.height) / 2
-        ).rounded()
-        for position in [QuakeTerminalPosition.left, .right] {
-            XCTAssertEqual(
-                position.initialOrigin(visibleFrame: offsetVisibleFrame, windowSize: windowSize).y,
-                expectedY
-            )
-            XCTAssertEqual(
-                position.finalOrigin(visibleFrame: offsetVisibleFrame, windowSize: windowSize).y,
-                expectedY
-            )
+    func testOffsetMonitorOrigins() {
+        let cases: [(QuakeTerminalPosition, CGPoint, CGPoint)] = [
+            (.top, CGPoint(x: 450, y: 1900), CGPoint(x: 450, y: 1600)),
+            (.bottom, CGPoint(x: 450, y: 700), CGPoint(x: 450, y: 1000)),
+            (.left, CGPoint(x: -300, y: 1300), CGPoint(x: 200, y: 1300)),
+            (.right, CGPoint(x: 1200, y: 1300), CGPoint(x: 700, y: 1300))
+        ]
+        for (position, initial, final) in cases {
+            XCTAssertEqual(position.initialOrigin(visibleFrame: offsetVisibleFrame, windowSize: windowSize), initial)
+            XCTAssertEqual(position.finalOrigin(visibleFrame: offsetVisibleFrame, windowSize: windowSize), final)
         }
     }
 

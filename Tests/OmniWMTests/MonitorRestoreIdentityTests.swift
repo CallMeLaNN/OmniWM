@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import CoreGraphics
 import Foundation
@@ -38,46 +38,22 @@ final class MonitorRestoreIdentityTests: XCTestCase {
         XCTAssertEqual(assignments[currentB.id], workspaceB)
     }
 
-    func testKnownUUIDMismatchUsesGeometryInsteadOfRecycledId() {
-        let workspace = UUID()
-        let previous = monitor(id: 2, name: "Display", uuid: displayUUIDA, x: 0)
-        let recycled = monitor(id: 2, name: "Display", uuid: displayUUIDB, x: 2000)
-        let geometricMatch = monitor(id: 9, name: "Display", uuid: displayUUIDC, x: 0)
-
-        let assignments = resolveWorkspaceRestoreAssignments(
-            snapshots: [
-                WorkspaceRestoreSnapshot(
+    func testRestoreAssignmentPrefersUUIDOrLegacyRuntimeIdentity() {
+        for uuidLess in [false, true] {
+            let workspace = UUID()
+            let previous = monitor(id: 2, name: "Display", uuid: uuidLess ? nil : displayUUIDA, x: 0)
+            let recycled = monitor(id: 2, name: "Display", uuid: uuidLess ? nil : displayUUIDB, x: 2000)
+            let geometric = monitor(id: 9, name: "Display", uuid: uuidLess ? nil : displayUUIDC, x: 0)
+            let assignments = resolveWorkspaceRestoreAssignments(
+                snapshots: [WorkspaceRestoreSnapshot(
                     monitor: MonitorRestoreKey(monitor: previous),
                     workspaceId: workspace
-                )
-            ],
-            monitors: [recycled, geometricMatch],
-            workspaceExists: { _ in true }
-        )
-
-        XCTAssertNil(assignments[recycled.id])
-        XCTAssertEqual(assignments[geometricMatch.id], workspace)
-    }
-
-    func testUUIDLessSnapshotCanUseExactRuntimeIdAndName() {
-        let workspace = UUID()
-        let previous = monitor(id: 2, name: "Display", uuid: nil, x: 0)
-        let exactRuntime = monitor(id: 2, name: "Display", uuid: nil, x: 2000)
-        let geometricMatch = monitor(id: 9, name: "Display", uuid: nil, x: 0)
-
-        let assignments = resolveWorkspaceRestoreAssignments(
-            snapshots: [
-                WorkspaceRestoreSnapshot(
-                    monitor: MonitorRestoreKey(monitor: previous),
-                    workspaceId: workspace
-                )
-            ],
-            monitors: [exactRuntime, geometricMatch],
-            workspaceExists: { _ in true }
-        )
-
-        XCTAssertEqual(assignments[exactRuntime.id], workspace)
-        XCTAssertNil(assignments[geometricMatch.id])
+                )],
+                monitors: [recycled, geometric], workspaceExists: { _ in true }
+            )
+            XCTAssertEqual(assignments[uuidLess ? recycled.id : geometric.id], workspace)
+            XCTAssertNil(assignments[uuidLess ? geometric.id : recycled.id])
+        }
     }
 
     func testDuplicateUUIDsSkipIdentityAndRemainOneToOneByGeometry() {
@@ -134,57 +110,26 @@ final class MonitorRestoreIdentityTests: XCTestCase {
         XCTAssertEqual(decoded, fingerprint)
         XCTAssertEqual(decoded.displayUUID, displayUUIDA)
         XCTAssertNil(legacy.displayUUID)
-    }
-
-    func testDisplayFingerprintRejectsMalformedPersistedUUID() throws {
-        let fingerprint = DisplayFingerprint(
-            monitor: monitor(id: 2, name: "Display", uuid: displayUUIDA, x: 0)
-        )
-        let data = try JSONEncoder().encode(fingerprint)
-        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
         object["displayUUID"] = "not-a-uuid"
         let malformed = try JSONSerialization.data(withJSONObject: object)
-
         XCTAssertThrowsError(try JSONDecoder().decode(DisplayFingerprint.self, from: malformed))
     }
 
-    func testPersistedHydrationFollowsUUIDAcrossRecycledRuntimeId() throws {
-        let previous = monitor(id: 2, name: "Display", uuid: displayUUIDA, x: 0)
-        let recycled = monitor(id: 2, name: "Display", uuid: displayUUIDB, x: 2000)
-        let current = monitor(id: 9, name: "Renamed", uuid: displayUUIDA, x: 0)
-
-        let preferredMonitorId = try persistedPreferredMonitor(
-            previous: previous,
-            current: [recycled, current]
-        )
-
-        XCTAssertEqual(preferredMonitorId, current.id)
-    }
-
-    func testPersistedHydrationUUIDMismatchUsesGeometryInsteadOfRecycledId() throws {
-        let previous = monitor(id: 2, name: "Display", uuid: displayUUIDA, x: 0)
-        let recycled = monitor(id: 2, name: "Display", uuid: displayUUIDB, x: 2000)
-        let geometricMatch = monitor(id: 9, name: "Display", uuid: displayUUIDC, x: 0)
-
-        let preferredMonitorId = try persistedPreferredMonitor(
-            previous: previous,
-            current: [recycled, geometricMatch]
-        )
-
-        XCTAssertEqual(preferredMonitorId, geometricMatch.id)
-    }
-
-    func testPersistedHydrationUUIDLessFingerprintUsesRuntimeIdAndName() throws {
-        let previous = monitor(id: 2, name: "Display", uuid: nil, x: 0)
-        let exactRuntime = monitor(id: 2, name: "Display", uuid: nil, x: 2000)
-        let geometricMatch = monitor(id: 9, name: "Display", uuid: nil, x: 0)
-
-        let preferredMonitorId = try persistedPreferredMonitor(
-            previous: previous,
-            current: [exactRuntime, geometricMatch]
-        )
-
-        XCTAssertEqual(preferredMonitorId, exactRuntime.id)
+    func testPersistedHydrationResolvesIdentityAndGeometryFallbacks() throws {
+        let cases: [(String?, String?, String?, String, Int)] = [
+            (displayUUIDA, displayUUIDB, displayUUIDA, "Renamed", 1),
+            (nil, nil, nil, "Display", 0),
+            (displayUUIDA, displayUUIDB, displayUUIDC, "Display", 1)
+        ]
+        for (previousUUID, recycledUUID, geometricUUID, geometricName, expectedIndex) in cases {
+            let previous = monitor(id: 2, name: "Display", uuid: previousUUID, x: 0)
+            let current = [
+                monitor(id: 2, name: "Display", uuid: recycledUUID, x: 2000),
+                monitor(id: 9, name: geometricName, uuid: geometricUUID, x: 0)
+            ]
+            let preferredMonitorId = try persistedPreferredMonitor(previous: previous, current: current)
+            XCTAssertEqual(preferredMonitorId, current[expectedIndex].id)
+        }
     }
 
     private func monitor(

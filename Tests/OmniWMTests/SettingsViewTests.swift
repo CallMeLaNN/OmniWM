@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import Carbon
+import Observation
 @testable import OmniWM
 import SwiftUI
 import XCTest
 
 @MainActor
 final class SettingsViewTests: XCTestCase {
-    func testAppReactivationRefreshesDiagnosticsFromGeneralSection() {
+    func testAppReactivationRefreshesDiagnosticsFromGeneralSection() async {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("SettingsViewTests-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -30,6 +31,22 @@ final class SettingsViewTests: XCTestCase {
             settings: settings,
             diagnosticsDirectory: root.appendingPathComponent("diagnostics", isDirectory: true)
         )
+        let sidedHyper = KeyBinding(
+            keyCode: UInt32(kVK_ANSI_1),
+            modifiers: KeySymbolMapper.hyperModifiers
+        ).settingSide(.left)
+        let initialIssueID = "hotkey-sided-hyper:settings-initial"
+        settings.hotkeyBindings = [HotkeyBinding(
+            id: "settings-initial",
+            command: .focusNavigation(.previous),
+            binding: sidedHyper
+        )]
+        let initialRefresh = expectation(description: "Initial hosted diagnostics publication")
+        withObservationTracking {
+            _ = controller.diagnosticsIssues
+        } onChange: {
+            initialRefresh.fulfill()
+        }
         let navigation = SettingsNavigationModel()
         navigation.section = .general
         let cornerPreferences = GlobalWindowCornerPreferences(
@@ -56,25 +73,27 @@ final class SettingsViewTests: XCTestCase {
         )
         window.contentView = hostingView
         hostingView.layoutSubtreeIfNeeded()
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.01))
+        await fulfillment(of: [initialRefresh], timeout: 5)
+        XCTAssertTrue(controller.diagnosticsIssues.contains { $0.id == initialIssueID })
 
         let issueID = "hotkey-sided-hyper:settings-reactivation"
         XCTAssertFalse(controller.diagnosticsIssues.contains { $0.id == issueID })
 
-        let sidedHyper = KeyBinding(
-            keyCode: UInt32(kVK_ANSI_1),
-            modifiers: KeySymbolMapper.hyperModifiers
-        ).settingSide(.left)
         settings.hotkeyBindings = [HotkeyBinding(
             id: "settings-reactivation",
             command: .focusNavigation(.previous),
             binding: sidedHyper
         )]
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.01))
         XCTAssertFalse(controller.diagnosticsIssues.contains { $0.id == issueID })
 
+        let reactivationRefresh = expectation(description: "Reactivated hosted diagnostics publication")
+        withObservationTracking {
+            _ = controller.diagnosticsIssues
+        } onChange: {
+            reactivationRefresh.fulfill()
+        }
         NotificationCenter.default.post(name: NSApplication.didBecomeActiveNotification, object: NSApp)
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.01))
+        await fulfillment(of: [reactivationRefresh], timeout: 5)
 
         XCTAssertTrue(controller.diagnosticsIssues.contains { $0.id == issueID })
         withExtendedLifetime(window) {}

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import CoreGraphics
 @testable import OmniWM
@@ -65,7 +65,7 @@ final class SpaceTopologyTests: XCTestCase {
         XCTAssertEqual(topology.isDisplayShowingFullscreenSpace(lowercasedUUID.uppercased()), true)
     }
 
-    func testNormalizingDisplayIdentifiersResolvesMainAndNumericAliases() {
+    func testNormalizingDisplayIdentifiersResolvesMainAndNumericAliases() throws {
         let mainUUID = "11111111-1111-4111-8111-111111111111"
         let secondaryUUID = "22222222-2222-4222-8222-222222222222"
         let mainDisplayId = CGMainDisplayID()
@@ -82,23 +82,47 @@ final class SpaceTopologyTests: XCTestCase {
                 displayUUID: secondaryUUID
             )
         ]
-        let topology = SpaceTopology(
-            displays: [
-                .init(displayIdentifier: "Main", spaceIds: [1], currentSpaceId: 1),
-                .init(
-                    displayIdentifier: String(secondaryDisplayId),
-                    spaceIds: [2],
-                    currentSpaceId: 2
-                )
-            ],
-            activeSpaceId: 1,
-            fullscreenSpaceIds: [2],
-            windowSpace: [:]
-        ).normalizingDisplayIdentifiers(using: monitors)
-
-        XCTAssertEqual(topology.displays.map(\.displayIdentifier), [mainUUID, secondaryUUID])
-        XCTAssertEqual(topology.isDisplayShowingFullscreenSpace(mainUUID), false)
-        XCTAssertEqual(topology.isDisplayShowingFullscreenSpace(secondaryUUID), true)
+        let cases: [(
+            label: String,
+            mainIdentifier: String,
+            secondaryIdentifier: String,
+            mainSpaces: [UInt64],
+            secondarySpaces: [UInt64],
+            secondaryCurrent: UInt64,
+            fullscreen: Set<UInt64>,
+            secondaryFullscreen: Bool
+        )] = [
+            ("Main and UUID", "Main", secondaryUUID, [1, 2], [3, 4], 3, [], false),
+            ("numeric and numeric", String(mainDisplayId), String(secondaryDisplayId), [1, 2], [3, 4], 3, [], false),
+            ("Main and numeric", "Main", String(secondaryDisplayId), [1], [2], 2, [2], true)
+        ]
+        for row in cases {
+            let raw = SpaceTopology(
+                displays: [
+                    .init(displayIdentifier: row.mainIdentifier, spaceIds: row.mainSpaces, currentSpaceId: 1),
+                    .init(
+                        displayIdentifier: row.secondaryIdentifier,
+                        spaceIds: row.secondarySpaces,
+                        currentSpaceId: row.secondaryCurrent
+                    )
+                ],
+                activeSpaceId: 1, fullscreenSpaceIds: row.fullscreen, windowSpace: [:]
+            )
+            let rawSample = try XCTUnwrap(NativeSpaceTopologySample(topology: raw))
+            XCTAssertFalse(
+                rawSample.matchesExpectedDisplays(count: 2, displayUUIDs: [mainUUID, secondaryUUID]),
+                row.label
+            )
+            let topology = raw.normalizingDisplayIdentifiers(using: monitors)
+            let normalizedSample = try XCTUnwrap(NativeSpaceTopologySample(topology: topology))
+            XCTAssertTrue(
+                normalizedSample.matchesExpectedDisplays(count: 2, displayUUIDs: [mainUUID, secondaryUUID]),
+                row.label
+            )
+            XCTAssertEqual(topology.displays.map(\.displayIdentifier), [mainUUID, secondaryUUID], row.label)
+            XCTAssertEqual(topology.isDisplayShowingFullscreenSpace(mainUUID), false, row.label)
+            XCTAssertEqual(topology.isDisplayShowingFullscreenSpace(secondaryUUID), row.secondaryFullscreen, row.label)
+        }
     }
 
     func testNormalizingAmbiguousUUIDMonitorsUsesRuntimeIdentifiers() {
@@ -155,37 +179,23 @@ final class SpaceTopologyTests: XCTestCase {
         XCTAssertNil(topology.isDisplayShowingFullscreenSpace("duplicate"))
     }
 
-    func testSelectWindowSpacePrefersCurrentNonFullscreen() {
-        let topology = twoDisplayTopology()
-        XCTAssertEqual(topology.selectWindowSpace(from: [4, 2, 3]), 3)
-    }
-
-    func testSelectWindowSpaceFallsBackToKnownNonFullscreen() {
-        let topology = twoDisplayTopology()
-        XCTAssertEqual(topology.selectWindowSpace(from: [4, 2]), 2)
-    }
-
-    func testSelectWindowSpaceFallsBackToCurrentFullscreen() {
-        let topology = SpaceTopology(
-            displays: [
-                SpaceTopology.DisplaySpaces(displayIdentifier: "d", spaceIds: [5], currentSpaceId: 5)
-            ],
-            activeSpaceId: 5,
-            fullscreenSpaceIds: [5],
-            windowSpace: [:]
+    func testWindowSpaceSelectionPriorityMatrix() {
+        let ordinary = twoDisplayTopology()
+        let fullscreen = SpaceTopology(
+            displays: [.init(displayIdentifier: "d", spaceIds: [5], currentSpaceId: 5)],
+            activeSpaceId: 5, fullscreenSpaceIds: [5], windowSpace: [:]
         )
-        XCTAssertEqual(topology.selectWindowSpace(from: [5]), 5)
-    }
-
-    func testSelectWindowSpaceFallsBackToFirstNonzero() {
-        let topology = twoDisplayTopology()
-        XCTAssertEqual(topology.selectWindowSpace(from: [0, 777, 888]), 777)
-    }
-
-    func testSelectWindowSpaceReturnsNilForEmptyOrZero() {
-        let topology = twoDisplayTopology()
-        XCTAssertNil(topology.selectWindowSpace(from: []))
-        XCTAssertNil(topology.selectWindowSpace(from: [0]))
+        let cases: [(label: String, topology: SpaceTopology, spaces: [UInt64], expected: UInt64?)] = [
+            ("current nonfullscreen", ordinary, [4, 2, 3], 3),
+            ("known nonfullscreen", ordinary, [4, 2], 2),
+            ("current fullscreen", fullscreen, [5], 5),
+            ("first nonzero", ordinary, [0, 777, 888], 777),
+            ("empty", ordinary, [], nil),
+            ("zero", ordinary, [0], nil)
+        ]
+        for row in cases {
+            XCTAssertEqual(row.topology.selectWindowSpace(from: row.spaces), row.expected, row.label)
+        }
     }
 
     private func makeMonitor(

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 @testable import OmniWM
 import XCTest
@@ -52,11 +52,21 @@ final class BorderEffectsTests: XCTestCase {
 
     func testSolidKeepsRimVisibleAndHidesGradient() throws {
         let panel = try makePanel()
+        defer { panel.close() }
         updateEffects(panel, geometry: geometry(width: 4, padding: 0), gradient: false, glowOpacity: 0)
-
         XCTAssertEqual(panel.borderLayer.rimOpacity, 1)
         XCTAssertTrue(panel.gradientStrokeLayer.isHidden)
-        XCTAssertNil(panel.gradientRingMaskLayer.path)
+        XCTAssertTrue(panel.glowColorLayer.isHidden)
+
+        updateEffects(panel, geometry: geometry(width: 4, padding: 12), gradient: true, glowOpacity: 0.6)
+        XCTAssertEqual(panel.borderLayer.rimOpacity, 0)
+        XCTAssertFalse(panel.gradientStrokeLayer.isHidden)
+        XCTAssertFalse(panel.glowColorLayer.isHidden)
+
+        updateEffects(panel, geometry: geometry(width: 4, padding: 0), gradient: false, glowOpacity: 0)
+        XCTAssertEqual(panel.borderLayer.rimOpacity, 1)
+        XCTAssertTrue(panel.gradientStrokeLayer.isHidden)
+        XCTAssertTrue(panel.glowColorLayer.isHidden)
     }
 
     func testGlowInstallsBandMask() throws {
@@ -67,18 +77,17 @@ final class BorderEffectsTests: XCTestCase {
         XCTAssertEqual(panel.glowMaskLayer.sublayers?.count, 12)
     }
 
-    func testNoGlowHidesColorLayer() throws {
-        let panel = try makePanel()
-        updateEffects(panel, geometry: geometry(width: 4, padding: 0), gradient: false, glowOpacity: 0)
-
-        XCTAssertTrue(panel.glowColorLayer.isHidden)
-    }
-
     func testGlowBandCountCapsAtMaximum() throws {
-        let panel = try makePanel()
-        updateEffects(panel, geometry: geometry(width: 4, padding: 48), gradient: false, glowOpacity: 0.6)
-
-        XCTAssertEqual(panel.glowMaskLayer.sublayers?.count, 48)
+        for scale: CGFloat in [1, 2] {
+            let panel = try makePanel()
+            defer { panel.close() }
+            let config = config(gradient: false, glowOpacity: 0.6)
+            panel.updateEffects(
+                geometry: geometry(width: 4, padding: 48), cornerRadii: WindowCornerRadii(uniform: 9),
+                config: config, baseColor: BorderLayerPanel.cgColor(config.color), scale: scale
+            )
+            XCTAssertEqual(panel.glowMaskLayer.sublayers?.count, 48)
+        }
     }
 
     func testGlowColorOverrideWinsOverGradient() throws {

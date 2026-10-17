@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import ApplicationServices
 import Foundation
@@ -8,81 +8,39 @@ import XCTest
 
 @MainActor
 final class FullRescanReadmissionTests: XCTestCase {
-    func testUnchangedTrackedEntryIsNotReadmitted() throws {
-        let manager = makeManager()
-        let workspaceId = try XCTUnwrap(manager.workspaceId(for: "1", createIfMissing: true))
-        let token = manager.addWindow(axRef(9001, 1), pid: 9001, windowId: 1, to: workspaceId)
-        let entry = try XCTUnwrap(manager.entry(for: token))
-
-        XCTAssertFalse(
-            LayoutRefreshController.shouldReadmitTrackedWindow(
-                entry: entry,
-                target: .init(
-                    workspaceId: workspaceId,
-                    mode: .tiling,
-                    ruleEffects: entry.ruleEffects
-                ),
-                shouldPreservePreFullscreenState: false,
-                appFullscreen: false
-            )
-        )
-    }
-
-    func testChangedStateStillReadmits() throws {
+    func testTrackedWindowReadmissionStateMatrix() throws {
         let manager = makeManager()
         let workspaceId = try XCTUnwrap(manager.workspaceId(for: "1", createIfMissing: true))
         let otherWorkspaceId = try XCTUnwrap(manager.workspaceId(for: "2", createIfMissing: true))
         let token = manager.addWindow(axRef(9002, 2), pid: 9002, windowId: 2, to: workspaceId)
         let entry = try XCTUnwrap(manager.entry(for: token))
 
-        XCTAssertTrue(
-            LayoutRefreshController.shouldReadmitTrackedWindow(
-                entry: entry,
-                target: .init(
-                    workspaceId: otherWorkspaceId,
-                    mode: .tiling,
-                    ruleEffects: entry.ruleEffects
+        let cases: [(
+            label: String,
+            workspace: WorkspaceDescriptor.ID,
+            mode: TrackedWindowMode,
+            preserve: Bool,
+            fullscreen: Bool,
+            expected: Bool
+        )] = [
+            ("unchanged", workspaceId, .tiling, false, false, false),
+            ("workspace", otherWorkspaceId, .tiling, false, false, true),
+            ("mode", workspaceId, .floating, false, false, true),
+            ("pre-fullscreen", workspaceId, .tiling, true, false, true),
+            ("app-fullscreen", workspaceId, .tiling, false, true, true)
+        ]
+        for row in cases {
+            XCTAssertEqual(
+                LayoutRefreshController.shouldReadmitTrackedWindow(
+                    entry: entry,
+                    target: .init(workspaceId: row.workspace, mode: row.mode, ruleEffects: entry.ruleEffects),
+                    shouldPreservePreFullscreenState: row.preserve,
+                    appFullscreen: row.fullscreen
                 ),
-                shouldPreservePreFullscreenState: false,
-                appFullscreen: false
+                row.expected,
+                row.label
             )
-        )
-        XCTAssertTrue(
-            LayoutRefreshController.shouldReadmitTrackedWindow(
-                entry: entry,
-                target: .init(
-                    workspaceId: workspaceId,
-                    mode: .floating,
-                    ruleEffects: entry.ruleEffects
-                ),
-                shouldPreservePreFullscreenState: false,
-                appFullscreen: false
-            )
-        )
-        XCTAssertTrue(
-            LayoutRefreshController.shouldReadmitTrackedWindow(
-                entry: entry,
-                target: .init(
-                    workspaceId: workspaceId,
-                    mode: .tiling,
-                    ruleEffects: entry.ruleEffects
-                ),
-                shouldPreservePreFullscreenState: true,
-                appFullscreen: false
-            )
-        )
-        XCTAssertTrue(
-            LayoutRefreshController.shouldReadmitTrackedWindow(
-                entry: entry,
-                target: .init(
-                    workspaceId: workspaceId,
-                    mode: .tiling,
-                    ruleEffects: entry.ruleEffects
-                ),
-                shouldPreservePreFullscreenState: false,
-                appFullscreen: true
-            )
-        )
+        }
     }
 
     private func makeManager() -> WorkspaceManager {

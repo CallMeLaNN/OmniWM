@@ -1276,6 +1276,6 @@ The similarly named files under `docs/` are compatibility stubs that direct old 
 
 ## License
 
-OmniWM is licensed under the [GNU General Public License v2.0-only](LICENSE). Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM.
+OmniWM is licensed under the [GNU General Public License v2.0-only](LICENSE). Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM.
 
 Every OmniWM source file carries an SPDX license header. The vendored Luau runtime in `Sources/OmniWMLuau` keeps its MIT license (`LICENSE.txt` and `lua_LICENSE.txt`), and app builds ship both texts in `Contents/Resources/Licenses`. The Nocturne and Wayline shell themes use colours from [Noctalia](https://github.com/noctalia-dev/noctalia) and [Wayle](https://github.com/wayle-rs/wayle), both MIT. The Catppuccin, Dracula, Everforest, Gruvbox, Kanagawa, Nord and Rosé Pine shell themes adapt those MIT colour schemes through the same two projects. The bundled fonts Google Sans Flex and Rubik (SIL Open Font License) and Material Symbols Rounded (Apache 2.0) keep their licenses, as does Google's Material Color Utilities (Apache 2.0), vendored in `Sources/OmniWMMaterialColor`. All of these notices are in `Resources/Licenses` and ship there too. Forks and redistributions must retain these notices and the `LICENSE` file, and remain GPL-2.0-only with source available.

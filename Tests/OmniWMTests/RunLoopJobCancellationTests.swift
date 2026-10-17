@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWM
@@ -119,21 +119,15 @@ final class RunLoopJobCancellationTests: XCTestCase {
         XCTAssertFalse(job.isCancelled)
         XCTAssertNoThrow(try job.checkCancellation())
 
+        job.schedule { _ in }
+
         job.cancel()
         job.cancel()
 
+        XCTAssertNil(job.takeScheduledBody())
         XCTAssertTrue(job.isCancelled)
         XCTAssertThrowsError(try job.checkCancellation()) { error in
             XCTAssertTrue(error is CancellationError)
         }
-    }
-
-    func testCancelAfterScheduleDropsBodyExactlyOnce() {
-        let job = RunLoopJob()
-        job.schedule { _ in }
-
-        job.cancel()
-
-        XCTAssertNil(job.takeScheduledBody())
     }
 }

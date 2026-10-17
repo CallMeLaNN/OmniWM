@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import ApplicationServices
 import CoreGraphics
@@ -489,7 +489,6 @@ final class CGSPhantomEventGuardTests: XCTestCase {
         )
         var createDelivered = false
         let createTask = Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(20))
             createDelivered = true
             controller.axEventHandler.retainPreparedWindowSubscription(UInt32(newToken.windowId))
             controller.axEventHandler.enqueueManagedReplacementCreate(
@@ -505,6 +504,9 @@ final class CGSPhantomEventGuardTests: XCTestCase {
                 )
             )
         }
+        defer { createTask.cancel() }
+        XCTAssertFalse(createDelivered)
+        XCTAssertTrue(controller.axEventHandler.hasPendingManagedReplacementDestroy(oldToken, workspaceId: workspaceId))
         await controller.axEventHandler.awaitPendingManagedReplacementBursts(for: [pid])
 
         XCTAssertTrue(createDelivered)

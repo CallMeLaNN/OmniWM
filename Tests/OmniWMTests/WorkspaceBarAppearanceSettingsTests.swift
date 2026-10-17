@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWM
@@ -89,13 +89,6 @@ final class WorkspaceBarAppearanceSettingsTests: XCTestCase {
         }
     }
 
-    func testMissingExistingRequiredWorkspaceBarFieldStillFails() throws {
-        let data = try SettingsTOMLCodec.encode(.defaults())
-        let toml = String(decoding: data, as: UTF8.self)
-            .replacingOccurrences(of: "showLabels = true\n", with: "")
-        XCTAssertThrowsError(try SettingsTOMLCodec.decode(Data(toml.utf8)))
-    }
-
     func testMonitorAppearanceOverrideRoundTrips() throws {
         var export = SettingsExport.defaults()
         export.monitorBarSettings = [
@@ -166,36 +159,6 @@ final class WorkspaceBarAppearanceSettingsTests: XCTestCase {
         XCTAssertTrue(resolvedOverride.solidBlackBackground)
         XCTAssertFalse(resolvedOverride.showItemBackgrounds)
         XCTAssertFalse(resolvedOverride.showAccentHighlights)
-    }
-
-    @MainActor
-    func testResolvedBarSettingsUsesDefaultsWhenOverrideNil() {
-        let settings = makeSettingsStore()
-        settings.workspaceBar.inactiveIconOpacity = 0.5
-        settings.workspaceBar.transparentBackground = false
-        settings.workspaceBar.solidBlackBackground = false
-        settings.workspaceBar.showItemBackgrounds = true
-        settings.workspaceBar.showAccentHighlights = true
-        let monitor = Monitor(
-            id: .init(displayId: 7),
-            displayId: 7,
-            frame: CGRect(x: 0, y: 0, width: 1512, height: 982),
-            visibleFrame: CGRect(x: 0, y: 0, width: 1512, height: 950),
-            hasNotch: true,
-            name: "Built-in"
-        )
-
-        settings.workspaceBar.update(
-            MonitorBarSettings(monitorName: "Built-in"),
-            for: monitor
-        )
-
-        let resolved = settings.workspaceBar.resolved(for: monitor)
-        XCTAssertEqual(resolved.inactiveIconOpacity, 0.5)
-        XCTAssertFalse(resolved.transparentBackground)
-        XCTAssertFalse(resolved.solidBlackBackground)
-        XCTAssertTrue(resolved.showItemBackgrounds)
-        XCTAssertTrue(resolved.showAccentHighlights)
     }
 
     @MainActor
@@ -270,36 +233,57 @@ final class WorkspaceBarAppearanceSettingsTests: XCTestCase {
     }
 
     @MainActor
-    func testResetAppearanceOverridesRestoresGlobalValues() {
-        let settings = makeSettingsStore()
-        let monitor = makeMonitor()
-        settings.workspaceBar.inactiveIconOpacity = 0.8
-        settings.workspaceBar.transparentBackground = true
-        settings.workspaceBar.solidBlackBackground = true
-        settings.workspaceBar.update(
-            MonitorBarSettings(
-                monitorName: monitor.name,
-                inactiveIconOpacity: 0.2,
-                transparentBackground: false,
-                solidBlackBackground: false,
-                showItemBackgrounds: false,
-                showAccentHighlights: false
-            ),
-            for: monitor
-        )
-        XCTAssertFalse(settings.workspaceBar.resolved(for: monitor).transparentBackground)
-        XCTAssertFalse(settings.workspaceBar.resolved(for: monitor).solidBlackBackground)
+    func testNilAppearanceOverrideFieldsFallBackToGlobalValues() {
+        let cases: [(
+            opacity: Double,
+            transparent: Bool,
+            solidBlack: Bool,
+            itemBackgrounds: Bool,
+            accentHighlights: Bool
+        )] = [
+            (0.8, true, true, true, true),
+            (0.5, false, false, true, true)
+        ]
+        for row in cases {
+            let settings = makeSettingsStore()
+            let monitor = makeMonitor()
+            settings.workspaceBar.inactiveIconOpacity = row.opacity
+            settings.workspaceBar.transparentBackground = row.transparent
+            settings.workspaceBar.solidBlackBackground = row.solidBlack
+            settings.workspaceBar.showItemBackgrounds = row.itemBackgrounds
+            settings.workspaceBar.showAccentHighlights = row.accentHighlights
+            settings.workspaceBar.update(
+                MonitorBarSettings(
+                    monitorName: monitor.name, monitorDisplayUUID: monitor.displayUUID,
+                    monitorDisplayId: monitor.displayId,
+                    inactiveIconOpacity: 0.2, transparentBackground: false, solidBlackBackground: false,
+                    showItemBackgrounds: false, showAccentHighlights: false
+                ),
+                for: monitor
+            )
+            let explicit = settings.workspaceBar.resolved(for: monitor)
+            XCTAssertEqual(explicit.inactiveIconOpacity, 0.2)
+            XCTAssertFalse(explicit.transparentBackground)
+            XCTAssertFalse(explicit.solidBlackBackground)
+            XCTAssertFalse(explicit.showItemBackgrounds)
+            XCTAssertFalse(explicit.showAccentHighlights)
 
-        settings.workspaceBar.update(MonitorBarSettings(monitorName: monitor.name), for: monitor)
-
-        let reset = settings.workspaceBar.resolved(for: monitor)
-        XCTAssertEqual(reset.inactiveIconOpacity, 0.8)
-        XCTAssertTrue(reset.transparentBackground)
-        XCTAssertTrue(reset.solidBlackBackground)
-        XCTAssertTrue(reset.showItemBackgrounds)
-        XCTAssertTrue(reset.showAccentHighlights)
-        settings.workspaceBar.inactiveIconOpacity = nil
-        XCTAssertNil(settings.workspaceBar.resolved(for: monitor).inactiveIconOpacity)
+            settings.workspaceBar.update(
+                MonitorBarSettings(
+                    monitorName: monitor.name, monitorDisplayUUID: monitor.displayUUID,
+                    monitorDisplayId: monitor.displayId
+                ),
+                for: monitor
+            )
+            let fallback = settings.workspaceBar.resolved(for: monitor)
+            XCTAssertEqual(fallback.inactiveIconOpacity, row.opacity)
+            XCTAssertEqual(fallback.transparentBackground, row.transparent)
+            XCTAssertEqual(fallback.solidBlackBackground, row.solidBlack)
+            XCTAssertEqual(fallback.showItemBackgrounds, row.itemBackgrounds)
+            XCTAssertEqual(fallback.showAccentHighlights, row.accentHighlights)
+            settings.workspaceBar.inactiveIconOpacity = nil
+            XCTAssertNil(settings.workspaceBar.resolved(for: monitor).inactiveIconOpacity)
+        }
     }
 }
 

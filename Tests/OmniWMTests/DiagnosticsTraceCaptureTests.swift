@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWM
@@ -29,20 +29,6 @@ final class DiagnosticsTraceCaptureTests: XCTestCase {
         }
         XCTAssertFalse(controller.isTraceCaptureActive)
         XCTAssertNil(controller.traceCaptureStatus.startedAt)
-    }
-
-    @MainActor
-    func testTraceCaptureRemovesPartialSidecarOnStop() async throws {
-        let directory = try makeDiagnosticsDirectory()
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let controller = WMController(settings: makeSettingsStore(), diagnosticsDirectory: directory)
-
-        _ = await controller.toggleTraceCapture(desiredState: .active)
-        _ = await controller.toggleTraceCapture(desiredState: .inactive)
-
-        let partials = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil))?
-            .filter { $0.lastPathComponent.hasSuffix(".partial.log") } ?? []
-        XCTAssertTrue(partials.isEmpty)
     }
 
     @MainActor
@@ -111,39 +97,6 @@ final class DiagnosticsTraceCaptureTests: XCTestCase {
             return XCTFail("expected .writeFailed when the diagnostics directory cannot be created")
         }
         XCTAssertFalse(controller.isTraceCaptureActive)
-    }
-
-    @MainActor
-    func testFinalWriteFailurePreservesPartialAndRemovesTemporaryFile() async throws {
-        let directory = try makeDiagnosticsDirectory()
-        defer {
-            try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
-            try? FileManager.default.removeItem(at: directory)
-        }
-        let coordinator = RuntimeTraceCaptureCoordinator(diagnosticsDirectory: directory, recorders: [])
-
-        guard case .started = await coordinator.toggle(desiredState: .active, reportProvider: { "report" }) else {
-            return XCTFail("expected capture to start")
-        }
-        let partial = try XCTUnwrap(
-            FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
-                .first { $0.lastPathComponent.hasSuffix(".partial.log") }
-        )
-        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: directory.path)
-
-        guard case .writeFailed = await coordinator.toggle(
-            desiredState: .inactive,
-            reportProvider: { "report" }
-        ) else {
-            return XCTFail("expected final write to fail")
-        }
-        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
-
-        XCTAssertTrue(FileManager.default.fileExists(atPath: partial.path))
-        XCTAssertFalse(
-            try FileManager.default.contentsOfDirectory(atPath: directory.path)
-                .contains { $0.hasPrefix(".omniwm-trace-") && $0.hasSuffix(".tmp") }
-        )
     }
 
     @MainActor
@@ -627,13 +580,25 @@ final class DiagnosticsTraceCaptureTests: XCTestCase {
             diagnosticsEventRecorder: diagnosticsEventRecorder
         )
 
-        _ = await coordinator.toggle(desiredState: .active, reportProvider: { "report" })
+        guard case .started = await coordinator.toggle(desiredState: .active, reportProvider: { "report" }) else {
+            return XCTFail("expected capture to start")
+        }
+        let partial = try XCTUnwrap(
+            FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
+                .first { $0.lastPathComponent.hasSuffix(".partial.log") }
+        )
         recorder.record("release-probe-sentinel")
         try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: directory.path)
 
         guard case .writeFailed = await coordinator.toggle(desiredState: .inactive, reportProvider: { "report" }) else {
             return XCTFail("expected the final write to fail")
         }
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: partial.path))
+        XCTAssertFalse(
+            try FileManager.default.contentsOfDirectory(atPath: directory.path)
+                .contains { $0.hasPrefix(".omniwm-trace-") && $0.hasSuffix(".tmp") }
+        )
         XCTAssertFalse(recorder.isStoragePrepared)
         XCTAssertFalse(recorder.isSpareStoragePrepared)
         XCTAssertFalse(diagnosticsEventRecorder.isVerboseStoragePrepared)

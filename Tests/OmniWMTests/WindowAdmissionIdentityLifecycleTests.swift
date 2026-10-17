@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import ApplicationServices
 import Foundation
@@ -115,6 +115,7 @@ final class WindowAdmissionIdentityLifecycleTests: XCTestCase {
     func testExplicitStaleRetirementRemovesNiriLayoutNode() async throws {
         let controller = WindowAdmissionTestSupport.controller()
         controller.niriLayoutHandler.enableNiriLayout()
+        let engine = try XCTUnwrap(controller.niriEngine)
         let workspaceId = try XCTUnwrap(
             controller.workspaceManager.workspaceId(for: "1", createIfMissing: true)
         )
@@ -126,20 +127,22 @@ final class WindowAdmissionIdentityLifecycleTests: XCTestCase {
             to: workspaceId
         )
         controller.workspaceManager.withEngineMutationScope {
-            _ = controller.niriEngine?.addWindow(token: token, to: workspaceId, afterSelection: nil)
+            _ = engine.addWindow(token: token, to: workspaceId, afterSelection: nil)
         }
+        _ = try XCTUnwrap(engine.findNode(for: token, in: workspaceId))
         let entry = try XCTUnwrap(controller.workspaceManager.entry(for: token))
 
         controller.axEventHandler.discardStaleManagedWindowIncarnation(entry)
         await WindowAdmissionTestSupport.drainLayoutRefreshes(controller)
 
         XCTAssertNil(controller.workspaceManager.entry(for: token))
-        XCTAssertNil(controller.niriEngine?.findNode(for: token, in: workspaceId))
+        XCTAssertNil(engine.findNode(for: token, in: workspaceId))
     }
 
     func testExplicitStaleRetirementRemovesDwindleLayoutNode() async throws {
         let controller = WindowAdmissionTestSupport.controller()
         controller.dwindleLayoutHandler.enableDwindleLayout()
+        let engine = try XCTUnwrap(controller.dwindleEngine)
         let workspaceId = try XCTUnwrap(
             WindowAdmissionTestSupport.workspace(
                 named: "98",
@@ -155,24 +158,26 @@ final class WindowAdmissionIdentityLifecycleTests: XCTestCase {
             to: workspaceId
         )
         controller.workspaceManager.withEngineMutationScope {
-            _ = controller.dwindleEngine?.addWindow(
+            _ = engine.addWindow(
                 token: token,
                 to: workspaceId,
                 activeWindowFrame: nil
             )
         }
+        _ = try XCTUnwrap(engine.findNode(for: token, in: workspaceId))
         let entry = try XCTUnwrap(controller.workspaceManager.entry(for: token))
 
         controller.axEventHandler.discardStaleManagedWindowIncarnation(entry)
         await WindowAdmissionTestSupport.drainLayoutRefreshes(controller)
 
         XCTAssertNil(controller.workspaceManager.entry(for: token))
-        XCTAssertFalse(controller.dwindleEngine?.containsWindow(token, in: workspaceId) == true)
+        XCTAssertFalse(engine.containsWindow(token, in: workspaceId))
     }
 
     func testAuthoritativeRescanRetirementCancelsRebindAndRemovesNiriIdentity() async throws {
         let controller = WindowAdmissionTestSupport.controller()
         controller.niriLayoutHandler.enableNiriLayout()
+        let engine = try XCTUnwrap(controller.niriEngine)
         let workspaceId = try XCTUnwrap(
             controller.workspaceManager.workspaceId(for: "1", createIfMissing: true)
         )
@@ -188,8 +193,9 @@ final class WindowAdmissionIdentityLifecycleTests: XCTestCase {
             to: workspaceId
         )
         controller.workspaceManager.withEngineMutationScope {
-            _ = controller.niriEngine?.addWindow(token: token, to: workspaceId, afterSelection: nil)
+            _ = engine.addWindow(token: token, to: workspaceId, afterSelection: nil)
         }
+        _ = try XCTUnwrap(engine.findNode(for: token, in: workspaceId))
         let aliases = FullRescanWindowIdentityAliases(
             pids: [oldPID, newPID],
             axRefs: [oldAXRef, newAXRef]
@@ -215,12 +221,13 @@ final class WindowAdmissionIdentityLifecycleTests: XCTestCase {
         XCTAssertNil(controller.axEventHandler.admissionRetryStateByWindowId[UInt32(windowId)])
         XCTAssertNil(controller.axEventHandler.identityAliasesByWindowId[windowId])
         XCTAssertNil(controller.workspaceManager.entry(for: token))
-        XCTAssertNil(controller.niriEngine?.findNode(for: token, in: workspaceId))
+        XCTAssertNil(engine.findNode(for: token, in: workspaceId))
     }
 
     func testAuthoritativeRescanRetirementRemovesDwindleIdentity() async throws {
         let controller = WindowAdmissionTestSupport.controller()
         controller.dwindleLayoutHandler.enableDwindleLayout()
+        let engine = try XCTUnwrap(controller.dwindleEngine)
         let workspaceId = try XCTUnwrap(
             WindowAdmissionTestSupport.workspace(
                 named: "99",
@@ -231,8 +238,9 @@ final class WindowAdmissionIdentityLifecycleTests: XCTestCase {
         let token = WindowToken(pid: 467_976, windowId: 467_977)
         _ = WindowAdmissionTestSupport.track(token, in: workspaceId, controller: controller)
         controller.workspaceManager.withEngineMutationScope {
-            _ = controller.dwindleEngine?.addWindow(token: token, to: workspaceId, activeWindowFrame: nil)
+            _ = engine.addWindow(token: token, to: workspaceId, activeWindowFrame: nil)
         }
+        _ = try XCTUnwrap(engine.findNode(for: token, in: workspaceId))
         XCTAssertTrue(
             controller.layoutRefreshController.confirmedMissingEntries(keys: [], requiredConsecutiveMisses: 2).isEmpty
         )
@@ -244,7 +252,7 @@ final class WindowAdmissionIdentityLifecycleTests: XCTestCase {
         await WindowAdmissionTestSupport.drainLayoutRefreshes(controller)
 
         XCTAssertNil(controller.workspaceManager.entry(for: token))
-        XCTAssertFalse(controller.dwindleEngine?.containsWindow(token, in: workspaceId) == true)
+        XCTAssertFalse(engine.containsWindow(token, in: workspaceId))
     }
 
     func testDecisionRejectionExternalizesNativeFocusedWindowWithoutManagedRecovery() async throws {

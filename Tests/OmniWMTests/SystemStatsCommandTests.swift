@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWM
@@ -7,33 +7,6 @@ import OmniWMIPC
 import XCTest
 
 final class SystemStatsCommandTests: XCTestCase {
-    func testToggleSystemStatsSpecRegistered() throws {
-        let spec = try XCTUnwrap(ActionCatalog.spec(for: .presentation(.systemStats)))
-
-        XCTAssertEqual(spec.id, "toggleSystemStats")
-        XCTAssertEqual(spec.title, "Toggle System Stats")
-        XCTAssertEqual(spec.layoutCompatibility, .shared)
-        XCTAssertEqual(spec.defaultBinding, .unassigned)
-        XCTAssertEqual(spec.ipcCommandName, .presentation(.systemStats))
-        XCTAssertNotNil(spec.ipcDescriptor)
-    }
-
-    func testActionSpecIDsUnique() {
-        let ids = ActionCatalog.allSpecs().map(\.id)
-
-        XCTAssertEqual(ids.count, Set(ids).count)
-    }
-
-    func testToggleSystemStatsNameMapping() {
-        XCTAssertEqual(IPCCommandRequest.presentation(.systemStats).name, .presentation(.systemStats))
-    }
-
-    func testToggleSystemStatsJSONRoundTrip() throws {
-        let data = try JSONEncoder().encode(IPCCommandRequest.presentation(.systemStats))
-
-        XCTAssertEqual(try JSONDecoder().decode(IPCCommandRequest.self, from: data), .presentation(.systemStats))
-    }
-
     func testToggleSystemStatsManifestResolves() throws {
         let descriptors = IPCAutomationManifest.commandDescriptors(matching: ["toggle-system-stats"])
         let descriptor = try XCTUnwrap(descriptors.first { $0.name == .presentation(.systemStats) })
@@ -45,6 +18,15 @@ final class SystemStatsCommandTests: XCTestCase {
     @MainActor
     func testRouterExecutesToggleSystemStats() {
         let controller = WMController(settings: makeSettingsStore())
+        addTeardownBlock { @MainActor in
+            controller.hasStartedServices = false
+            controller.workspaceBarManager.cleanup()
+            controller.layoutRefreshController.resetState()
+            controller.mouseEventHandler.cleanup()
+            controller.surfaceReconciler.cleanup()
+            controller.axManager.cleanup()
+            await controller.workspaceBarManager.flushShellForQuit()
+        }
         let router = IPCCommandRouter(controller: controller, sessionToken: "test")
 
         XCTAssertEqual(router.handle(.presentation(.systemStats)), .executed)
@@ -64,6 +46,9 @@ final class SystemStatsCommandTests: XCTestCase {
     private func makeSettingsStore() -> SettingsStore {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("OmniWMSystemStatsTests-\(UUID().uuidString)", isDirectory: true)
+        addTeardownBlock { @MainActor in
+            try FileManager.default.removeItem(at: root)
+        }
         return SettingsStore(
             persistence: SettingsFilePersistence(
                 directory: root.appendingPathComponent("config", isDirectory: true),

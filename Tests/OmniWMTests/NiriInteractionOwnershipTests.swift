@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import CoreGraphics
 @testable import OmniWM
@@ -354,34 +354,26 @@ final class NiriInteractionLifecycleTests: NiriInteractionTestCase {
         XCTAssertFalse(beginMove(engine, window: window, in: workspace))
     }
 
-    func testWorkspaceRemovalClearsMoveAndPermitsMoveInAnotherWorkspace() {
-        let engine = NiriLayoutEngine()
-        let workspaceA = WorkspaceDescriptor.ID()
-        let workspaceB = WorkspaceDescriptor.ID()
-        let source = addWindow(engine, pid: 1_005, to: workspaceA)
-        let next = addWindow(engine, pid: 1_006, to: workspaceB)
-        XCTAssertTrue(beginMove(engine, window: source, in: workspaceA))
-        XCTAssertFalse(beginMove(engine, window: next, in: workspaceB))
+    func testWorkspaceRemovalClearsInteractionAndPermitsAnotherWorkspace() {
+        for (resizing, sourcePID, nextPID) in [(false, 1_005, 1_006), (true, 1_007, 1_008)] {
+            let engine = NiriLayoutEngine()
+            let workspaceA = WorkspaceDescriptor.ID()
+            let workspaceB = WorkspaceDescriptor.ID()
+            let begin: (NiriWindow, WorkspaceDescriptor.ID) -> Bool = { window, workspace in
+                resizing
+                    ? self.beginResize(engine, window: window, in: workspace)
+                    : self.beginMove(engine, window: window, in: workspace)
+            }
+            let source = addWindow(engine, pid: pid_t(sourcePID), to: workspaceA)
+            let next = addWindow(engine, pid: pid_t(nextPID), to: workspaceB)
+            XCTAssertTrue(begin(source, workspaceA))
+            XCTAssertFalse(begin(next, workspaceB))
 
-        engine.removeWorkspaceState(workspaceA)
+            engine.removeWorkspaceState(workspaceA)
 
-        XCTAssertNil(engine.interactiveMove)
-        XCTAssertTrue(beginMove(engine, window: next, in: workspaceB))
-    }
-
-    func testWorkspaceRemovalClearsResizeAndPermitsResizeInAnotherWorkspace() {
-        let engine = NiriLayoutEngine()
-        let workspaceA = WorkspaceDescriptor.ID()
-        let workspaceB = WorkspaceDescriptor.ID()
-        let source = addWindow(engine, pid: 1_007, to: workspaceA)
-        let next = addWindow(engine, pid: 1_008, to: workspaceB)
-        XCTAssertTrue(beginResize(engine, window: source, in: workspaceA))
-        XCTAssertFalse(beginResize(engine, window: next, in: workspaceB))
-
-        engine.removeWorkspaceState(workspaceA)
-
-        XCTAssertNil(engine.interactiveResize)
-        XCTAssertTrue(beginResize(engine, window: next, in: workspaceB))
+            XCTAssertTrue(resizing ? engine.interactiveResize == nil : engine.interactiveMove == nil)
+            XCTAssertTrue(begin(next, workspaceB))
+        }
     }
 
     func testSimpleRemovalClearsOnlyMatchingMoveAndResizeSessions() {
@@ -426,96 +418,64 @@ final class NiriInteractionLifecycleTests: NiriInteractionTestCase {
         XCTAssertNil(resizeEngine.interactiveResize)
     }
 
-    func testWindowTransferClearsMatchingMoveSession() {
-        let engine = NiriLayoutEngine()
-        let workspaceA = WorkspaceDescriptor.ID()
-        let workspaceB = WorkspaceDescriptor.ID()
-        let source = addWindow(engine, pid: 1_015, to: workspaceA)
-        _ = addWindow(engine, pid: 1_015, windowId: 2, to: workspaceA, after: source)
-        XCTAssertTrue(beginMove(engine, window: source, in: workspaceA))
-        var sourceState = ViewportState()
-        var targetState = ViewportState()
+    func testWindowTransferClearsMatchingInteraction() {
+        for (resizing, sourcePID) in [(false, 1_015), (true, 1_016)] {
+            let engine = NiriLayoutEngine()
+            let workspaceA = WorkspaceDescriptor.ID()
+            let workspaceB = WorkspaceDescriptor.ID()
+            let begin: (NiriWindow, WorkspaceDescriptor.ID) -> Bool = { window, workspace in
+                resizing
+                    ? self.beginResize(engine, window: window, in: workspace)
+                    : self.beginMove(engine, window: window, in: workspace)
+            }
+            let source = addWindow(engine, pid: pid_t(sourcePID), to: workspaceA)
+            _ = addWindow(engine, pid: pid_t(sourcePID), windowId: 2, to: workspaceA, after: source)
+            XCTAssertTrue(begin(source, workspaceA))
+            var sourceState = ViewportState()
+            var targetState = ViewportState()
 
-        XCTAssertNotNil(
-            engine.moveWindowToWorkspace(
-                source,
-                from: workspaceA,
-                to: workspaceB,
-                sourceState: &sourceState,
-                targetState: &targetState
+            XCTAssertNotNil(
+                engine.moveWindowToWorkspace(
+                    source,
+                    from: workspaceA,
+                    to: workspaceB,
+                    sourceState: &sourceState,
+                    targetState: &targetState
+                )
             )
-        )
-        XCTAssertNil(engine.interactiveMove)
-        XCTAssertTrue(beginMove(engine, window: source, in: workspaceB))
+            XCTAssertTrue(resizing ? engine.interactiveResize == nil : engine.interactiveMove == nil)
+            XCTAssertTrue(begin(source, workspaceB))
+        }
     }
 
-    func testWindowTransferClearsMatchingResizeSession() {
-        let engine = NiriLayoutEngine()
-        let workspaceA = WorkspaceDescriptor.ID()
-        let workspaceB = WorkspaceDescriptor.ID()
-        let source = addWindow(engine, pid: 1_016, to: workspaceA)
-        _ = addWindow(engine, pid: 1_016, windowId: 2, to: workspaceA, after: source)
-        XCTAssertTrue(beginResize(engine, window: source, in: workspaceA))
-        var sourceState = ViewportState()
-        var targetState = ViewportState()
+    func testColumnTransferClearsMatchingInteraction() throws {
+        for (resizing, sourcePID) in [(false, 1_017), (true, 1_018)] {
+            let engine = NiriLayoutEngine()
+            let workspaceA = WorkspaceDescriptor.ID()
+            let workspaceB = WorkspaceDescriptor.ID()
+            let begin: (NiriWindow, WorkspaceDescriptor.ID) -> Bool = { window, workspace in
+                resizing
+                    ? self.beginResize(engine, window: window, in: workspace)
+                    : self.beginMove(engine, window: window, in: workspace)
+            }
+            let source = addWindow(engine, pid: pid_t(sourcePID), to: workspaceA)
+            let column = try XCTUnwrap(engine.columns(in: workspaceA).first)
+            XCTAssertTrue(begin(source, workspaceA))
+            var sourceState = ViewportState()
+            var targetState = ViewportState()
 
-        XCTAssertNotNil(
-            engine.moveWindowToWorkspace(
-                source,
-                from: workspaceA,
-                to: workspaceB,
-                sourceState: &sourceState,
-                targetState: &targetState
+            XCTAssertNotNil(
+                engine.moveColumnToWorkspace(
+                    column,
+                    from: workspaceA,
+                    to: NiriWorkspaceDestination(workspaceId: workspaceB, orientation: .horizontal),
+                    sourceState: &sourceState,
+                    targetState: &targetState
+                )
             )
-        )
-        XCTAssertNil(engine.interactiveResize)
-        XCTAssertTrue(beginResize(engine, window: source, in: workspaceB))
-    }
-
-    func testColumnTransferClearsMatchingMoveSession() throws {
-        let engine = NiriLayoutEngine()
-        let workspaceA = WorkspaceDescriptor.ID()
-        let workspaceB = WorkspaceDescriptor.ID()
-        let source = addWindow(engine, pid: 1_017, to: workspaceA)
-        let column = try XCTUnwrap(engine.columns(in: workspaceA).first)
-        XCTAssertTrue(beginMove(engine, window: source, in: workspaceA))
-        var sourceState = ViewportState()
-        var targetState = ViewportState()
-
-        XCTAssertNotNil(
-            engine.moveColumnToWorkspace(
-                column,
-                from: workspaceA,
-                to: NiriWorkspaceDestination(workspaceId: workspaceB, orientation: .horizontal),
-                sourceState: &sourceState,
-                targetState: &targetState
-            )
-        )
-        XCTAssertNil(engine.interactiveMove)
-        XCTAssertTrue(beginMove(engine, window: source, in: workspaceB))
-    }
-
-    func testColumnTransferClearsMatchingResizeSession() throws {
-        let engine = NiriLayoutEngine()
-        let workspaceA = WorkspaceDescriptor.ID()
-        let workspaceB = WorkspaceDescriptor.ID()
-        let source = addWindow(engine, pid: 1_018, to: workspaceA)
-        let column = try XCTUnwrap(engine.columns(in: workspaceA).first)
-        XCTAssertTrue(beginResize(engine, window: source, in: workspaceA))
-        var sourceState = ViewportState()
-        var targetState = ViewportState()
-
-        XCTAssertNotNil(
-            engine.moveColumnToWorkspace(
-                column,
-                from: workspaceA,
-                to: NiriWorkspaceDestination(workspaceId: workspaceB, orientation: .horizontal),
-                sourceState: &sourceState,
-                targetState: &targetState
-            )
-        )
-        XCTAssertNil(engine.interactiveResize)
-        XCTAssertTrue(beginResize(engine, window: source, in: workspaceB))
+            XCTAssertTrue(resizing ? engine.interactiveResize == nil : engine.interactiveMove == nil)
+            XCTAssertTrue(begin(source, workspaceB))
+        }
     }
 
     func testSuccessfulRestoreCancelsMoveAndResizeButNoOpRestorePreservesThem() {

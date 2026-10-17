@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import ApplicationServices
@@ -533,6 +533,12 @@ final class NativeFullscreenPlaceholderDiagnosticsTests: XCTestCase {
 
         XCTAssertTrue(synchronized.frameSynchronized)
         XCTAssertFalse(desynchronized.frameSynchronized)
+        let beyondOnePixel = panelDiagnostics(
+            skyLightCaptureExcluded: nil,
+            panelFrame: CGRect(x: 10, y: 10, width: 181.5, height: 64),
+            windowFrame: CGRect(x: 10, y: 10, width: 182.25, height: 64)
+        )
+        XCTAssertFalse(beyondOnePixel.frameSynchronized)
     }
 
     func testReportIdentifiesTemporaryEntryLoss() {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import ApplicationServices
 import Foundation
@@ -114,7 +114,7 @@ final class NiriFocusPreviousTests: XCTestCase {
         let fixture = try makeCommandFixture { pid, windowId, _ in
             frontedTokens.append(WindowToken(pid: pid, windowId: Int(windowId)))
         }
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceB)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceB)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         let result = fixture.controller.commandHandler.performCommand(.focusNavigation(.previous))
@@ -161,7 +161,7 @@ final class NiriFocusPreviousTests: XCTestCase {
         _ = fixture.controller.workspaceManager.setManagedFocus(fixture.nodeB.token, in: fixture.workspaceB)
         fixture.controller.commandHandler.frontmostAppPidProvider = { fixture.nodeB.token.pid }
         fixture.controller.commandHandler.frontmostFocusedWindowTokenProvider = { fixture.nodeB.token }
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceB)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceB)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         XCTAssertEqual(
@@ -198,6 +198,7 @@ final class NiriFocusPreviousTests: XCTestCase {
         controller.workspaceManager.applySettings()
         _ = controller.workspaceManager.focusWorkspace(named: "2")
         controller.niriLayoutHandler.enableNiriLayout()
+        controller.layoutRefreshController.resetState()
         let engine = try XCTUnwrap(controller.niriEngine)
         let tokenA = addWindow(pid: 447_011, windowId: 447_111, to: workspaceA, controller: controller)
         let tokenB = addWindow(pid: 447_012, windowId: 447_112, to: workspaceB, controller: controller)
@@ -217,7 +218,7 @@ final class NiriFocusPreviousTests: XCTestCase {
         )
         controller.commandHandler.frontmostAppPidProvider = { tokenA.pid }
         controller.commandHandler.frontmostFocusedWindowTokenProvider = { tokenA }
-        let blocker = blockLayoutRefresh(controller, workspaceId: workspaceB)
+        let blocker = try blockLayoutRefresh(controller, workspaceId: workspaceB)
         defer { unblockLayoutRefresh(controller, blocker: blocker) }
 
         XCTAssertEqual(controller.commandHandler.performCommand(.focusNavigation(.previous)), .executed)
@@ -298,7 +299,7 @@ final class NiriFocusPreviousTests: XCTestCase {
         let fixture = try makeCommandFixture { pid, windowId, _ in
             frontedTokens.append(WindowToken(pid: pid, windowId: Int(windowId)))
         }
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceB)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceB)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         XCTAssertEqual(
@@ -320,7 +321,7 @@ final class NiriFocusPreviousTests: XCTestCase {
         let fixture = try makeCommandFixture { pid, windowId, _ in
             frontedTokens.append(WindowToken(pid: pid, windowId: Int(windowId)))
         }
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceB)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceB)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
         let newerToken = addWindow(
             pid: 447_003,
@@ -388,6 +389,7 @@ final class NiriFocusPreviousTests: XCTestCase {
         XCTAssertTrue(controller.workspaceManager.setActiveWorkspace(unrelatedWorkspace, on: secondary.id))
         _ = controller.workspaceManager.setInteractionMonitor(primary.id)
         controller.niriLayoutHandler.enableNiriLayout()
+        controller.layoutRefreshController.resetState()
         let engine = try XCTUnwrap(controller.niriEngine)
         let tokenA = addWindow(pid: 447_011, windowId: 447_111, to: workspaceA, controller: controller)
         let tokenB = addWindow(pid: 447_012, windowId: 447_112, to: workspaceB, controller: controller)
@@ -401,7 +403,7 @@ final class NiriFocusPreviousTests: XCTestCase {
             in: workspaceB,
             onMonitor: primary.id
         )
-        let blocker = blockLayoutRefresh(controller, workspaceId: workspaceB)
+        let blocker = try blockLayoutRefresh(controller, workspaceId: workspaceB)
         defer { unblockLayoutRefresh(controller, blocker: blocker) }
 
         XCTAssertEqual(controller.commandHandler.performCommand(.focusNavigation(.previous)), .executed)
@@ -421,7 +423,7 @@ final class NiriFocusPreviousTests: XCTestCase {
         let fixture = try makeCommandFixture { pid, windowId, _ in
             frontedTokens.append(WindowToken(pid: pid, windowId: Int(windowId)))
         }
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceB)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceB)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
         let originalHandle = try XCTUnwrap(
             fixture.controller.workspaceManager.handle(for: fixture.tokenA)
@@ -493,6 +495,7 @@ final class NiriFocusPreviousTests: XCTestCase {
         )
         _ = controller.workspaceManager.focusWorkspace(named: "2")
         controller.niriLayoutHandler.enableNiriLayout()
+        controller.layoutRefreshController.resetState()
         let engine = try XCTUnwrap(controller.niriEngine)
         let tokenA = addWindow(pid: 447_001, windowId: 447_101, to: workspaceA, controller: controller)
         let tokenB = addWindow(pid: 447_002, windowId: 447_102, to: workspaceB, controller: controller)
@@ -548,29 +551,15 @@ final class NiriFocusPreviousTests: XCTestCase {
     private func blockLayoutRefresh(
         _ controller: WMController,
         workspaceId: WorkspaceDescriptor.ID
-    ) -> Task<Void, Never> {
-        let blocker = Task { @MainActor in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(1))
-            }
-        }
-        controller.layoutRefreshController.layoutState.activeRefreshTask = blocker
-        controller.layoutRefreshController.layoutState.activeRefresh = .init(
-            kind: .immediateRelayout,
-            reason: .workspaceTransition,
-            affectedWorkspaceIds: [workspaceId]
-        )
-        return blocker
+    ) throws -> Task<Void, Never> {
+        try LayoutRefreshTestSupport.block(controller, in: workspaceId, reason: .workspaceTransition)
     }
 
     private func unblockLayoutRefresh(
         _ controller: WMController,
         blocker: Task<Void, Never>
     ) {
-        blocker.cancel()
-        controller.layoutRefreshController.layoutState.activeRefreshTask = nil
-        controller.layoutRefreshController.layoutState.activeRefresh = nil
-        controller.layoutRefreshController.layoutState.pendingRefresh = nil
+        LayoutRefreshTestSupport.unblock(controller, blocker: blocker)
     }
 
     private func addWindow(

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWM
@@ -69,18 +69,22 @@ final class ScreenCapturePermissionMonitorTests: XCTestCase {
         XCTAssertEqual(preflight.calls, 1)
     }
 
-    func testInteractivePreviewReconcilesReuseCachedPermission() async {
+    func testInteractivePreviewReconcilesReuseCachedPermission() async throws {
         let preflight = Preflight()
         let monitor = makeMonitor(preflight)
         let driver = OverviewPreviewTestDriver()
         let capture = driver.makeCapture(hasCaptureAccess: { monitor.isGranted })
+        defer {
+            capture.clear()
+            driver.finish()
+        }
         let handle = WindowHandle(id: WindowToken(pid: 123, windowId: 456))
         let request = OverviewPreviewRequest(handle: handle, pixelWidth: 80, pixelHeight: 60)
 
         for _ in 0 ..< 60 {
             capture.reconcile(represented: [handle], visible: [request])
         }
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
 
         XCTAssertEqual(driver.streams.count, 1)
         XCTAssertEqual(preflight.calls, 1)

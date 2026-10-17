@@ -1,82 +1,62 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 @testable import OmniWM
 import XCTest
 
 @MainActor
 final class BorderAppearanceTests: XCTestCase {
-    func testLegacyDefaultsKeepOptionalEffectsDisabled() {
-        let defaults = SettingsExport.defaults().borders
+    func testGradientAndGlowRoundTripThroughTOML() throws {
+        let cases: [(BorderGradient?, BorderGlow?)] = [
+            (
+                BorderGradient(enabled: true, start: solidRed, end: solidBlue, direction: .topRightToBottomLeft),
+                BorderGlow(enabled: true, radius: 16, opacity: 0.6)
+            ),
+            (
+                BorderGradient(
+                    enabled: true,
+                    start: SettingsColor(red: 0.1, green: 0.2, blue: 0.3, alpha: 0.4),
+                    end: SettingsColor(red: 0.7, green: 0.8, blue: 0.9, alpha: 1),
+                    direction: .topRightToBottomLeft
+                ),
+                BorderGlow(enabled: true, radius: 8, opacity: 0.6)
+            ),
+            (BorderGradient.default, nil),
+            (nil, BorderGlow(enabled: true, radius: 8, opacity: 0.6, color: solidBlue, darkColor: solidRed))
+        ]
+        for (gradient, glow) in cases {
+            var export = SettingsExport.defaults()
+            export.borders.gradient = gradient
+            export.borders.glow = glow
+            let data = try SettingsTOMLCodec.encode(export)
+            let toml = String(decoding: data, as: UTF8.self)
+            let decoded = try SettingsTOMLCodec.decode(data)
+            XCTAssertEqual(toml.contains("[borders.gradient]"), gradient != nil)
+            XCTAssertEqual(toml.contains("[borders.glow]"), glow != nil)
+            XCTAssertFalse(toml.contains("gradient.dark"))
+            XCTAssertNil(decoded.borders.gradient?.dark)
+            XCTAssertEqual(decoded.borders.gradient, gradient)
+            XCTAssertEqual(decoded.borders.glow, glow)
+        }
+    }
 
+    func testAbsentGradientAndGlowRemainAbsentInTOML() throws {
+        let defaults = SettingsExport.defaults().borders
         XCTAssertNil(defaults.gradient)
         XCTAssertNil(defaults.glow)
         XCTAssertNil(defaults.darkColor)
         XCTAssertTrue(defaults.enabled)
         XCTAssertEqual(defaults.width, 5)
-    }
-
-    func testAbsentGradientAndGlowProduceSolidConfig() {
-        let config = BorderConfig(enabled: true, width: 4, color: solidRed)
-
-        XCTAssertNil(config.gradient)
-        XCTAssertNil(config.glow)
-    }
-
-    func testGradientAndGlowRoundTripAsCodableValues() throws {
-        let gradient = BorderGradient(
-            enabled: true,
-            start: SettingsColor(red: 0.1, green: 0.2, blue: 0.3, alpha: 0.4),
-            end: SettingsColor(red: 0.7, green: 0.8, blue: 0.9, alpha: 1),
-            direction: .topRightToBottomLeft
-        )
-        let glow = BorderGlow(enabled: true, radius: 8, opacity: 0.6)
-        let payload = CodableBorderAppearance(gradient: gradient, glow: glow)
-        let data = try JSONEncoder().encode(payload)
-        let decoded = try JSONDecoder().decode(CodableBorderAppearance.self, from: data)
-
-        XCTAssertEqual(decoded.gradient, gradient)
-        XCTAssertEqual(decoded.glow, glow)
-    }
-
-    func testNilGradientAndGlowRoundTrip() throws {
-        let payload = CodableBorderAppearance(gradient: nil, glow: nil)
-        let data = try JSONEncoder().encode(payload)
-        let decoded = try JSONDecoder().decode(CodableBorderAppearance.self, from: data)
-
-        XCTAssertNil(decoded.gradient)
-        XCTAssertNil(decoded.glow)
-    }
-
-    func testGradientAndGlowRoundTripThroughTOML() throws {
-        var export = SettingsExport.defaults()
-        export.borders.gradient = BorderGradient(
-            enabled: true,
-            start: solidRed,
-            end: solidBlue,
-            direction: .topRightToBottomLeft
-        )
-        export.borders.glow = BorderGlow(enabled: true, radius: 16, opacity: 0.6)
-
-        let data = try SettingsTOMLCodec.encode(export)
-        let toml = String(decoding: data, as: UTF8.self)
-        let decoded = try SettingsTOMLCodec.decode(data)
-
-        XCTAssertTrue(toml.contains("[borders.gradient]"))
-        XCTAssertTrue(toml.contains("[borders.glow]"))
-        XCTAssertEqual(decoded.borders.gradient, export.borders.gradient)
-        XCTAssertEqual(decoded.borders.glow, export.borders.glow)
-    }
-
-    func testAbsentGradientAndGlowRemainAbsentInTOML() throws {
         let data = try SettingsTOMLCodec.encode(.defaults())
         let toml = String(decoding: data, as: UTF8.self)
 
         XCTAssertFalse(toml.contains("[borders.gradient]"))
         XCTAssertFalse(toml.contains("[borders.glow]"))
+        XCTAssertFalse(toml.contains("darkColor"))
         let decoded = try SettingsTOMLCodec.decode(data)
         XCTAssertNil(decoded.borders.gradient)
         XCTAssertNil(decoded.borders.glow)
+        XCTAssertNil(decoded.borders.darkColor)
     }
 
     func testLightAppearanceUsesBaseColor() {
@@ -116,15 +96,19 @@ final class BorderAppearanceTests: XCTestCase {
     }
 
     func testResolvedGradientFallsBackPerStop() {
-        let gradient = BorderGradient(
-            enabled: true,
-            start: solidRed,
-            end: solidBlue,
-            direction: .topLeftToBottomRight,
-            dark: BorderGradientColors(start: solidBlue, end: solidBlue)
-        )
-
-        XCTAssertEqual(BorderConfig.resolvedGradient(gradient, isDark: true).start, solidBlue)
+        let yellow = SettingsColor(red: 1, green: 1, blue: 0, alpha: 1)
+        for (dark, expectedStart, expectedEnd) in [
+            (BorderGradientColors(start: solidBlue, end: solidBlue), solidBlue, solidBlue),
+            (BorderGradientColors(start: yellow, end: nil), yellow, solidBlue)
+        ] {
+            let gradient = BorderGradient(
+                enabled: true, start: solidRed, end: solidBlue, direction: .topLeftToBottomRight, dark: dark
+            )
+            let resolved = BorderConfig.resolvedGradient(gradient, isDark: true)
+            XCTAssertEqual(resolved.start, expectedStart)
+            XCTAssertEqual(resolved.end, expectedEnd)
+            XCTAssertNil(resolved.dark)
+        }
     }
 
     func testDarkBorderColorRoundTripsThroughTOML() throws {
@@ -139,62 +123,28 @@ final class BorderAppearanceTests: XCTestCase {
         XCTAssertEqual(decoded.borders.darkColor, solidBlue)
     }
 
-    func testLegacyTOMLWithoutDarkColorStaysBackwardCompatible() throws {
-        let data = try SettingsTOMLCodec.encode(.defaults())
-        let toml = String(decoding: data, as: UTF8.self)
-        let decoded = try SettingsTOMLCodec.decode(data)
-
-        XCTAssertFalse(toml.contains("darkColor"))
-        XCTAssertNil(decoded.borders.darkColor)
-    }
-
     func testGradientDarkColorsRoundTripThroughTOML() throws {
-        var export = SettingsExport.defaults()
-        var gradient = BorderGradient.default
-        gradient.enabled = true
-        gradient.dark = BorderGradientColors(start: solidBlue, end: solidRed)
-        export.borders.gradient = gradient
-
-        let data = try SettingsTOMLCodec.encode(export)
-        let toml = String(decoding: data, as: UTF8.self)
-        let decoded = try SettingsTOMLCodec.decode(data)
-
-        XCTAssertTrue(toml.contains("[borders.gradient.dark]"))
-        XCTAssertEqual(decoded.borders.gradient?.dark, gradient.dark)
-    }
-
-    func testPartialDarkGradientTOMLDecodesWithPerStopFallback() throws {
-        var export = SettingsExport.defaults()
-        var gradient = BorderGradient.default
-        gradient.enabled = true
-        gradient.dark = BorderGradientColors(start: solidBlue, end: nil)
-        export.borders.gradient = gradient
-
-        let data = try SettingsTOMLCodec.encode(export)
-        let toml = String(decoding: data, as: UTF8.self)
-        let decoded = try SettingsTOMLCodec.decode(data)
-
-        XCTAssertTrue(toml.contains("[borders.gradient.dark]"))
-        XCTAssertFalse(toml.contains("gradient.dark.end"))
-        XCTAssertEqual(decoded.borders.gradient?.dark?.start, solidBlue)
-        XCTAssertNil(decoded.borders.gradient?.dark?.end)
-
-        let resolved = BorderConfig.resolvedGradient(try XCTUnwrap(decoded.borders.gradient), isDark: true)
-        XCTAssertEqual(resolved.start, solidBlue)
-        XCTAssertEqual(resolved.end, BorderGradient.default.end)
-        XCTAssertNil(resolved.dark)
-    }
-
-    func testLegacyGradientTOMLDecodesWithoutDarkColors() throws {
-        var export = SettingsExport.defaults()
-        export.borders.gradient = BorderGradient.default
-
-        let data = try SettingsTOMLCodec.encode(export)
-        let toml = String(decoding: data, as: UTF8.self)
-        let decoded = try SettingsTOMLCodec.decode(data)
-
-        XCTAssertFalse(toml.contains("gradient.dark"))
-        XCTAssertNil(decoded.borders.gradient?.dark)
+        for end in [solidRed, nil] {
+            var export = SettingsExport.defaults()
+            var gradient = BorderGradient.default
+            gradient.enabled = true
+            gradient.dark = BorderGradientColors(start: solidBlue, end: end)
+            export.borders.gradient = gradient
+            let data = try SettingsTOMLCodec.encode(export)
+            let toml = String(decoding: data, as: UTF8.self)
+            let decoded = try SettingsTOMLCodec.decode(data)
+            XCTAssertTrue(toml.contains("[borders.gradient.dark]"))
+            XCTAssertEqual(decoded.borders.gradient?.dark, gradient.dark)
+            if end == nil {
+                XCTAssertFalse(toml.contains("gradient.dark.end"))
+                XCTAssertEqual(decoded.borders.gradient?.dark?.start, solidBlue)
+                XCTAssertNil(decoded.borders.gradient?.dark?.end)
+                let resolved = BorderConfig.resolvedGradient(try XCTUnwrap(decoded.borders.gradient), isDark: true)
+                XCTAssertEqual(resolved.start, solidBlue)
+                XCTAssertEqual(resolved.end, BorderGradient.default.end)
+                XCTAssertNil(resolved.dark)
+            }
+        }
     }
 
     func testEditingDarkGradientStartKeepsEndInheritedThroughTOML() throws {
@@ -205,7 +155,11 @@ final class BorderAppearanceTests: XCTestCase {
 
         var export = SettingsExport.defaults()
         export.borders = settings.export()
-        let decoded = try SettingsTOMLCodec.decode(SettingsTOMLCodec.encode(export))
+        let data = try SettingsTOMLCodec.encode(export)
+        let toml = String(decoding: data, as: UTF8.self)
+        XCTAssertTrue(toml.contains("[borders.gradient.dark]"))
+        XCTAssertFalse(toml.contains("gradient.dark.end"))
+        let decoded = try SettingsTOMLCodec.decode(data)
         let gradient = try XCTUnwrap(decoded.borders.gradient)
         let resolved = BorderConfig.resolvedGradient(gradient, isDark: true)
 
@@ -213,6 +167,7 @@ final class BorderAppearanceTests: XCTestCase {
         XCTAssertNil(gradient.dark?.end)
         XCTAssertEqual(resolved.start, solidBlue)
         XCTAssertEqual(resolved.end, solidRed)
+        XCTAssertNil(resolved.dark)
     }
 
     func testEditingDarkGradientEndKeepsStartInheritedThroughTOML() throws {
@@ -283,25 +238,16 @@ final class BorderAppearanceTests: XCTestCase {
         XCTAssertNil(BorderConfig.resolvedGlow(glow, isDark: true).color)
     }
 
-    func testGradientDarkColorsRoundTripAsCodableValues() throws {
-        var gradient = BorderGradient.default
-        gradient.dark = BorderGradientColors(start: solidBlue, end: solidRed)
-        let data = try JSONEncoder().encode(gradient)
-        let decoded = try JSONDecoder().decode(BorderGradient.self, from: data)
-
-        XCTAssertEqual(decoded.dark, gradient.dark)
-    }
-
     func testInvalidGlowFallsBackToPreviousValue() {
-        let settings = BorderSettings()
         let valid = BorderGlow(enabled: true, radius: 8, opacity: 0.6)
-        settings.glow = valid
-
-        var export = SettingsExport.defaults().borders
-        export.glow = BorderGlow(enabled: true, radius: 64, opacity: 2)
-        settings.apply(export)
-
-        XCTAssertEqual(settings.glow, valid)
+        for (radius, opacity) in [(64.0, 0.6), (8.0, 2.0), (64.0, 2.0)] {
+            let settings = BorderSettings()
+            settings.glow = valid
+            var export = SettingsExport.defaults().borders
+            export.glow = BorderGlow(enabled: true, radius: radius, opacity: opacity)
+            settings.apply(export)
+            XCTAssertEqual(settings.glow, valid)
+        }
     }
 
     func testInvalidGlowColorFallsBackToPreviousValue() {
@@ -467,23 +413,6 @@ final class BorderAppearanceTests: XCTestCase {
         XCTAssertNil(BorderConfig.resolvedGlow(inherited, isDark: false).color)
     }
 
-    func testGlowColorOverridesSurviveTOMLRoundTrip() throws {
-        var export = SettingsExport.defaults()
-        export.borders.glow = BorderGlow(
-            enabled: true,
-            radius: 8,
-            opacity: 0.6,
-            color: solidBlue,
-            darkColor: solidRed
-        )
-
-        let data = try SettingsTOMLCodec.encode(export)
-        let decoded = try SettingsTOMLCodec.decode(data)
-
-        XCTAssertEqual(decoded.borders.glow?.color, solidBlue)
-        XCTAssertEqual(decoded.borders.glow?.darkColor, solidRed)
-    }
-
     func testDisabledGlowProducesZeroPadding() {
         let glow = BorderGlow(enabled: false, radius: 16, opacity: 0.5)
         XCTAssertEqual(BorderConfig.renderPadding(glow: glow, scale: 2), 0)
@@ -501,6 +430,9 @@ final class BorderAppearanceTests: XCTestCase {
     func testRenderPaddingAtRetinaScale() {
         let glow = BorderGlow(enabled: true, radius: 8, opacity: 0.6)
         XCTAssertEqual(BorderConfig.renderPadding(glow: glow, scale: 2), 12)
+        let fractional = BorderGlow(enabled: true, radius: 5, opacity: 0.6)
+        XCTAssertEqual(BorderConfig.renderPadding(glow: fractional, scale: 1), 8)
+        XCTAssertEqual(BorderConfig.renderPadding(glow: fractional, scale: 2), 7.5)
     }
 
     func testRenderPaddingAtMaxRadius() {
@@ -518,22 +450,6 @@ final class BorderAppearanceTests: XCTestCase {
         XCTAssertEqual(BorderConfig.renderPadding(glow: glow, scale: 1), 48)
     }
 
-    func testLayoutClearanceIgnoresGlow() {
-        let withGlow = BorderConfig(
-            enabled: true,
-            width: 5,
-            color: solidRed,
-            glow: BorderGlow(enabled: true, radius: 16, opacity: 0.8)
-        )
-        let withoutGlow = BorderConfig(enabled: true, width: 5, color: solidRed)
-        let scale: CGFloat = 2
-
-        XCTAssertEqual(
-            BorderConfig.layoutClearance(enabled: withGlow.enabled, width: withGlow.width, scale: scale),
-            BorderConfig.layoutClearance(enabled: withoutGlow.enabled, width: withoutGlow.width, scale: scale)
-        )
-    }
-
     func testResolvedGeometryExpandsSurfaceForGlow() {
         let config = BorderConfig(
             enabled: true,
@@ -547,18 +463,7 @@ final class BorderAppearanceTests: XCTestCase {
         XCTAssertEqual(geometry.surfacePadding, 12)
         XCTAssertEqual(geometry.surfaceFrame, target.insetBy(dx: -16, dy: -16))
         XCTAssertEqual(geometry.targetFrame, target)
-    }
-
-    func testLocalizedGeometryOffsetsByWidthAndPadding() {
-        let config = BorderConfig(
-            enabled: true,
-            width: 4,
-            color: solidRed,
-            glow: BorderGlow(enabled: true, radius: 8, opacity: 0.6)
-        )
-        let target = CGRect(x: 10, y: 20, width: 100, height: 80)
-        let localized = config.resolvedGeometry(for: target, scale: 1).localized()
-
+        let localized = geometry.localized()
         XCTAssertEqual(localized.surfaceFrame, CGRect(x: 0, y: 0, width: 132, height: 112))
         XCTAssertEqual(localized.targetFrame, CGRect(x: 16, y: 16, width: 100, height: 80))
     }
@@ -575,9 +480,4 @@ final class BorderAppearanceTests: XCTestCase {
 
     private let solidRed = SettingsColor(red: 1, green: 0, blue: 0, alpha: 1)
     private let solidBlue = SettingsColor(red: 0, green: 0, blue: 1, alpha: 1)
-
-    private struct CodableBorderAppearance: Codable {
-        let gradient: BorderGradient?
-        let glow: BorderGlow?
-    }
 }

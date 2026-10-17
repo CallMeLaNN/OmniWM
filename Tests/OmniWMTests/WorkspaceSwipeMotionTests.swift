@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 @testable import OmniWM
 import XCTest
@@ -100,25 +100,20 @@ final class WorkspaceSwipeMotionTests: XCTestCase {
         XCTAssertEqual(motion.progress(at: 5), 1)
     }
 
-    func testHeldReleaseDropsOldVelocityAndUsesCurrentPosition() {
-        let motion = WorkspaceSwipeMotion(cumulativeUnits: 0, timestamp: 1)
-        motion.update(cumulativeUnits: 60, timestamp: 1.04)
-
-        motion.release(timestamp: 1.30, allowFlick: true, animationTime: 1.30)
-
-        XCTAssertEqual(motion.target, 0)
-        XCTAssertEqual(motion.velocity(at: 1.30), 0, accuracy: 0.000001)
-        XCTAssertLessThan(motion.progress(at: 1.40), 0.2)
-    }
-
-    func testHeldReleaseBeyondHalfwayCommitsWithoutVelocity() {
-        let motion = WorkspaceSwipeMotion(cumulativeUnits: 0, timestamp: 1)
-        motion.update(cumulativeUnits: 180, timestamp: 1.1)
-
-        motion.release(timestamp: 1.4, allowFlick: true, animationTime: 1.4)
-
-        XCTAssertEqual(motion.target, 1)
-        XCTAssertEqual(motion.velocity(at: 1.4), 0, accuracy: 0.000001)
+    func testHeldReleaseDropsVelocityOnBothSidesOfCommitThreshold() {
+        let cases: [(units: Double, update: TimeInterval, release: TimeInterval, target: Double)] = [
+            (60, 1.04, 1.30, 0), (180, 1.10, 1.40, 1)
+        ]
+        for entry in cases {
+            let motion = WorkspaceSwipeMotion(cumulativeUnits: 0, timestamp: 1)
+            motion.update(cumulativeUnits: entry.units, timestamp: entry.update)
+            motion.release(timestamp: entry.release, allowFlick: true, animationTime: entry.release)
+            XCTAssertEqual(motion.target, entry.target)
+            XCTAssertEqual(motion.velocity(at: entry.release), 0, accuracy: 0.000001)
+            if entry.target == 0 {
+                XCTAssertLessThan(motion.progress(at: 1.40), 0.2)
+            }
+        }
     }
 
     func testDisallowedFlickCancelsRegardlessOfProgress() {

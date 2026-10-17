@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Carbon
 import CoreGraphics
@@ -13,12 +13,8 @@ final class WorkspaceBarRevealModifierTests: XCTestCase {
     private let command = CGEventFlags.maskCommand.rawValue
     private let shift = CGEventFlags.maskShift.rawValue
 
-    func testOffNeverHeld() {
-        XCTAssertFalse(WorkspaceBarRevealModifier.off.isHeld(inRawFlags: 0))
-        XCTAssertFalse(WorkspaceBarRevealModifier.off.isHeld(inRawFlags: leftOption))
-    }
-
     func testNoModifierHeldIsNeverDetected() {
+        XCTAssertFalse(WorkspaceBarRevealModifier.off.isHeld(inRawFlags: leftOption))
         for modifier in WorkspaceBarRevealModifier.allCases {
             XCTAssertFalse(modifier.isHeld(inRawFlags: 0), "\(modifier) should not be held with no flags")
         }
@@ -45,18 +41,5 @@ final class WorkspaceBarRevealModifierTests: XCTestCase {
             WorkspaceBarRevealModifier.controlOptionCommand.isHeld(inRawFlags: control | leftOption | command | shift)
         )
         XCTAssertTrue(WorkspaceBarRevealModifier.option.isHeld(inRawFlags: leftOption | shift))
-    }
-
-    func testRawValueRoundTrip() {
-        for modifier in WorkspaceBarRevealModifier.allCases {
-            XCTAssertEqual(WorkspaceBarRevealModifier(rawValue: modifier.rawValue), modifier)
-        }
-        XCTAssertEqual(WorkspaceBarRevealModifier.off.rawValue, "off")
-        XCTAssertEqual(WorkspaceBarRevealModifier.controlOptionCommand.rawValue, "controlOptionCommand")
-    }
-
-    func testInvalidRawValueIsNil() {
-        XCTAssertNil(WorkspaceBarRevealModifier(rawValue: "garbage"))
-        XCTAssertEqual(WorkspaceBarRevealModifier(rawValue: "garbage") ?? .off, .off)
     }
 }

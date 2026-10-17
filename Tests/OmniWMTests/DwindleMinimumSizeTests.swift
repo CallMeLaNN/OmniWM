@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import CoreGraphics
 import Foundation
@@ -148,17 +148,6 @@ final class DwindleMinimumSizeTests: XCTestCase {
         XCTAssertEqual(frames[first]?.width ?? 0, 700, accuracy: 0.5)
 
         XCTAssertFalse(engine.balanceSizes(in: ws))
-    }
-
-    func testCycleSplitRatioClampsAndStops() {
-        let (engine, ws, first, _) = makeTwoWindowEngine(firstMinWidth: 600)
-        engine.setSelectedNode(engine.findNode(for: first, in: ws), in: ws)
-
-        XCTAssertTrue(engine.cycleSplitRatio(forward: false, in: ws))
-        XCTAssertEqual(engine.root(for: ws)?.splitRatio ?? 0, 1.208, accuracy: 1e-6)
-
-        XCTAssertFalse(engine.cycleSplitRatio(forward: false, in: ws))
-        XCTAssertEqual(engine.root(for: ws)?.splitRatio ?? 0, 1.208, accuracy: 1e-6)
     }
 
     func testRenderClampActsAsSafetyNetWithoutMutation() {

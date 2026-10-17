@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWM
@@ -7,60 +7,36 @@ import XCTest
 
 @MainActor
 final class ClipboardHistoryStoreTests: XCTestCase {
-    func testSupersededSaveOnlyPersistsReplacement() async throws {
-        let sleeper = ClipboardSaveSleeper()
-        let (store, fileURL) = try makeStore(sleeper: sleeper)
-        var requests = sleeper.requests.makeAsyncIterator()
+    func testSupersededSavePreservesReplacementForBothSleepOutcomes() async throws {
+        for oldSleepThrows in [true, false] {
+            let sleeper = ClipboardSaveSleeper()
+            let (store, fileURL) = try makeStore(sleeper: sleeper)
+            var requests = sleeper.requests.makeAsyncIterator()
 
-        _ = await store.handleCapture(capture("first"))
-        let firstDuration = await requests.next()
-        XCTAssertEqual(firstDuration, .milliseconds(250))
-        let firstTask = await store.saveTask
-        let obsoleteSave = try XCTUnwrap(firstTask)
+            _ = await store.handleCapture(capture("first"))
+            let firstDuration = await requests.next()
+            XCTAssertEqual(firstDuration, .milliseconds(250))
+            let firstTask = await store.saveTask
+            let obsoleteSave = try XCTUnwrap(firstTask)
 
-        _ = await store.handleCapture(capture("second"))
-        let secondDuration = await requests.next()
-        XCTAssertEqual(secondDuration, .milliseconds(250))
-        let secondTask = await store.saveTask
-        let replacementSave = try XCTUnwrap(secondTask)
+            _ = await store.handleCapture(capture("second"))
+            let secondDuration = await requests.next()
+            XCTAssertEqual(secondDuration, .milliseconds(250))
+            let secondTask = await store.saveTask
+            let replacementSave = try XCTUnwrap(secondTask)
 
-        XCTAssertTrue(obsoleteSave.isCancelled)
-        await sleeper.resumeNext(throwing: CancellationError())
-        await obsoleteSave.value
-        XCTAssertFalse(FileManager.default.fileExists(atPath: fileURL.path))
-        XCTAssertFalse(replacementSave.isCancelled)
+            XCTAssertTrue(obsoleteSave.isCancelled)
+            await sleeper.resumeNext(throwing: oldSleepThrows ? CancellationError() : nil)
+            await obsoleteSave.value
+            XCTAssertFalse(FileManager.default.fileExists(atPath: fileURL.path))
+            XCTAssertFalse(replacementSave.isCancelled)
 
-        await sleeper.resumeNext()
-        await replacementSave.value
-        XCTAssertEqual(try persistedTitles(at: fileURL), ["second", "first"])
-        let pendingSave = await store.saveTask
-        XCTAssertNil(pendingSave)
-    }
-
-    func testCancelledSuccessfulSleepDoesNotFlushOrCancelReplacement() async throws {
-        let sleeper = ClipboardSaveSleeper()
-        let (store, fileURL) = try makeStore(sleeper: sleeper)
-        var requests = sleeper.requests.makeAsyncIterator()
-
-        _ = await store.handleCapture(capture("first"))
-        _ = await requests.next()
-        let firstTask = await store.saveTask
-        let obsoleteSave = try XCTUnwrap(firstTask)
-
-        _ = await store.handleCapture(capture("second"))
-        _ = await requests.next()
-        let secondTask = await store.saveTask
-        let replacementSave = try XCTUnwrap(secondTask)
-
-        XCTAssertTrue(obsoleteSave.isCancelled)
-        await sleeper.resumeNext()
-        await obsoleteSave.value
-        XCTAssertFalse(FileManager.default.fileExists(atPath: fileURL.path))
-        XCTAssertFalse(replacementSave.isCancelled)
-
-        await sleeper.resumeNext()
-        await replacementSave.value
-        XCTAssertEqual(try persistedTitles(at: fileURL), ["second", "first"])
+            await sleeper.resumeNext()
+            await replacementSave.value
+            XCTAssertEqual(try persistedTitles(at: fileURL), ["second", "first"])
+            let pendingSave = await store.saveTask
+            XCTAssertNil(pendingSave)
+        }
     }
 
     func testExplicitFlushCancelsPendingSaveWithoutLaterWrite() async throws {

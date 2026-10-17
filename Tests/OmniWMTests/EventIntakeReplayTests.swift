@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import ApplicationServices
 import CoreGraphics
@@ -148,6 +148,21 @@ final class EventIntakeReplayTests: XCTestCase {
         intake.open(sink: sink)
         defer { intake.close() }
 
+        for _ in 0 ..< 32 {
+            intake.enqueue(.cgs(.frameChanged(windowId: 7)))
+        }
+        intake.drainNow()
+
+        let frameWindowIds = sink.received.compactMap { stamped -> UInt32? in
+            if case let .cgs(.frameChanged(windowId)) = stamped.event {
+                return windowId
+            }
+            return nil
+        }
+        XCTAssertEqual(frameWindowIds, [7])
+        XCTAssertEqual(sink.received.count, 1)
+        sink.received.removeAll()
+
         intake.enqueue(.cgs(.frameChanged(windowId: 7)))
         intake.enqueue(.cgs(.frameChanged(windowId: 7)))
         intake.enqueue(.cgs(.frameChanged(windowId: 8)))
@@ -186,28 +201,6 @@ final class EventIntakeReplayTests: XCTestCase {
             return nil
         }
         XCTAssertEqual(titles, [7, 8, 7])
-    }
-
-    @MainActor
-    func testCGSFrameBurstForLiveWindowDeliversOnce() {
-        let intake = EventIntake()
-        let sink = RecordingSink()
-        intake.open(sink: sink)
-        defer { intake.close() }
-
-        for _ in 0 ..< 32 {
-            intake.enqueue(.cgs(.frameChanged(windowId: 7)))
-        }
-        intake.drainNow()
-
-        let frameWindowIds = sink.received.compactMap { stamped -> UInt32? in
-            if case let .cgs(.frameChanged(windowId)) = stamped.event {
-                return windowId
-            }
-            return nil
-        }
-        XCTAssertEqual(frameWindowIds, [7])
-        XCTAssertEqual(sink.received.count, 1)
     }
 
     @MainActor
@@ -571,13 +564,10 @@ final class EventIntakeReplayTests: XCTestCase {
     }
 
     @MainActor
-    func testNativeFullscreenRekeyAndSuspensionPrecedeLaterExpiry() throws {
-        try assertNativeFullscreenExpiryOrdering(expiryFirst: false)
-    }
-
-    @MainActor
-    func testNativeFullscreenExpiryPrecedesLaterRekeyAndSuspension() throws {
-        try assertNativeFullscreenExpiryOrdering(expiryFirst: true)
+    func testNativeFullscreenExpiryOrdering() throws {
+        for expiryFirst in [false, true] {
+            try assertNativeFullscreenExpiryOrdering(expiryFirst: expiryFirst)
+        }
     }
 
     @MainActor
@@ -973,24 +963,12 @@ final class EventIntakeReplayTests: XCTestCase {
         XCTAssertEqual(border.windowId, scenario.tokenB.windowId)
         XCTAssertEqual(border.frame, frame)
 
+        let zeroWorld = WorldView(controller: controller, liveBoundsProvider: { _ in .zero })
+        XCTAssertNil(SurfaceDerivation.deriveBorder(world: zeroWorld))
+
         controller.settings.borders.enabled = false
         let disabledWorld = WorldView(controller: controller, liveBoundsProvider: { _ in frame })
         XCTAssertNil(SurfaceDerivation.deriveBorder(world: disabledWorld))
-    }
-
-    @MainActor
-    func testZeroSizedBorderFrameYieldsNoBorder() throws {
-        let pid: pid_t = 100
-        let scenario = try makeScenario(pid: pid)
-        defer { scenario.tearDown() }
-        let controller = scenario.controller
-
-        scenario.system.focusedWindowIdByPid[pid] = scenario.tokenB.windowId
-        controller.eventIntake.enqueue(.axWindow(.focusedWindowChanged(pid: pid, callbackGeneration: nil)))
-        scenario.drainToQuiescence()
-
-        let world = WorldView(controller: controller, liveBoundsProvider: { _ in .zero })
-        XCTAssertNil(SurfaceDerivation.deriveBorder(world: world))
     }
 
     @MainActor

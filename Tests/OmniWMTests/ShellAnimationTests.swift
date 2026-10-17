@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 @testable import OmniWM
@@ -74,12 +74,20 @@ final class ShellAnimationTests: XCTestCase {
         XCTAssertTrue(Content(hoverMaterial: 3).hasHoverEffect)
     }
 
-    func testHoverTransitionsUseTheirOwnTimingAndFallBackToAnimate() {
-        let both = Content(motion: 19, hoverMotion: 14)
-        XCTAssertEqual(ShellWidgetSurface.motion(of: both, hover: true), .ease(seconds: 0.1))
-        XCTAssertEqual(ShellWidgetSurface.motion(of: both, hover: false), .ease(seconds: 0.15))
-        XCTAssertEqual(ShellWidgetSurface.motion(of: Content(motion: 2), hover: true), .bouncy)
-        XCTAssertNil(ShellWidgetSurface.motion(of: Content(), hover: true))
+    func testHoverTransitionsUseTheirOwnTimingAndFallBackToAnimate() throws {
+        let both = "function render(ctx) return ui.box{w=10,h=10,animate=0.15,hoverAnimate=0.1} end"
+        let cases: [(String, Bool, ShellMotion?)] = [
+            (both, true, .ease(seconds: 0.1)), (both, false, .ease(seconds: 0.15)),
+            ("function render(ctx) return ui.box{w=10,h=10,animate='bouncy'} end", true, .bouncy),
+            ("function render(ctx) return ui.box{w=10,h=10} end", true, nil)
+        ]
+        for (source, hover, expected) in cases {
+            let widget = try ShellRenderedWidget(name: "hover-motion", source: source)
+            widget.render(ShellBarData())
+            let handle = widget.surface.layout.core.rootHandle
+            XCTAssertNotEqual(handle, .none)
+            XCTAssertEqual(widget.surface.animation(for: handle, hover: hover)?.motion, expected)
+        }
     }
 
     func testScaledElementsGrowAroundTheirCentreAndCarryAShadow() throws {

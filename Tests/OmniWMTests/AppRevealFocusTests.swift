@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import ApplicationServices
@@ -444,75 +444,33 @@ final class AppRevealFocusTests: XCTestCase {
         XCTAssertTrue(AppVisibilityTrace.shared.dump().contains("reason=visibility_generation_changed"))
     }
 
-    func testExternalFocusFingerprintChangeRejectsRevealContinuation() throws {
-        let fixture = try makeFixture(pid: 91_005, windowId: 91_105)
-        let handler = makeHandler(controller: fixture.controller) { _ in true }
-        fixture.controller.workspaceManager.setAppHidden(
-            true,
-            pid: fixture.token.pid,
-            source: .service
-        )
-        XCTAssertTrue(handler.navigateToExplicitlySelectedWindow(handle: fixture.handle))
-        let intentId = try XCTUnwrap(
-            fixture.controller.intentLedger.openAppRevealFocusIntent(pid: fixture.token.pid)?.intent.id
-        )
-        _ = fixture.controller.workspaceManager.recordExternalFocus(
-            pid: 99_999,
-            windowId: 99_999
-        )
-        fixture.controller.workspaceManager.setAppHidden(
-            false,
-            pid: fixture.token.pid,
-            source: .service
-        )
+    func testExternalOrOwnedFocusFingerprintChangeRejectsRevealContinuation() throws {
+        for ownedSurface in [false, true] {
+            let fixture = try makeFixture(pid: ownedSurface ? 91_032 : 91_005, windowId: ownedSurface ? 91_132 : 91_105)
+            let handler = makeHandler(controller: fixture.controller) { _ in true }
+            fixture.controller.workspaceManager.setAppHidden(
+                true,
+                pid: fixture.token.pid,
+                source: .service
+            )
+            XCTAssertTrue(handler.navigateToExplicitlySelectedWindow(handle: fixture.handle))
+            let intentId = try XCTUnwrap(
+                fixture.controller.intentLedger.openAppRevealFocusIntent(pid: fixture.token.pid)?.intent.id
+            )
+            if ownedSurface {
+                XCTAssertTrue(fixture.controller.workspaceManager.recordOwnedSurfaceFocus())
+            } else {
+                _ = fixture.controller.workspaceManager.recordExternalFocus(pid: 99_999, windowId: 99_999)
+            }
+            fixture.controller.workspaceManager.setAppHidden(
+                false,
+                pid: fixture.token.pid,
+                source: .service
+            )
 
-        XCTAssertFalse(handler.completeAppRevealFocus(intentId: intentId))
-        XCTAssertEqual(fixture.controller.intentLedger.intent(id: intentId)?.phase, .cancelled)
-    }
-
-    func testOwnedSurfaceFocusFingerprintChangeRejectsRevealContinuation() throws {
-        let fixture = try makeFixture(pid: 91_032, windowId: 91_132)
-        let handler = makeHandler(controller: fixture.controller) { _ in true }
-        fixture.controller.workspaceManager.setAppHidden(
-            true,
-            pid: fixture.token.pid,
-            source: .service
-        )
-        XCTAssertTrue(handler.navigateToExplicitlySelectedWindow(handle: fixture.handle))
-        let intentId = try XCTUnwrap(
-            fixture.controller.intentLedger.openAppRevealFocusIntent(pid: fixture.token.pid)?.intent.id
-        )
-        XCTAssertTrue(fixture.controller.workspaceManager.recordOwnedSurfaceFocus())
-        fixture.controller.workspaceManager.setAppHidden(
-            false,
-            pid: fixture.token.pid,
-            source: .service
-        )
-
-        XCTAssertFalse(handler.completeAppRevealFocus(intentId: intentId))
-        XCTAssertEqual(fixture.controller.intentLedger.intent(id: intentId)?.phase, .cancelled)
-    }
-
-    func testAuthoritativeVisibilityGenerationAllowsExactRevealContinuation() throws {
-        let fixture = try makeFixture(pid: 91_009, windowId: 91_109)
-        let handler = makeHandler(controller: fixture.controller) { _ in true }
-        fixture.controller.workspaceManager.setAppHidden(
-            true,
-            pid: fixture.token.pid,
-            source: .service
-        )
-        XCTAssertTrue(handler.navigateToExplicitlySelectedWindow(handle: fixture.handle))
-        let intentId = try XCTUnwrap(
-            fixture.controller.intentLedger.openAppRevealFocusIntent(pid: fixture.token.pid)?.intent.id
-        )
-        fixture.controller.workspaceManager.setAppHidden(
-            false,
-            pid: fixture.token.pid,
-            source: .service
-        )
-
-        XCTAssertTrue(handler.completeAppRevealFocus(intentId: intentId))
-        XCTAssertEqual(fixture.controller.intentLedger.intent(id: intentId)?.phase, .confirmed)
+            XCTAssertFalse(handler.completeAppRevealFocus(intentId: intentId))
+            XCTAssertEqual(fixture.controller.intentLedger.intent(id: intentId)?.phase, .cancelled)
+        }
     }
 
     func testClosedTargetRejectsRevealContinuation() throws {

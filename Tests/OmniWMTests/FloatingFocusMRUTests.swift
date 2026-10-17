@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import ApplicationServices
 import Foundation
@@ -8,78 +8,26 @@ import XCTest
 
 @MainActor
 final class FloatingFocusMRUTests: XCTestCase {
-    func testWorkspaceFocusReturnsToTheFloatingWindowFocusedLast() {
-        let manager = makeManager()
-        let workspaceId = manager.workspaces[0].id
-        let tiled = manager.addWindow(axRef(4001, 11), pid: 4001, windowId: 11, to: workspaceId)
-        let floating = manager.addWindow(
-            axRef(4001, 12),
-            pid: 4001,
-            windowId: 12,
-            to: workspaceId,
-            mode: .floating
-        )
-
-        _ = manager.rememberFocus(tiled, in: workspaceId)
-        _ = manager.rememberFocus(floating, in: workspaceId)
-
-        XCTAssertEqual(resolvedFocus(in: workspaceId, manager: manager), floating)
-    }
-
-    func testWorkspaceFocusReturnsToTheTiledWindowWhenItWasFocusedLast() {
-        let manager = makeManager()
-        let workspaceId = manager.workspaces[0].id
-        let tiled = manager.addWindow(axRef(4002, 21), pid: 4002, windowId: 21, to: workspaceId)
-        let floating = manager.addWindow(
-            axRef(4002, 22),
-            pid: 4002,
-            windowId: 22,
-            to: workspaceId,
-            mode: .floating
-        )
-
-        _ = manager.rememberFocus(floating, in: workspaceId)
-        _ = manager.rememberFocus(tiled, in: workspaceId)
-
-        XCTAssertEqual(resolvedFocus(in: workspaceId, manager: manager), tiled)
-    }
-
-    func testRefocusingTheSameTiledWindowAfterAFloatingWindowWins() {
-        let manager = makeManager()
-        let workspaceId = manager.workspaces[0].id
-        let tiled = manager.addWindow(axRef(4005, 51), pid: 4005, windowId: 51, to: workspaceId)
-        let floating = manager.addWindow(
-            axRef(4005, 52),
-            pid: 4005,
-            windowId: 52,
-            to: workspaceId,
-            mode: .floating
-        )
-
-        _ = manager.rememberFocus(tiled, in: workspaceId)
-        _ = manager.rememberFocus(floating, in: workspaceId)
-        _ = manager.rememberFocus(tiled, in: workspaceId)
-
-        XCTAssertEqual(resolvedFocus(in: workspaceId, manager: manager), tiled)
-    }
-
-    func testRefocusingTheSameFloatingWindowAfterATiledWindowWins() {
-        let manager = makeManager()
-        let workspaceId = manager.workspaces[0].id
-        let tiled = manager.addWindow(axRef(4006, 61), pid: 4006, windowId: 61, to: workspaceId)
-        let floating = manager.addWindow(
-            axRef(4006, 62),
-            pid: 4006,
-            windowId: 62,
-            to: workspaceId,
-            mode: .floating
-        )
-
-        _ = manager.rememberFocus(floating, in: workspaceId)
-        _ = manager.rememberFocus(tiled, in: workspaceId)
-        _ = manager.rememberFocus(floating, in: workspaceId)
-
-        XCTAssertEqual(resolvedFocus(in: workspaceId, manager: manager), floating)
+    func testMostRecentTiledOrFloatingFocusWinsAtEachStep() {
+        for tiledFirst in [true, false] {
+            let manager = makeManager()
+            let workspaceId = manager.workspaces[0].id
+            let tiled = manager.addWindow(axRef(4005, 51), pid: 4005, windowId: 51, to: workspaceId)
+            let floating = manager.addWindow(
+                axRef(4005, 52),
+                pid: 4005,
+                windowId: 52,
+                to: workspaceId,
+                mode: .floating
+            )
+            let first = tiledFirst ? tiled : floating
+            let second = tiledFirst ? floating : tiled
+            _ = manager.rememberFocus(first, in: workspaceId)
+            _ = manager.rememberFocus(second, in: workspaceId)
+            XCTAssertEqual(resolvedFocus(in: workspaceId, manager: manager), second)
+            _ = manager.rememberFocus(first, in: workspaceId)
+            XCTAssertEqual(resolvedFocus(in: workspaceId, manager: manager), first)
+        }
     }
 
     func testSessionPatchRestatingTiledFallbackDoesNotReplaceFloatingMRU() {

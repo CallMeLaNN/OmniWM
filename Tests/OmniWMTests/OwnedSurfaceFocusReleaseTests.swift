@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import ApplicationServices
@@ -8,17 +8,6 @@ import XCTest
 
 @MainActor
 final class OwnedSurfaceFocusReleaseTests: XCTestCase {
-    func testClosingTheLastOwnedWindowReleasesOwnedFocusAndKeepsTheSelection() throws {
-        let fixture = try Fixture()
-        let window = fixture.ownedWindow()
-        XCTAssertTrue(fixture.controller.workspaceManager.recordOwnedSurfaceFocus())
-
-        fixture.registry.windowWillClose(window)
-
-        XCTAssertEqual(fixture.controller.workspaceManager.nativeFocusOwner, NativeFocusOwner.none)
-        XCTAssertEqual(fixture.controller.workspaceManager.selectedManagedToken, fixture.first)
-    }
-
     func testClosingOneOfTwoOwnedWindowsKeepsOwnedFocus() throws {
         let fixture = try Fixture()
         let closing = fixture.ownedWindow()
@@ -41,28 +30,22 @@ final class OwnedSurfaceFocusReleaseTests: XCTestCase {
         XCTAssertEqual(fixture.controller.workspaceManager.nativeFocusOwner, .ownedSurface)
     }
 
-    func testHoveringThePreviouslySelectedWindowAfterTheLastOwnedWindowClosesFocusesIt() throws {
-        var focusedTokens: [WindowToken] = []
-        let fixture = try Fixture { focusedTokens.append($0) }
-        let window = fixture.ownedWindow()
-        XCTAssertTrue(fixture.controller.workspaceManager.recordOwnedSurfaceFocus())
-        fixture.registry.windowWillClose(window)
+    func testHoveringEitherWindowAfterLastOwnedWindowClosesFocusesIt() throws {
+        for hoverFirst in [true, false] {
+            var focusedTokens: [WindowToken] = []
+            let fixture = try Fixture { focusedTokens.append($0) }
+            let window = fixture.ownedWindow()
+            XCTAssertTrue(fixture.controller.workspaceManager.recordOwnedSurfaceFocus())
+            fixture.registry.windowWillClose(window)
 
-        fixture.controller.mouseEventHandler.dispatchMouseMoved(at: fixture.firstFrame.center)
+            XCTAssertEqual(fixture.controller.workspaceManager.nativeFocusOwner, NativeFocusOwner.none)
+            XCTAssertEqual(fixture.controller.workspaceManager.selectedManagedToken, fixture.first)
+            let target = hoverFirst ? fixture.first : fixture.second
+            let frame = hoverFirst ? fixture.firstFrame : fixture.secondFrame
+            fixture.controller.mouseEventHandler.dispatchMouseMoved(at: frame.center)
 
-        XCTAssertEqual(focusedTokens, [fixture.first])
-    }
-
-    func testHoveringAnotherWindowAfterTheLastOwnedWindowClosesFocusesIt() throws {
-        var focusedTokens: [WindowToken] = []
-        let fixture = try Fixture { focusedTokens.append($0) }
-        let window = fixture.ownedWindow()
-        XCTAssertTrue(fixture.controller.workspaceManager.recordOwnedSurfaceFocus())
-        fixture.registry.windowWillClose(window)
-
-        fixture.controller.mouseEventHandler.dispatchMouseMoved(at: fixture.secondFrame.center)
-
-        XCTAssertEqual(focusedTokens, [fixture.second])
+            XCTAssertEqual(focusedTokens, [target])
+        }
     }
 
     func testHoveringTheFocusedWindowDoesNotRequestFocusAgain() throws {

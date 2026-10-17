@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWM
@@ -7,7 +7,7 @@ import XCTest
 
 final class SystemStatsSamplerTests: XCTestCase {
     @MainActor
-    func testTheFeedDeliversDiskUsageSampledOffTheMainThread() async {
+    func testTheFeedDeliversDiskUsageAndTotal() async {
         final class Latest {
             var data: ShellWidgetData?
         }
@@ -50,7 +50,7 @@ final class SystemStatsSamplerTests: XCTestCase {
         XCTAssertEqual(history.down.last, 39)
     }
 
-    func testBatteryDetailsAndUptimeIncludeEverythingSinceBoot() {
+    func testBatteryDetailsAndUptimeLowerBound() {
         var power = ShellPower()
         power.describe([
             "CycleCount": 120,
@@ -90,21 +90,19 @@ final class SystemStatsSamplerTests: XCTestCase {
     }
 
     func testCPUUsageFromTickDeltas() {
-        let previous = CPUTicks(busy: 1000, idle: 3000)
-        let current = CPUTicks(busy: 1300, idle: 3900)
-
-        XCTAssertEqual(SystemStatsSampler.cpuUsage(previous: previous, current: current), 0.25)
-    }
-
-    func testCPUUsageZeroDeltaReturnsNil() {
-        let ticks = CPUTicks(busy: 500, idle: 500)
-
-        XCTAssertNil(SystemStatsSampler.cpuUsage(previous: ticks, current: ticks))
-    }
-
-    func testCPUUsageFirstSampleReturnsNil() {
-        XCTAssertNil(SystemStatsSampler.cpuUsage(previous: nil, current: CPUTicks(busy: 1, idle: 1)))
-        XCTAssertNil(SystemStatsSampler.cpuUsage(previous: CPUTicks(busy: 1, idle: 1), current: nil))
+        let cases: [(label: String, previous: CPUTicks?, current: CPUTicks?, expected: Double?)] = [
+            ("delta", CPUTicks(busy: 1000, idle: 3000), CPUTicks(busy: 1300, idle: 3900), 0.25),
+            ("no previous", nil, CPUTicks(busy: 1, idle: 1), nil),
+            ("no current", CPUTicks(busy: 1, idle: 1), nil, nil),
+            ("zero delta", CPUTicks(busy: 500, idle: 500), CPUTicks(busy: 500, idle: 500), nil)
+        ]
+        for row in cases {
+            XCTAssertEqual(
+                SystemStatsSampler.cpuUsage(previous: row.previous, current: row.current),
+                row.expected,
+                row.label
+            )
+        }
     }
 
     func testMemoryUsedFormula() {

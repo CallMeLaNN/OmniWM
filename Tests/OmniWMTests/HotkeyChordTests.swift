@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import Carbon
@@ -46,21 +46,18 @@ final class HotkeyChordTests: XCTestCase {
         )
     }
 
-    func testConfiguredHyperAliasEqualsLiteralThreeModifiers() throws {
+    func testConfiguredHyperAliasesEqualLiteralModifiers() throws {
         try withHyperComposition("Control+Option+Command") {
-            XCTAssertEqual(
-                KeySymbolMapper.fromHumanReadable("Control+Option+Command+1"),
-                KeySymbolMapper.fromHumanReadable("Hyper+1")
-            )
-        }
-    }
-
-    func testConfiguredHyperShiftAliasEqualsLiteralFourModifiers() throws {
-        try withHyperComposition("Control+Option+Command") {
-            XCTAssertEqual(
-                KeySymbolMapper.fromHumanReadable("Control+Option+Shift+Command+1"),
-                KeySymbolMapper.fromHumanReadable("Hyper+Shift+1")
-            )
+            for (literal, alias) in [
+                ("Control+Option+Command+1", "Hyper+1"),
+                ("Control+Option+Shift+Command+1", "Hyper+Shift+1")
+            ] {
+                XCTAssertEqual(
+                    KeySymbolMapper.fromHumanReadable(literal),
+                    KeySymbolMapper.fromHumanReadable(alias),
+                    alias
+                )
+            }
         }
     }
 
@@ -202,6 +199,8 @@ final class HotkeyChordTests: XCTestCase {
 
         for encoded in encodings {
             let toml = String(decoding: encoded, as: UTF8.self)
+            XCTAssertFalse(toml.contains("leaderKey"))
+            XCTAssertFalse(toml.contains("sequenceTimeoutMilliseconds"))
             XCTAssertTrue(toml.contains("binding = \"Hyper+H\"\nid = \"focus.left\""))
             XCTAssertTrue(toml.contains("binding = \"Hyper+Shift+H\"\nid = \"move.left\""))
             XCTAssertEqual(try SettingsTOMLCodec.decode(encoded), export)
@@ -289,10 +288,19 @@ final class HotkeyChordTests: XCTestCase {
 
     func testSystemHyperTriggerSupportUsesSelectableSets() {
         XCTAssertTrue(SystemHyperTrigger.none.isSupported)
-        for keyCode in SystemHyperTrigger.selectableKeyCodes {
+        let keyCodes: [UInt32] = [
+            UInt32(kVK_CapsLock),
+            UInt32(kVK_F13), UInt32(kVK_F14), UInt32(kVK_F15), UInt32(kVK_F16),
+            UInt32(kVK_F17), UInt32(kVK_F18), UInt32(kVK_F19), UInt32(kVK_F20),
+            UInt32(kVK_Control), UInt32(kVK_RightControl), UInt32(kVK_Option), UInt32(kVK_RightOption),
+            UInt32(kVK_Shift), UInt32(kVK_RightShift), UInt32(kVK_Command), UInt32(kVK_RightCommand)
+        ]
+        XCTAssertEqual(Set(SystemHyperTrigger.selectableKeyCodes), Set(keyCodes))
+        XCTAssertEqual(SystemHyperTrigger.selectableMouseButtons, [3, 4, 5])
+        for keyCode in keyCodes {
             XCTAssertTrue(SystemHyperTrigger.key(keyCode).isSupported)
         }
-        for button in SystemHyperTrigger.selectableMouseButtons {
+        for button in [Int64(3), 4, 5] {
             XCTAssertTrue(SystemHyperTrigger.mouseButton(button).isSupported)
         }
 
@@ -326,16 +334,6 @@ final class HotkeyChordTests: XCTestCase {
         XCTAssertEqual(trigger.handleKeyUp(UInt32(kVK_F13)), .suppress)
         XCTAssertFalse(trigger.isActive)
         XCTAssertEqual(trigger.handleKeyDown(UInt32(kVK_ANSI_A)), .passThrough)
-    }
-
-    func testSystemHyperTriggerSupportsLeftModifiers() {
-        let leftModifiers = [
-            UInt32(kVK_Control), UInt32(kVK_Option), UInt32(kVK_Shift), UInt32(kVK_Command)
-        ]
-        for keyCode in leftModifiers {
-            XCTAssertTrue(SystemHyperTrigger.selectableKeyCodes.contains(keyCode))
-            XCTAssertTrue(SystemHyperTrigger.key(keyCode).isSupported)
-        }
     }
 
     func testHyperTriggerStateMachineHandlesLeftModifierTrigger() {
@@ -519,29 +517,18 @@ final class HotkeyChordTests: XCTestCase {
         XCTAssertEqual(mappings, [externalCapsLock])
     }
 
-    func testCapsLockHyperRemapperPreservesExistingMappingsThroughApplyAndRestore() {
+    func testCapsLockHyperRemapperPreservesOriginalMappingsThroughApplyAndRestore() {
         let existing = HIDKeyboardModifierMapping(source: 0x70000006E, destination: 0x70000006E)
-        let store = UserKeyMappingStoreStub(value: CapsLockHyperMapping.propertyValue(for: [existing]))
-        let remapper = store.makeRemapper()
-
-        XCTAssertTrue(remapper.apply())
-        XCTAssertEqual(store.mappings, [existing, CapsLockHyperMapping.omniMapping])
-
-        remapper.restore()
-        XCTAssertEqual(store.mappings, [existing])
-        XCTAssertEqual(store.writeCount, 2)
-    }
-
-    func testCapsLockHyperRemapperAppliesAndRestoresWithoutExistingMappings() {
-        let store = UserKeyMappingStoreStub(value: nil)
-        let remapper = store.makeRemapper()
-
-        XCTAssertTrue(remapper.apply())
-        XCTAssertEqual(store.mappings, [CapsLockHyperMapping.omniMapping])
-
-        remapper.restore()
-        XCTAssertEqual(store.mappings, [])
-        XCTAssertEqual(store.writeCount, 2)
+        for original in [[], [existing]] {
+            let store = UserKeyMappingStoreStub(value: original.isEmpty ? nil : CapsLockHyperMapping
+                .propertyValue(for: original))
+            let remapper = store.makeRemapper()
+            XCTAssertTrue(remapper.apply())
+            XCTAssertEqual(store.mappings, original + [CapsLockHyperMapping.omniMapping])
+            remapper.restore()
+            XCTAssertEqual(store.mappings, original)
+            XCTAssertEqual(store.writeCount, 2)
+        }
     }
 
     func testCapsLockHyperRemapperDoesNotWriteWhenApplyReadsMalformedMappings() {
@@ -654,14 +641,6 @@ final class HotkeyChordTests: XCTestCase {
             ),
             KeyBinding(keyCode: UInt32(kVK_F13), modifiers: 0)
         )
-    }
-
-    func testSettingsTOMLDoesNotEmitLeaderOrSequenceTimeout() throws {
-        let data = try SettingsTOMLCodec.encode(.defaults())
-        let toml = String(decoding: data, as: UTF8.self)
-
-        XCTAssertFalse(toml.contains("leaderKey"))
-        XCTAssertFalse(toml.contains("sequenceTimeoutMilliseconds"))
     }
 
     func testKeyBindingConflictTreatsLeftAndRightAsDistinct() {
@@ -781,15 +760,29 @@ final class HotkeyChordTests: XCTestCase {
         let leftWithShift = leftFlags | CGEventFlags.maskShift.rawValue | UInt64(NX_DEVICELSHIFTKEYMASK)
         let flagSets: [UInt64] = [0, leftFlags, rightFlags, leftWithShift]
 
-        for binding in bindings {
-            for keyCode in [UInt32(kVK_ANSI_1), UInt32(kVK_ANSI_2)] {
-                for flags in flagSets {
-                    let matched = CommandHotkeyTapMatcher.matches(binding, keyCode: keyCode, rawFlags: flags)
-                    let reason = CommandHotkeyTapMatcher.rejectionReason(binding, keyCode: keyCode, rawFlags: flags)
+        let expectedReasons: [[[String?]]] = [
+            [["needs ⌥", nil, nil, "extra ⇧"], ["keyCode", "keyCode", "keyCode", "keyCode"]],
+            [["needs ⌥", nil, "needs L⌥", "extra ⇧"], ["keyCode", "keyCode", "keyCode", "keyCode"]],
+            [["needs ⌥", "needs R⌥", nil, "needs R⌥"], ["keyCode", "keyCode", "keyCode", "keyCode"]]
+        ]
+        let expectedMatches = [
+            [[false, true, true, false], [false, false, false, false]],
+            [[false, true, false, false], [false, false, false, false]],
+            [[false, false, true, false], [false, false, false, false]]
+        ]
+        for (bindingIndex, binding) in bindings.enumerated() {
+            for (keyIndex, keyCode) in [UInt32(kVK_ANSI_1), UInt32(kVK_ANSI_2)].enumerated() {
+                for (flagIndex, flags) in flagSets.enumerated() {
+                    let label = "binding=\(binding.displayString) key=\(keyCode) flags=\(flags)"
                     XCTAssertEqual(
-                        matched,
-                        reason == nil,
-                        "binding=\(binding.displayString) key=\(keyCode) flags=\(flags)"
+                        CommandHotkeyTapMatcher.matches(binding, keyCode: keyCode, rawFlags: flags),
+                        expectedMatches[bindingIndex][keyIndex][flagIndex],
+                        label
+                    )
+                    XCTAssertEqual(
+                        CommandHotkeyTapMatcher.rejectionReason(binding, keyCode: keyCode, rawFlags: flags),
+                        expectedReasons[bindingIndex][keyIndex][flagIndex],
+                        label
                     )
                 }
             }

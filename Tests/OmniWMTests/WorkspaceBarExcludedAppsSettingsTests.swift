@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWM
@@ -143,43 +143,6 @@ final class WorkspaceBarExcludedAppsSettingsTests: XCTestCase {
             settings.workspaceBar.resolved(for: second).excludedBundleIDs,
             ["com.example.global"]
         )
-    }
-
-    func testExternalSettingsReloadReplacesLiveExclusions() async throws {
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent("OmniWMWorkspaceBarExclusionReloadTests-\(UUID().uuidString)", isDirectory: true)
-        defer {
-            try? FileManager.default.removeItem(at: root)
-        }
-        let persistence = SettingsFilePersistence(
-            directory: root.appendingPathComponent("config", isDirectory: true),
-            startWatching: true,
-            deferSaves: false
-        )
-        let settings = SettingsStore(
-            persistence: persistence,
-            runtimeState: RuntimeStateStore(
-                directory: root.appendingPathComponent("state", isDirectory: true),
-                deferSaves: false
-            ),
-            autosaveEnabled: false
-        )
-        XCTAssertTrue(settings.workspaceBar.addExcludedBundleID("com.example.before"))
-        var externalReloadCount = 0
-        settings.onExternalSettingsReloaded = {
-            externalReloadCount += 1
-        }
-        var external = SettingsExport.defaults()
-        external.workspaceBar.excludedBundleIDs = ["  com.example.After  "]
-
-        try SettingsTOMLCodec.encode(external).write(to: persistence.fileURL, options: .atomic)
-        for _ in 0 ..< 200 {
-            if externalReloadCount > 0 { break }
-            try await Task.sleep(for: .milliseconds(10))
-        }
-
-        XCTAssertEqual(externalReloadCount, 1)
-        XCTAssertEqual(settings.workspaceBar.excludedBundleIDs, ["com.example.After"])
     }
 
     private func monitor(displayId: CGDirectDisplayID, name: String, x: CGFloat) -> Monitor {

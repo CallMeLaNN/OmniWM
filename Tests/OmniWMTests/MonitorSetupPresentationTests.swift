@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import CoreGraphics
 import Foundation
@@ -136,31 +136,7 @@ final class MonitorSetupPresentationTests: XCTestCase {
         XCTAssertFalse(navigation.consumeMonitorSetupPresentationRequest())
     }
 
-    func testPresentationPolicyRequiresTwoDisplaysAfterOverlay() {
-        XCTAssertFalse(
-            MonitorSetupPresentationPolicy.shouldAutomaticallyPresent(
-                status: .notPresented,
-                monitors: monitors(count: 2),
-                launchOverlayFinished: false
-            )
-        )
-        XCTAssertFalse(
-            MonitorSetupPresentationPolicy.shouldAutomaticallyPresent(
-                status: .notPresented,
-                monitors: monitors(count: 1),
-                launchOverlayFinished: true
-            )
-        )
-        XCTAssertTrue(
-            MonitorSetupPresentationPolicy.shouldAutomaticallyPresent(
-                status: .notPresented,
-                monitors: monitors(count: 2),
-                launchOverlayFinished: true
-            )
-        )
-    }
-
-    func testPresentationPolicyWaitsForTransientDisplayGeometry() {
+    func testAutomaticPresentationPolicyMatrix() {
         var displays = monitors(count: 2)
         displays[1] = Monitor(
             id: .init(displayId: 2),
@@ -171,23 +147,27 @@ final class MonitorSetupPresentationTests: XCTestCase {
             name: "Display 2"
         )
 
-        XCTAssertFalse(
-            MonitorSetupPresentationPolicy.shouldAutomaticallyPresent(
-                status: .notPresented,
-                monitors: displays,
-                launchOverlayFinished: true
-            )
-        )
-    }
-
-    func testPresentationPolicyStopsAfterAutomaticDismissalOrCompletion() {
-        for status in [MonitorSetupStatus.dismissed, .completed] {
-            XCTAssertFalse(
+        let cases: [(
+            label: String,
+            status: MonitorSetupStatus,
+            displays: [Monitor],
+            overlayFinished: Bool,
+            expected: Bool
+        )] = [
+            ("overlay pending", .notPresented, monitors(count: 2), false, false),
+            ("one display", .notPresented, monitors(count: 1), true, false),
+            ("two displays", .notPresented, monitors(count: 2), true, true),
+            ("transient width", .notPresented, displays, true, false),
+            ("dismissed", .dismissed, monitors(count: 3), true, false),
+            ("completed", .completed, monitors(count: 3), true, false)
+        ]
+        for row in cases {
+            XCTAssertEqual(
                 MonitorSetupPresentationPolicy.shouldAutomaticallyPresent(
-                    status: status,
-                    monitors: monitors(count: 3),
-                    launchOverlayFinished: true
-                )
+                    status: row.status, monitors: row.displays, launchOverlayFinished: row.overlayFinished
+                ),
+                row.expected,
+                row.label
             )
         }
     }

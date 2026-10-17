@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 @testable import OmniWM
 import OmniWMIPC
@@ -36,7 +36,7 @@ final class WorkspaceMonitorHotkeyCommandTests: XCTestCase {
     }
 
     func testWorkspaceSlotActionsAreRegistered() throws {
-        for slot in ActionCatalog.workspaceSlotRange {
+        for slot in 1 ... 9 {
             let cases: [(command: HotkeyCommand, id: String, title: String, ipcName: IPCCommandName)] = [
                 (
                     .workspace(.switchSlot(slot)),

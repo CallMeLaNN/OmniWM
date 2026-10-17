@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import ApplicationServices
 import Darwin
@@ -87,7 +87,7 @@ final class AppAXFrameMailboxTests: XCTestCase {
         XCTAssertEqual(metrics.snapshot(), frozen)
     }
 
-    func testEndCaptureWaitsForAnAdmittedConcurrentWriter() {
+    func testEndCapturePreservesAnAdmittedWritersCompleteSnapshot() {
         let metrics = AppAXContextRuntimeMetrics.shared
         let generations = LockedWindowGenerationMap()
         let frameRequest = request(id: 9_001, windowId: 9_002, generations: generations)
@@ -107,13 +107,23 @@ final class AppAXFrameMailboxTests: XCTestCase {
             metrics.noteOrdinaryStarted(items)
             group.leave()
         }
-        while metrics.snapshot().ordinaryStarted == 0 {
+        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
+        while metrics.snapshot().ordinaryStarted == 0, ContinuousClock.now < deadline {
             sched_yield()
+        }
+        guard metrics.snapshot().ordinaryStarted > 0 else {
+            XCTFail("Concurrent writer was not admitted before the readiness deadline")
+            XCTAssertEqual(group.wait(timeout: .now() + 5), .success)
+            metrics.endCapture()
+            return
         }
 
         metrics.endCapture()
         let frozen = metrics.snapshot()
-        group.wait()
+        guard group.wait(timeout: .now() + 5) == .success else {
+            XCTFail("Admitted writer did not finish before the cleanup deadline")
+            return
+        }
 
         XCTAssertEqual(frozen.ordinaryStarted, UInt64(items.count))
         XCTAssertEqual(frozen.queueWaitSamples, UInt64(items.count))
@@ -179,12 +189,10 @@ final class AppAXFrameMailboxTests: XCTestCase {
         XCTAssertTrue(completions.allSatisfy { $0.first?.writeResult.failureReason == .cancelled })
     }
 
-    func testShutdownCompletesInFlightAndPendingOrdinarySubmissionsAndRejectsNewWork() throws {
-        try assertShutdownCompletesInFlightAndPendingSubmissions(lane: .ordinary)
-    }
-
-    func testShutdownCompletesInFlightAndPendingParkSubmissionsAndRejectsNewWork() throws {
-        try assertShutdownCompletesInFlightAndPendingSubmissions(lane: .park)
+    func testShutdownCompletesBothLanesAndRejectsNewWork() throws {
+        for lane in [AppAXFrameLane.ordinary, .park] {
+            try assertShutdownCompletesInFlightAndPendingSubmissions(lane: lane)
+        }
     }
 
     private func assertShutdownCompletesInFlightAndPendingSubmissions(
@@ -303,89 +311,28 @@ final class AppAXFrameMailboxTests: XCTestCase {
         XCTAssertTrue(trace.contains("event=batch count=1"))
     }
 
-    func testDisabledEnhancedUICacheExpiresExactlyAfterOneSecond() {
-        let initialNow = ContinuousClock.now
-        let now = Mutex(initialNow)
-        let cache = LockedEnhancedUIStateMap(clock: { now.withLock { $0 } })
-        let pid = pid_t(410_201)
-
-        cache.store(false, for: pid)
-        XCTAssertEqual(cache.state(for: pid), false)
-
-        now.withLock { $0 = initialNow.advanced(by: .milliseconds(999)) }
-        XCTAssertEqual(cache.state(for: pid), false)
-
-        now.withLock { $0 = initialNow.advanced(by: .seconds(1)) }
-        XCTAssertNil(cache.state(for: pid))
-        XCTAssertNil(cache.state(for: pid))
-    }
-
-    func testRenewedDisabledEnhancedUICacheUsesNewDeadline() {
-        let initialNow = ContinuousClock.now
-        let now = Mutex(initialNow)
-        let cache = LockedEnhancedUIStateMap(clock: { now.withLock { $0 } })
-        let pid = pid_t(410_202)
-
-        cache.store(false, for: pid)
-        now.withLock { $0 = initialNow.advanced(by: .seconds(1)) }
-        XCTAssertNil(cache.state(for: pid))
-
-        cache.store(false, for: pid)
-        now.withLock { $0 = initialNow.advanced(by: .milliseconds(1_999)) }
-        XCTAssertEqual(cache.state(for: pid), false)
-
-        now.withLock { $0 = initialNow.advanced(by: .seconds(2)) }
-        XCTAssertNil(cache.state(for: pid))
-    }
-
-    func testExpiredDisabledEnhancedUICachePromotesToPersistentEnabled() {
+    func testEnhancedUICacheExpiryRenewalAndPersistentPromotion() {
         let initialNow = ContinuousClock.now
         let now = Mutex(initialNow)
         let cache = LockedEnhancedUIStateMap(clock: { now.withLock { $0 } })
         let pid = pid_t(410_203)
-
         cache.store(false, for: pid)
+        XCTAssertEqual(cache.state(for: pid), false)
+        now.withLock { $0 = initialNow.advanced(by: .milliseconds(999)) }
+        XCTAssertEqual(cache.state(for: pid), false)
         now.withLock { $0 = initialNow.advanced(by: .seconds(1)) }
         XCTAssertNil(cache.state(for: pid))
-
+        XCTAssertNil(cache.state(for: pid))
+        cache.store(false, for: pid)
+        now.withLock { $0 = initialNow.advanced(by: .milliseconds(1_999)) }
+        XCTAssertEqual(cache.state(for: pid), false)
+        now.withLock { $0 = initialNow.advanced(by: .seconds(2)) }
+        XCTAssertNil(cache.state(for: pid))
         cache.store(true, for: pid)
         now.withLock { $0 = initialNow.advanced(by: .seconds(10_000)) }
         XCTAssertEqual(cache.state(for: pid), true)
-
         cache.store(false, for: pid)
         XCTAssertEqual(cache.state(for: pid), true)
-    }
-
-    func testFailedEnhancedUIProbeRetriesOnNextEligibleBatch() {
-        let generations = LockedWindowGenerationMap()
-        let request = request(id: 1, windowId: 410_101, generations: generations)
-        let cache = LockedEnhancedUIStateMap.shared
-        cache.invalidate(request.pid)
-        defer { cache.invalidate(request.pid) }
-        AppAXContextRuntimeMetrics.shared.beginCapture()
-
-        _ = executeFrameWriteRequest(request, generations: generations)
-        _ = executeFrameWriteRequest(request, generations: generations)
-
-        AppAXContextRuntimeMetrics.shared.endCapture()
-        XCTAssertEqual(AppAXContextRuntimeMetrics.shared.snapshot().enhancedUICalls, 2)
-        XCTAssertNil(cache.state(for: request.pid))
-    }
-
-    func testCachedDisabledEnhancedUISuppressesProbe() {
-        let generations = LockedWindowGenerationMap()
-        let request = request(id: 1, windowId: 410_102, generations: generations)
-        let cache = LockedEnhancedUIStateMap.shared
-        cache.invalidate(request.pid)
-        cache.store(false, for: request.pid)
-        defer { cache.invalidate(request.pid) }
-        AppAXContextRuntimeMetrics.shared.beginCapture()
-
-        _ = executeFrameWriteRequest(request, generations: generations)
-
-        AppAXContextRuntimeMetrics.shared.endCapture()
-        XCTAssertEqual(AppAXContextRuntimeMetrics.shared.snapshot().enhancedUICalls, 0)
-        XCTAssertEqual(cache.state(for: request.pid), false)
     }
 
     func testEnhancedUICacheInvalidationRestoresProbe() {
@@ -393,25 +340,28 @@ final class AppAXFrameMailboxTests: XCTestCase {
         let request = request(id: 1, windowId: 410_103, generations: generations)
         let cache = LockedEnhancedUIStateMap.shared
         cache.invalidate(request.pid)
-        cache.store(false, for: request.pid)
         defer { cache.invalidate(request.pid) }
-        AppAXContextRuntimeMetrics.shared.beginCapture()
-
+        let metrics = AppAXContextRuntimeMetrics.shared
+        metrics.beginCapture()
+        defer { metrics.endCapture() }
         _ = executeFrameWriteRequest(request, generations: generations)
+        _ = executeFrameWriteRequest(request, generations: generations)
+        XCTAssertEqual(metrics.snapshot().enhancedUICalls, 2)
+        XCTAssertNil(cache.state(for: request.pid))
+        cache.store(false, for: request.pid)
+        _ = executeFrameWriteRequest(request, generations: generations)
+        XCTAssertEqual(metrics.snapshot().enhancedUICalls, 2)
+        XCTAssertEqual(cache.state(for: request.pid), false)
         cache.invalidate(request.pid)
         _ = executeFrameWriteRequest(request, generations: generations)
-
-        AppAXContextRuntimeMetrics.shared.endCapture()
-        XCTAssertEqual(AppAXContextRuntimeMetrics.shared.snapshot().enhancedUICalls, 1)
+        XCTAssertEqual(metrics.snapshot().enhancedUICalls, 3)
         XCTAssertNil(cache.state(for: request.pid))
     }
 
-    func testTenThousandHeldOrdinarySubmissionsRemainBoundedAndCompleteExactlyOnce() throws {
-        try assertTenThousandHeldSubmissionsRemainBounded(lane: .ordinary)
-    }
-
-    func testTenThousandHeldParkSubmissionsRemainBoundedAndCompleteExactlyOnce() throws {
-        try assertTenThousandHeldSubmissionsRemainBounded(lane: .park)
+    func testTenThousandHeldSubmissionsInBothLanesRemainBoundedAndCompleteExactlyOnce() throws {
+        for lane in [AppAXFrameLane.ordinary, .park] {
+            try assertTenThousandHeldSubmissionsRemainBounded(lane: lane)
+        }
     }
 
     private func assertTenThousandHeldSubmissionsRemainBounded(

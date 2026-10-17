@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 @testable import OmniWM
@@ -17,11 +17,13 @@ final class DragGhostControllerTests: XCTestCase {
 
     func testSharedPreviewShowsImmediatelyThenAFreshCaptureReplacesIt() async throws {
         let driver = OverviewPreviewTestDriver()
+        defer { driver.finish() }
         let window = WindowHandle(id: WindowToken(pid: 77, windowId: 1))
         let frame = try await publishSharedFrame(width: 400, height: 300, for: window, driver: driver)
         let surfaces = SurfaceCoordinator(scene: SurfaceScene())
         let log = CaptureLog()
         let ghost = makeGhost(surfaces: surfaces, previews: driver.coordinator, log: log)
+        defer { ghost.destroy() }
 
         ghost.beginDrag(token: window.token, originalFrame: originalFrame, cursorLocation: start)
         XCTAssertEqual(surfaces.visibleSurfaceIDs(kind: .dragGhost).count, 1)
@@ -85,11 +87,12 @@ final class DragGhostControllerTests: XCTestCase {
         driver: OverviewPreviewTestDriver
     ) async throws -> OverviewPreviewFrame {
         let capture = driver.makeCapture()
+        defer { capture.clear() }
         capture.reconcile(
             represented: [window],
             visible: [OverviewPreviewRequest(handle: window, pixelWidth: width, pixelHeight: height)]
         )
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
         driver.completeAllStarts()
         let frame = try makeOverviewPreviewFrame(width: width, height: height)
         let published = expectation(description: "shared frame published")
@@ -97,7 +100,7 @@ final class DragGhostControllerTests: XCTestCase {
         driver.streams[0].output.offer(frame)
         await fulfillment(of: [published], timeout: 1)
         capture.clear()
-        await driver.waitForStops(1)
+        try await driver.waitForStops(1)
         addTeardownBlock { withExtendedLifetime(capture) {} }
         return frame
     }

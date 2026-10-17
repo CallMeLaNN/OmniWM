@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 @testable import OmniWM
@@ -10,36 +10,34 @@ final class QuakeTerminalPlacementTests: XCTestCase {
     private let upperFrame = CGRect(x: 200, y: 1000, width: 1000, height: 900)
     private let lowerFrame = CGRect(x: 1200, y: -300, width: 800, height: 600)
 
-    func testInitialPlacementReadsGeometryAfterAlphaAndWritesUndisplayedFrame() {
-        let effects = Effects()
-        let screen = Screen(frames: [upperFrame], effects: effects)
-        let window = makeWindow(effects: effects)
-        let placement = QuakeTerminalPlacement(position: .top, on: screen, widthPercent: 50, heightPercent: 40)
-        XCTAssertTrue(effects.events.isEmpty)
-
-        placement.setInitial(in: window)
-
-        XCTAssertEqual(effects.events, [
-            .alpha(0), .visibleFrame, .visibleFrame,
-            .frame(CGRect(x: 450, y: 1900, width: 500, height: 360), display: false)
-        ])
-        XCTAssertFalse(window.isVisible)
-    }
-
-    func testFinalPlacementReadsGeometryAfterAlphaAndWritesDisplayedFrame() {
-        let effects = Effects()
-        let screen = Screen(frames: [upperFrame], effects: effects)
-        let window = makeWindow(effects: effects)
-        let placement = QuakeTerminalPlacement(position: .bottom, on: screen, widthPercent: 50, heightPercent: 40)
-        XCTAssertTrue(effects.events.isEmpty)
-
-        placement.setFinal(in: window)
-
-        XCTAssertEqual(effects.events, [
-            .alpha(1), .visibleFrame, .visibleFrame,
-            .frame(CGRect(x: 450, y: 1000, width: 500, height: 360), display: true)
-        ])
-        XCTAssertFalse(window.isVisible)
+    func testPlacementReadsGeometryAfterAlphaAndUsesBothScreenReads() {
+        let cases: [(initial: Bool, frames: [CGRect], expected: CGRect, alpha: CGFloat, display: Bool)] = [
+            (true, [upperFrame], CGRect(x: 450, y: 1900, width: 500, height: 360), 0, false),
+            (false, [upperFrame], CGRect(x: 450, y: 1000, width: 500, height: 360), 1, true),
+            (true, [upperFrame, lowerFrame], CGRect(x: 1350, y: 300, width: 500, height: 360), 0, false),
+            (false, [upperFrame, lowerFrame], CGRect(x: 1350, y: -300, width: 500, height: 360), 1, true)
+        ]
+        for entry in cases {
+            let effects = Effects()
+            let screen = Screen(frames: entry.frames, effects: effects)
+            let window = makeWindow(effects: effects)
+            let placement = QuakeTerminalPlacement(
+                position: entry.initial ? .top : .bottom,
+                on: screen,
+                widthPercent: 50,
+                heightPercent: 40
+            )
+            XCTAssertTrue(effects.events.isEmpty)
+            if entry.initial {
+                placement.setInitial(in: window)
+            } else {
+                placement.setFinal(in: window)
+            }
+            XCTAssertEqual(effects.events, [
+                .alpha(entry.alpha), .visibleFrame, .visibleFrame, .frame(entry.expected, display: entry.display)
+            ])
+            XCTAssertFalse(window.isVisible)
+        }
     }
 
     func testReusingPlacementReadsUpdatedScreenGeometryAtEachApplication() {
@@ -58,34 +56,6 @@ final class QuakeTerminalPlacementTests: XCTestCase {
             .frame(CGRect(x: 1400, y: -120, width: 400, height: 240), display: true)
         ])
         XCTAssertFalse(window.isVisible)
-    }
-
-    func testInitialPlacementUsesFirstScreenReadForSizeAndSecondForOrigin() {
-        let effects = Effects()
-        let screen = Screen(frames: [upperFrame, lowerFrame], effects: effects)
-        let window = makeWindow(effects: effects)
-        let placement = QuakeTerminalPlacement(position: .top, on: screen, widthPercent: 50, heightPercent: 40)
-
-        placement.setInitial(in: window)
-
-        XCTAssertEqual(effects.events, [
-            .alpha(0), .visibleFrame, .visibleFrame,
-            .frame(CGRect(x: 1350, y: 300, width: 500, height: 360), display: false)
-        ])
-    }
-
-    func testFinalPlacementUsesFirstScreenReadForSizeAndSecondForOrigin() {
-        let effects = Effects()
-        let screen = Screen(frames: [upperFrame, lowerFrame], effects: effects)
-        let window = makeWindow(effects: effects)
-        let placement = QuakeTerminalPlacement(position: .bottom, on: screen, widthPercent: 50, heightPercent: 40)
-
-        placement.setFinal(in: window)
-
-        XCTAssertEqual(effects.events, [
-            .alpha(1), .visibleFrame, .visibleFrame,
-            .frame(CGRect(x: 1350, y: -300, width: 500, height: 360), display: true)
-        ])
     }
 
     private func makeWindow(effects: Effects) -> RecordingWindow {

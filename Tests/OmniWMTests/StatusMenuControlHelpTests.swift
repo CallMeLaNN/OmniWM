@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWM
@@ -148,17 +148,6 @@ final class StatusMenuControlHelpTests: XCTestCase {
         XCTAssertTrue(explanation.contains("Settings"))
     }
 
-    func testHoveredControlIsPresentedOnlyAfterDwellCompletes() {
-        var selection = StatusMenuHelpSelection()
-
-        selection.hoverEntered(.focusFollowsMouse)
-
-        XCTAssertEqual(selection.hoveredControl, .focusFollowsMouse)
-        XCTAssertNil(selection.presentedControl)
-        XCTAssertTrue(selection.presentHovered(.focusFollowsMouse))
-        XCTAssertEqual(selection.presentedControl, .focusFollowsMouse)
-    }
-
     func testStaleHoverExitCannotClearANewerHover() {
         var selection = StatusMenuHelpSelection()
         selection.hoverEntered(.focusFollowsMouse)
@@ -195,19 +184,6 @@ final class StatusMenuControlHelpTests: XCTestCase {
 
         XCTAssertEqual(selection.focusedControl, .moveCrossesMonitorAtEdge)
         XCTAssertEqual(selection.presentedControl, .moveCrossesMonitorAtEdge)
-    }
-
-    func testResetClearsHoverFocusAndPresentation() {
-        var selection = StatusMenuHelpSelection()
-        selection.focusChanged(.bordersEnabled, isFocused: true)
-        selection.hoverEntered(.mouseWarpEnabled)
-        XCTAssertTrue(selection.presentHovered(.mouseWarpEnabled))
-
-        selection.reset()
-
-        XCTAssertNil(selection.hoveredControl)
-        XCTAssertNil(selection.focusedControl)
-        XCTAssertNil(selection.presentedControl)
     }
 
     func testPresentationSchedulesExactHoverDwellBeforePresenting() async throws {
@@ -284,20 +260,26 @@ final class StatusMenuControlHelpTests: XCTestCase {
     }
 
     func testPresentationResetCancelsPendingTransition() async throws {
-        let sleeper = ManualSleeper()
-        let presentation = StatusMenuHelpPresentation { try await sleeper.sleep(for: $0) }
-        presentation.hoverChanged(.moveCrossesMonitorAtEdge, isHovered: true)
-        let dwell = try XCTUnwrap(presentation.transitionTask)
-        await sleeper.waitForPendingSleeps(1)
+        for control in [StatusMenuControl.mouseWarpEnabled, .moveCrossesMonitorAtEdge] {
+            let sleeper = ManualSleeper()
+            let presentation = StatusMenuHelpPresentation { try await sleeper.sleep(for: $0) }
+            presentation.focusChanged(.bordersEnabled, isFocused: true)
+            presentation.hoverChanged(control, isHovered: true)
+            XCTAssertEqual(presentation.selection.hoveredControl, control)
+            XCTAssertEqual(presentation.selection.focusedControl, .bordersEnabled)
+            XCTAssertEqual(presentation.selection.presentedControl, .bordersEnabled)
+            let dwell = try XCTUnwrap(presentation.transitionTask)
+            await sleeper.waitForPendingSleeps(1)
 
-        presentation.reset()
-        await dwell.value
+            presentation.reset()
+            await dwell.value
 
-        XCTAssertEqual(sleeper.requestedDurations, [.milliseconds(300)])
-        XCTAssertEqual(sleeper.pendingCount, 0)
-        XCTAssertNil(presentation.selection.hoveredControl)
-        XCTAssertNil(presentation.selection.focusedControl)
-        XCTAssertNil(presentation.selection.presentedControl)
+            XCTAssertEqual(sleeper.requestedDurations, [.milliseconds(300)])
+            XCTAssertEqual(sleeper.pendingCount, 0)
+            XCTAssertNil(presentation.selection.hoveredControl)
+            XCTAssertNil(presentation.selection.focusedControl)
+            XCTAssertNil(presentation.selection.presentedControl)
+        }
     }
 
     func testMenuPresentationGenerationAdvancesOnOpenAndClose() {
@@ -316,12 +298,15 @@ final class StatusMenuControlHelpTests: XCTestCase {
     }
 
     func testHiddenBarTileInclusionMatchesControllerAvailability() {
-        let fixture = makeStatusMenuModelFixture()
-        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let unavailable = makeStatusMenuModelFixture()
+        defer { try? FileManager.default.removeItem(at: unavailable.root) }
+        let available = makeStatusMenuModelFixture(hiddenBarAvailable: true)
+        defer { try? FileManager.default.removeItem(at: available.root) }
 
-        let hiddenBarTiles = fixture.model.toggleTiles.filter { $0.control == .hiddenBarEnabled }
-
-        XCTAssertEqual(hiddenBarTiles.count, fixture.controller.isHiddenBarHidingAvailable ? 1 : 0)
+        XCTAssertFalse(unavailable.controller.isHiddenBarHidingAvailable)
+        XCTAssertEqual(unavailable.model.toggleTiles.filter { $0.control == .hiddenBarEnabled }.count, 0)
+        XCTAssertTrue(available.controller.isHiddenBarHidingAvailable)
+        XCTAssertEqual(available.model.toggleTiles.filter { $0.control == .hiddenBarEnabled }.count, 1)
     }
 
     func testHiddenBarTileReadsAndWritesTheActiveProfileEnabledValue() async throws {

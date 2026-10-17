@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import ApplicationServices
 import CoreGraphics
@@ -22,7 +22,7 @@ final class DwindleGroupFocusIntegrationTests: XCTestCase {
         let fixture = try makeFixture { pid, windowId in
             frontedTokens.append(WindowToken(pid: pid, windowId: Int(windowId)))
         }
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         XCTAssertTrue(fixture.controller.dwindleLayoutHandler.focusNeighbor(direction: .up))
@@ -48,7 +48,7 @@ final class DwindleGroupFocusIntegrationTests: XCTestCase {
             .nativeFullscreen,
             for: fixture.activeToken
         )
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         XCTAssertEqual(fixture.engine.activeToken(in: fixture.workspaceId), third)
@@ -59,7 +59,7 @@ final class DwindleGroupFocusIntegrationTests: XCTestCase {
     func testGroupTabEdgeExitsSpatiallyAndSingletonVerticalFocusRemainsSpatial() throws {
         let fixture = try makeFixture { _, _ in }
         let neighbor = addSpatialNeighborBelowGroup(to: fixture)
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         XCTAssertEqual(
@@ -92,7 +92,7 @@ final class DwindleGroupFocusIntegrationTests: XCTestCase {
         }
         let neighbor = addSpatialNeighborAboveGroup(to: fixture)
         let pendingReveal = try beginPendingReveal(fixture)
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         XCTAssertTrue(fixture.controller.dwindleLayoutHandler.focusNeighbor(direction: .up))
@@ -151,7 +151,7 @@ final class DwindleGroupFocusIntegrationTests: XCTestCase {
         let preservedTileId = try XCTUnwrap(
             fixture.engine.tileSnapshot(for: fixture.inactiveToken, in: fixture.workspaceId)?.id
         )
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         XCTAssertEqual(
@@ -192,7 +192,7 @@ final class DwindleGroupFocusIntegrationTests: XCTestCase {
             pid: fixture.activeToken.pid,
             source: .service
         )
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         XCTAssertEqual(fixture.engine.projectedActiveToken(in: fixture.workspaceId), fixture.inactiveToken)
@@ -218,7 +218,7 @@ final class DwindleGroupFocusIntegrationTests: XCTestCase {
         let destinationTileId = try XCTUnwrap(
             fixture.engine.tileSnapshot(for: destination.active, in: fixture.workspaceId)?.id
         )
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         XCTAssertEqual(
@@ -307,7 +307,7 @@ final class DwindleGroupFocusIntegrationTests: XCTestCase {
         let fixture = try makeFixture { pid, windowId in
             frontedTokens.append(WindowToken(pid: pid, windowId: Int(windowId)))
         }
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         fixture.controller.focusWindow(fixture.inactiveToken)
@@ -333,7 +333,7 @@ final class DwindleGroupFocusIntegrationTests: XCTestCase {
         let fixture = try makeFixture { pid, windowId in
             frontedTokens.append(WindowToken(pid: pid, windowId: Int(windowId)))
         }
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         fixture.controller.focusWindow(fixture.inactiveToken)
@@ -392,7 +392,7 @@ final class DwindleGroupFocusIntegrationTests: XCTestCase {
         let fixture = try makeFixture { pid, windowId in
             frontedTokens.append(WindowToken(pid: pid, windowId: Int(windowId)))
         }
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
         let entry = try XCTUnwrap(
             fixture.controller.workspaceManager.entry(for: fixture.inactiveToken)
@@ -424,7 +424,7 @@ final class DwindleGroupFocusIntegrationTests: XCTestCase {
         let fixture = try makeFixture { pid, windowId in
             frontedTokens.append(WindowToken(pid: pid, windowId: Int(windowId)))
         }
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         fixture.controller.ensureFocusedTokenValid(
@@ -445,7 +445,7 @@ final class DwindleGroupFocusIntegrationTests: XCTestCase {
         let fixture = try makeFixture { pid, windowId in
             frontedTokens.append(WindowToken(pid: pid, windowId: Int(windowId)))
         }
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
         let handle = try XCTUnwrap(
             fixture.controller.workspaceManager.handle(for: fixture.inactiveToken)
@@ -494,7 +494,7 @@ final class DwindleGroupFocusIntegrationTests: XCTestCase {
         let fixture = try makeFixture { pid, windowId in
             frontedTokens.append(WindowToken(pid: pid, windowId: Int(windowId)))
         }
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         let info = try XCTUnwrap(
@@ -858,7 +858,7 @@ final class DwindleGroupFocusIntegrationTests: XCTestCase {
         let fixture = try makeFixture { pid, windowId in
             frontedTokens.append(WindowToken(pid: pid, windowId: Int(windowId)))
         }
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
         let pending = try beginPendingReveal(fixture)
         XCTAssertTrue(
@@ -893,7 +893,7 @@ final class DwindleGroupFocusIntegrationTests: XCTestCase {
         let fixture = try makeFixture { pid, windowId in
             frontedTokens.append(WindowToken(pid: pid, windowId: Int(windowId)))
         }
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
         let hiddenState = HiddenState(
             proportionalPosition: .zero,
@@ -1157,7 +1157,7 @@ final class DwindleGroupFocusIntegrationTests: XCTestCase {
         let fixture = try makeFixture { pid, windowId in
             frontedTokens.append(WindowToken(pid: pid, windowId: Int(windowId)))
         }
-        let blocker = blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
+        let blocker = try blockLayoutRefresh(fixture.controller, workspaceId: fixture.workspaceId)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
         let pending = try beginPendingReveal(fixture)
         let replacementToken = WindowToken(
@@ -1471,28 +1471,14 @@ final class DwindleGroupFocusIntegrationTests: XCTestCase {
     private func blockLayoutRefresh(
         _ controller: WMController,
         workspaceId: WorkspaceDescriptor.ID
-    ) -> Task<Void, Never> {
-        let blocker = Task { @MainActor in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(1))
-            }
-        }
-        controller.layoutRefreshController.layoutState.activeRefreshTask = blocker
-        controller.layoutRefreshController.layoutState.activeRefresh = .init(
-            kind: .immediateRelayout,
-            reason: .layoutCommand,
-            affectedWorkspaceIds: [workspaceId]
-        )
-        return blocker
+    ) throws -> Task<Void, Never> {
+        try LayoutRefreshTestSupport.block(controller, in: workspaceId, reason: .layoutCommand)
     }
 
     private func unblockLayoutRefresh(
         _ controller: WMController,
         blocker: Task<Void, Never>
     ) {
-        blocker.cancel()
-        controller.layoutRefreshController.layoutState.activeRefreshTask = nil
-        controller.layoutRefreshController.layoutState.activeRefresh = nil
-        controller.layoutRefreshController.layoutState.pendingRefresh = nil
+        LayoutRefreshTestSupport.unblock(controller, blocker: blocker)
     }
 }

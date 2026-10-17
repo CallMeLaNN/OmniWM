@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 @testable import OmniWM
@@ -48,6 +48,7 @@ final class ShellMenuAppTests: XCTestCase {
             bundle: app.bundleIdentifier ?? ""
         ))
         XCTAssertEqual(frontmostReads, 1)
+        XCTAssertNil(controller.shellMenuApp(frontmost: nil))
     }
 
     func testMissingManagedMetadataDoesNotBorrowFrontmostIdentity() throws {
@@ -63,11 +64,6 @@ final class ShellMenuAppTests: XCTestCase {
         XCTAssertEqual(controller.shellMenuApp(frontmost: frontmost()), ShellMenuApp(pid: pid, name: "", bundle: ""))
         XCTAssertFalse(controller.appInfoCache.hasCachedInfo(for: pid))
         XCTAssertEqual(frontmostReads, 0)
-    }
-
-    func testNoManagedSelectionAndNoFrontmostAppProducesNoMenuTarget() {
-        let controller = WindowAdmissionTestSupport.controller(prefix: "OmniWMShellMenuAppTests")
-        XCTAssertNil(controller.shellMenuApp(frontmost: nil))
     }
 
     func testMenuAppIdentityChangesInvalidateOnlyItsOwnDataKey() {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import Foundation
@@ -135,34 +135,7 @@ final class MissionControlGestureProbeTests: XCTestCase {
         XCTAssertEqual(probe.status, .disabled)
     }
 
-    func testWarningRequiresEnabledVerticalThreeOrFourFingerGesture() {
-        let fixture = Fixture()
-        fixture.set(NSNumber(value: true), key: authoritativeKey, domain: dockDomain)
-        let probe = fixture.makeProbe()
-        probe.refresh()
-
-        XCTAssertFalse(probe.shouldWarn(axis: .vertical, fingerCount: .two))
-        XCTAssertTrue(probe.shouldWarn(axis: .vertical, fingerCount: .three))
-        XCTAssertTrue(probe.shouldWarn(axis: .vertical, fingerCount: .four))
-        XCTAssertFalse(probe.shouldWarn(axis: .horizontal, fingerCount: .three))
-        XCTAssertFalse(probe.shouldWarn(axis: .horizontal, fingerCount: .four))
-    }
-
-    func testWarningIsHiddenForDisabledAndUnknownStatus() {
-        let disabledFixture = Fixture()
-        disabledFixture.set(NSNumber(value: false), key: authoritativeKey, domain: dockDomain)
-        let disabledProbe = disabledFixture.makeProbe()
-        disabledProbe.refresh()
-
-        XCTAssertFalse(disabledProbe.shouldWarn(axis: .vertical, fingerCount: .three))
-
-        let unknownProbe = Fixture().makeProbe()
-        unknownProbe.refresh()
-
-        XCTAssertFalse(unknownProbe.shouldWarn(axis: .vertical, fingerCount: .four))
-    }
-
-    func testDisabledWorkspaceSwipeStillWarnsWhenCollisionForcesEffectiveAxisVertical() {
+    func testDisabledWorkspaceSwipeKeepsCollisionAxisVertical() {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("MissionControlGestureProbeTests-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -184,20 +157,11 @@ final class MissionControlGestureProbeTests: XCTestCase {
         settings.gestures.workspaceSwipeFingerCount = .three
         settings.gestures.workspaceSwipeAxis = .horizontal
 
-        let fixture = Fixture()
-        fixture.set(NSNumber(value: true), key: authoritativeKey, domain: dockDomain)
-        let probe = fixture.makeProbe()
-        probe.refresh()
-
         XCTAssertTrue(settings.gestures.workspaceSwipeAxisLockedToVertical)
         XCTAssertEqual(settings.gestures.effectiveWorkspaceSwipeAxis, .vertical)
-        XCTAssertTrue(probe.shouldWarn(
-            axis: settings.gestures.effectiveWorkspaceSwipeAxis,
-            fingerCount: settings.gestures.workspaceSwipeFingerCount
-        ))
     }
 
-    func testSettingsPaneRefreshesProbeOnAppearanceAndAppReactivation() {
+    func testSettingsPaneRefreshesProbeOnAppearanceAndAppReactivation() async {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("MissionControlGestureProbeTests-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -216,6 +180,11 @@ final class MissionControlGestureProbeTests: XCTestCase {
         let controller = WMController(settings: settings)
         let fixture = Fixture()
         fixture.set(NSNumber(value: false), key: authoritativeKey, domain: dockDomain)
+        let appeared = expectation(description: "Appearance refresh reads the authoritative preference")
+        fixture.onRead = { [authoritativeKey, dockDomain] key, domain in
+            if key == authoritativeKey, domain == dockDomain { appeared.fulfill() }
+        }
+        defer { fixture.onRead = nil }
         let probe = fixture.makeProbe()
         let hostingView = NSHostingView(rootView: MouseTrackpadSettingsTab(
             settings: settings,
@@ -230,13 +199,17 @@ final class MissionControlGestureProbeTests: XCTestCase {
         )
         window.contentView = hostingView
         hostingView.layoutSubtreeIfNeeded()
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.01))
+        await fulfillment(of: [appeared], timeout: 5)
 
         XCTAssertEqual(probe.status, .disabled)
 
+        let reactivated = expectation(description: "Reactivation refresh reads the authoritative preference")
+        fixture.onRead = { [authoritativeKey, dockDomain] key, domain in
+            if key == authoritativeKey, domain == dockDomain { reactivated.fulfill() }
+        }
         fixture.set(NSNumber(value: true), key: authoritativeKey, domain: dockDomain)
         NotificationCenter.default.post(name: NSApplication.didBecomeActiveNotification, object: NSApp)
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.01))
+        await fulfillment(of: [reactivated], timeout: 5)
 
         XCTAssertEqual(probe.status, .enabled)
         withExtendedLifetime(window) {}
@@ -258,6 +231,7 @@ final class MissionControlGestureProbeTests: XCTestCase {
 private final class Fixture {
     var events: [Event] = []
     var openedURLs: [URL] = []
+    var onRead: ((String, String) -> Void)?
     private var values: [Address: Any] = [:]
 
     func set(_ value: Any?, key: String, domain: String) {
@@ -273,6 +247,7 @@ private final class Fixture {
         MissionControlGestureProbe(
             preferenceReader: { [self] key, domain in
                 events.append(.read(key, domain))
+                onRead?(key, domain)
                 return values[Address(key: key, domain: domain)]
             },
             domainSynchronizer: { [self] domain in

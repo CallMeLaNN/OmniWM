@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWM
@@ -123,6 +123,7 @@ final class AXWriteMetricsBenchmarkTests: XCTestCase {
         }
         let stop = StopSignal()
         let merged = Mutex<[UInt64]>([])
+        let remainingWriters = Mutex(writers)
         DispatchQueue.concurrentPerform(iterations: writers + 1) { index in
             guard index < writers else {
                 contender(metrics, stop)
@@ -133,7 +134,12 @@ final class AXWriteMetricsBenchmarkTests: XCTestCase {
                 metrics.record(token, lane: .ordinary, nanoseconds: UInt64(write), succeeded: true)
             }.samples
             merged.withLock { $0.append(contentsOf: samples) }
-            if index == 0 {
+            let lastWriter = remainingWriters.withLock { count in
+                precondition(count > 0)
+                count -= 1
+                return count == 0
+            }
+            if lastWriter {
                 stop.set()
             }
         }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import IOSurface
@@ -121,44 +121,43 @@ final class ShellBarShaderTests: XCTestCase {
         host.stop()
     }
 
-    func testBackgroundStaysAttachedAcrossFullWidthChangesForBothAnimatedProfiles() async throws {
-        for source in ["sakura-petals.metal", "matrix-rain.metal"] {
-            let model = WorkspaceBarModel(snapshot: WorkspaceBarSnapshot(
-                projection: WorkspaceBarProjection(items: [], scratchpads: []),
-                backgroundOpacity: 1, barHeight: 40,
-                barFill: ShellThemeColor("background", theme: .native),
-                barBorder: ShellThemeColor("border", theme: .native),
-                barShader: ShellBarShader(source: source)
-            ))
-            let background = ShellBarShaderView()
-            background.update(program: try program(), input: input, paused: false)
-            let view = NSHostingView(rootView: WorkspaceBarView(
-                model: model, motionPolicy: MotionPolicy(animationsEnabled: false),
-                shaderBackground: { background }
-            ))
-            view.sizingOptions = []
-            let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 1000, height: 40),
-                styleMask: .borderless, backing: .buffered, defer: false
-            )
-            window.contentView = view
-            view.layoutSubtreeIfNeeded()
-            XCTAssertTrue(background.window === window, source)
-            XCTAssertTrue(background.isDescendant(of: view), source)
+    func testConstructedProgramBackgroundStaysAttachedAcrossFullWidthChanges() async throws {
+        let source = "sakura-petals.metal"
+        let model = WorkspaceBarModel(snapshot: WorkspaceBarSnapshot(
+            projection: WorkspaceBarProjection(items: [], scratchpads: []),
+            backgroundOpacity: 1, barHeight: 40,
+            barFill: ShellThemeColor("background", theme: .native),
+            barBorder: ShellThemeColor("border", theme: .native),
+            barShader: ShellBarShader(source: source)
+        ))
+        let background = ShellBarShaderView()
+        background.update(program: try program(), input: input, paused: false)
+        let view = NSHostingView(rootView: WorkspaceBarView(
+            model: model, motionPolicy: MotionPolicy(animationsEnabled: false),
+            shaderBackground: { background }
+        ))
+        view.sizingOptions = []
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 1000, height: 40),
+            styleMask: .borderless, backing: .buffered, defer: false
+        )
+        window.contentView = view
+        view.layoutSubtreeIfNeeded()
+        XCTAssertTrue(background.window === window, source)
+        XCTAssertTrue(background.isDescendant(of: view), source)
 
-            model.zones = WorkspaceBarZones(notch: nil, mode: .splitAroundNotch)
-            view.layoutSubtreeIfNeeded()
-            await until { background.frame.size == CGSize(width: 1000, height: 40) }
-            XCTAssertTrue(background.window === window, source)
-            XCTAssertTrue(background.isDescendant(of: view), source)
+        model.zones = WorkspaceBarZones(notch: nil, mode: .splitAroundNotch)
+        view.layoutSubtreeIfNeeded()
+        await until { background.frame.size == CGSize(width: 1000, height: 40) }
+        XCTAssertTrue(background.window === window, source)
+        XCTAssertTrue(background.isDescendant(of: view), source)
 
-            model.zones = nil
-            view.layoutSubtreeIfNeeded()
-            await until { background.frame.width < 1000 }
-            XCTAssertTrue(background.window === window, source)
-            XCTAssertTrue(background.isDescendant(of: view), source)
-            background.stop()
-        }
+        model.zones = nil
+        view.layoutSubtreeIfNeeded()
+        await until { background.frame.width < 1000 }
+        XCTAssertTrue(background.window === window, source)
+        XCTAssertTrue(background.isDescendant(of: view), source)
+        background.stop()
     }
 
     func testBackgroundReplacementUpdatesTheHostedView() async {

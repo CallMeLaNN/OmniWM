@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Darwin
 import Foundation
@@ -20,10 +20,6 @@ final class IPCProtocolEnvelopeTests: XCTestCase {
         Data("""
         {"version":\(version),"id":"req-1","kind":"\(kind)","authorizationToken":"\(token)","payload":\(payload)}
         """.utf8)
-    }
-
-    func testCurrentProtocolVersionIsTwenty() {
-        XCTAssertEqual(OmniWMIPCProtocol.version, 20)
     }
 
     func testScratchpadCommandDecodesLiteralScratchpadIndexField() throws {

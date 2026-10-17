@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import CoreGraphics
 import Foundation
@@ -20,25 +20,18 @@ final class DwindleResizeFocusedTests: XCTestCase {
         return (engine, ws, first, second)
     }
 
-    func testGrowFirstChildIncreasesRatio() {
-        let (engine, ws, first, _) = makeTwoWindowEngine()
-        engine.setSelectedNode(engine.findNode(for: first, in: ws), in: ws)
-        XCTAssertTrue(engine.resizeFocusedWindow(by: 0.1, in: ws))
-        XCTAssertEqual(engine.root(for: ws)?.splitRatio ?? 0, 1.1, accuracy: 1e-6)
-    }
-
-    func testShrinkFirstChildDecreasesRatio() {
-        let (engine, ws, first, _) = makeTwoWindowEngine()
-        engine.setSelectedNode(engine.findNode(for: first, in: ws), in: ws)
-        XCTAssertTrue(engine.resizeFocusedWindow(by: -0.1, in: ws))
-        XCTAssertEqual(engine.root(for: ws)?.splitRatio ?? 0, 0.9, accuracy: 1e-6)
-    }
-
-    func testGrowSecondChildDecreasesRatio() {
-        let (engine, ws, _, second) = makeTwoWindowEngine()
-        engine.setSelectedNode(engine.findNode(for: second, in: ws), in: ws)
-        XCTAssertTrue(engine.resizeFocusedWindow(by: 0.1, in: ws))
-        XCTAssertEqual(engine.root(for: ws)?.splitRatio ?? 0, 0.9, accuracy: 1e-6)
+    func testResizeAdjustsParentRatioForSelectedChild() {
+        let cases: [(String, Bool, CGFloat, CGFloat)] = [
+            ("testGrowFirstChildIncreasesRatio", true, 0.1, 1.1),
+            ("testShrinkFirstChildDecreasesRatio", true, -0.1, 0.9),
+            ("testGrowSecondChildDecreasesRatio", false, 0.1, 0.9)
+        ]
+        for (label, focusFirst, delta, expected) in cases {
+            let (engine, ws, first, second) = makeTwoWindowEngine()
+            engine.setSelectedNode(engine.findNode(for: focusFirst ? first : second, in: ws), in: ws)
+            XCTAssertTrue(engine.resizeFocusedWindow(by: delta, in: ws), label)
+            XCTAssertEqual(engine.root(for: ws)?.splitRatio ?? 0, expected, accuracy: 1e-6, label)
+        }
     }
 
     func testRatioClampsAtMaxAndStops() {

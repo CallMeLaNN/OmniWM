@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWMCtl
@@ -56,6 +56,10 @@ final class WorkspaceSlotIPCCommandTests: XCTestCase {
     func testHelpAndCompletionsExposeSlotCommands() {
         XCTAssertTrue(CLIParser.usageText.contains("switch-workspace slot <number>"))
         XCTAssertTrue(CLIParser.usageText.contains("move-to-workspace slot <number>"))
+        XCTAssertTrue(CLICompletionCatalog.commandSlotThreeSuggestionsByFirst["switch-workspace"]?
+            .contains("slot") == true)
+        XCTAssertTrue(CLICompletionCatalog.commandSlotThreeSuggestionsByFirst["move-to-workspace"]?
+            .contains("slot") == true)
         for shell in CLIShell.allCases {
             XCTAssertTrue(CLICompletionGenerator.script(for: shell).contains("slot"), shell.rawValue)
         }

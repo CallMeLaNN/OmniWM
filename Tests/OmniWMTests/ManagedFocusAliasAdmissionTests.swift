@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import ApplicationServices
 import Foundation
@@ -170,78 +170,43 @@ final class ManagedFocusAliasAdmissionTests: XCTestCase {
         XCTAssertFalse(controller.workspaceManager.nativeFocusOwner.isExternal)
     }
 
-    func testMissingFocusedWindowFromRetryConsumesManagedFocusAttempt() throws {
-        let controller = WindowAdmissionTestSupport.controller()
-        let workspaceId = try XCTUnwrap(
-            controller.workspaceManager.workspaceId(for: "1", createIfMissing: true)
-        )
-        let token = WindowToken(pid: 467_930, windowId: 467_931)
-        _ = WindowAdmissionTestSupport.track(token, in: workspaceId, controller: controller)
-        let request = controller.intentLedger.beginManagedRequest(token: token, workspaceId: workspaceId)
-        _ = controller.workspaceManager.beginManagedFocusRequest(
-            token,
-            in: workspaceId,
-            requestId: request.requestId
-        )
-        controller.factResolver.factProvider = { _ in nil }
-        controller.hasStartedServices = true
+    func testMissingFocusedWindowConsumesOnlyRetryAttempt() throws {
+        for probe in [false, true] {
+            let controller = WindowAdmissionTestSupport.controller()
+            let workspaceId = try XCTUnwrap(
+                controller.workspaceManager.workspaceId(for: "1", createIfMissing: true)
+            )
+            let token = WindowToken(pid: probe ? 467_932 : 467_930, windowId: probe ? 467_933 : 467_931)
+            _ = WindowAdmissionTestSupport.track(token, in: workspaceId, controller: controller)
+            let request = controller.intentLedger.beginManagedRequest(token: token, workspaceId: workspaceId)
+            _ = controller.workspaceManager.beginManagedFocusRequest(
+                token,
+                in: workspaceId,
+                requestId: request.requestId
+            )
+            controller.factResolver.factProvider = { _ in nil }
+            controller.hasStartedServices = true
 
-        controller.axEventHandler.handleAppActivation(
-            pid: token.pid,
-            source: .focusedWindowChanged,
-            origin: .retry
-        )
-        controller.axEventHandler.handleActivationFactsResolved(
-            ActivationFacts(
+            controller.axEventHandler.handleAppActivation(
                 pid: token.pid,
                 source: .focusedWindowChanged,
-                origin: .retry,
-                observationGeneration: 1,
-                requestedAtSeq: controller.intentLedger.intent(id: request.requestId)?.issuedAtSeq ?? 0,
-                focusedWindow: nil
+                origin: probe ? .probe : .retry
             )
-        )
-
-        XCTAssertEqual(controller.intentLedger.activeManagedRequest?.requestId, request.requestId)
-        XCTAssertEqual(controller.intentLedger.activeManagedRequest?.retryCount, 1)
-        XCTAssertEqual(controller.workspaceManager.pendingFocusedToken, token)
-    }
-
-    func testMissingFocusedWindowFromProbeDoesNotConsumeManagedFocusAttempt() throws {
-        let controller = WindowAdmissionTestSupport.controller()
-        let workspaceId = try XCTUnwrap(
-            controller.workspaceManager.workspaceId(for: "1", createIfMissing: true)
-        )
-        let token = WindowToken(pid: 467_932, windowId: 467_933)
-        _ = WindowAdmissionTestSupport.track(token, in: workspaceId, controller: controller)
-        let request = controller.intentLedger.beginManagedRequest(token: token, workspaceId: workspaceId)
-        _ = controller.workspaceManager.beginManagedFocusRequest(
-            token,
-            in: workspaceId,
-            requestId: request.requestId
-        )
-        controller.factResolver.factProvider = { _ in nil }
-        controller.hasStartedServices = true
-
-        controller.axEventHandler.handleAppActivation(
-            pid: token.pid,
-            source: .focusedWindowChanged,
-            origin: .probe
-        )
-        controller.axEventHandler.handleActivationFactsResolved(
-            ActivationFacts(
-                pid: token.pid,
-                source: .focusedWindowChanged,
-                origin: .probe,
-                observationGeneration: 1,
-                requestedAtSeq: controller.intentLedger.intent(id: request.requestId)?.issuedAtSeq ?? 0,
-                focusedWindow: nil
+            controller.axEventHandler.handleActivationFactsResolved(
+                ActivationFacts(
+                    pid: token.pid,
+                    source: .focusedWindowChanged,
+                    origin: probe ? .probe : .retry,
+                    observationGeneration: 1,
+                    requestedAtSeq: controller.intentLedger.intent(id: request.requestId)?.issuedAtSeq ?? 0,
+                    focusedWindow: nil
+                )
             )
-        )
 
-        XCTAssertEqual(controller.intentLedger.activeManagedRequest?.requestId, request.requestId)
-        XCTAssertEqual(controller.intentLedger.activeManagedRequest?.retryCount, 0)
-        XCTAssertEqual(controller.workspaceManager.pendingFocusedToken, token)
+            XCTAssertEqual(controller.intentLedger.activeManagedRequest?.requestId, request.requestId)
+            XCTAssertEqual(controller.intentLedger.activeManagedRequest?.retryCount, probe ? 0 : 1)
+            XCTAssertEqual(controller.workspaceManager.pendingFocusedToken, token)
+        }
     }
 
     func testMissingFocusedWindowFromObserverPIDAliasPreservesConfirmedManagedFocus() throws {

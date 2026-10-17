@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import ApplicationServices
 import Dispatch
@@ -85,34 +85,22 @@ final class DiagnosticsTraceRecorderTests: XCTestCase {
         XCTAssertEqual(evaluations, 1)
     }
 
-    func testSessionTraceRecorderDefersEveryRingAllocationUntilCaptureStart() {
+    func testSessionTraceRecorderReleaseStorageDropsActiveSpareAndRetainedRings() {
         let recorder = SessionTraceRecorder<Int>(sectionTitle: "Nums", capacity: 4) { "\($0)" }
 
         XCTAssertFalse(recorder.isStoragePrepared, "active ring must not allocate before capture")
         XCTAssertFalse(recorder.isSpareStoragePrepared, "spare ring must not allocate before capture")
-
         recorder.beginCapture()
         XCTAssertTrue(recorder.isStoragePrepared)
-        XCTAssertTrue(
-            recorder.isSpareStoragePrepared,
-            "spare must be ready so snapshot rotation never allocates while holding the lock"
-        )
-
-        recorder.record(1)
-        recorder.endCapture()
-        XCTAssertTrue(recorder.isStoragePrepared, "endCapture freezes producers without dropping storage")
-        XCTAssertEqual(recorder.dump(), "1")
-    }
-
-    func testSessionTraceRecorderReleaseStorageDropsActiveSpareAndRetainedRings() {
-        let recorder = SessionTraceRecorder<Int>(sectionTitle: "Nums", capacity: 4) { "\($0)" }
-
-        recorder.beginCapture()
+        XCTAssertTrue(recorder.isSpareStoragePrepared, "snapshot rotation must have spare storage")
         recorder.record(1)
         XCTAssertEqual(recorder.dump(), "1", "dump retains records so the final write can read them")
         XCTAssertTrue(recorder.isRetainedStoragePrepared)
         XCTAssertEqual(recorder.dump(), "1", "an empty active ring must still return retained records")
+        recorder.record(2)
         recorder.endCapture()
+        XCTAssertTrue(recorder.isStoragePrepared, "endCapture freezes producers without dropping storage")
+        XCTAssertEqual(recorder.dump(), "1\n2")
 
         recorder.releaseStorage()
         XCTAssertFalse(recorder.isStoragePrepared)

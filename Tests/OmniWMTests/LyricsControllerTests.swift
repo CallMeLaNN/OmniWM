@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWM
@@ -9,7 +9,11 @@ import XCTest
 @MainActor
 final class LyricsControllerTests: XCTestCase {
     private final class Loads: Sendable {
-        private let state = Mutex<(tracks: [ShellLyricsTrack], waiting: [CheckedContinuation<Void, Never>])>(([], []))
+        private let state = Mutex<(
+            tracks: [ShellLyricsTrack],
+            waiting: [CheckedContinuation<Void, Never>],
+            finished: Bool
+        )>(([], [], false))
         let held: Bool
         let result: @Sendable (ShellLyricsTrack) throws -> ShellLyrics
 
@@ -30,7 +34,12 @@ final class LyricsControllerTests: XCTestCase {
             state.withLock { $0.tracks.append(track) }
             if held {
                 await withCheckedContinuation { continuation in
-                    state.withLock { $0.waiting.append(continuation) }
+                    let finished = state.withLock { state in
+                        guard !state.finished else { return true }
+                        state.waiting.append(continuation)
+                        return false
+                    }
+                    if finished { continuation.resume() }
                 }
             }
             return try result(track)
@@ -41,6 +50,16 @@ final class LyricsControllerTests: XCTestCase {
                 state.waiting.forEach { $0.resume() }
                 state.waiting.removeAll()
             }
+        }
+
+        func finish() {
+            let waiting = state.withLock { state in
+                state.finished = true
+                let waiting = state.waiting
+                state.waiting.removeAll()
+                return waiting
+            }
+            for continuation in waiting { continuation.resume() }
         }
     }
 
@@ -139,28 +158,43 @@ final class LyricsControllerTests: XCTestCase {
         XCTAssertNil(controller.lyrics)
     }
 
-    func testATrackChangeCancelsTheEarlierRequest() async {
+    func testATrackChangeCancelsTheEarlierRequest() async throws {
         let loads = Loads(held: true) { $0.title == "Song" ? Self.synced : .missing }
         let controller = LyricsController(load: loads.load)
+        defer {
+            controller.show(nil)
+            loads.finish()
+        }
         var loaded: [ShellLyrics] = []
         controller.onLoad = { loaded.append($0) }
 
         controller.show(Self.song)
+        let earlier = try XCTUnwrap(controller.task)
         await until { loads.waiting == 1 }
+        _ = try XCTUnwrap(loads.waiting == 1 ? loads : nil, "Expected the first held request")
         controller.show(Self.other)
+        let current = try XCTUnwrap(controller.task)
+        XCTAssertTrue(earlier.isCancelled)
+        XCTAssertFalse(current.isCancelled)
         await until { loads.waiting == 2 }
+        _ = try XCTUnwrap(loads.waiting == 2 ? loads : nil, "Expected both held requests")
         loads.releaseAll()
-        await until { loaded.count == 1 }
+        await earlier.value
+        await current.value
         XCTAssertEqual(loaded, [.missing])
         XCTAssertEqual(controller.lyrics, .missing)
 
         controller.show(Self.song)
+        let cleared = try XCTUnwrap(controller.task)
         XCTAssertEqual(controller.lyrics, .loading)
         await until { loads.waiting == 1 }
+        _ = try XCTUnwrap(loads.waiting == 1 ? loads : nil, "Expected the request cleared below")
         controller.show(nil)
+        XCTAssertTrue(cleared.isCancelled)
+        XCTAssertNil(controller.lyrics)
         loads.releaseAll()
-        await until { loads.tracks.count == 3 }
-        await Task.yield()
+        await cleared.value
+        XCTAssertEqual(loads.tracks, [Self.song, Self.other, Self.song])
         XCTAssertEqual(loaded, [.missing])
         XCTAssertNil(controller.lyrics)
     }

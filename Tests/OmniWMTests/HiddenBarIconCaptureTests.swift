@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 @testable import OmniWM
 import XCTest
@@ -57,6 +57,25 @@ final class HiddenBarIconCaptureTests: XCTestCase {
         XCTAssertEqual(
             HiddenBarIconCaptureService.cropRects(bounds: [itemBounds], union: hostFrame, scale: 2),
             [CGRect(x: 2880, y: 6, width: 200, height: 48)]
+        )
+        let union = CGRect(x: 100, y: 10, width: 90, height: 24)
+        let bounds = [
+            CGRect(x: 100, y: 10, width: 30, height: 24),
+            CGRect(x: 160, y: 10, width: 30, height: 24)
+        ]
+        XCTAssertEqual(
+            HiddenBarIconCaptureService.cropRects(bounds: bounds, union: union, scale: 1),
+            [
+                CGRect(x: 0, y: 0, width: 30, height: 24),
+                CGRect(x: 60, y: 0, width: 30, height: 24)
+            ]
+        )
+        XCTAssertEqual(
+            HiddenBarIconCaptureService.cropRects(bounds: bounds, union: union, scale: 2),
+            [
+                CGRect(x: 0, y: 0, width: 60, height: 48),
+                CGRect(x: 120, y: 0, width: 60, height: 48)
+            ]
         )
     }
 

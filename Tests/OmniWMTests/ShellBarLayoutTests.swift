@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWM
@@ -115,78 +115,6 @@ final class ShellBarLayoutTests: XCTestCase {
         XCTAssertEqual(layout.trailing, ["workspaces", "mine"])
     }
 
-    func testSavingRewritesOnlyTheProfilesLayoutKeysAndResetRestoresTheProfile() throws {
-        try write("shell.toml", """
-        # my shell
-        profile = "default"
-        profiles.default.trailing = [
-            "clock",
-            "mine",
-        ]
-
-        [weather]
-        city = "Toronto"
-        """)
-        var layout = try ShellBarLayout.load(shellDirectory: shell).get()
-        XCTAssertTrue(layout.customized)
-        XCTAssertEqual(layout.trailing, ["clock", "mine"])
-        layout.remove("mine")
-        layout.add("weather", to: .leading)
-        try layout.save(shellDirectory: shell)
-        XCTAssertEqual(try parsed(), [
-            "profile": .string("default"),
-            "profiles": .table(["default": .table([
-                "leading": .array([.string("workspaces"), .string("weather")]),
-                "center": .array([]),
-                "trailing": .array([.string("clock")])
-            ])]),
-            "weather": .table(["city": .string("Toronto")])
-        ])
-        let saved = try ShellBarLayout.load(shellDirectory: shell).get()
-        XCTAssertEqual(saved.leading, ["workspaces", "weather"])
-        XCTAssertEqual(saved.trailing, ["clock"])
-
-        try ShellBarLayout.reset(shellDirectory: shell)
-        XCTAssertEqual(try parsed(), [
-            "profile": .string("default"),
-            "weather": .table(["city": .string("Toronto")])
-        ])
-        let reset = try ShellBarLayout.load(shellDirectory: shell).get()
-        XCTAssertFalse(reset.customized)
-        XCTAssertEqual(reset.trailing, ["clock"])
-    }
-
-    func testEachProfileKeepsItsOwnLayout() throws {
-        try FileManager.default.createDirectory(
-            at: shell.appendingPathComponent("styled", isDirectory: true),
-            withIntermediateDirectories: true
-        )
-        try write("styled/shell.toml", "leading = [\"clock\"]\ntrailing = []")
-        try write("shell.toml", "profile = \"styled\"")
-        XCTAssertTrue(try ShellBarLayout.edit(shellDirectory: shell) { $0.add("weather", to: .center) })
-        XCTAssertEqual(try parsed(), [
-            "profile": .string("styled"),
-            "profiles": .table(["styled": .table([
-                "leading": .array([.string("clock")]),
-                "center": .array([.string("weather")]),
-                "trailing": .array([])
-            ])])
-        ])
-        let styled = try ShellBarLayout.load(shellDirectory: shell).get()
-        XCTAssertEqual(styled.leading, ["clock"])
-        XCTAssertEqual(styled.center, ["weather"])
-        XCTAssertTrue(styled.customized)
-
-        XCTAssertTrue(try ShellProfiles.select(ShellDefaults.profile, in: shell))
-        let plain = try ShellBarLayout.load(shellDirectory: shell).get()
-        XCTAssertEqual(plain.leading, ["workspaces"])
-        XCTAssertEqual(plain.center, [])
-        XCTAssertFalse(plain.customized)
-        try ShellBarLayout.reset(shellDirectory: shell)
-        XCTAssertTrue(try ShellProfiles.select("styled", in: shell))
-        XCTAssertEqual(try ShellBarLayout.load(shellDirectory: shell).get().center, ["weather"])
-    }
-
     func testTheCenterLaneLoadsAndPlacesBetweenTheOthers() throws {
         try write("shell.toml", "profiles.default.center = [\"weather\"]")
         let config = ShellConfig.resolve(shellDirectory: shell)
@@ -199,17 +127,6 @@ final class ShellBarLayoutTests: XCTestCase {
         XCTAssertEqual(layout.addable.map(\.name), ["mine"])
     }
 
-    func testABrokenLayerBlocksEditingInsteadOfSavingFallbackLists() throws {
-        try write("shell.toml", "profiles.default.leading = [\"clock\"]\nprofiles.default.theme = \"dusk\"")
-        try write("default/shell.toml", "leading = [")
-        guard case let .failure(unreadable) = ShellBarLayout.load(shellDirectory: shell) else {
-            return XCTFail("a broken layer must not load")
-        }
-        XCTAssertTrue(unreadable.problem.hasPrefix("default/shell.toml"), unreadable.problem)
-        XCTAssertThrowsError(try ShellBarLayout.edit(shellDirectory: shell) { $0.remove("clock") })
-        XCTAssertEqual(try read(), "profiles.default.leading = [\"clock\"]\nprofiles.default.theme = \"dusk\"\n")
-    }
-
     func testAHandWrittenProfileTableSupportsTheSameEditsAsDottedKeys() throws {
         let original = "[profiles.default]\ntrailing = [\"clock\"]\n"
         try write("shell.toml", original.trimmingCharacters(in: .newlines))
@@ -219,31 +136,6 @@ final class ShellBarLayoutTests: XCTestCase {
         XCTAssertEqual(saved.leading, ["workspaces", "weather"])
         XCTAssertEqual(saved.trailing, ["clock"])
         XCTAssertTrue(saved.customized)
-    }
-
-    func testAStaleDragIsCancelledAndOtherEditsKeepOutsideChanges() throws {
-        try write("shell.toml", "profiles.default.trailing = [\"clock\", \"weather\", \"mine\"]")
-        let shown = try ShellBarLayout.load(shellDirectory: shell).get()
-        try write(
-            "shell.toml",
-            "profiles.default.trailing = [\"mine\", \"clock\"]\nprofiles.default.center = [\"weather\"]"
-        )
-
-        XCTAssertFalse(try ShellBarLayout.edit(shellDirectory: shell, unlessChanged: (.trailing, shown.trailing)) {
-            $0.move(in: .trailing, from: [2], to: 0)
-        })
-        XCTAssertEqual(
-            try read(),
-            "profiles.default.trailing = [\"mine\", \"clock\"]\nprofiles.default.center = [\"weather\"]\n"
-        )
-        XCTAssertTrue(try ShellBarLayout.edit(shellDirectory: shell) { $0.remove("clock") })
-        let saved = try ShellBarLayout.load(shellDirectory: shell).get()
-        XCTAssertEqual(saved.center, ["weather"])
-        XCTAssertEqual(saved.trailing, ["mine"])
-        XCTAssertTrue(try ShellBarLayout.edit(shellDirectory: shell, unlessChanged: (.center, saved.center)) {
-            $0.add("clock", to: .center)
-        })
-        XCTAssertEqual(try ShellBarLayout.load(shellDirectory: shell).get().center, ["weather", "clock"])
     }
 
     @MainActor

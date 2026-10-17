@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import CoreGraphics
@@ -135,6 +135,7 @@ private final class ColumnModeToastManualSleeper {
     private var waiters: [CheckedContinuation<Void, Never>] = []
 
     func sleep(for _: Duration) async throws {
+        try Task.checkCancellation()
         if permits > 0 {
             permits -= 1
         } else {

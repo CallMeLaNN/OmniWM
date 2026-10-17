@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 @testable import OmniWM
@@ -75,9 +75,15 @@ final class OverviewNativeAnimationTests: XCTestCase {
         }
         let normalized = OverviewNativeTransition(generation: 1, startTime: 0, from: 0.4, to: 1, initialVelocity: 1.2)
         XCTAssertEqual(normalized.makeAnimation(keyPath: "opacity").initialVelocity, 2, accuracy: 0.000000001)
-        let settled = OverviewNativeTransition(generation: 1, startTime: 0, from: 1, to: 1, initialVelocity: 5)
-        XCTAssertEqual(settled.makeAnimation(keyPath: "opacity").initialVelocity, 0)
-        XCTAssertEqual(settled.duration, 0)
+        for (startTime, initialVelocity) in [(100.0, 0.0), (0.0, 5.0)] {
+            let settled = OverviewNativeTransition(
+                generation: 1, startTime: startTime, from: 1, to: 1, initialVelocity: initialVelocity
+            )
+            XCTAssertEqual(settled.makeAnimation(keyPath: "opacity").initialVelocity, 0)
+            XCTAssertEqual(settled.duration, 0)
+            XCTAssertEqual(settled.value(at: startTime), 1)
+            XCTAssertEqual(settled.velocity(at: startTime), 0)
+        }
     }
 
     func testRubberBandMatchesHyperbolicResistance() {
@@ -184,14 +190,6 @@ final class OverviewNativeAnimationTests: XCTestCase {
         XCTAssertLessThan(closing.makeAnimation(keyPath: "opacity").initialVelocity, 0)
         XCTAssertEqual(closing.value(at: reversedAt + closing.duration + 1), 0)
         XCTAssertEqual(closing.velocity(at: reversedAt + closing.duration + 1), 0)
-    }
-
-    func testAlreadySettledTransitionHasNoDurationOrResidualVelocity() {
-        let transition = OverviewNativeTransition(generation: 1, startTime: 100, from: 1, to: 1)
-
-        XCTAssertEqual(transition.duration, 0)
-        XCTAssertEqual(transition.value(at: 100), 1)
-        XCTAssertEqual(transition.velocity(at: 100), 0)
     }
 
     func testNativeLayerMotionCommitsFinalModelAndAnimatesFromCapturedGeometry() throws {

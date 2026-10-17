@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import CoreGraphics
@@ -37,28 +37,16 @@ final class OverviewScrollInputTests: XCTestCase {
         XCTAssertFalse(gate.consumes(wheel, state: .open))
     }
 
-    func testVerticalDominanceKeepsSign() {
-        XCTAssertEqual(OverviewScrollInput.dominantDelta(deltaX: 1, deltaY: -8), -8)
-        XCTAssertEqual(OverviewScrollInput.dominantDelta(deltaX: -1, deltaY: 8), 8)
-    }
-
-    func testHorizontalDominanceKeepsSign() {
-        XCTAssertEqual(OverviewScrollInput.dominantDelta(deltaX: 9, deltaY: 2), 9)
-        XCTAssertEqual(OverviewScrollInput.dominantDelta(deltaX: -9, deltaY: 2), -9)
-    }
-
-    func testTiePrefersVertical() {
-        XCTAssertEqual(OverviewScrollInput.dominantDelta(deltaX: 5, deltaY: 5), 5)
-        XCTAssertEqual(OverviewScrollInput.dominantDelta(deltaX: -5, deltaY: 5), 5)
-    }
-
-    func testEpsilonFiltersNoise() {
-        XCTAssertEqual(OverviewScrollInput.dominantDelta(deltaX: 0.00005, deltaY: 0), 0)
-        XCTAssertEqual(OverviewScrollInput.dominantDelta(deltaX: 0, deltaY: -0.00005), 0)
-        XCTAssertEqual(OverviewScrollInput.dominantDelta(deltaX: 0, deltaY: 0.0002), 0.0002)
-    }
-
-    func testZeroInput() {
-        XCTAssertEqual(OverviewScrollInput.dominantDelta(deltaX: 0, deltaY: 0), 0)
+    func testDominantDeltaPreservesSignsTiesAndNoiseFiltering() {
+        let cases: [(String, CGFloat, CGFloat, CGFloat)] = [
+            ("verticalNegative", 1, -8, -8), ("verticalPositive", -1, 8, 8),
+            ("horizontalPositive", 9, 2, 9), ("horizontalNegative", -9, 2, -9),
+            ("positiveTie", 5, 5, 5), ("oppositeSignTie", -5, 5, 5),
+            ("horizontalNoise", 0.00005, 0, 0), ("verticalNoise", 0, -0.00005, 0),
+            ("aboveEpsilon", 0, 0.0002, 0.0002), ("zero", 0, 0, 0)
+        ]
+        for (label, x, y, expected) in cases {
+            XCTAssertEqual(OverviewScrollInput.dominantDelta(deltaX: x, deltaY: y), expected, label)
+        }
     }
 }

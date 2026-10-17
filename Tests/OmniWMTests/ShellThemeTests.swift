@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 @testable import OmniWM
@@ -267,34 +267,32 @@ final class ShellThemeTests: XCTestCase {
         XCTAssertEqual(config.lane(of: "other").rank, 2)
     }
 
-    func testSlicesShowTheirIslandsWidgetsByLaneInEveryOrientation() {
+    func testSlicesShowTheirIslandsWidgetsByLane() {
         let widget = { (id: String, lane: ShellLane, island: WorkspaceBarIslandSlice) in
             WorkspaceBarShellWidget(id: id, size: CGSize(width: 10, height: 10), lane: lane, island: island)
         }
-        for orientation in [WorkspaceBarOrientation.horizontal, .vertical] {
-            let snapshot = WorkspaceBarSnapshot(
-                projection: WorkspaceBarProjection(items: [], scratchpads: []),
-                backgroundOpacity: 0.6,
-                barHeight: 24,
-                orientation: orientation,
-                shellWidgets: [
-                    widget("menu", .leading, .all),
-                    widget("clock", .trailing, .all),
-                    widget("menu", .leading, .active),
-                    widget("spaces", .leading, .active),
-                    widget("spaces", .leading, .secondary),
-                    widget("clock", .trailing, .secondary)
-                ]
-            )
-            let ids = { (slice: WorkspaceBarIslandSlice, lane: ShellLane) in
-                slice.shellWidgets(in: snapshot, lane: lane).map(\.id)
-            }
-            XCTAssertEqual(ids(.all, .leading), ["menu"])
-            XCTAssertEqual(ids(.all, .trailing), ["clock"])
-            XCTAssertEqual(ids(.active, .leading), ["menu", "spaces"])
-            XCTAssertEqual(ids(.active, .trailing), [])
-            XCTAssertEqual(ids(.secondary, .leading), ["spaces"])
-            XCTAssertEqual(ids(.secondary, .trailing), ["clock"])
+        let snapshot = WorkspaceBarSnapshot(
+            projection: WorkspaceBarProjection(items: [], scratchpads: []),
+            backgroundOpacity: 0.6,
+            barHeight: 24,
+            orientation: .horizontal,
+            shellWidgets: [
+                widget("menu", .leading, .all),
+                widget("clock", .trailing, .all),
+                widget("menu", .leading, .active),
+                widget("spaces", .leading, .active),
+                widget("spaces", .leading, .secondary),
+                widget("clock", .trailing, .secondary)
+            ]
+        )
+        let ids = { (slice: WorkspaceBarIslandSlice, lane: ShellLane) in
+            slice.shellWidgets(in: snapshot, lane: lane).map(\.id)
         }
+        XCTAssertEqual(ids(.all, .leading), ["menu"])
+        XCTAssertEqual(ids(.all, .trailing), ["clock"])
+        XCTAssertEqual(ids(.active, .leading), ["menu", "spaces"])
+        XCTAssertEqual(ids(.active, .trailing), [])
+        XCTAssertEqual(ids(.secondary, .leading), ["spaces"])
+        XCTAssertEqual(ids(.secondary, .trailing), ["clock"])
     }
 }

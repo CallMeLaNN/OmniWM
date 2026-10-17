@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import CoreGraphics
 import Foundation
@@ -363,7 +363,7 @@ final class NiriPortraitRevealIntegrationTests: XCTestCase {
     ) throws {
         let gap = fixture.controller.innerGap(for: fixture.sourceMonitor)
         let workingFrame = fixture.controller.insetWorkingFrame(for: fixture.sourceMonitor)
-        let layout = fixture.engine.calculateCombinedLayoutWithVisibility(
+        let layout = fixture.engine.calculateCombinedLayoutUsingPools(
             in: fixture.workspaceId,
             monitor: fixture.sourceMonitor,
             gaps: LayoutGaps(

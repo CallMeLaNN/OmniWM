@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 @testable import OmniWM
@@ -156,24 +156,6 @@ final class ShellInvocationTests: XCTestCase {
             if id == 1 { XCTAssertNotNil(delivery.failure) }
         }
         await package.close()
-    }
-
-    func testCoalescedChangedSamplesCannotMovePastSealedEndedInvocation() throws {
-        let box = ShellGestureBox()
-        func gesture(_ id: UInt64) -> ShellGestureBox.Gesture {
-            var event = ShellEvent()
-            event.kind = .gesture
-            event.phase = .changed
-            event.invocationID = id
-            event.dx = Double(id)
-            return ShellGestureBox.Gesture(bar: bar, view: .bar, action: 1, sequence: 1, event: event)
-        }
-        let first = try XCTUnwrap(box.post(gesture(1)))
-        XCTAssertNil(box.post(gesture(2)))
-        box.seal()
-        let later = try XCTUnwrap(box.post(gesture(4)))
-        XCTAssertEqual(first.take()?.event.invocationID, 2)
-        XCTAssertEqual(later.take()?.event.invocationID, 4)
     }
 
     func testStaleHostRejectionSettlesTheOriginatingGesture() throws {

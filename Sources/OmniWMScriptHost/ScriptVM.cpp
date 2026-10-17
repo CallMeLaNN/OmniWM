@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 #include "ScriptHostInternal.h"
 #include "OmniWMLuauCommon.h"
@@ -258,7 +258,7 @@ void watchdogFired(void *context) {
     auto *vm = static_cast<omni_vm *>(context);
     vm->pending.store(true, std::memory_order_release);
     std::atomic_thread_fence(std::memory_order_seq_cst);
-    lua_callbacks(vm->main)->interrupt = budgetHook;
+    __atomic_store_n(&lua_callbacks(vm->main)->interrupt, budgetHook, __ATOMIC_RELAXED);
 }
 
 void armWatchdog(omni_vm *vm, uint64_t afterNanoseconds) {
@@ -332,7 +332,7 @@ void budgetHook(lua_State *L, int gc) {
         vm->latched = true;
         raiseBudget(L);
     }
-    lua_callbacks(L)->interrupt = nullptr;
+    __atomic_store_n(&lua_callbacks(L)->interrupt, nullptr, __ATOMIC_RELAXED);
     std::atomic_thread_fence(std::memory_order_seq_cst);
     armWatchdog(vm, vm->budget - used);
 }
@@ -423,7 +423,7 @@ void copyValueMessage(lua_State *L, int index, char *error, size_t capacity) {
 CallScope::CallScope(omni_vm *vm, uint64_t budget) : vm(vm) {
     uint64_t start = threadCPU();
     vm->pending.store(false, std::memory_order_release);
-    lua_callbacks(vm->main)->interrupt = nullptr;
+    __atomic_store_n(&lua_callbacks(vm->main)->interrupt, nullptr, __ATOMIC_RELAXED);
     if (budget != 0) {
         armWatchdog(vm, budget);
     }
@@ -438,7 +438,7 @@ CallScope::~CallScope() {
     vm->lastCallCPU = threadCPU() - vm->callStartCPU;
     vm->inCall = false;
     vm->pending.store(false, std::memory_order_release);
-    lua_callbacks(vm->main)->interrupt = nullptr;
+    __atomic_store_n(&lua_callbacks(vm->main)->interrupt, nullptr, __ATOMIC_RELAXED);
 }
 
 omni_status enforceBudget(omni_vm *vm, omni_status status, char *error, size_t capacity) {

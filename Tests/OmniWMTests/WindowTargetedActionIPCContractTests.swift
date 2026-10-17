@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWMCtl
@@ -12,8 +12,8 @@ final class WindowTargetedActionIPCContractTests: XCTestCase {
     }
 
     private func parseCases() throws -> [([String], IPCWindowRequest)] {
-        let half = try XCTUnwrap(IPCSizeChange(token: "50%"))
-        let delta = try XCTUnwrap(IPCSizeChange(token: "+10"))
+        let half = IPCSizeChange.setProportion(50)
+        let delta = IPCSizeChange.adjustFixed(10)
         return [
             (["move-column-to-first"], .init(name: .moveColumnToFirst, windowId: "ow_x")),
             (["move-column-to-last"], .init(name: .moveColumnToLast, windowId: "ow_x")),
@@ -64,13 +64,21 @@ final class WindowTargetedActionIPCContractTests: XCTestCase {
     }
 
     func testRoundTripKeepsFlatWireShape() throws {
-        for (_, request) in try parseCases() {
+        let extras: [[String: Any]] = [
+            [:], [:], ["columnIndex": 3], ["direction": "left"], [:],
+            ["change": ["kind": "set-proportion", "value": 50]],
+            ["change": ["kind": "adjust-fixed", "value": 10]], ["cycle": "forward"],
+            ["change": ["kind": "set-proportion", "value": 50]], [:], ["cycle": "backward"], [:], [:],
+            ["scratchpadIndex": 2]
+        ]
+        let cases = try parseCases()
+        XCTAssertEqual(cases.count, extras.count)
+        for ((tokens, request), extra) in zip(cases, extras) {
             let data = try JSONEncoder().encode(request)
             let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
-            let argumentKeys = Set(object.keys).subtracting(["name", "windowId"])
-
-            XCTAssertEqual(object["name"] as? String, request.name.rawValue)
-            XCTAssertLessThanOrEqual(argumentKeys.count, 1, "\(object)")
+            var expected: [String: Any] = ["name": tokens[0], "windowId": "ow_x"]
+            expected.merge(extra) { _, value in value }
+            XCTAssertTrue(NSDictionary(dictionary: object).isEqual(to: expected), "\(tokens): \(object)")
             XCTAssertEqual(try JSONDecoder().decode(IPCWindowRequest.self, from: data), request)
         }
 

@@ -63,32 +63,29 @@ class CanaryReleaseTests(unittest.TestCase):
         self.repo.commit("c1")
         self.assertEqual(canary_release.check(str(self.repo.path), False)["should_skip"], "false")
 
-    def test_head_on_stable_tag_skips(self):
+    def test_head_on_stable_or_canary_tag_skips(self):
         self.seed_release()
-        result = canary_release.check(str(self.repo.path), False)
-        self.assertEqual(result["should_skip"], "true")
-        self.assertIn("v0.7.5", result["skip_reason"])
-
-    def test_head_on_canary_tag_skips(self):
-        self.seed_release()
+        with self.subTest(tag="v0.7.5"):
+            result = canary_release.check(str(self.repo.path), False)
+            self.assertEqual(result["should_skip"], "true")
+            self.assertIn("v0.7.5", result["skip_reason"])
         self.repo.commit("c2")
         self.repo.commit("c3")
         self.repo.tag("canary-20261005-0400")
-        result = canary_release.check(str(self.repo.path), False)
-        self.assertEqual(result["should_skip"], "true")
-        self.assertIn("canary-20261005-0400", result["skip_reason"])
+        with self.subTest(tag="canary-20261005-0400"):
+            result = canary_release.check(str(self.repo.path), False)
+            self.assertEqual(result["should_skip"], "true")
+            self.assertIn("canary-20261005-0400", result["skip_reason"])
 
-    def test_commit_after_every_tag_builds(self):
+    def test_commit_after_stable_and_canary_tags_builds(self):
         self.seed_release()
         self.repo.commit("c2")
+        with self.subTest(canary_pool="empty"):
+            self.assertEqual(canary_release.check(str(self.repo.path), False)["should_skip"], "false")
         self.repo.tag("canary-20261004-0400")
         self.repo.commit("c3")
-        self.assertEqual(canary_release.check(str(self.repo.path), False)["should_skip"], "false")
-
-    def test_commit_after_release_tag_builds(self):
-        self.seed_release()
-        self.repo.commit("c2")
-        self.assertEqual(canary_release.check(str(self.repo.path), False)["should_skip"], "false")
+        with self.subTest(canary_pool="populated"):
+            self.assertEqual(canary_release.check(str(self.repo.path), False)["should_skip"], "false")
 
     def test_force_overrides_skip(self):
         self.seed_release()

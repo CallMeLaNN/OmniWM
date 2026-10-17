@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import CoreGraphics
@@ -62,20 +62,6 @@ final class OverviewRendererTests: XCTestCase {
             hoveredBorderColor: SettingsColor(red: 0, green: 1, blue: 0, alpha: 1),
             selectedBorderColor: SettingsColor(red: 0, green: 0, blue: 1, alpha: 1)
         )
-        let token = WindowToken(pid: 1, windowId: 1)
-        let window = OverviewWindowItem(
-            handle: WindowHandle(id: token),
-            windowId: token.windowId,
-            workspaceId: UUID(),
-            title: "Window",
-            appName: "App",
-            appIcon: nil,
-            originalFrame: .zero,
-            overviewFrame: .zero,
-            matchesSearch: true
-        )
-
-        XCTAssertEqual(window.title, "Window")
         assertColor(
             OverviewRenderer.borderColor(isSelected: false, isHovered: false, palette: palette),
             equals: [1, 0, 0, 1]
@@ -190,10 +176,15 @@ final class OverviewRendererTests: XCTestCase {
         let labelFrame = CGRect(x: 20, y: -116, width: 960, height: 32)
         let viewport = CGRect(x: 0, y: -90, width: 1000, height: 800)
 
+        let section = OverviewWorkspaceSection(
+            workspaceId: WorkspaceDescriptor.ID(), name: "Label", windows: [],
+            sectionFrame: sectionFrame, labelFrame: labelFrame, gridFrame: sectionFrame,
+            isActive: false, displayId: nil
+        )
         XCTAssertFalse(OverviewRenderGeometry.shouldRender(frame: sectionFrame, visibleContentRect: viewport))
         XCTAssertTrue(
             OverviewRenderGeometry.shouldRender(
-                frame: sectionFrame.union(labelFrame),
+                frame: OverviewRenderGeometry.sectionCullingFrame(section, progress: 1),
                 visibleContentRect: viewport
             )
         )

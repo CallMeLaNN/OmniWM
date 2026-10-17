@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import ApplicationServices
@@ -10,50 +10,32 @@ import XCTest
 
 @MainActor
 final class FloatingCreatePlacementTests: XCTestCase {
-    func testTiledFocusConfirmationSetsLastTiledFocusedToken() {
-        let workspaceId = WorkspaceDescriptor.ID()
-        let token = WindowToken(pid: 5001, windowId: 11)
-        let plan = StateReducer.reduce(
-            event: .managedFocusConfirmed(
-                token: token,
-                workspaceId: workspaceId,
-                monitorId: nil,
-                requestId: nil,
-                source: .workspaceManager
-            ),
-            existingEntry: nil,
-            currentSnapshot: snapshot(
-                FocusSessionSnapshot(),
-                [reconcileWindow(token, workspaceId, mode: .tiling)]
-            ),
-            monitors: []
-        )
+    func testAcceptedFocusConfirmationTracksTiledTokenByMode() {
+        let cases: [(mode: TrackedWindowMode, windowId: Int, lastTiled: Bool)] = [
+            (.tiling, 11, true), (.floating, 12, false)
+        ]
+        for row in cases {
+            let workspaceId = WorkspaceDescriptor.ID()
+            let token = WindowToken(pid: 5001, windowId: row.windowId)
+            let plan = StateReducer.reduce(
+                event: .managedFocusConfirmed(
+                    token: token,
+                    workspaceId: workspaceId,
+                    monitorId: nil,
+                    requestId: nil,
+                    source: .workspaceManager
+                ),
+                existingEntry: nil,
+                currentSnapshot: snapshot(
+                    FocusSessionSnapshot(),
+                    [reconcileWindow(token, workspaceId, mode: row.mode)]
+                ),
+                monitors: []
+            )
 
-        XCTAssertEqual(plan.focusSession?.selectedManagedToken, token)
-        XCTAssertEqual(plan.focusSession?.lastTiledFocusedToken, token)
-    }
-
-    func testFloatingFocusConfirmationDoesNotSetLastTiledFocusedToken() {
-        let workspaceId = WorkspaceDescriptor.ID()
-        let token = WindowToken(pid: 5001, windowId: 12)
-        let plan = StateReducer.reduce(
-            event: .managedFocusConfirmed(
-                token: token,
-                workspaceId: workspaceId,
-                monitorId: nil,
-                requestId: nil,
-                source: .workspaceManager
-            ),
-            existingEntry: nil,
-            currentSnapshot: snapshot(
-                FocusSessionSnapshot(),
-                [reconcileWindow(token, workspaceId, mode: .floating)]
-            ),
-            monitors: []
-        )
-
-        XCTAssertEqual(plan.focusSession?.selectedManagedToken, token)
-        XCTAssertNil(plan.focusSession?.lastTiledFocusedToken)
+            XCTAssertEqual(plan.focusSession?.selectedManagedToken, token)
+            XCTAssertEqual(plan.focusSession?.lastTiledFocusedToken, row.lastTiled ? token : nil)
+        }
     }
 
     func testRejectedFocusConfirmationDoesNotSetLastTiledFocusedToken() {
@@ -123,7 +105,7 @@ final class FloatingCreatePlacementTests: XCTestCase {
         XCTAssertEqual(plan.focusSession?.lastTiledFocusedToken, newToken)
     }
 
-    func testTiledToFloatingModeChangeClearsAndDoesNotResurrectLastTiledFocusedToken() {
+    func testTiledToFloatingModeChangeClearsAndDoesNotResurrectLastTiledFocusedToken() throws {
         let workspaceId = WorkspaceDescriptor.ID()
         let token = WindowToken(pid: 5001, windowId: 17)
         var focus = FocusSessionSnapshot()
@@ -145,8 +127,7 @@ final class FloatingCreatePlacementTests: XCTestCase {
         )
         XCTAssertNil(toFloating.focusSession?.lastTiledFocusedToken)
 
-        var clearedFocus = focus
-        clearedFocus.lastTiledFocusedToken = nil
+        let clearedFocus = try XCTUnwrap(toFloating.focusSession)
         let backToTiling = StateReducer.reduce(
             event: .windowModeChanged(
                 token: token,
@@ -162,27 +143,18 @@ final class FloatingCreatePlacementTests: XCTestCase {
         XCTAssertNil(backToTiling.focusSession?.lastTiledFocusedToken)
     }
 
-    func testFloatingSpawnResolvesToSecondaryWhereAppIsTiled() throws {
-        let fixture = try makeTwoMonitorFixture()
-        let pid: pid_t = 6001
-        _ = fixture.controller.workspaceManager.addWindow(
-            axRef(pid, 100), pid: pid, windowId: 100, to: fixture.secondaryWorkspace
-        )
-
-        XCTAssertEqual(fixture.controller.testFloatingSpawnMonitorId(pid: pid), fixture.secondary.id)
-    }
-
     func testFloatingSpawnExcludesAppFloatingWindows() throws {
         let fixture = try makeTwoMonitorFixture()
         let pid: pid_t = 6002
         _ = fixture.controller.workspaceManager.addWindow(
             axRef(pid, 200), pid: pid, windowId: 200, to: fixture.secondaryWorkspace
         )
+        XCTAssertEqual(fixture.controller.placementResolver.floatingSpawnMonitorId(pid: pid), fixture.secondary.id)
         _ = fixture.controller.workspaceManager.addWindow(
             axRef(pid, 201), pid: pid, windowId: 201, to: fixture.primaryWorkspace, mode: .floating
         )
 
-        XCTAssertEqual(fixture.controller.testFloatingSpawnMonitorId(pid: pid), fixture.secondary.id)
+        XCTAssertEqual(fixture.controller.placementResolver.floatingSpawnMonitorId(pid: pid), fixture.secondary.id)
     }
 
     func testFloatingSpawnMultiMonitorTracksMostRecentlyFocusedTiled() throws {
@@ -203,7 +175,7 @@ final class FloatingCreatePlacementTests: XCTestCase {
             on: fixture.primaryWorkspace
         )
         XCTAssertEqual(manager.lastTiledFocusedToken, onSecondary)
-        XCTAssertEqual(fixture.controller.testFloatingSpawnMonitorId(pid: pid), fixture.secondary.id)
+        XCTAssertEqual(fixture.controller.placementResolver.floatingSpawnMonitorId(pid: pid), fixture.secondary.id)
 
         confirmTiledThenFloat(
             manager,
@@ -213,7 +185,7 @@ final class FloatingCreatePlacementTests: XCTestCase {
             on: fixture.primaryWorkspace
         )
         XCTAssertEqual(manager.lastTiledFocusedToken, onPrimary)
-        XCTAssertEqual(fixture.controller.testFloatingSpawnMonitorId(pid: pid), fixture.primary.id)
+        XCTAssertEqual(fixture.controller.placementResolver.floatingSpawnMonitorId(pid: pid), fixture.primary.id)
     }
 
     func testFloatingSpawnMultiMonitorNoRecencyReturnsNil() throws {
@@ -223,28 +195,7 @@ final class FloatingCreatePlacementTests: XCTestCase {
         _ = manager.addWindow(axRef(pid, 400), pid: pid, windowId: 400, to: fixture.primaryWorkspace)
         _ = manager.addWindow(axRef(pid, 401), pid: pid, windowId: 401, to: fixture.secondaryWorkspace)
 
-        XCTAssertNil(fixture.controller.testFloatingSpawnMonitorId(pid: pid))
-    }
-
-    func testResolveDiscoveryGenericFloatingUsesFrameInsteadOfSameAppWindow() throws {
-        let fixture = try makeTwoMonitorFixture()
-        let pid: pid_t = 6101
-        _ = fixture.controller.workspaceManager.addWindow(
-            axRef(pid, 500), pid: pid, windowId: 500, to: fixture.secondaryWorkspace
-        )
-
-        let resolved = resolvePlacement(
-            fixture,
-            pid: pid,
-            placementMode: .floating,
-            origin: .discovery,
-            createPlacementContext: placementContext(),
-            windowFrame: CGRect(x: 200, y: 200, width: 600, height: 400),
-            fallbackWorkspaceId: nil
-        )
-
-        XCTAssertEqual(fixture.controller.workspaceManager.monitorId(for: resolved.workspaceId), fixture.primary.id)
-        XCTAssertEqual(resolved.rung, .frame)
+        XCTAssertNil(fixture.controller.placementResolver.floatingSpawnMonitorId(pid: pid))
     }
 
     func testResolveDiscoveryFinderQuickLookUsesSameAppTiledWindow() throws {
@@ -350,25 +301,30 @@ final class FloatingCreatePlacementTests: XCTestCase {
         XCTAssertEqual(resolved.rung, .liveManagedFocus)
     }
 
-    func testResolveTiledFallsBackToFrameWhenNoSignal() throws {
-        let fixture = try makeTwoMonitorFixture()
-        let pid: pid_t = 6106
-        _ = fixture.controller.workspaceManager.addWindow(
-            axRef(pid, 550), pid: pid, windowId: 550, to: fixture.secondaryWorkspace
-        )
+    func testDiscoveryPlacementFallsBackToPhysicalFrameByMode() throws {
+        let cases: [(mode: TrackedWindowMode, pid: pid_t, windowId: Int)] = [
+            (.tiling, 6106, 550), (.floating, 6101, 500)
+        ]
+        for row in cases {
+            let fixture = try makeTwoMonitorFixture()
+            let pid: pid_t = row.pid
+            _ = fixture.controller.workspaceManager.addWindow(
+                axRef(pid, row.windowId), pid: pid, windowId: row.windowId, to: fixture.secondaryWorkspace
+            )
 
-        let resolved = resolvePlacement(
-            fixture,
-            pid: pid,
-            placementMode: .tiling,
-            origin: .discovery,
-            createPlacementContext: placementContext(),
-            windowFrame: CGRect(x: 200, y: 200, width: 600, height: 400),
-            fallbackWorkspaceId: nil
-        )
+            let resolved = resolvePlacement(
+                fixture,
+                pid: pid,
+                placementMode: row.mode,
+                origin: .discovery,
+                createPlacementContext: placementContext(),
+                windowFrame: CGRect(x: 200, y: 200, width: 600, height: 400),
+                fallbackWorkspaceId: nil
+            )
 
-        XCTAssertEqual(fixture.controller.workspaceManager.monitorId(for: resolved.workspaceId), fixture.primary.id)
-        XCTAssertEqual(resolved.rung, .frame)
+            XCTAssertEqual(fixture.controller.workspaceManager.monitorId(for: resolved.workspaceId), fixture.primary.id)
+            XCTAssertEqual(resolved.rung, .frame)
+        }
     }
 
     func testResolveLiveTiledPrefersCapturedInteractionWorkspace() throws {

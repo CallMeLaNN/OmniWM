@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import ApplicationServices
 import Foundation
@@ -138,7 +138,7 @@ final class ScratchpadRevealTests: XCTestCase {
         }
     }
 
-    func testShiftClickingAScratchpadPillTogglesItsScratchpad() throws {
+    func testShellScratchpadMoveRequestTogglesItsScratchpad() throws {
         let fixture = try makeFixture()
         let token = addFloatingWindow(pid: 971_031, windowId: 971_131, to: fixture)
         XCTAssertEqual(assign(token, to: 3, in: fixture), .executed)
@@ -178,6 +178,9 @@ final class ScratchpadRevealTests: XCTestCase {
         let fixture = try makeFixture()
 
         XCTAssertEqual(fixture.controller.toggleScratchpad(9), .notFound)
+        XCTAssertNil(fixture.controller.workspaceManager.revealedScratchpadIndex())
+        let router = IPCCommandRouter(controller: fixture.controller, sessionToken: "test")
+        XCTAssertEqual(router.handle(.scratchpad(.toggle(index: 1))), .notFound)
         XCTAssertNil(fixture.controller.workspaceManager.revealedScratchpadIndex())
     }
 
@@ -591,6 +594,7 @@ final class ScratchpadRevealTests: XCTestCase {
         for token in [first, second] {
             XCTAssertEqual(assign(token, to: 1, in: fixture), .executed)
         }
+        fixture.controller.layoutRefreshController.resetState()
         fixture.focusRecorder.reset()
         XCTAssertEqual(fixture.controller.toggleScratchpad(1), .executed)
         try completeReveal(first, in: fixture)
@@ -615,7 +619,7 @@ final class ScratchpadRevealTests: XCTestCase {
         )
         XCTAssertEqual(group.members.count, 2)
         XCTAssertEqual(group.activeToken, active)
-        let blocker = blockLayoutRefresh(fixture)
+        let blocker = try blockLayoutRefresh(fixture)
         defer { unblockLayoutRefresh(fixture, blocker: blocker) }
 
         XCTAssertNil(fixture.controller.focusWindow(inactive))
@@ -1354,20 +1358,16 @@ final class ScratchpadRevealTests: XCTestCase {
         XCTAssertEqual(fixture.controller.workspaceManager.scratchpadIndex(for: fullscreen), 5)
     }
 
-    func testReturningScratchpadMemberToNiriReleasesOnlyThatMember() throws {
-        try verifyReturningScratchpadMemberToLayout(.niri)
+    func testReturningScratchpadMemberToEitherLayoutReleasesOnlyThatMember() throws {
+        for dwindle in [false, true] {
+            try verifyReturningScratchpadMemberToLayout(dwindle ? .dwindle : .niri)
+        }
     }
 
-    func testReturningScratchpadMemberToDwindleReleasesOnlyThatMember() throws {
-        try verifyReturningScratchpadMemberToLayout(.dwindle)
-    }
-
-    func testReturningLastRevealedScratchpadMemberToTilingClearsRevealedSlot() throws {
-        try verifyReturningLastScratchpadMemberToTiling(parkBeforeTransition: false)
-    }
-
-    func testDeferredTilingTransitionAfterParkingClearsScratchpadHiding() throws {
-        try verifyReturningLastScratchpadMemberToTiling(parkBeforeTransition: true)
+    func testReturningLastScratchpadMemberClearsRevealedSlotBeforeOrAfterParking() throws {
+        for parked in [false, true] {
+            try verifyReturningLastScratchpadMemberToTiling(parkBeforeTransition: parked)
+        }
     }
 
     private func verifyReturningScratchpadMemberToLayout(_ layout: LayoutType) throws {
@@ -1594,29 +1594,15 @@ final class ScratchpadRevealTests: XCTestCase {
         )
     }
 
-    private func blockLayoutRefresh(_ fixture: Fixture) -> Task<Void, Never> {
-        let blocker = Task { @MainActor in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(1))
-            }
-        }
-        fixture.controller.layoutRefreshController.layoutState.activeRefreshTask = blocker
-        fixture.controller.layoutRefreshController.layoutState.activeRefresh = .init(
-            kind: .immediateRelayout,
-            reason: .layoutCommand,
-            affectedWorkspaceIds: [fixture.workspaceId]
-        )
-        return blocker
+    private func blockLayoutRefresh(_ fixture: Fixture) throws -> Task<Void, Never> {
+        try LayoutRefreshTestSupport.block(fixture.controller, in: fixture.workspaceId, reason: .layoutCommand)
     }
 
     private func unblockLayoutRefresh(
         _ fixture: Fixture,
         blocker: Task<Void, Never>
     ) {
-        blocker.cancel()
-        fixture.controller.layoutRefreshController.layoutState.activeRefreshTask = nil
-        fixture.controller.layoutRefreshController.layoutState.activeRefresh = nil
-        fixture.controller.layoutRefreshController.layoutState.pendingRefresh = nil
+        LayoutRefreshTestSupport.unblock(fixture.controller, blocker: blocker)
     }
 
     private func assign(

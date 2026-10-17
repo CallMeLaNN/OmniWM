@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import Combine
@@ -341,9 +341,11 @@ final class CommandPaletteFocusTests: XCTestCase {
     }
 
     func testClipboardReturnCopiesSelectedItem() async throws {
+        var copiedIDs: [UUID] = []
         let copied = expectation(description: "Selected clipboard item was copied")
         let fixture = CommandPaletteFocusFixture(initialMode: .clipboard) { environment in
-            environment.copyClipboardItem = { _, _ in
+            environment.copyClipboardItem = { _, id in
+                copiedIDs.append(id)
                 copied.fulfill()
                 return true
             }
@@ -351,9 +353,13 @@ final class CommandPaletteFocusTests: XCTestCase {
         defer { fixture.cleanup() }
         let panel = try await showAndWaitForEditing(fixture)
         fixture.palette.selectMode(.clipboard)
+        let selected = try XCTUnwrap(fixture.palette.filteredClipboardItems.dropFirst().first)
+        XCTAssertEqual(selected.title, "Beta")
+        fixture.palette.selectedItemID = .clipboard(selected.id)
 
         try sendKey(keyCode: 36, characters: "\r", to: panel)
         await fulfillment(of: [copied], timeout: 1)
+        XCTAssertEqual(copiedIDs, [selected.id])
         XCTAssertFalse(fixture.palette.isVisible)
     }
 

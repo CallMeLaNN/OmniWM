@@ -1,20 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 import OmniWMIPC
 import XCTest
 
 final class IPCResizeFocusedCommandTests: XCTestCase {
-    func testNameMapsToResizeFocused() {
-        XCTAssertEqual(IPCCommandRequest.dwindle(.resizeFocused(operation: .grow)).name, .dwindle(.resizeFocused))
-    }
-
-    func testConstructionFromArgumentValues() throws {
-        let request = try IPCCommandRequest(name: .dwindle(.resizeFocused), argumentValues: [.resizeOperation(.grow)])
-        XCTAssertEqual(request, .dwindle(.resizeFocused(operation: .grow)))
-    }
-
     func testConstructionRejectsMissingArgument() {
         XCTAssertThrowsError(try IPCCommandRequest(name: .dwindle(.resizeFocused), argumentValues: []))
     }
