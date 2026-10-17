@@ -9,7 +9,6 @@ extension DwindleLayoutEngine {
     func canInsertAtWorkspaceEdge(token: WindowToken, in workspaceId: WorkspaceDescriptor.ID) -> Bool {
         guard let state = existingState(for: workspaceId),
               let source = state.leafByToken[token],
-              source.tile != nil,
               !state.excludedTokens.contains(token),
               !isWindowFullscreen(token, in: workspaceId)
         else { return false }
@@ -57,8 +56,6 @@ extension DwindleLayoutEngine {
         }
 
         root.kind = .split(orientation: direction.dwindleOrientation, ratio: 1)
-        root.cachedContentFrame = nil
-        root.clearAnimations()
         if direction == .left || direction == .down {
             root.replaceChildren(first: source, second: remainder)
         } else {
