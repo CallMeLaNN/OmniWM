@@ -92,6 +92,9 @@ extension NiriLayoutHandler {
             removalSeed: removalSeed,
             gap: gap,
             niriWorkingFrame: controller.niriWorkingFrame(refreshInput.monitor.workingFrame, gap: gap),
+            fullscreenLayoutFrame: controller.niriFullscreenLayoutFrame(
+                refreshInput.monitor.fullscreenLayoutFrame, monitor: monitor, gap: gap
+            ),
             displayRefreshRate: controller.layoutRefreshController.layoutState
                 .refreshRateByDisplay[monitor.displayId] ?? 60.0,
             isActiveWorkspace: refreshInput.isActiveWorkspace,
@@ -386,7 +389,7 @@ extension NiriLayoutHandler {
             workingFrame: snapshot.niriWorkingFrame,
             singleWindowFrame: snapshot.monitor.workingFrame,
             borderSafeFillFrame: snapshot.monitor.borderSafeFillFrame,
-            fullscreenLayoutFrame: snapshot.monitor.fullscreenLayoutFrame,
+            fullscreenLayoutFrame: snapshot.fullscreenLayoutFrame,
             viewFrame: snapshot.monitor.frame,
             scale: snapshot.monitor.scale
         )

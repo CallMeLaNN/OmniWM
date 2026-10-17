@@ -144,6 +144,11 @@ extension WMController {
         settings.niri.edgeGaps ? workingFrame : workingFrame.insetBy(dx: -gap, dy: -gap)
     }
 
+    func niriFullscreenLayoutFrame(_ fullscreenLayoutFrame: CGRect, monitor: Monitor, gap: CGFloat) -> CGRect {
+        guard settings.gaps.resolved(for: monitor).fullscreenUsesOuterGaps else { return fullscreenLayoutFrame }
+        return niriWorkingFrame(fullscreenLayoutFrame, gap: gap).insetBy(dx: gap, dy: gap)
+    }
+
     func fullscreenLayoutFrame(for monitor: Monitor) -> CGRect {
         let scale = backingScaleFactor(for: monitor)
         return layoutFrames(for: monitor, scale: scale).fullscreenLayoutFrame
