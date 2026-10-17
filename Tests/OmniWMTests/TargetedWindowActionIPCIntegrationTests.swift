@@ -528,6 +528,81 @@ final class TargetedWindowActionIPCIntegrationTests: XCTestCase {
         XCTAssertEqual(fixture.frame(of: fixture.focused), before)
     }
 
+    func testMovingAColumnBeforeTheFocusToAnotherWorkspaceKeepsTheFocusedFrame() async throws {
+        let fixture = try await makeCenteredFixture()
+        let before = try XCTUnwrap(fixture.frame(of: fixture.focused))
+        let target = fixture.windows[0]
+
+        let outcome = fixture.controller.workspaceNavigationHandler.commitWindowMove(
+            handle: target,
+            toWorkspaceId: fixture.otherNiriWorkspaceId
+        )
+        await WindowAdmissionTestSupport.drainLayoutRefreshes(fixture.controller)
+
+        XCTAssertTrue(outcome.didMutate)
+        XCTAssertNil(fixture.engine.findNode(for: target, in: fixture.niriWorkspaceId))
+        XCTAssertNotNil(fixture.engine.findNode(for: target, in: fixture.otherNiriWorkspaceId))
+        try assertActiveColumnHoldsTheFocus(fixture)
+        XCTAssertEqual(fixture.frame(of: fixture.focused), before)
+    }
+
+    func testMovingAColumnBeforeTheFocusToADwindleWorkspaceKeepsTheFocusedFrame() async throws {
+        let fixture = try await makeCenteredFixture()
+        let before = try XCTUnwrap(fixture.frame(of: fixture.focused))
+        let target = fixture.windows[0]
+
+        let outcome = fixture.controller.workspaceNavigationHandler.commitWindowMove(
+            handle: target,
+            toWorkspaceId: fixture.dwindleWorkspaceId
+        )
+        await WindowAdmissionTestSupport.drainLayoutRefreshes(fixture.controller)
+
+        XCTAssertTrue(outcome.didMutate)
+        XCTAssertNil(fixture.engine.findNode(for: target, in: fixture.niriWorkspaceId))
+        try assertActiveColumnHoldsTheFocus(fixture)
+        XCTAssertEqual(fixture.frame(of: fixture.focused), before)
+    }
+
+    func testEngineMoveOfAWholeColumnBeforeTheActiveOneRepointsTheActiveColumnIndex() async throws {
+        let fixture = try await makeCenteredFixture()
+        let viewOffset = fixture.viewport.viewOffset
+        let column = try XCTUnwrap(fixture.engine.columns(in: fixture.niriWorkspaceId).first)
+        let movedTokens = column.windowNodes.map(\.token)
+
+        let result = fixture.controller.workspaceManager.withBatchedWorkspaceMove(
+            sourceWorkspaceId: fixture.niriWorkspaceId,
+            targetWorkspaceId: fixture.otherNiriWorkspaceId
+        ) { sourceState, targetState in
+            guard let moveResult = fixture.engine.moveColumnToWorkspace(
+                column,
+                from: fixture.niriWorkspaceId,
+                to: NiriWorkspaceDestination(workspaceId: fixture.otherNiriWorkspaceId, orientation: .horizontal),
+                sourceState: &sourceState,
+                targetState: &targetState
+            ) else { return nil }
+            return (moveResult, movedTokens)
+        }
+
+        XCTAssertNotNil(result)
+        XCTAssertNil(fixture.engine.findNode(for: fixture.windows[0], in: fixture.niriWorkspaceId))
+        try assertActiveColumnHoldsTheFocus(fixture)
+        XCTAssertEqual(fixture.viewport.viewOffset, viewOffset, accuracy: 0.5)
+    }
+
+    func testClosingAColumnBeforeTheFocusKeepsTheFocusedFrame() async throws {
+        let fixture = try await makeCenteredFixture()
+        let before = try XCTUnwrap(fixture.frame(of: fixture.focused))
+        let target = fixture.windows[0]
+
+        fixture.controller.axEventHandler.handleRemoved(token: target.id)
+        await WindowAdmissionTestSupport.drainLayoutRefreshes(fixture.controller)
+
+        XCTAssertNil(fixture.controller.workspaceManager.entry(for: target.id))
+        XCTAssertNil(fixture.engine.findNode(for: target, in: fixture.niriWorkspaceId))
+        try assertActiveColumnHoldsTheFocus(fixture)
+        XCTAssertEqual(fixture.frame(of: fixture.focused), before)
+    }
+
     func testFloatingAWindowFromAStackedColumnBeforeTheFocusKeepsTheActiveColumn() async throws {
         let fixture = try await makeCenteredFixture()
         let stacked = fixture.windows[1]
