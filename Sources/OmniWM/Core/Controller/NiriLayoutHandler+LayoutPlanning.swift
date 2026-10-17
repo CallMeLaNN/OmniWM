@@ -93,7 +93,10 @@ extension NiriLayoutHandler {
             gap: gap,
             niriWorkingFrame: controller.niriWorkingFrame(refreshInput.monitor.workingFrame, gap: gap),
             fullscreenLayoutFrame: controller.niriFullscreenLayoutFrame(
-                refreshInput.monitor.fullscreenLayoutFrame, monitor: monitor, gap: gap
+                refreshInput.monitor.fullscreenLayoutFrame,
+                workingFrame: refreshInput.monitor.workingFrame,
+                monitor: monitor,
+                gap: gap
             ),
             displayRefreshRate: controller.layoutRefreshController.layoutState
                 .refreshRateByDisplay[monitor.displayId] ?? 60.0,

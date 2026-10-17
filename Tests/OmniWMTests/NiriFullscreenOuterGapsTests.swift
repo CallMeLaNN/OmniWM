@@ -9,12 +9,22 @@ import XCTest
 @MainActor
 final class NiriFullscreenOuterGapsTests: XCTestCase {
     func testFullscreenKeepsInnerGapEdgeMarginOfTiledColumns() throws {
+        try assertFullscreenMatchesTiledEdges(outerGap: 12, bordersEnabled: false)
+    }
+
+    func testFullscreenKeepsBorderClearanceWhenOuterGapIsSmaller() throws {
+        try assertFullscreenMatchesTiledEdges(outerGap: 1, bordersEnabled: true)
+    }
+
+    private func assertFullscreenMatchesTiledEdges(outerGap: Double, bordersEnabled: Bool) throws {
         let controller = WindowAdmissionTestSupport.controller(prefix: "OmniWMNiriFullscreenOuterGapsTests")
-        controller.settings.gaps.outerGapLeft = 12
-        controller.settings.gaps.outerGapRight = 12
-        controller.settings.gaps.outerGapTop = 12
-        controller.settings.gaps.outerGapBottom = 12
+        controller.settings.gaps.outerGapLeft = outerGap
+        controller.settings.gaps.outerGapRight = outerGap
+        controller.settings.gaps.outerGapTop = outerGap
+        controller.settings.gaps.outerGapBottom = outerGap
         controller.settings.gaps.fullscreenUsesOuterGaps = true
+        controller.settings.borders.enabled = bordersEnabled
+        controller.settings.borders.width = 8
         let monitor = Monitor(
             id: .init(displayId: 92), displayId: 92,
             frame: CGRect(x: 0, y: 0, width: 2560, height: 1440),

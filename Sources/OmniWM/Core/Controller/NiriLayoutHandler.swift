@@ -266,7 +266,10 @@ struct NodeActivationOptions {
             singleWindowFrame: layoutFrames.workingFrame,
             borderSafeFillFrame: layoutFrames.borderSafeFillFrame,
             fullscreenLayoutFrame: controller.niriFullscreenLayoutFrame(
-                layoutFrames.fullscreenLayoutFrame, monitor: monitor, gap: gaps
+                layoutFrames.fullscreenLayoutFrame,
+                workingFrame: layoutFrames.workingFrame,
+                monitor: monitor,
+                gap: gaps
             ),
             viewFrame: monitor.frame,
             scale: scale
