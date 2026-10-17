@@ -149,12 +149,12 @@ final class FloatingCreatePlacementTests: XCTestCase {
         _ = fixture.controller.workspaceManager.addWindow(
             axRef(pid, 200), pid: pid, windowId: 200, to: fixture.secondaryWorkspace
         )
-        XCTAssertEqual(fixture.controller.testFloatingSpawnMonitorId(pid: pid), fixture.secondary.id)
+        XCTAssertEqual(fixture.controller.placementResolver.floatingSpawnMonitorId(pid: pid), fixture.secondary.id)
         _ = fixture.controller.workspaceManager.addWindow(
             axRef(pid, 201), pid: pid, windowId: 201, to: fixture.primaryWorkspace, mode: .floating
         )
 
-        XCTAssertEqual(fixture.controller.testFloatingSpawnMonitorId(pid: pid), fixture.secondary.id)
+        XCTAssertEqual(fixture.controller.placementResolver.floatingSpawnMonitorId(pid: pid), fixture.secondary.id)
     }
 
     func testFloatingSpawnMultiMonitorTracksMostRecentlyFocusedTiled() throws {
@@ -175,7 +175,7 @@ final class FloatingCreatePlacementTests: XCTestCase {
             on: fixture.primaryWorkspace
         )
         XCTAssertEqual(manager.lastTiledFocusedToken, onSecondary)
-        XCTAssertEqual(fixture.controller.testFloatingSpawnMonitorId(pid: pid), fixture.secondary.id)
+        XCTAssertEqual(fixture.controller.placementResolver.floatingSpawnMonitorId(pid: pid), fixture.secondary.id)
 
         confirmTiledThenFloat(
             manager,
@@ -185,7 +185,7 @@ final class FloatingCreatePlacementTests: XCTestCase {
             on: fixture.primaryWorkspace
         )
         XCTAssertEqual(manager.lastTiledFocusedToken, onPrimary)
-        XCTAssertEqual(fixture.controller.testFloatingSpawnMonitorId(pid: pid), fixture.primary.id)
+        XCTAssertEqual(fixture.controller.placementResolver.floatingSpawnMonitorId(pid: pid), fixture.primary.id)
     }
 
     func testFloatingSpawnMultiMonitorNoRecencyReturnsNil() throws {
@@ -195,7 +195,7 @@ final class FloatingCreatePlacementTests: XCTestCase {
         _ = manager.addWindow(axRef(pid, 400), pid: pid, windowId: 400, to: fixture.primaryWorkspace)
         _ = manager.addWindow(axRef(pid, 401), pid: pid, windowId: 401, to: fixture.secondaryWorkspace)
 
-        XCTAssertNil(fixture.controller.testFloatingSpawnMonitorId(pid: pid))
+        XCTAssertNil(fixture.controller.placementResolver.floatingSpawnMonitorId(pid: pid))
     }
 
     func testResolveDiscoveryFinderQuickLookUsesSameAppTiledWindow() throws {

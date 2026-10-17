@@ -1943,7 +1943,7 @@ final class TrackpadWorkspaceGestureTests: XCTestCase {
 
     func testScrollTapDrainsQueuedFirstGestureAndFreshTwoFingerStart() async throws {
         let fixture = try makeFixture()
-        let harness = await installRecoveringMultitouchSource(fixture)
+        let harness = try await installRecoveringMultitouchSource(fixture)
         defer {
             fixture.controller.mouseEventHandler.cleanup()
             await harness.sleeper.resumeAll()
@@ -1968,7 +1968,7 @@ final class TrackpadWorkspaceGestureTests: XCTestCase {
 
     func testNonOwnerFreshContactRetiresItsOldTailThroughSynchronousDrain() async throws {
         let fixture = try makeFixture()
-        let harness = await installRecoveringMultitouchSource(fixture, includeSecondDevice: true)
+        let harness = try await installRecoveringMultitouchSource(fixture, includeSecondDevice: true)
         defer {
             fixture.controller.mouseEventHandler.cleanup()
             await harness.sleeper.resumeAll()
@@ -2001,7 +2001,7 @@ final class TrackpadWorkspaceGestureTests: XCTestCase {
     func testSyntheticRestartPreservesConsumptionAcrossTimestampGaps() async throws {
         for gap in [0.01, 0.2, 20.0] {
             let fixture = try makeFixture()
-            let harness = await installRecoveringMultitouchSource(fixture)
+            let harness = try await installRecoveringMultitouchSource(fixture)
             let contacts = Array(repeating: (x: Float(0.5), y: Float(0.2)), count: 3)
             harness.backend.emitFrame(registryId: 303, touches: contacts, timestamp: 100)
             XCTAssertTrue(scrollVerdict(fixture, momentumPhase: 0, phase: 0))
@@ -2350,7 +2350,7 @@ final class TrackpadWorkspaceGestureTests: XCTestCase {
 
     func testWorkspaceGestureRecoversThroughRawSourceReplacementWithoutRestart() async throws {
         let fixture = try makeFixture()
-        let harness = await installRecoveringMultitouchSource(fixture)
+        let harness = try await installRecoveringMultitouchSource(fixture)
         let firstGeneration = try XCTUnwrap(harness.source.diagnosticsSnapshot().activeGeneration)
         let location = CGPoint(x: 800, y: 450)
 
@@ -2378,8 +2378,8 @@ final class TrackpadWorkspaceGestureTests: XCTestCase {
         fixture.controller.mouseEventHandler.state.suppressTrackpadMomentumScroll = true
 
         harness.source.requestRevalidation(.wake)
-        await harness.sleeper.waitForScheduledSleep(of: harness.source)
-        await harness.sleeper.resumeNext()
+        try await harness.sleeper.waitForScheduledSleep(of: harness.source)
+        try await harness.sleeper.resumeNext()
         let recoveredGeneration = try XCTUnwrap(harness.source.diagnosticsSnapshot().activeGeneration)
 
         XCTAssertNotEqual(recoveredGeneration, firstGeneration)
@@ -2442,7 +2442,7 @@ final class TrackpadWorkspaceGestureTests: XCTestCase {
             column.cachedWidth = 700
         }
 
-        let harness = await installRecoveringMultitouchSource(fixture)
+        let harness = try await installRecoveringMultitouchSource(fixture)
         let firstGeneration = try XCTUnwrap(harness.source.diagnosticsSnapshot().activeGeneration)
         let location = CGPoint(x: 800, y: 450)
         sendRawFrame(
@@ -2469,8 +2469,8 @@ final class TrackpadWorkspaceGestureTests: XCTestCase {
         fixture.controller.mouseEventHandler.state.suppressTrackpadMomentumScroll = true
 
         harness.source.requestRevalidation(.wake)
-        await harness.sleeper.waitForScheduledSleep(of: harness.source)
-        await harness.sleeper.resumeNext()
+        try await harness.sleeper.waitForScheduledSleep(of: harness.source)
+        try await harness.sleeper.resumeNext()
         let recoveredGeneration = try XCTUnwrap(harness.source.diagnosticsSnapshot().activeGeneration)
 
         XCTAssertNotEqual(recoveredGeneration, firstGeneration)
@@ -2535,7 +2535,7 @@ final class TrackpadWorkspaceGestureTests: XCTestCase {
             column.cachedWidth = 700
         }
 
-        let harness = await installRecoveringMultitouchSource(fixture)
+        let harness = try await installRecoveringMultitouchSource(fixture)
         let generation = try XCTUnwrap(harness.source.diagnosticsSnapshot().activeGeneration)
         let location = CGPoint(x: 800, y: 450)
         sendRawFrame(harness.source, generation: generation, fingers: 3, x: 0.8, y: 0.5, at: 300, location: location)
@@ -2581,7 +2581,7 @@ final class TrackpadWorkspaceGestureTests: XCTestCase {
     private func installRecoveringMultitouchSource(
         _ fixture: Fixture,
         includeSecondDevice: Bool = false
-    ) async -> (
+    ) async throws -> (
         source: MultitouchGestureSource,
         backend: FakeMultitouchBackend,
         sleeper: ManualMultitouchSleeper
@@ -2600,10 +2600,14 @@ final class TrackpadWorkspaceGestureTests: XCTestCase {
             operations: backend.operations(sleeper: sleeper),
             topologyMonitoringEnabled: false
         )
+        addTeardownBlock { @MainActor in
+            fixture.controller.mouseEventHandler.cleanup()
+            await sleeper.resumeAll()
+        }
         fixture.controller.mouseEventHandler.installMultitouchSource(source)
-        await sleeper.waitForScheduledSleep(of: source)
+        try await sleeper.waitForScheduledSleep(of: source)
         XCTAssertEqual(sleeper.pendingCount, 1)
-        await sleeper.resumeNext()
+        try await sleeper.resumeNext()
         XCTAssertEqual(source.diagnosticsSnapshot().state, .running)
         return (source, backend, sleeper)
     }
@@ -2622,7 +2626,7 @@ final class TrackpadWorkspaceGestureTests: XCTestCase {
 
     func testCommittedVisibilityAbortRetainsPhaseLessTailUntilFreshContact() async throws {
         let fixture = try makeFixture()
-        let harness = await installRecoveringMultitouchSource(fixture)
+        let harness = try await installRecoveringMultitouchSource(fixture)
         let controller = fixture.controller
         let handler = controller.mouseEventHandler
         defer {
@@ -2667,7 +2671,7 @@ final class TrackpadWorkspaceGestureTests: XCTestCase {
     func testViewportTerminationRetainsPhaseLessTailWithoutTerminalFrame() async throws {
         let fixture = try makeFixture(workspaceSwipeEnabled: false, scrollGestureEnabled: true)
         try addColumnGestureWindows(to: fixture)
-        let harness = await installRecoveringMultitouchSource(fixture)
+        let harness = try await installRecoveringMultitouchSource(fixture)
         let controller = fixture.controller
         let handler = controller.mouseEventHandler
         defer {

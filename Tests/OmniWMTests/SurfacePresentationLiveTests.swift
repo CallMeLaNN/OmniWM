@@ -367,6 +367,7 @@ final class SurfacePresentationLiveTests: XCTestCase {
         let captureScale = CGFloat(filter.pointPixelScale)
         let output = RailCompositeCaptureOutput(
             clientWidthPixels: Int((baseFrame.width * captureScale).rounded()),
+            pointPixelScale: captureScale,
             backgroundColor: CGColor(
                 colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!,
                 components: [1, 1, 1, 1]
@@ -853,7 +854,7 @@ final class SurfacePresentationLiveTests: XCTestCase {
 
     private func captureRegionForRailMotion(baseFrame: CGRect, displayFrame: CGRect) -> CGRect {
         let left = railMotionFrame(index: 0, baseFrame: baseFrame)
-        let right = railMotionFrame(index: 180, baseFrame: baseFrame)
+        let right = railMotionFrame(index: Self.railSweepFrames - 1, baseFrame: baseFrame)
         let appKitBounds = left.union(right).insetBy(dx: -48, dy: -48)
         return ScreenCoordinateSpace.toWindowServer(rect: appKitBounds).intersection(displayFrame)
     }
@@ -1013,12 +1014,14 @@ private final class RailCompositeCaptureOutput: NSObject, SCStreamOutput, @unche
     }
 
     private let clientWidthPixels: Int
+    private let pointPixelScale: CGFloat
     let backgroundColor: CGColor
     private let lock = NSLock()
     private var state = State()
 
-    init(clientWidthPixels: Int, backgroundColor: CGColor) {
+    init(clientWidthPixels: Int, pointPixelScale: CGFloat, backgroundColor: CGColor) {
         self.clientWidthPixels = clientWidthPixels
+        self.pointPixelScale = pointPixelScale
         self.backgroundColor = backgroundColor
     }
 
@@ -1096,8 +1099,8 @@ private final class RailCompositeCaptureOutput: NSObject, SCStreamOutput, @unche
         }
         guard clientRight >= clientWidthPixels - 1 else { return nil }
         let clientOrigin = clientRight - clientWidthPixels + 1
-        let scanMinX = max(0, clientOrigin - 6)
-        let scanMaxX = min(width - 1, clientOrigin + 28)
+        let scanMinX = max(0, clientOrigin - Int((6 * pointPixelScale).rounded()))
+        let scanMaxX = min(width - 1, clientOrigin + Int((28 * pointPixelScale).rounded()))
         var railAnchor: Int?
 
         for x in scanMinX ... scanMaxX {

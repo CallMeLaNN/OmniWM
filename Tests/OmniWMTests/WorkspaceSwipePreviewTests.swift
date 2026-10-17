@@ -10,80 +10,95 @@ final class WorkspaceSwipePreviewTests: XCTestCase {
     func testMissingPreviewDoesNotShowPanelWhenLateFrameArrives() async throws {
         let driver = OverviewPreviewTestDriver()
         let capture = driver.makeCapture()
+        defer {
+            capture.clear()
+            driver.finish()
+        }
         let preview = WorkspaceSwipePreview(
             ownedWindowRegistry: OwnedWindowRegistry(),
             previewCapture: capture,
             backdrop: try makeBackdrop(),
             hasCaptureAccess: { true }
         )
+        defer { preview.stop() }
         let item = item()
         preview.prepare(source: [item], destination: [], monitor: monitor)
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
         driver.completeAllStarts()
         XCTAssertFalse(preview.begin(source: [item], destination: [], monitor: monitor))
         let frame = try makeOverviewPreviewFrame()
-        await publish(frame, through: driver.streams[0], into: capture)
+        try await publish(frame, through: driver.streams[0], into: capture)
         XCTAssertFalse(preview.isVisible)
         XCTAssertTrue(capture.preview(for: item.handle) === frame)
         preview.stop()
-        await driver.waitForStops(1)
+        try await driver.waitForStops(1)
     }
 
     func testStopRetainsCacheAndRetiresCaptureUntilNextPreparation() async throws {
         let driver = OverviewPreviewTestDriver()
         let capture = driver.makeCapture()
+        defer {
+            capture.clear()
+            driver.finish()
+        }
         let preview = WorkspaceSwipePreview(
             ownedWindowRegistry: OwnedWindowRegistry(),
             previewCapture: capture,
             backdrop: try makeBackdrop(),
             hasCaptureAccess: { true }
         )
+        defer { preview.stop() }
         let item = item()
         preview.prepare(source: [item], destination: [], monitor: monitor)
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
         driver.completeAllStarts()
         let frame = try makeOverviewPreviewFrame()
-        await publish(frame, through: driver.streams[0], into: capture)
+        try await publish(frame, through: driver.streams[0], into: capture)
         preview.stop()
-        await driver.waitForStops(1)
+        try await driver.waitForStops(1)
         XCTAssertTrue(capture.preview(for: item.handle) === frame)
         driver.streams[0].output.offer(try makeOverviewPreviewFrame())
         XCTAssertNil(driver.streams[0].output.take())
         XCTAssertEqual(driver.streams.count, 1)
 
         preview.prepare(source: [item], destination: [], monitor: monitor)
-        await driver.waitForStarts(2)
+        try await driver.waitForStarts(2)
         XCTAssertTrue(capture.preview(for: item.handle) === frame)
         driver.completeAllStarts()
         preview.stop()
-        await driver.waitForStops(2)
+        try await driver.waitForStops(2)
     }
 
     func testRekeyedParticipantCannotUseOldPreview() async throws {
         let driver = OverviewPreviewTestDriver()
         let capture = driver.makeCapture()
+        defer {
+            capture.clear()
+            driver.finish()
+        }
         let preview = WorkspaceSwipePreview(
             ownedWindowRegistry: OwnedWindowRegistry(),
             previewCapture: capture,
             backdrop: try makeBackdrop(),
             hasCaptureAccess: { true }
         )
+        defer { preview.stop() }
         let item = item()
         preview.prepare(source: [item], destination: [], monitor: monitor)
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
         driver.completeAllStarts()
-        await publish(try makeOverviewPreviewFrame(), through: driver.streams[0], into: capture)
+        try await publish(try makeOverviewPreviewFrame(), through: driver.streams[0], into: capture)
         preview.stop()
-        await driver.waitForStops(1)
+        try await driver.waitForStops(1)
 
         item.handle.id = WindowToken(pid: 123, windowId: 457)
         preview.prepare(source: [item], destination: [], monitor: monitor)
-        await driver.waitForStarts(2)
+        try await driver.waitForStarts(2)
         XCTAssertNil(capture.preview(for: item.handle))
         XCTAssertFalse(preview.begin(source: [item], destination: [], monitor: monitor))
         driver.completeAllStarts()
         preview.stop()
-        await driver.waitForStops(2)
+        try await driver.waitForStops(2)
     }
 
     func testCapturePermissionDenialKeepsOverlayHidden() {
@@ -267,11 +282,14 @@ final class WorkspaceSwipePreviewTests: XCTestCase {
         _ frame: OverviewPreviewFrame,
         through stream: OverviewPreviewTestStream,
         into capture: OverviewThumbnailCapture
-    ) async {
+    ) async throws {
         let published = expectation(description: "swipe preview published")
         capture.onPreview = { _, preview in if preview === frame { published.fulfill() } }
         stream.output.offer(frame)
-        await fulfillment(of: [published], timeout: 1)
+        guard await XCTWaiter.fulfillment(of: [published], timeout: 1) == .completed else {
+            XCTFail("Expected preview publication")
+            throw OverviewPreviewTestWaitError.publication
+        }
     }
 
     private final class CaptureAccess {

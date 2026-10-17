@@ -10,23 +10,28 @@ final class WorkspaceSwipePreviewWarmupTests: XCTestCase {
     func testWarmupStopsEachStreamAtFirstFrameAndCompletesWithoutPanel() async throws {
         let driver = OverviewPreviewTestDriver()
         let capture = driver.makeCapture()
+        defer {
+            capture.clear()
+            driver.finish()
+        }
         let preview = makePreview(capture)
+        defer { preview.stop() }
         let first = item(1)
         let second = item(2)
         preview.warm(source: [first], destination: [second], monitor: monitor)
-        await driver.waitForStarts(2)
+        try await driver.waitForStarts(2)
         driver.completeAllStarts()
         XCTAssertTrue(preview.isWarming)
         XCTAssertTrue(capture.hasPendingFirstFrames)
 
-        await publish(try makeOverviewPreviewFrame(), through: driver.streams[0], into: capture)
-        await driver.waitForStops(1)
+        try await publish(try makeOverviewPreviewFrame(), through: driver.streams[0], into: capture)
+        try await driver.waitForStops(1)
         XCTAssertTrue(preview.isWarming)
         XCTAssertTrue(capture.hasPendingFirstFrames)
         XCTAssertEqual(driver.streams[0].stopCount, 1)
         XCTAssertEqual(driver.streams[1].stopCount, 0)
-        await publish(try makeOverviewPreviewFrame(), through: driver.streams[1], into: capture)
-        await driver.waitForStops(2)
+        try await publish(try makeOverviewPreviewFrame(), through: driver.streams[1], into: capture)
+        try await driver.waitForStops(2)
 
         XCTAssertFalse(preview.isWarming)
         XCTAssertFalse(capture.hasPendingFirstFrames)
@@ -41,18 +46,23 @@ final class WorkspaceSwipePreviewWarmupTests: XCTestCase {
     func testWarmupCompletesWhenOneRequestFailsAndOtherPublishes() async throws {
         let driver = OverviewPreviewTestDriver()
         let capture = driver.makeCapture()
+        defer {
+            capture.clear()
+            driver.finish()
+        }
         let preview = makePreview(capture)
+        defer { preview.stop() }
         let first = item(1)
         let second = item(2)
         preview.warm(source: [first], destination: [second], monitor: monitor)
-        await driver.waitForStarts(2)
+        try await driver.waitForStarts(2)
         driver.streams[0].completeStart(error: NSError(domain: "Warmup test", code: 1))
         driver.streams[1].completeStart()
-        await driver.waitForStops(1)
+        try await driver.waitForStops(1)
         XCTAssertTrue(preview.isWarming)
 
-        await publish(try makeOverviewPreviewFrame(), through: driver.streams[1], into: capture)
-        await driver.waitForStops(2)
+        try await publish(try makeOverviewPreviewFrame(), through: driver.streams[1], into: capture)
+        try await driver.waitForStops(2)
 
         XCTAssertFalse(preview.isWarming)
         XCTAssertFalse(capture.hasPendingFirstFrames)
@@ -64,75 +74,90 @@ final class WorkspaceSwipePreviewWarmupTests: XCTestCase {
     func testPreparationConvertsWarmupToContinuousCapture() async throws {
         let driver = OverviewPreviewTestDriver()
         let capture = driver.makeCapture()
+        defer {
+            capture.clear()
+            driver.finish()
+        }
         let preview = makePreview(capture)
+        defer { preview.stop() }
         let item = item(1)
         preview.warm(source: [item], destination: [], monitor: monitor)
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
         driver.completeAllStarts()
         preview.prepare(source: [item], destination: [], monitor: monitor)
         XCTAssertFalse(preview.isWarming)
 
-        await publish(try makeOverviewPreviewFrame(), through: driver.streams[0], into: capture)
+        try await publish(try makeOverviewPreviewFrame(), through: driver.streams[0], into: capture)
         XCTAssertEqual(driver.streams[0].stopCount, 0)
         let second = try makeOverviewPreviewFrame()
-        await publish(second, through: driver.streams[0], into: capture)
+        try await publish(second, through: driver.streams[0], into: capture)
         XCTAssertTrue(capture.preview(for: item.handle) === second)
         XCTAssertEqual(driver.streams.count, 1)
         preview.stop()
-        await driver.waitForStops(1)
+        try await driver.waitForStops(1)
     }
 
     func testCandidateChangesRetainImagesAndRekeyInvalidatesUnrepresentedCache() async throws {
         let driver = OverviewPreviewTestDriver()
         let capture = driver.makeCapture()
+        defer {
+            capture.clear()
+            driver.finish()
+        }
         let preview = makePreview(capture)
+        defer { preview.stop() }
         let first = item(1)
         let second = item(2)
         let firstFrame = try makeOverviewPreviewFrame()
         preview.warm(source: [first], destination: [], monitor: monitor)
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
         driver.completeAllStarts()
-        await publish(firstFrame, through: driver.streams[0], into: capture)
-        await driver.waitForStops(1)
+        try await publish(firstFrame, through: driver.streams[0], into: capture)
+        try await driver.waitForStops(1)
 
         preview.warm(source: [second], destination: [], monitor: monitor)
-        await driver.waitForStarts(2)
+        try await driver.waitForStarts(2)
         XCTAssertTrue(capture.preview(for: first.handle) === firstFrame)
         driver.completeAllStarts()
-        await publish(try makeOverviewPreviewFrame(), through: driver.streams[1], into: capture)
-        await driver.waitForStops(2)
+        try await publish(try makeOverviewPreviewFrame(), through: driver.streams[1], into: capture)
+        try await driver.waitForStops(2)
         XCTAssertTrue(capture.preview(for: first.handle) === firstFrame)
 
         first.handle.id = WindowToken(pid: 123, windowId: 3)
         XCTAssertNil(capture.preview(for: first.handle))
         preview.prepare(source: [first], destination: [], monitor: monitor)
-        await driver.waitForStarts(3)
+        try await driver.waitForStarts(3)
         XCTAssertNil(capture.preview(for: first.handle))
         XCTAssertNotNil(capture.preview(for: second.handle))
         driver.completeAllStarts()
         preview.stop()
-        await driver.waitForStops(3)
+        try await driver.waitForStops(3)
     }
 
     func testLateRetiredSourceCannotCompleteReplacementWarmup() async throws {
         let driver = OverviewPreviewTestDriver()
         let capture = driver.makeCapture()
+        defer {
+            capture.clear()
+            driver.finish()
+        }
         let preview = makePreview(capture)
+        defer { preview.stop() }
         let original = item(1)
         let replacement = item(1)
         preview.warm(source: [original], destination: [], monitor: monitor)
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
         preview.warm(source: [replacement], destination: [], monitor: monitor)
-        await driver.waitForStarts(2)
+        try await driver.waitForStarts(2)
         driver.completeAllStarts()
-        await driver.waitForStops(1)
+        try await driver.waitForStops(1)
         driver.streams[0].output.offer(try makeOverviewPreviewFrame())
         XCTAssertNil(driver.streams[0].output.take())
         XCTAssertTrue(preview.isWarming)
         XCTAssertNil(capture.preview(for: replacement.handle))
 
-        await publish(try makeOverviewPreviewFrame(), through: driver.streams[1], into: capture)
-        await driver.waitForStops(2)
+        try await publish(try makeOverviewPreviewFrame(), through: driver.streams[1], into: capture)
+        try await driver.waitForStops(2)
         XCTAssertFalse(preview.isWarming)
         XCTAssertNotNil(capture.preview(for: replacement.handle))
         XCTAssertNil(capture.preview(for: original.handle))
@@ -142,20 +167,25 @@ final class WorkspaceSwipePreviewWarmupTests: XCTestCase {
         let frame = try makeOverviewPreviewFrame()
         let driver = OverviewPreviewTestDriver()
         let capture = driver.makeCapture(maximumRetainedBytes: frame.surface.allocationSize)
+        defer {
+            capture.clear()
+            driver.finish()
+        }
         let preview = makePreview(capture)
+        defer { preview.stop() }
         let first = item(1)
         let second = item(2)
         preview.warm(source: [first], destination: [], monitor: monitor)
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
         driver.completeAllStarts()
-        await publish(frame, through: driver.streams[0], into: capture)
-        await driver.waitForStops(1)
+        try await publish(frame, through: driver.streams[0], into: capture)
+        try await driver.waitForStops(1)
         preview.warm(source: [second], destination: [], monitor: monitor)
-        await driver.waitForStarts(2)
+        try await driver.waitForStarts(2)
         driver.completeAllStarts()
         let recent = try makeOverviewPreviewFrame()
-        await publish(recent, through: driver.streams[1], into: capture)
-        await driver.waitForStops(2)
+        try await publish(recent, through: driver.streams[1], into: capture)
+        try await driver.waitForStops(2)
 
         XCTAssertFalse(preview.isWarming)
         XCTAssertEqual(capture.cachedByteCount, recent.surface.allocationSize)
@@ -169,6 +199,10 @@ final class WorkspaceSwipePreviewWarmupTests: XCTestCase {
         let budget = 128 * 1_024 * 1_024
         let driver = OverviewPreviewTestDriver()
         let capture = driver.makeCapture(maximumRetainedBytes: budget)
+        defer {
+            capture.clear()
+            driver.finish()
+        }
         let items = (0 ..< 7).map { index in
             WorkspaceSwipePreview.Item(
                 handle: WindowHandle(id: WindowToken(pid: 123, windowId: 100 + index)),
@@ -186,19 +220,19 @@ final class WorkspaceSwipePreviewWarmupTests: XCTestCase {
             retainingUnrepresentedPreviews: true,
             firstFrameOnly: true
         )
-        await driver.waitForStarts(4)
+        try await driver.waitForStarts(4)
         XCTAssertEqual(driver.streams.count, 4)
         driver.completeAllStarts()
-        await driver.waitForStarts(7)
+        try await driver.waitForStarts(7)
         driver.completeAllStarts()
         for stream in driver.streams {
             let frame = try makeOverviewPreviewFrame(
                 width: stream.request.pixelWidth,
                 height: stream.request.pixelHeight
             )
-            await publish(frame, through: stream, into: capture)
+            try await publish(frame, through: stream, into: capture)
         }
-        await driver.waitForStops(7)
+        try await driver.waitForStops(7)
         XCTAssertFalse(capture.hasPendingFirstFrames)
         for item in items {
             XCTAssertNotNil(
@@ -224,24 +258,29 @@ final class WorkspaceSwipePreviewWarmupTests: XCTestCase {
         let driver = OverviewPreviewTestDriver()
         let budget = frames[0].surface.allocationSize * 2
         let capture = driver.makeCapture(maximumRetainedBytes: budget)
+        defer {
+            capture.clear()
+            driver.finish()
+        }
         let preview = makePreview(capture)
+        defer { preview.stop() }
         let first = item(1)
         let reused = item(2)
         let third = item(3)
         preview.warm(source: [first], destination: [reused], monitor: monitor)
-        await driver.waitForStarts(2)
+        try await driver.waitForStarts(2)
         driver.completeAllStarts()
-        await publish(frames[0], through: driver.streams[0], into: capture)
-        await publish(frames[1], through: driver.streams[1], into: capture)
-        await driver.waitForStops(2)
+        try await publish(frames[0], through: driver.streams[0], into: capture)
+        try await publish(frames[1], through: driver.streams[1], into: capture)
+        try await driver.waitForStops(2)
         preview.warm(source: [reused], destination: [], monitor: monitor)
         XCTAssertFalse(capture.hasPendingFirstFrames)
         XCTAssertEqual(driver.streams.count, 2)
         preview.warm(source: [third], destination: [], monitor: monitor)
-        await driver.waitForStarts(3)
+        try await driver.waitForStarts(3)
         driver.completeAllStarts()
-        await publish(frames[2], through: driver.streams[2], into: capture)
-        await driver.waitForStops(3)
+        try await publish(frames[2], through: driver.streams[2], into: capture)
+        try await driver.waitForStops(3)
         XCTAssertEqual(capture.cachedByteCount, budget)
         XCTAssertNil(capture.preview(for: first.handle))
         XCTAssertTrue(capture.preview(for: reused.handle) === frames[1])
@@ -254,7 +293,12 @@ final class WorkspaceSwipePreviewWarmupTests: XCTestCase {
         let controller = WindowAdmissionTestSupport.controller()
         let driver = OverviewPreviewTestDriver()
         let capture = driver.makeCapture()
+        defer {
+            capture.clear()
+            driver.finish()
+        }
         let preview = makePreview(capture)
+        defer { preview.stop() }
         controller.layoutRefreshController.workspaceSwipe = WorkspaceSwipePresentation(
             refreshController: controller.layoutRefreshController, previewSurface: preview
         )
@@ -277,10 +321,10 @@ final class WorkspaceSwipePreviewWarmupTests: XCTestCase {
         let frames = try (0 ..< 2).map { _ in try makeOverviewPreviewFrame() }
         for index in 0 ..< 2 {
             preview.warm(source: [items[index]], destination: [], monitor: monitor)
-            await driver.waitForStarts(index + 1)
+            try await driver.waitForStarts(index + 1)
             driver.completeAllStarts()
-            await publish(frames[index], through: driver.streams[index], into: capture)
-            await driver.waitForStops(index + 1)
+            try await publish(frames[index], through: driver.streams[index], into: capture)
+            try await driver.waitForStops(index + 1)
         }
         XCTAssertTrue(capture.preview(for: items[0].handle) === frames[0])
         controller.workspaceManager.removeWindow(pid: items[0].handle.pid, windowId: items[0].handle.windowId)
@@ -289,7 +333,7 @@ final class WorkspaceSwipePreviewWarmupTests: XCTestCase {
         XCTAssertTrue(capture.preview(for: items[1].handle) === frames[1])
 
         preview.warm(source: [items[2]], destination: [], monitor: monitor)
-        await driver.waitForStarts(3)
+        try await driver.waitForStarts(3)
         controller.workspaceManager.removeWindow(pid: items[2].handle.pid, windowId: items[2].handle.windowId)
         XCTAssertFalse(capture.hasPendingFirstFrames)
         driver.streams[2].output.offer(frames[0])
@@ -297,7 +341,7 @@ final class WorkspaceSwipePreviewWarmupTests: XCTestCase {
         XCTAssertNil(capture.preview(for: items[2].handle))
         preview.stop()
         driver.completeAllStarts()
-        await driver.waitForStops(3)
+        try await driver.waitForStops(3)
         capture.releaseCache()
     }
 
@@ -327,10 +371,13 @@ final class WorkspaceSwipePreviewWarmupTests: XCTestCase {
         _ frame: OverviewPreviewFrame,
         through stream: OverviewPreviewTestStream,
         into capture: OverviewThumbnailCapture
-    ) async {
+    ) async throws {
         let published = expectation(description: "warmup frame published")
         capture.onPreview = { _, preview in if preview === frame { published.fulfill() } }
         stream.output.offer(frame)
-        await fulfillment(of: [published], timeout: 1)
+        guard await XCTWaiter.fulfillment(of: [published], timeout: 1) == .completed else {
+            XCTFail("Expected preview publication")
+            throw OverviewPreviewTestWaitError.publication
+        }
     }
 }

@@ -7,6 +7,11 @@ import XCTest
 
 @MainActor
 final class WindowServerSubscriptionLiveTests: XCTestCase {
+    private struct NativeWindowFixture: Decodable {
+        let pid: Int32
+        let windowIds: [UInt32]
+    }
+
     private final class Sink: EventIntakeSink {
         var frameChangedWindowIds: Set<UInt32> = []
 
@@ -25,21 +30,7 @@ final class WindowServerSubscriptionLiveTests: XCTestCase {
         }
 
         let sky = SkyLight.shared
-        let candidates = sky.queryAllVisibleWindows().compactMap { info -> (UInt32, CGPoint)? in
-            guard info.pid != getpid(),
-                  info.level == 0,
-                  info.parentId == 0,
-                  info.frame.width >= 200,
-                  info.frame.height >= 120,
-                  let origin = sky.getWindowBounds(info.id)?.origin
-            else {
-                return nil
-            }
-            return (info.id, origin)
-        }
-        guard candidates.count >= 2 else {
-            throw XCTSkip("Two movable foreign level-0 windows are required")
-        }
+        let candidates = try await ownedForeignWindows()
         let (first, firstOrigin) = candidates[0]
         let (second, secondOrigin) = candidates[1]
         defer {
@@ -81,6 +72,96 @@ final class WindowServerSubscriptionLiveTests: XCTestCase {
         intake.drainNow()
 
         XCTAssertFalse(sink.frameChangedWindowIds.contains(first))
+    }
+
+    private func ownedForeignWindows() async throws -> [(UInt32, CGPoint)] {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("OmniWMNativeWindows-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        addTeardownBlock { try FileManager.default.removeItem(at: directory) }
+        let source = try XCTUnwrap(Bundle.module.url(
+            forResource: "NativeWindowHost", withExtension: "swift", subdirectory: "Fixtures"
+        ))
+        let executable = directory.appendingPathComponent("native-window-host")
+        let readyURL = directory.appendingPathComponent("ready.json")
+        let logURL = directory.appendingPathComponent("host.log")
+        try Data().write(to: logURL)
+        let log = try FileHandle(forWritingTo: logURL)
+        addTeardownBlock { try log.close() }
+
+        let compiler = Process()
+        compiler.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
+        compiler.arguments = [
+            "swiftc", "-swift-version", "6", "-warnings-as-errors", "-parse-as-library",
+            source.path, "-o", executable.path
+        ]
+        compiler.standardOutput = FileHandle.nullDevice
+        compiler.standardError = log
+        let compiled = XCTestExpectation(description: "native fixture compilation finished")
+        compiler.terminationHandler = { _ in compiled.fulfill() }
+        try compiler.run()
+        let compilation = await XCTWaiter.fulfillment(of: [compiled], timeout: 60)
+        if compiler.isRunning {
+            compiler.terminate()
+            compiler.waitUntilExit()
+        }
+        let compilerLog = try String(contentsOf: logURL, encoding: .utf8)
+        _ = try XCTUnwrap(
+            compilation == .completed && compiler.terminationReason == .exit && compiler.terminationStatus == 0
+                ? true : nil,
+            "Native fixture compilation failed: \(compilerLog)"
+        )
+
+        let host = Process()
+        let input = Pipe()
+        let exited = XCTestExpectation(description: "owned native fixture exited")
+        host.executableURL = executable
+        host.arguments = [readyURL.path]
+        host.standardInput = input
+        host.standardOutput = FileHandle.nullDevice
+        host.standardError = log
+        host.terminationHandler = { _ in exited.fulfill() }
+        do {
+            try host.run()
+        } catch {
+            try input.fileHandleForWriting.close()
+            throw error
+        }
+        addTeardownBlock { @MainActor in
+            do { try input.fileHandleForWriting.close() }
+            catch { XCTFail("Closing native fixture input failed: \(error)") }
+            let completion = await XCTWaiter.fulfillment(of: [exited], timeout: 5)
+            if host.isRunning {
+                host.terminate()
+                host.waitUntilExit()
+            }
+            XCTAssertEqual(completion, .completed, "Native fixture must exit after stdin EOF")
+            XCTAssertEqual(host.terminationStatus, 0, "Native fixture must exit normally")
+        }
+        let ready = await waitUntil(timeout: .seconds(5)) {
+            FileManager.default.fileExists(atPath: readyURL.path) || !host.isRunning
+        }
+        let hostLog = try String(contentsOf: logURL, encoding: .utf8)
+        _ = try XCTUnwrap(
+            ready && host.isRunning ? true : nil,
+            "Owned native fixture did not become ready: \(hostLog)"
+        )
+        let fixture = try JSONDecoder().decode(NativeWindowFixture.self, from: Data(contentsOf: readyURL))
+        let fixturePID = try XCTUnwrap(
+            fixture.pid == host.processIdentifier && fixture.pid > 0 && fixture.pid != getpid() ? fixture.pid : nil
+        )
+        let ids = try XCTUnwrap(
+            fixture.windowIds.count == 2 && Set(fixture.windowIds).count == 2 && !fixture.windowIds.contains(0)
+                ? fixture.windowIds : nil
+        )
+        let visible = SkyLight.shared.queryAllVisibleWindows()
+        return try ids.map { id in
+            let info = try XCTUnwrap(visible.first {
+                $0.id == id && $0.pid == fixturePID && $0.level == 0 && $0.parentId == 0
+                    && $0.frame.width >= 200 && $0.frame.height >= 120
+            }, "Only the exact owned foreign fixture windows may move")
+            return (info.id, try XCTUnwrap(SkyLight.shared.getWindowBounds(info.id)?.origin))
+        }
     }
 
     private func waitUntil(

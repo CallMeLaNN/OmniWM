@@ -98,13 +98,11 @@ final class LockScreenObserverTests: XCTestCase {
         observer.onLockDetected = { lockDetections += 1 }
         observer.start()
 
-        observer.enqueueLockEventForTests()
+        let retiredTask = observer.enqueueLockEventForTests()
         observer.stop()
         observer.start()
         defer { observer.stop() }
-        for _ in 0 ..< 8 {
-            await Task.yield()
-        }
+        await retiredTask.value
 
         XCTAssertEqual(lockDetections, 0)
         guard case .unlocked = observer.state else {

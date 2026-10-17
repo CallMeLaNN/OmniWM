@@ -9,9 +9,10 @@ import XCTest
 final class MultitouchWaitFailureTests: XCTestCase {
     private enum WaitFailure: Error {
         case rejected
+        case stateDidNotSettle
     }
 
-    func testNoncancelledStartupWaitFailureExhaustsAndAllowsFreshWakeEpisode() async {
+    func testNoncancelledStartupWaitFailureExhaustsAndAllowsFreshWakeEpisode() async throws {
         let backend = FakeMultitouchBackend()
         var durations: [Duration] = []
         let source = makeSource(backend: backend) { duration in
@@ -21,7 +22,7 @@ final class MultitouchWaitFailureTests: XCTestCase {
         }
         defer { source.shutdown() }
         XCTAssertTrue(source.startLifecycle())
-        await drainMultitouchTasks()
+        try await waitForRevalidation(source, exhausted: true)
 
         let failed = source.diagnosticsSnapshot()
         XCTAssertEqual(failed.state, .exhausted)
@@ -33,7 +34,7 @@ final class MultitouchWaitFailureTests: XCTestCase {
         XCTAssertEqual(durations, [.milliseconds(100)])
 
         source.requestRevalidation(.wake)
-        await drainMultitouchTasks()
+        try await waitForRevalidation(source, exhausted: true)
 
         let rearmed = source.diagnosticsSnapshot()
         XCTAssertEqual(rearmed.state, .exhausted)
@@ -45,7 +46,7 @@ final class MultitouchWaitFailureTests: XCTestCase {
         XCTAssertEqual(durations, [.milliseconds(100), .seconds(1)])
     }
 
-    func testNoncancelledWakeWaitFailurePreservesRunningGenerationAndRegistrations() async {
+    func testNoncancelledWakeWaitFailurePreservesRunningGenerationAndRegistrations() async throws {
         let backend = FakeMultitouchBackend()
         let device = FakeMultitouchBackend.device(pointer: 0x1001, registryId: 101)
         backend.enumerations = [FakeMultitouchBackend.enumeration([device])]
@@ -59,14 +60,14 @@ final class MultitouchWaitFailureTests: XCTestCase {
         }
         defer { source.shutdown() }
         XCTAssertTrue(source.startLifecycle())
-        await drainMultitouchTasks()
+        try await waitForRevalidation(source, exhausted: false)
         let running = source.diagnosticsSnapshot()
         XCTAssertEqual(running.state, .running)
         XCTAssertNotNil(running.activeGeneration)
         let callsBeforeFailure = backend.calls
 
         source.requestRevalidation(.wake)
-        await drainMultitouchTasks()
+        try await waitForRevalidation(source, exhausted: true)
 
         let failed = source.diagnosticsSnapshot()
         XCTAssertEqual(failed.state, .running)
@@ -77,6 +78,21 @@ final class MultitouchWaitFailureTests: XCTestCase {
         XCTAssertNil(failed.nextRetryDelay)
         XCTAssertEqual(backend.calls, callsBeforeFailure)
         XCTAssertEqual(durations, [.milliseconds(100), .seconds(1)])
+    }
+
+    private func waitForRevalidation(_ source: MultitouchGestureSource, exhausted: Bool) async throws {
+        let deadline = ContinuousClock.now.advanced(by: .seconds(2))
+        while true {
+            let snapshot = source.diagnosticsSnapshot()
+            if snapshot.retryExhausted == exhausted,
+               snapshot.nextRetryDelay == nil,
+               exhausted || snapshot.state == .running
+            {
+                return
+            }
+            guard ContinuousClock.now < deadline else { throw WaitFailure.stateDidNotSettle }
+            await Task.yield()
+        }
     }
 
     private func makeSource(

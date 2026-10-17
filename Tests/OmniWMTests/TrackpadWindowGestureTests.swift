@@ -586,10 +586,15 @@ final class TrackpadWindowGestureTests: XCTestCase {
             operations: backend.operations(sleeper: sleeper),
             topologyMonitoringEnabled: false
         )
+        defer {
+            fixture.controller.layoutRefreshController.resetState()
+            handler.cleanup()
+            await sleeper.resumeAll()
+        }
         XCTAssertTrue(handler.installMultitouchSource(source))
-        await sleeper.waitForScheduledSleep(of: source)
-        await sleeper.resumeNext()
-        await sleeper.waitForScheduledSleep(of: source)
+        try await sleeper.waitForScheduledSleep(of: source)
+        try await sleeper.resumeNext()
+        try await sleeper.waitForScheduledSleep(of: source)
 
         let location = fixture.firstFrame.center
         let startX: Float = 0.2
@@ -618,9 +623,6 @@ final class TrackpadWindowGestureTests: XCTestCase {
         XCTAssertEqual(fixture.windowOrder(), [fixture.second.token, fixture.first.token])
 
         emit(fingers: 0, x: 0)
-        fixture.controller.layoutRefreshController.resetState()
-        handler.cleanup()
-        await sleeper.resumeAll()
     }
 
     func testMoveOvershootKeepsEdgeWindowAsDropTarget() throws {

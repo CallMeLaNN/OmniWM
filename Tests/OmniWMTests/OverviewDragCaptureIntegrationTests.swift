@@ -12,7 +12,7 @@ final class OverviewDragCaptureIntegrationTests: XCTestCase {
         let fixture = try makeFixture()
         defer { fixture.overview.dismiss(animated: false) }
         fixture.overview.open()
-        await fixture.driver.waitForStarts(1)
+        try await fixture.driver.waitForStarts(1)
         fixture.driver.completeAllStarts()
         let handle = try XCTUnwrap(fixture.overview.selectedWindowHandle)
         let first = try makeOverviewPreviewFrame()
@@ -41,14 +41,14 @@ final class OverviewDragCaptureIntegrationTests: XCTestCase {
         XCTAssertEqual(fixture.driver.streams[0].stopCount, 0)
         XCTAssertEqual(fixture.captureStarts.count, 1)
         fixture.overview.dismiss(animated: false)
-        await fixture.driver.waitForStops(1)
+        try await fixture.driver.waitForStops(1)
     }
 
     func testAuthoritativeRemovalCancelsDragAndRejectsLateSourceFrames() async throws {
         let fixture = try makeFixture()
         defer { fixture.overview.dismiss(animated: false) }
         fixture.overview.open()
-        await fixture.driver.waitForStarts(1)
+        try await fixture.driver.waitForStarts(1)
         fixture.driver.completeAllStarts()
         let handle = try XCTUnwrap(fixture.overview.selectedWindowHandle)
         try await publish(makeOverviewPreviewFrame(), in: fixture)
@@ -59,7 +59,7 @@ final class OverviewDragCaptureIntegrationTests: XCTestCase {
         }
 
         _ = fixture.controller.workspaceManager.removeWindow(pid: handle.pid, windowId: handle.windowId)
-        await fixture.driver.waitForStops(1)
+        try await fixture.driver.waitForStops(1)
 
         XCTAssertFalse(fixture.overview.hasActiveDragSession)
         XCTAssertNil(ghost.preview)
@@ -76,20 +76,20 @@ final class OverviewDragCaptureIntegrationTests: XCTestCase {
         let fixture = try makeFixture()
         defer { fixture.overview.dismiss(animated: false) }
         fixture.overview.open()
-        await fixture.driver.waitForStarts(1)
+        try await fixture.driver.waitForStarts(1)
         fixture.driver.completeAllStarts()
         let handle = try XCTUnwrap(fixture.overview.selectedWindowHandle)
         let previous = try makeOverviewPreviewFrame()
         try await publish(previous, in: fixture)
         fixture.overview.dismiss(animated: false)
-        await fixture.driver.waitForStops(1)
+        try await fixture.driver.waitForStops(1)
         XCTAssertTrue(fixture.capture.preview(for: handle) === previous)
 
         fixture.overview.open()
 
         let card = try XCTUnwrap(overviewCard(for: handle, in: fixture))
         XCTAssertTrue(card.preview === previous, "Reopened card must show the previous frame before any stream starts")
-        await fixture.driver.waitForStarts(2)
+        try await fixture.driver.waitForStarts(2)
         fixture.driver.completeAllStarts()
         let live = try makeOverviewPreviewFrame()
         let published = expectation(description: "live frame reached the card")
@@ -99,7 +99,10 @@ final class OverviewDragCaptureIntegrationTests: XCTestCase {
             if preview === live { published.fulfill() }
         }
         fixture.driver.streams[1].output.offer(live)
-        await fulfillment(of: [published], timeout: 1)
+        guard await XCTWaiter.fulfillment(of: [published], timeout: 1) == .completed else {
+            XCTFail("Expected preview publication")
+            throw OverviewPreviewTestWaitError.publication
+        }
         XCTAssertTrue(card.preview === live)
         fixture.driver.streams[0].output.offer(try makeOverviewPreviewFrame())
         XCTAssertNil(fixture.driver.streams[0].output.take())
@@ -122,7 +125,10 @@ final class OverviewDragCaptureIntegrationTests: XCTestCase {
         }
         defer { fixture.capture.onPreview = previous }
         fixture.driver.streams[0].output.offer(frame)
-        await fulfillment(of: [published], timeout: 1)
+        guard await XCTWaiter.fulfillment(of: [published], timeout: 1) == .completed else {
+            XCTFail("Expected preview publication")
+            throw OverviewPreviewTestWaitError.publication
+        }
     }
 
     private final class CaptureStarts {
@@ -190,6 +196,11 @@ final class OverviewDragCaptureIntegrationTests: XCTestCase {
             ownedWindowRegistry: registry,
             previewCapture: capture
         )
+        addTeardownBlock { @MainActor in
+            overview.dismiss(animated: false)
+            capture.clear()
+            driver.finish()
+        }
         return Fixture(
             controller: controller, overview: overview, driver: driver, capture: capture,
             registry: registry, monitorId: monitor.id, captureStarts: captureStarts

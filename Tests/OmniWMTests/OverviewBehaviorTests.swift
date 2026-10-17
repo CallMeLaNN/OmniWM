@@ -2650,13 +2650,18 @@ final class OverviewBehaviorTests: XCTestCase {
             environment: fixture.environment,
             previewCapture: capture
         )
+        defer {
+            overview.dismiss(animated: false)
+            capture.clear()
+            driver.finish()
+        }
         overview.prepareOpenState()
         overview.onAnimationComplete(state: .open)
         let handle = try XCTUnwrap(overview.selectedWindowHandle)
         capture.reconcile(represented: [handle], visible: [
             OverviewPreviewRequest(handle: handle, pixelWidth: 80, pixelHeight: 60)
         ])
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
         let frame = try makeOverviewPreviewFrame()
         let published = expectation(description: "preview published independently")
         capture.onPreview = { _, frame in if frame != nil { published.fulfill() } }
@@ -2682,19 +2687,24 @@ final class OverviewBehaviorTests: XCTestCase {
             environment: fixture.environment,
             previewCapture: capture
         )
+        defer {
+            overview.dismiss(animated: false)
+            capture.clear()
+            driver.finish()
+        }
         let handle = try XCTUnwrap(fixture.handles.first)
         let request = OverviewPreviewRequest(handle: handle, pixelWidth: 80, pixelHeight: 60)
         overview.prepareOpenState()
         overview.onAnimationComplete(state: .open)
         capture.reconcile(represented: [handle], visible: [request])
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
         overview.dismiss(animated: false)
         driver.completeAllStarts()
 
         overview.prepareOpenState()
         overview.onAnimationComplete(state: .open)
         capture.reconcile(represented: [handle], visible: [request])
-        await driver.waitForStarts(2)
+        try await driver.waitForStarts(2)
         let oldFrame = try makeOverviewPreviewFrame()
         let newFrame = try makeOverviewPreviewFrame()
         let published = expectation(description: "new session preview")

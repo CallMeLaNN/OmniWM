@@ -149,7 +149,7 @@ final class LyricsController {
     private let load: @Sendable (ShellLyricsTrack) async throws -> ShellLyrics
     private var cache: [ShellLyricsTrack: ShellLyrics] = [:]
     private var track: ShellLyricsTrack?
-    private var task: Task<Void, Never>?
+    private(set) var task: Task<Void, Never>?
     private(set) var lyrics: ShellLyrics?
     var onLoad: ((ShellLyrics) -> Void)?
 

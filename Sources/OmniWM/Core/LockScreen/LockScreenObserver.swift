@@ -87,7 +87,8 @@ final class LockScreenObserver {
         }
     }
 
-    private nonisolated func enqueueObserverEvent(_ event: ObserverEvent, generation: Int) {
+    @discardableResult
+    private nonisolated func enqueueObserverEvent(_ event: ObserverEvent, generation: Int) -> Task<Void, Never> {
         Task { @MainActor [weak self] in
             guard let self, generation == observerGeneration else { return }
             switch event {
@@ -101,7 +102,8 @@ final class LockScreenObserver {
         }
     }
 
-    func enqueueLockEventForTests() {
+    @discardableResult
+    func enqueueLockEventForTests() -> Task<Void, Never> {
         enqueueObserverEvent(.locked, generation: observerGeneration)
     }
 

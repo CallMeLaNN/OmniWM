@@ -55,14 +55,19 @@ final class WorkspaceBarHoverPreviewTests: XCTestCase {
         scheduler: ManualScheduler,
         hasCaptureAccess: Bool = true
     ) -> WorkspaceBarHoverPreviewController {
-        WorkspaceBarHoverPreviewController(
+        let controller = WorkspaceBarHoverPreviewController(
             capture: driver.makeCapture(),
             hasCaptureAccess: { hasCaptureAccess },
             scheduleAfter: scheduler.scheduler
         )
+        addTeardownBlock { @MainActor in
+            controller.dismiss()
+            driver.finish()
+        }
+        return controller
     }
 
-    func testPreviewOpensAfterTheHoverDelayAndStreamsOnlyWhileVisible() async {
+    func testPreviewOpensAfterTheHoverDelayAndStreamsOnlyWhileVisible() async throws {
         let driver = OverviewPreviewTestDriver()
         let scheduler = ManualScheduler()
         let controller = makeController(driver: driver, scheduler: scheduler)
@@ -75,7 +80,7 @@ final class WorkspaceBarHoverPreviewTests: XCTestCase {
 
         scheduler.fireLatest()
         XCTAssertEqual(controller.visibleTarget, hovered)
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
         driver.completeAllStarts()
 
         controller.hoverEnded(hovered.key)
@@ -83,7 +88,7 @@ final class WorkspaceBarHoverPreviewTests: XCTestCase {
         XCTAssertEqual(controller.visibleTarget, hovered)
         scheduler.fireLatest()
         XCTAssertNil(controller.visibleTarget)
-        await driver.waitForStops(1)
+        try await driver.waitForStops(1)
     }
 
     func testLeavingBeforeTheDelayCancelsTheOpen() {
@@ -110,11 +115,15 @@ final class WorkspaceBarHoverPreviewTests: XCTestCase {
             hasCaptureAccess: { true },
             scheduleAfter: scheduler.scheduler
         )
+        defer {
+            controller.dismiss()
+            driver.finish()
+        }
         let first = target([11])
         let second = target([12])
         controller.hoverBegan(first)
         scheduler.fireLatest()
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
         driver.completeAllStarts()
         let frame = try makeOverviewPreviewFrame()
         let published = expectation(description: "first icon frame published")
@@ -127,15 +136,15 @@ final class WorkspaceBarHoverPreviewTests: XCTestCase {
         await fulfillment(of: [published], timeout: 1)
 
         controller.hoverBegan(second)
-        await driver.waitForStarts(2)
+        try await driver.waitForStarts(2)
 
         XCTAssertTrue(capture.preview(for: first.windows[0].handle) === frame)
         driver.completeAllStarts()
         controller.dismiss()
-        await driver.waitForStops(2)
+        try await driver.waitForStops(2)
     }
 
-    func testMovingToAnotherIconWhilePreviewingSwitchesInstantly() async {
+    func testMovingToAnotherIconWhilePreviewingSwitchesInstantly() async throws {
         let driver = OverviewPreviewTestDriver()
         let scheduler = ManualScheduler()
         let controller = makeController(driver: driver, scheduler: scheduler)
@@ -144,13 +153,13 @@ final class WorkspaceBarHoverPreviewTests: XCTestCase {
 
         controller.hoverBegan(first)
         scheduler.fireLatest()
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
         controller.hoverEnded(first.key)
         controller.hoverBegan(second)
 
         XCTAssertEqual(controller.visibleTarget, second)
         XCTAssertTrue(scheduler.liveDelays.isEmpty)
-        await driver.waitForStarts(2)
+        try await driver.waitForStarts(2)
         XCTAssertEqual(driver.streams.map(\.request.handle), [first.windows[0].handle, second.windows[0].handle])
     }
 

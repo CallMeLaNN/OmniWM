@@ -11,9 +11,15 @@ final class PreviewCaptureCoordinatorTests: XCTestCase {
         let overview = driver.makeCapture()
         let swipe = driver.makeCapture(consumer: .workspaceSwipe, adoptsProvisionalPreviews: false)
         let hover = driver.makeCapture(consumer: .workspaceBarHover)
+        defer {
+            overview.clear()
+            swipe.clear()
+            hover.clear()
+            driver.finish()
+        }
         let window = handle(1)
         overview.reconcile(represented: [window], visible: [request(window)])
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
         driver.completeAllStarts()
         let older = try makeOverviewPreviewFrame()
         try await publish(older, for: window, into: overview, driver: driver)
@@ -22,7 +28,7 @@ final class PreviewCaptureCoordinatorTests: XCTestCase {
             visible: [request(window, width: 160, height: 120)],
             retainingUnrepresentedPreviews: true
         )
-        await driver.waitForStarts(2)
+        try await driver.waitForStarts(2)
         driver.completeAllStarts()
         let newer = try makeOverviewPreviewFrame(width: 160, height: 120)
         try await publish(newer, for: window, into: swipe, driver: driver)
@@ -31,17 +37,22 @@ final class PreviewCaptureCoordinatorTests: XCTestCase {
         XCTAssertEqual(driver.streams.count, 2)
         overview.clear()
         swipe.clear()
-        await driver.waitForStops(2)
+        try await driver.waitForStops(2)
     }
 
     func testSufficientOnlyConsumerAdoptsLargeEnoughFramesAndSkipsTheirWarmup() async throws {
         let driver = OverviewPreviewTestDriver()
         let overview = driver.makeCapture()
         let swipe = driver.makeCapture(consumer: .workspaceSwipe, adoptsProvisionalPreviews: false)
+        defer {
+            overview.clear()
+            swipe.clear()
+            driver.finish()
+        }
         let small = handle(1)
         let large = handle(2)
         overview.reconcile(represented: [small, large], visible: [request(small), request(large)])
-        await driver.waitForStarts(2)
+        try await driver.waitForStarts(2)
         driver.completeAllStarts()
         let smallFrame = try makeOverviewPreviewFrame(width: 80, height: 60)
         let largeFrame = try makeOverviewPreviewFrame(width: 800, height: 600)
@@ -55,7 +66,7 @@ final class PreviewCaptureCoordinatorTests: XCTestCase {
             retainingUnrepresentedPreviews: true,
             firstFrameOnly: true
         )
-        await driver.waitForStarts(3)
+        try await driver.waitForStarts(3)
 
         XCTAssertEqual(driver.streams.count, 3)
         XCTAssertTrue(driver.streams[2].request.handle === small)
@@ -64,7 +75,7 @@ final class PreviewCaptureCoordinatorTests: XCTestCase {
         driver.completeAllStarts()
         overview.clear()
         swipe.clear()
-        await driver.waitForStops(3)
+        try await driver.waitForStops(3)
     }
 
     func testSufficientOnlyConsumerRejectsFramesShortOnEitherAxis() async throws {
@@ -75,11 +86,11 @@ final class PreviewCaptureCoordinatorTests: XCTestCase {
             defer {
                 overview.clear()
                 swipe.clear()
-                driver.completeAllStarts()
+                driver.finish()
             }
             let window = handle(1)
             overview.reconcile(represented: [window], visible: [request(window, width: width, height: height)])
-            await driver.waitForStarts(1)
+            try await driver.waitForStarts(1)
             driver.completeAllStarts()
             let wide = try makeOverviewPreviewFrame(width: width, height: height)
             try await publish(wide, for: window, into: overview, driver: driver)
@@ -94,12 +105,12 @@ final class PreviewCaptureCoordinatorTests: XCTestCase {
             XCTAssertNil(swipe.preview(for: window))
             XCTAssertTrue(swipe.hasPendingFirstFrames)
             guard swipe.hasPendingFirstFrames else { continue }
-            await driver.waitForStarts(2)
+            try await driver.waitForStarts(2)
             XCTAssertTrue(driver.streams[1].request.handle === window)
             driver.completeAllStarts()
             overview.clear()
             swipe.clear()
-            await driver.waitForStops(2)
+            try await driver.waitForStops(2)
         }
     }
 
@@ -109,22 +120,27 @@ final class PreviewCaptureCoordinatorTests: XCTestCase {
         let driver = OverviewPreviewTestDriver()
         let active = driver.makeCapture(maximumRetainedBytes: budget)
         let idle = driver.makeCapture(consumer: .workspaceBarHover, maximumRetainedBytes: budget)
+        defer {
+            active.clear()
+            idle.clear()
+            driver.finish()
+        }
         let handles = (1 ... 3).map(handle)
         idle.reconcile(
             represented: [handles[1], handles[2]],
             visible: [request(handles[1]), request(handles[2])],
             prioritizing: handles[1]
         )
-        await driver.waitForStarts(2)
+        try await driver.waitForStarts(2)
         driver.completeAllStarts()
         try await publish(frames[1], for: handles[1], into: idle, driver: driver)
         try await publish(frames[2], for: handles[2], into: idle, driver: driver)
         idle.clear()
-        await driver.waitForStops(2)
+        try await driver.waitForStops(2)
         XCTAssertEqual(idle.cachedByteCount, budget)
 
         active.reconcile(represented: [handles[0]], visible: [request(handles[0])])
-        await driver.waitForStarts(3)
+        try await driver.waitForStarts(3)
         driver.completeAllStarts()
         try await publish(frames[0], for: handles[0], into: active, driver: driver)
         driver.coordinator.trimRetainedPreviews()
@@ -133,7 +149,7 @@ final class PreviewCaptureCoordinatorTests: XCTestCase {
         XCTAssertTrue(idle.retainedPreview(matching: handles[1].token)?.frame === frames[1])
         XCTAssertNil(idle.retainedPreview(matching: handles[2].token))
         active.clear()
-        await driver.waitForStops(3)
+        try await driver.waitForStops(3)
     }
 
     func testFrameSharedByConsumersCountsOnceAgainstBudget() async throws {
@@ -144,13 +160,18 @@ final class PreviewCaptureCoordinatorTests: XCTestCase {
             consumer: .workspaceBarHover,
             maximumRetainedBytes: frame.surface.allocationSize
         )
+        defer {
+            owner.clear()
+            adopter.clear()
+            driver.finish()
+        }
         let window = handle(1)
         owner.reconcile(represented: [window], visible: [request(window)])
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
         driver.completeAllStarts()
         try await publish(frame, for: window, into: owner, driver: driver)
         owner.clear()
-        await driver.waitForStops(1)
+        try await driver.waitForStops(1)
 
         XCTAssertTrue(adopter.preview(for: window) === frame)
         driver.coordinator.trimRetainedPreviews()
@@ -164,13 +185,18 @@ final class PreviewCaptureCoordinatorTests: XCTestCase {
         let driver = OverviewPreviewTestDriver()
         let owner = driver.makeCapture()
         let adopter = driver.makeCapture(consumer: .workspaceBarHover)
+        defer {
+            owner.clear()
+            adopter.clear()
+            driver.finish()
+        }
         let window = handle(1)
         owner.reconcile(represented: [window], visible: [request(window)])
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
         driver.completeAllStarts()
         try await publish(frame, for: window, into: owner, driver: driver)
         owner.clear()
-        await driver.waitForStops(1)
+        try await driver.waitForStops(1)
         XCTAssertTrue(adopter.preview(for: window) === frame)
         var released: [WindowHandle] = []
         adopter.onPreview = { handle, preview in if preview == nil { released.append(handle) } }

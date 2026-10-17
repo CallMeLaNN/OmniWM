@@ -1165,6 +1165,10 @@ final class DurableParkTests: XCTestCase {
         let windowId = UInt32(fixture.token.windowId)
         let otherWindowId: UInt32 = 963_101
         let queries = DeferredWindowInfoQueries()
+        defer {
+            handler.cancelFrameObservations()
+            queries.finish()
+        }
         var synchronousQueries = 0
         handler.windowInfoProvider = { _ in
             synchronousQueries += 1
@@ -1177,9 +1181,9 @@ final class DurableParkTests: XCTestCase {
         for _ in 0 ..< 6 {
             handler.handleCGSEvent(.frameChanged(windowId: windowId))
         }
-        await waitForQueries(queries, count: 1)
+        try await waitForQueries(queries, count: 1)
         handler.handleCGSEvent(.frameChanged(windowId: otherWindowId))
-        await waitForQueries(queries, count: 2)
+        try await waitForQueries(queries, count: 2)
 
         XCTAssertEqual(queries.requestedWindowIds, [windowId, otherWindowId])
         XCTAssertEqual(handler.frameObservations.byWindowId.count, 2)
@@ -1190,7 +1194,7 @@ final class DurableParkTests: XCTestCase {
         let first = try XCTUnwrap(handler.frameObservations.byWindowId[windowId]?.task)
         queries.answer(windowId, with: Self.windowServerInfo(fixture, frame: fixture.visibleFrame))
         await first.value
-        await waitForQueries(queries, count: 3)
+        try await waitForQueries(queries, count: 3)
 
         XCTAssertNil(fixture.controller.axManager.verifiedParkFrame(for: fixture.token.windowId))
         XCTAssertTrue(Self.frameTrace(fixture).contains("outcome=sls-park-intent/settled"))
@@ -1210,10 +1214,14 @@ final class DurableParkTests: XCTestCase {
             let handler = fixture.controller.axEventHandler
             let windowId = UInt32(fixture.token.windowId)
             let queries = DeferredWindowInfoQueries()
+            defer {
+                handler.cancelFrameObservations()
+                queries.finish()
+            }
             handler.windowInfoProvider = { _ in nil }
             handler.frameObservations.query = { await queries.query($0) }
             handler.handleCGSEvent(.frameChanged(windowId: windowId))
-            await waitForQueries(queries, count: 1)
+            try await waitForQueries(queries, count: 1)
             let task = try XCTUnwrap(handler.frameObservations.byWindowId[windowId]?.task)
 
             handler.handleCGSEvent(event)
@@ -1241,13 +1249,17 @@ final class DurableParkTests: XCTestCase {
         let windowId = UInt32(fixture.token.windowId)
         let liveInfo = Self.windowServerInfo(fixture, frame: fixture.visibleFrame)
         let queries = DeferredWindowInfoQueries()
+        defer {
+            handler.cancelFrameObservations()
+            queries.finish()
+        }
         handler.windowInfoProvider = { _ in liveInfo }
         handler.frameObservations.query = { await queries.query($0) }
         FrameApplyTrace.shared.beginCapture()
         defer { FrameApplyTrace.shared.endCapture() }
 
         handler.handleCGSEvent(.frameChanged(windowId: windowId))
-        await waitForQueries(queries, count: 1)
+        try await waitForQueries(queries, count: 1)
         let task = try XCTUnwrap(handler.frameObservations.byWindowId[windowId]?.task)
         handler.handleCGSEvent(.destroyed(windowId: windowId, spaceId: 1))
         await handler.lifecycleQueries.task?.value
@@ -1288,6 +1300,10 @@ final class DurableParkTests: XCTestCase {
         let handler = fixture.controller.axEventHandler
         let windowId = UInt32(fixture.token.windowId)
         let queries = DeferredWindowInfoQueries()
+        defer {
+            handler.cancelFrameObservations()
+            queries.finish()
+        }
         handler.frameObservations.query = { await queries.query($0) }
         let grownFrame = ScreenCoordinateSpace.toWindowServer(
             rect: CGRect(origin: fixture.parkedFrame.origin, size: CGSize(width: 1000, height: 600))
@@ -1296,7 +1312,7 @@ final class DurableParkTests: XCTestCase {
         defer { FrameApplyTrace.shared.endCapture() }
 
         handler.handleCGSEvent(.frameChanged(windowId: windowId))
-        await waitForQueries(queries, count: 1)
+        try await waitForQueries(queries, count: 1)
         let first = try XCTUnwrap(handler.frameObservations.byWindowId[windowId]?.task)
         fixture.controller.workspaceManager.setHiddenState(nil, for: fixture.token)
         queries.answer(
@@ -1304,7 +1320,7 @@ final class DurableParkTests: XCTestCase {
             with: WindowServerInfo(id: windowId, pid: fixture.token.pid, level: 0, frame: grownFrame)
         )
         await first.value
-        await waitForQueries(queries, count: 2)
+        try await waitForQueries(queries, count: 2)
         queries.answer(
             windowId,
             with: WindowServerInfo(id: windowId, pid: fixture.token.pid, level: 0, frame: grownFrame)
@@ -1322,6 +1338,10 @@ final class DurableParkTests: XCTestCase {
         let handler = fixture.controller.axEventHandler
         let windowId = UInt32(fixture.token.windowId)
         let queries = DeferredWindowInfoQueries()
+        defer {
+            handler.cancelFrameObservations()
+            queries.finish()
+        }
         handler.frameObservations.query = { await queries.query($0) }
         let staleFrame = CGRect(origin: fixture.parkedFrame.origin, size: CGSize(width: 1100, height: 600))
         let freshFrame = CGRect(origin: fixture.parkedFrame.origin, size: CGSize(width: 1000, height: 600))
@@ -1330,7 +1350,7 @@ final class DurableParkTests: XCTestCase {
 
         manager.setHiddenState(nil, for: fixture.token)
         handler.handleCGSEvent(.frameChanged(windowId: windowId))
-        await waitForQueries(queries, count: 1)
+        try await waitForQueries(queries, count: 1)
         let first = try XCTUnwrap(handler.frameObservations.byWindowId[windowId]?.task)
         manager.setHiddenState(hiddenState, for: fixture.token)
         queries.answer(windowId, with: WindowServerInfo(
@@ -1338,7 +1358,7 @@ final class DurableParkTests: XCTestCase {
             frame: ScreenCoordinateSpace.toWindowServer(rect: staleFrame)
         ))
         await first.value
-        await waitForQueries(queries, count: 2)
+        try await waitForQueries(queries, count: 2)
         queries.answer(windowId, with: WindowServerInfo(
             id: windowId, pid: fixture.token.pid, level: 0,
             frame: ScreenCoordinateSpace.toWindowServer(rect: freshFrame)
@@ -1362,6 +1382,10 @@ final class DurableParkTests: XCTestCase {
         let handler = controller.axEventHandler
         let windowId = UInt32(fixture.token.windowId)
         let queries = DeferredWindowInfoQueries()
+        defer {
+            handler.cancelFrameObservations()
+            queries.finish()
+        }
         var synchronousQueries = 0
         handler.windowInfoProvider = { _ in
             synchronousQueries += 1
@@ -1371,7 +1395,7 @@ final class DurableParkTests: XCTestCase {
         defer { controller.mouseEventHandler.state.nativeTitleBarDragFallbackToken = nil }
 
         handler.handleCGSEvent(.frameChanged(windowId: windowId))
-        await waitForQueries(queries, count: 1)
+        try await waitForQueries(queries, count: 1)
         let deferred = try XCTUnwrap(handler.frameObservations.byWindowId[windowId]?.task)
         controller.mouseEventHandler.state.nativeTitleBarDragFallbackToken = fixture.token
         handler.handleCGSEvent(.frameChanged(windowId: windowId))
@@ -1389,7 +1413,7 @@ final class DurableParkTests: XCTestCase {
         XCTAssertEqual(controller.axManager.verifiedParkFrame(for: fixture.token.windowId), fixture.parkFrame)
     }
 
-    private func waitForQueries(_ queries: DeferredWindowInfoQueries, count: Int) async {
+    private func waitForQueries(_ queries: DeferredWindowInfoQueries, count: Int) async throws {
         guard queries.requestedWindowIds.count < count else { return }
         let requested = expectation(description: "deferred window-info query \(count)")
         queries.onRequest = { requestCount in
@@ -1397,8 +1421,13 @@ final class DurableParkTests: XCTestCase {
                 requested.fulfill()
             }
         }
-        await fulfillment(of: [requested], timeout: 1)
-        queries.onRequest = nil
+        defer { queries.onRequest = nil }
+        guard await XCTWaiter.fulfillment(of: [requested], timeout: 1) == .completed,
+              queries.requestedWindowIds.count >= count
+        else {
+            XCTFail("Expected \(count) deferred window-info queries; received \(queries.requestedWindowIds.count)")
+            throw DeferredWindowInfoQueryWaitError.missingRequest(count)
+        }
     }
 
     private static func frameTrace(_ fixture: ParkDriftFixture) -> String {
@@ -1975,14 +2004,20 @@ final class DurableParkTests: XCTestCase {
     }
 }
 
+private enum DeferredWindowInfoQueryWaitError: Error {
+    case missingRequest(Int)
+}
+
 @MainActor
 private final class DeferredWindowInfoQueries {
     private(set) var requestedWindowIds: [UInt32] = []
     private var pending: [UInt32: CheckedContinuation<WindowServerInfo?, Never>] = [:]
     var onRequest: ((Int) -> Void)?
+    private var isFinished = false
 
     func query(_ windowId: UInt32) async -> WindowServerInfo? {
-        await withCheckedContinuation { continuation in
+        guard !isFinished else { return nil }
+        return await withCheckedContinuation { continuation in
             pending[windowId] = continuation
             requestedWindowIds.append(windowId)
             onRequest?(requestedWindowIds.count)
@@ -1991,6 +2026,14 @@ private final class DeferredWindowInfoQueries {
 
     func answer(_ windowId: UInt32, with info: WindowServerInfo?) {
         pending.removeValue(forKey: windowId)?.resume(returning: info)
+    }
+
+    func finish() {
+        isFinished = true
+        onRequest = nil
+        let pending = pending
+        self.pending.removeAll()
+        for continuation in pending.values { continuation.resume(returning: nil) }
     }
 }
 
