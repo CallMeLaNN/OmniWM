@@ -19,7 +19,6 @@ struct OverviewLayoutGeometry {
     let contentTopPadding: CGFloat
     let contentBottomPadding: CGFloat
 
-    /// Positions search and workspace content below the safe area, scaling only the Overview metrics.
     init(screenFrame: CGRect, scale: CGFloat, topSafeAreaInset: CGFloat = 0) {
         let metricsScale = OverviewLayoutCalculator.clampedScale(scale)
         let scaledSearchBarHeight = OverviewLayoutMetrics.searchBarHeight * metricsScale
