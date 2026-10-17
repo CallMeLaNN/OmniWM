@@ -95,6 +95,7 @@ struct NiriWorkspaceSnapshot {
     let removalSeed: NiriWindowRemovalSeed?
     let gap: CGFloat
     let niriWorkingFrame: CGRect
+    let fullscreenLayoutFrame: CGRect
     let displayRefreshRate: Double
     let isActiveWorkspace: Bool
     let quietArrivalTokens: Set<WindowToken>

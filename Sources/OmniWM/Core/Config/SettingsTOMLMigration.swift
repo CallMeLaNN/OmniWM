@@ -59,6 +59,15 @@ enum SettingsTOMLMigration {
 
     static let hotkeyIDsAddedInVersionFour = Set(versionFourHotkeyIDs)
 
+    private static let versionFiveHotkeyMappings = [
+        "setContainerPrimarySpan.decrease10Percent": "resizeContainerPrimarySpan.shrink",
+        "setContainerPrimarySpan.increase10Percent": "resizeContainerPrimarySpan.grow",
+        "setWindowPrimarySpan.decrease10Percent": "resizeWindowPrimarySpan.shrink",
+        "setWindowPrimarySpan.increase10Percent": "resizeWindowPrimarySpan.grow",
+        "setWindowSecondarySpan.decrease10Percent": "resizeWindowSecondarySpan.shrink",
+        "setWindowSecondarySpan.increase10Percent": "resizeWindowSecondarySpan.grow"
+    ]
+
     private struct PersistedHotkeyArray: Decodable {
         let hotkeys: [PersistedHotkeyBinding]
     }
@@ -68,6 +77,7 @@ enum SettingsTOMLMigration {
         let versionTwoAddedHotkeyIDs = version <= 1 ? migrateVersionOne(&raw) : []
         let versionThreeDefaultedPaths = version <= 2 ? try migrateVersionTwo(&raw) : []
         let versionFourAddedHotkeyIDs = version <= 3 ? migrateVersionThree(&raw) : []
+        let versionFiveMappedHotkeys = version <= 4 ? migrateVersionFour(&raw) : []
         canonicalizeMigratedHotkeys(in: &raw)
         return SettingsMigrationReport(
             fromVersion: version,
@@ -75,7 +85,7 @@ enum SettingsTOMLMigration {
             defaultedPaths: (versionOneReport?.defaultedPaths ?? []) + versionThreeDefaultedPaths,
             addedHotkeyIDs: (versionOneReport?.addedHotkeyIDs ?? []) + versionTwoAddedHotkeyIDs
                 + versionFourAddedHotkeyIDs,
-            mappedHotkeys: versionOneReport?.mappedHotkeys ?? [],
+            mappedHotkeys: (versionOneReport?.mappedHotkeys ?? []) + versionFiveMappedHotkeys,
             retiredHotkeys: versionOneReport?.retiredHotkeys ?? []
         )
     }
@@ -265,6 +275,20 @@ enum SettingsTOMLMigration {
         let addedIDs = appendMissingUnassignedHotkeys(versionFourHotkeyIDs, to: &entries)
         raw["hotkeys"] = .array(entries)
         return addedIDs
+    }
+
+    private static func migrateVersionFour(_ raw: inout [String: TOMLNode]) -> [SettingsHotkeyMapping] {
+        defer { raw["schemaVersion"] = .integer(5) }
+        guard case let .array(entries) = raw["hotkeys"] else { return [] }
+
+        let migrated = migrateLegacyHotkeyEntries(
+            entries,
+            explicitCurrentIDs: Set(entries.compactMap(hotkeyID)),
+            mappings: versionFiveHotkeyMappings,
+            retirements: [:]
+        )
+        raw["hotkeys"] = .array(migrated.entries)
+        return migrated.mapped
     }
 
     private static func appendMissingUnassignedHotkeys(
