@@ -61,10 +61,7 @@ struct StopWindowOperations {
         Self(
             setTimeout: { AXUIElementSetMessagingTimeout(window.element, $0) == .success },
             readMinimized: { AXWindowService.isMinimized(window) },
-            unminimize: {
-                AXUIElementSetAttributeValue(window.element, kAXMinimizedAttribute as CFString, kCFBooleanFalse) ==
-                    .success
-            },
+            unminimize: { AXWindowService.unminimize(window) },
             readFrame: { try? AXWindowService.frame(window) },
             writePosition: { frame, current in
                 AXWindowService.setFrame(

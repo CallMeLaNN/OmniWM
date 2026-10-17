@@ -58,10 +58,7 @@ final class WindowActionHandler {
             }
             return app.unhide() ? .requestReportedSent : .requestReportedNotSent
         },
-        unminimizeWindow: @escaping (AXWindowRef) -> Bool = { window in
-            AXUIElementSetAttributeValue(window.element, kAXMinimizedAttribute as CFString, kCFBooleanFalse) ==
-                .success
-        }
+        unminimizeWindow: @escaping (AXWindowRef) -> Bool = AXWindowService.unminimize
     ) {
         self.controller = controller
         self.unminimizeWindow = unminimizeWindow
@@ -324,17 +321,6 @@ final class WindowActionHandler {
         return navigated
     }
 
-    /// Focus and raise are ignored for minimized windows, so a bar click has to restore the window first.
-    private func restoreMinimizedWindowIfNeeded(_ handle: WindowHandle) -> Bool {
-        guard let controller,
-              let entry = controller.workspaceManager.entry(for: handle),
-              entry.observedState.isMinimized
-        else { return true }
-        guard unminimizeWindow(entry.axRef) else { return false }
-        controller.axEventHandler.updateWindowMinimizedState(false, token: entry.token)
-        return true
-    }
-
     func runningAppsWithWindows() -> [RunningAppInfo] {
         guard let controller else { return [] }
         var appInfoMap: [String: RunningAppInfo] = [:]
@@ -361,5 +347,17 @@ final class WindowActionHandler {
         }
 
         return appInfoMap.values.sorted { $0.appName < $1.appName }
+    }
+}
+
+extension WindowActionHandler {
+    private func restoreMinimizedWindowIfNeeded(_ handle: WindowHandle) -> Bool {
+        guard let controller,
+              let entry = controller.workspaceManager.entry(for: handle),
+              entry.observedState.isMinimized
+        else { return true }
+        guard unminimizeWindow(entry.axRef) else { return false }
+        controller.axEventHandler.updateWindowMinimizedState(false, token: entry.token)
+        return true
     }
 }

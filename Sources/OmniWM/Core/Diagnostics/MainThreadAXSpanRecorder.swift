@@ -15,6 +15,7 @@ enum MainThreadAXSpanTrace {
         case orderWindow = "order-window"
         case closeButtonPress = "close-button-press"
         case setNativeFullscreen = "set-native-fullscreen"
+        case unminimize
         case readFrame = "read-frame"
         case readSubrole = "read-subrole"
         case readRoleAndSubrole = "read-role-subrole"
