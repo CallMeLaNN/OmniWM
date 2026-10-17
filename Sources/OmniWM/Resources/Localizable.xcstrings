@@ -1,6 +1,21 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Applies to mouse resizing and to keyboard resizing in Niri. Window Snapshot stretches a still image of each moving window and needs Screen Recording. Glass Placeholder shows the app icon on glass and needs no permission. Windows get their final size once the resize ends." : {
+
+    },
+    "Glass Placeholder" : {
+
+    },
+    "Live Resize" : {
+
+    },
+    "Resize Preview" : {
+
+    },
+    "Window Snapshot" : {
+
+    },
     "Dynamic Island" : {
 
     },

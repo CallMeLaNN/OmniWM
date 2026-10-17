@@ -128,6 +128,10 @@ final class GestureSettings {
         }
     }
 
+    var resizePreviewStyle = GestureSettings.defaults.resizePreviewStyle ?? .live {
+        didSet { notifyChange() }
+    }
+
     var workspaceSwipeAxisLockedToVertical: Bool {
         scrollEnabled && workspaceSwipeFingerCount.rawValue == fingerCount.rawValue
     }
@@ -155,7 +159,8 @@ final class GestureSettings {
             windowMoveFingerCount: windowMoveFingerCount,
             windowResizeEnabled: windowResizeEnabled,
             windowResizeFingerCount: windowResizeFingerCount,
-            windowGestureSensitivity: windowGestureSensitivity
+            windowGestureSensitivity: windowGestureSensitivity,
+            resizePreviewStyle: resizePreviewStyle
         )
     }
 
@@ -185,6 +190,7 @@ final class GestureSettings {
         windowResizeEnabled = gestures.windowResizeEnabled ?? false
         windowResizeFingerCount = gestures.windowResizeFingerCount ?? .three
         windowGestureSensitivity = gestures.windowGestureSensitivity ?? 1.0
+        resizePreviewStyle = gestures.resizePreviewStyle ?? .live
         isApplying = false
         if export() != previous {
             notifyChange()

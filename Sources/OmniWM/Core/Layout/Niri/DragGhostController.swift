@@ -99,7 +99,7 @@ final class DragGhostController {
         ghostWindow?.showAt(cursorLocation: cursorLocation)
     }
 
-    private static func captureWindowImage(
+    static func captureWindowImage(
         token: WindowToken,
         pixelSize: CGSize,
         previews: PreviewCaptureCoordinator

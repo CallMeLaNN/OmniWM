@@ -95,6 +95,17 @@ struct MouseTrackpadSettingsTab: View {
             .id("Right Mouse Resize Modifier")
 
             SettingsCaption(localized: "Hold this modifier combo + right mouse drag to resize tiled windows")
+
+            Picker("Resize Preview", selection: Bindable(settings.gestures).resizePreviewStyle) {
+                ForEach(ResizePreviewStyle.allCases) { style in
+                    Text(style.localizedDisplayName).tag(style)
+                }
+            }
+            .id("Resize Preview")
+
+            SettingsCaption(
+                localized: "Applies to mouse resizing and to keyboard resizing in Niri. Window Snapshot stretches a still image of each moving window and needs Screen Recording. Glass Placeholder shows the app icon on glass and needs no permission. Windows get their final size once the resize ends."
+            )
         }
         .id("Mouse Move & Resize")
     }
