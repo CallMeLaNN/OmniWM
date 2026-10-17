@@ -15,6 +15,7 @@ struct CanonicalTOMLConfig: Codable, Equatable {
     var dwindle: SettingsExport.Dwindle
     var borders: SettingsExport.Borders
     var overview: SettingsExport.Overview
+    var windowSwitcher: SettingsExport.WindowSwitcher
     var workspaceBar: SettingsExport.WorkspaceBar
     var island: SettingsExport.Island
     var gestures: SettingsExport.Gestures
@@ -83,6 +84,8 @@ extension CanonicalTOMLConfig {
         dwindle = try container.decode(SettingsExport.Dwindle.self, forKey: .dwindle)
         borders = try container.decode(SettingsExport.Borders.self, forKey: .borders)
         overview = try container.decode(SettingsExport.Overview.self, forKey: .overview)
+        windowSwitcher = try container.decodeIfPresent(SettingsExport.WindowSwitcher.self, forKey: .windowSwitcher)
+            ?? SettingsExport.WindowSwitcher()
         workspaceBar = try container.decode(SettingsExport.WorkspaceBar.self, forKey: .workspaceBar)
         island = try container.decodeIfPresent(SettingsExport.Island.self, forKey: .island) ?? .defaults()
         gestures = try container.decode(SettingsExport.Gestures.self, forKey: .gestures)
@@ -138,6 +141,7 @@ extension CanonicalTOMLConfig {
         dwindle = export.dwindle
         borders = export.borders
         overview = export.overview
+        windowSwitcher = export.windowSwitcher
         workspaceBar = export.workspaceBar
         island = export.island
         gestures = export.gestures
@@ -170,6 +174,7 @@ extension CanonicalTOMLConfig {
             defaultLayoutType: general.defaultLayoutType,
             borders: borders,
             overview: overviewForExport(),
+            windowSwitcher: windowSwitcher,
             hotkeyBindings: hotkeys,
             systemHyperTrigger: general.systemHyperTrigger,
             hyperKeyModifiers: general.hyperKeyModifiers,

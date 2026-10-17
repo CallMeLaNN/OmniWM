@@ -375,6 +375,7 @@ final class SettingsUIRenderTests: XCTestCase {
         case .monitors: String(localized: "Arrangement")
         case .appRules: String(localized: "Add Rule")
         case .overview: String(localized: "Enable Overview")
+        case .windowSwitcher: String(localized: "Enable Window Switcher")
         case .hotkeys: String(localized: "System Hyper Trigger")
         case .mouseTrackpad: String(localized: "Trackpad")
         case .quakeTerminal: String(localized: "Enable Quake Terminal")

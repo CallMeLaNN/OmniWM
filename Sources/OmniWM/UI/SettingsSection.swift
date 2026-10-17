@@ -5,7 +5,7 @@ import SwiftUI
 
 enum SettingsSection: String, CaseIterable, Identifiable {
     case general, appearance, styles, bar, island, widgets, menuBar
-    case workspaces, layouts, monitors, appRules, overview
+    case workspaces, layouts, monitors, appRules, overview, windowSwitcher
     case hotkeys, mouseTrackpad, quakeTerminal, diagnostics, reportIssue, advanced
 
     var id: String {
@@ -110,6 +110,12 @@ enum SettingsSection: String, CaseIterable, Identifiable {
                 "rectangle.grid.2x2",
                 String(localized: "Customize the workspace overview and its controls.")
             )
+        case .windowSwitcher:
+            Presentation(
+                String(localized: "Window Switcher"),
+                "rectangle.stack",
+                String(localized: "Hold a shortcut to cycle through window previews.")
+            )
         case .hotkeys:
             Presentation(
                 String(localized: "Keyboard Shortcuts"),
@@ -171,7 +177,7 @@ enum SettingsSectionGroup: String, CaseIterable, Identifiable {
         switch self {
         case .app: [.general, .appearance]
         case .desktop: [.styles, .bar, .island, .widgets, .menuBar]
-        case .windows: [.workspaces, .layouts, .monitors, .appRules, .overview]
+        case .windows: [.workspaces, .layouts, .monitors, .appRules, .overview, .windowSwitcher]
         case .input: [.hotkeys, .mouseTrackpad]
         case .tools: [.quakeTerminal]
         case .support: [.diagnostics, .reportIssue, .advanced]

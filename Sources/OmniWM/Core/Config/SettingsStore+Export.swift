@@ -15,6 +15,7 @@ extension SettingsStore {
             defaultLayoutType: workspaces.defaultLayoutType,
             borders: borders.export(),
             overview: overview.export(),
+            windowSwitcher: windowSwitcher.export(),
             hotkeyBindings: hotkeyBindings,
             systemHyperTrigger: systemHyperTrigger,
             hyperKeyModifiers: hyperKeyModifiers,

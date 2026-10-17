@@ -67,6 +67,8 @@ struct SettingsDetailView: View {
             AppRulesView(settings: settings, controller: controller, editorState: navigation.ruleEditorState)
         case .overview:
             OverviewSettingsTab(settings: settings, controller: controller)
+        case .windowSwitcher:
+            WindowSwitcherSettingsTab(settings: settings, controller: controller)
         case .hotkeys:
             HotkeySettingsView(settings: settings, controller: controller)
         case .mouseTrackpad:
