@@ -272,6 +272,50 @@ final class SettingsMigrationTests: XCTestCase {
     }
 
     @MainActor
+    func testVersionFourMigrationValidatesDiscardedResizeAliases() throws {
+        let canonical = try SettingsTOMLCodec.encode(.defaults())
+        let original = Data(String(decoding: canonical, as: UTF8.self)
+            .replacingOccurrences(of: "schemaVersion = 5", with: "schemaVersion = 4").utf8)
+        let previousID = "setContainerPrimarySpan.decrease10Percent"
+        let currentID = "resizeContainerPrimarySpan.shrink"
+        let validAlias = addingHotkey(id: previousID, binding: "Option+L", to: original)
+        let valid = try SettingsTOMLCodec.decodeForLoad(validAlias)
+
+        XCTAssertEqual(valid.export.hotkeyBindings, SettingsExport.defaults().hotkeyBindings)
+        XCTAssertEqual(valid.migration?.mappedHotkeys, [
+            SettingsHotkeyMapping(
+                previousID: previousID,
+                currentID: currentID,
+                keptExplicitCurrentBinding: true
+            )
+        ])
+
+        for bindingLine in ["binding = \"NotAKey\"", "binding = 17"] {
+            let data = Data((String(decoding: original, as: UTF8.self) + "\n\n[[hotkeys]]\n"
+                    + "id = \"\(previousID)\"\n\(bindingLine)\n").utf8)
+            XCTAssertThrowsError(try SettingsTOMLCodec.decodeForLoad(data), bindingLine) { error in
+                XCTAssertTrue(SettingsTOMLCodec.diagnosticDescription(for: error).contains("hotkeys["))
+            }
+            let fixture = try makeFixture("version-four-invalid-alias")
+            defer { fixture.remove() }
+            try data.write(to: settingsURL(in: fixture))
+            let outcome = makePersistence(in: fixture).loadOutcome()
+
+            XCTAssertTrue(outcome.export == nil, bindingLine)
+            XCTAssertEqual(try Data(contentsOf: settingsURL(in: fixture)), data, bindingLine)
+            for index in 0 ..< 2 {
+                XCTAssertFalse(FileManager.default
+                    .fileExists(atPath: migrationBackupURL(in: fixture, index: index).path))
+            }
+            guard let notice = outcome.notice, case .invalidRejected = notice else {
+                XCTFail("Expected invalid version-four alias for \(bindingLine)")
+                continue
+            }
+            assertNoCorruptFiles(in: fixture, file: #filePath, line: #line)
+        }
+    }
+
+    @MainActor
     func testVersionThreeStartupPreservesBindingsAndBacksUpExactBytes() throws {
         let fixture = try makeFixture("version-three-window-marks")
         defer { fixture.remove() }
