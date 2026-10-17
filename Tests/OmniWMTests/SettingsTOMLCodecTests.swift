@@ -774,7 +774,7 @@ final class SettingsTOMLCodecTests: XCTestCase {
     }
 
     @MainActor
-    func testMalformedExternalWorkspaceSwipeReloadDoesNotPartiallyApplyOrNotify() async throws {
+    func testMalformedExternalWorkspaceSwipeReloadDoesNotPartiallyApplyOrNotify() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("OmniWMSettingsCodecTests-\(UUID().uuidString)", isDirectory: true)
         defer {
@@ -782,7 +782,7 @@ final class SettingsTOMLCodecTests: XCTestCase {
         }
         let persistence = SettingsFilePersistence(
             directory: root.appendingPathComponent("config", isDirectory: true),
-            startWatching: true,
+            startWatching: false,
             deferSaves: false
         )
         let settings = SettingsStore(
@@ -796,6 +796,10 @@ final class SettingsTOMLCodecTests: XCTestCase {
         settings.gestures.workspaceSwipeEnabled = true
         settings.gestures.workspaceSwipeFingerCount = .four
         settings.gestures.workspaceSwipeAxis = .horizontal
+        var noticeChangeCount = 0
+        settings.onConfigNoticeChanged = {
+            noticeChangeCount += 1
+        }
         var externalReloadCount = 0
         settings.onExternalSettingsReloaded = {
             externalReloadCount += 1
@@ -805,9 +809,16 @@ final class SettingsTOMLCodecTests: XCTestCase {
             ("workspaceSwipeAxis = \"vertical\"\n", "workspaceSwipeAxis = 3\n")
         )
         try malformed.write(to: persistence.fileURL, options: .atomic)
-        XCTAssertNil(persistence.reloadIfChanged())
-        try await Task.sleep(for: .milliseconds(200))
+        persistence.handlePossibleSettingsFileChange()
 
+        guard case let .invalidRejected(reason) = settings.configNotice else {
+            return XCTFail("Malformed external settings must publish a rejection notice")
+        }
+        XCTAssertFalse(reason.isEmpty)
+        XCTAssertEqual(noticeChangeCount, 1)
+        XCTAssertEqual(try Data(contentsOf: persistence.fileURL), malformed)
+        persistence.handlePossibleSettingsFileChange()
+        XCTAssertEqual(noticeChangeCount, 1)
         XCTAssertEqual(externalReloadCount, 0)
         XCTAssertTrue(settings.gestures.workspaceSwipeEnabled)
         XCTAssertEqual(settings.gestures.workspaceSwipeFingerCount, .four)
@@ -815,11 +826,10 @@ final class SettingsTOMLCodecTests: XCTestCase {
 
         let valid = try SettingsTOMLCodec.encode(.defaults())
         try valid.write(to: persistence.fileURL, options: .atomic)
-        for _ in 0 ..< 200 {
-            if externalReloadCount > 0 { break }
-            try await Task.sleep(for: .milliseconds(10))
-        }
+        persistence.handlePossibleSettingsFileChange()
 
+        XCTAssertNil(settings.configNotice)
+        XCTAssertEqual(noticeChangeCount, 2)
         XCTAssertEqual(externalReloadCount, 1)
         XCTAssertFalse(settings.gestures.workspaceSwipeEnabled)
         XCTAssertEqual(settings.gestures.workspaceSwipeFingerCount, .three)

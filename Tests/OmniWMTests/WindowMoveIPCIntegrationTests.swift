@@ -86,7 +86,7 @@ final class WindowMoveIPCIntegrationTests: XCTestCase {
         let moved = try addManagedWindow(pid: 489_003, windowId: 22, to: fixture.workspaceIds[1], fixture: fixture)
         try select(focused, in: fixture.workspaceIds[0], fixture: fixture)
 
-        withBlockedLayoutRefreshes(fixture) {
+        try withBlockedLayoutRefreshes(fixture) {
             XCTAssertEqual(fixture.router.handle(moveRequest(moved, to: "1")), .executed)
             XCTAssertEqual(fixture.controller.workspaceManager.workspace(for: moved.id), fixture.workspaceIds[0])
             XCTAssertEqual(fixture.controller.workspaceManager.selectedManagedToken, focused.id)
@@ -255,25 +255,9 @@ final class WindowMoveIPCIntegrationTests: XCTestCase {
         fixture.focusRecorder.focusedTokens.removeAll()
     }
 
-    private func withBlockedLayoutRefreshes<T>(_ fixture: Fixture, _ body: () throws -> T) rethrows -> T {
-        let blocker = Task { @MainActor in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(1))
-            }
-        }
-        let refreshController = fixture.controller.layoutRefreshController
-        refreshController.layoutState.activeRefreshTask = blocker
-        refreshController.layoutState.activeRefresh = .init(
-            kind: .immediateRelayout,
-            reason: .workspaceTransition,
-            affectedWorkspaceIds: [fixture.workspaceIds[0]]
+    private func withBlockedLayoutRefreshes<T>(_ fixture: Fixture, _ body: () throws -> T) throws -> T {
+        try LayoutRefreshTestSupport.withBlocked(
+            fixture.controller, in: fixture.workspaceIds[0], reason: .workspaceTransition, body
         )
-        defer {
-            blocker.cancel()
-            refreshController.layoutState.activeRefreshTask = nil
-            refreshController.layoutState.activeRefresh = nil
-            refreshController.layoutState.pendingRefresh = nil
-        }
-        return try body()
     }
 }

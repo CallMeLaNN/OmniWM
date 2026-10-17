@@ -52,22 +52,50 @@ private final class AXBoundaryValueBox<Value: Sendable>: @unchecked Sendable {
     }
 }
 
-private final class AXBoundaryConcurrencyProbe: @unchecked Sendable {
-    private let lock = NSLock()
+@MainActor
+private final class AXBoundaryConcurrencyProbe {
+    private let entries: [XCTestExpectation]
+    private let completions: [XCTestExpectation]
+    private var pending: [Int: CheckedContinuation<Void, Never>] = [:]
+    private var released = false
     private var active = 0
     private(set) var maximum = 0
+    private(set) var completionOrder: [Int] = []
 
-    func enter() {
-        lock.lock()
-        active += 1
-        maximum = max(maximum, active)
-        lock.unlock()
+    init(entries: [XCTestExpectation], completions: [XCTestExpectation]) {
+        self.entries = entries
+        self.completions = completions
     }
 
-    func leave() {
-        lock.lock()
-        active -= 1
-        lock.unlock()
+    func run(_ input: Int) async -> Int {
+        active += 1
+        maximum = max(maximum, active)
+        defer { active -= 1 }
+        await withCheckedContinuation { continuation in
+            if released {
+                continuation.resume()
+            } else {
+                pending[input] = continuation
+            }
+            entries[input].fulfill()
+        }
+        completionOrder.append(input)
+        completions[input].fulfill()
+        return input
+    }
+
+    func complete(_ input: Int) throws {
+        let continuation = try XCTUnwrap(pending.removeValue(forKey: input))
+        continuation.resume()
+    }
+
+    func releaseAll() {
+        released = true
+        let continuations = Array(pending.values)
+        pending.removeAll()
+        for continuation in continuations {
+            continuation.resume()
+        }
     }
 }
 
@@ -1792,18 +1820,42 @@ final class AXFullRescanBoundaryTests: XCTestCase {
     }
 
     func testBoundedAsyncMapCapsConcurrencyAndPreservesInputOrder() async throws {
-        let probe = AXBoundaryConcurrencyProbe()
         let inputs = Array(0 ..< 12)
-
-        let output = try await boundedFullRescanMap(inputs, maxConcurrent: 4) { input in
-            probe.enter()
-            defer { probe.leave() }
-            try await Task.sleep(for: .milliseconds(20))
-            return input
+        let entries = inputs.map { XCTestExpectation(description: "Map input \($0) admitted") }
+        let completions = inputs.map { XCTestExpectation(description: "Map input \($0) completed") }
+        let finished = XCTestExpectation(description: "Bounded map finished")
+        let probe = AXBoundaryConcurrencyProbe(entries: entries, completions: completions)
+        var output: [Int]?
+        var failure: Error?
+        let task = Task { @MainActor in
+            do {
+                output = try await boundedFullRescanMap(inputs, maxConcurrent: 4) { input in
+                    await probe.run(input)
+                }
+            } catch {
+                failure = error
+            }
+            finished.fulfill()
+        }
+        defer {
+            task.cancel()
+            probe.releaseAll()
         }
 
-        XCTAssertEqual(output, inputs)
+        await fulfillment(of: Array(entries.prefix(4)), timeout: 2)
+        let completionOrder = [3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8]
+        for (index, input) in completionOrder.enumerated() {
+            try probe.complete(input)
+            await fulfillment(of: [completions[input]], timeout: 2)
+            if index < inputs.count - 4 {
+                await fulfillment(of: [entries[index + 4]], timeout: 2)
+            }
+        }
+        await fulfillment(of: [finished], timeout: 2)
+        XCTAssertNil(failure)
+        XCTAssertEqual(try XCTUnwrap(output), inputs)
         XCTAssertEqual(probe.maximum, 4)
+        XCTAssertEqual(probe.completionOrder, completionOrder)
     }
 
     func testGlobalFullRescanBatchesTrackedOffCensusEvidenceBeforeEnumeration() async {

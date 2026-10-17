@@ -8,7 +8,7 @@ import OmniWMShellCore
 import XCTest
 
 private extension ShellWidgetPackage {
-    func testDropAuthority(_ key: ShellTreeKey) -> ShellDropAuthority? {
+    func dropAuthority(for key: ShellTreeKey) -> ShellDropAuthority? {
         guard let script, let instance = script.instances[key.bar],
               let sequence = states[key.bar]?.sequences[key.view.rawValue] else { return nil }
         var count = 0
@@ -32,7 +32,7 @@ private extension ShellWidgetPackage {
         return nil
     }
 
-    func testDropResourceCount(_ owner: ShellServiceOwner) -> Int {
+    func resourceCount(for owner: ShellServiceOwner) -> Int {
         guard let script else { return 0 }
         return omni_vm_resource_count(script.vm, owner.wire)
     }
@@ -65,7 +65,7 @@ final class ShellDropPackageTests: XCTestCase {
         await package.receive(.bars([key.bar: ShellBarData()]))
         let mailbox = ShellWidgetHost.connect(package)
         defer { mailbox.finish() }
-        let authority = await package.testDropAuthority(key)
+        let authority = await package.dropAuthority(for: key)
         let reservation = try await package.reserveDrop(XCTUnwrap(authority), key: key).get()
         XCTAssertEqual(reservation.authority.sourceID, 70)
         XCTAssertNil(reservation.component)
@@ -84,7 +84,7 @@ final class ShellDropPackageTests: XCTestCase {
         XCTAssertEqual(package.services.activeCount, 0)
         await resources.release(ids, owner: reservation.id.owner)
         await package.retireResourceIDs(ids, owner: reservation.id.owner)
-        let remaining = await package.testDropResourceCount(reservation.id.owner)
+        let remaining = await package.resourceCount(for: reservation.id.owner)
         XCTAssertEqual(remaining, 0)
         await package.close()
     }
@@ -126,7 +126,7 @@ final class ShellDropPackageTests: XCTestCase {
             await package.receive(.bars([key.bar: ShellBarData()]))
             let mailbox = ShellWidgetHost.connect(package)
             defer { mailbox.finish() }
-            let authority = await package.testDropAuthority(key)
+            let authority = await package.dropAuthority(for: key)
             let result = await package.reserveDrop(try XCTUnwrap(authority), key: key)
             if allowed {
                 let reservation = try result.get()

@@ -10,22 +10,37 @@ final class NativeSpaceInventoryStabilityTests: XCTestCase {
         let controller = WindowAdmissionTestSupport.controller()
         let manager = controller.serviceLifecycleManager
         let refreshController = controller.layoutRefreshController
+        let terminalSample = XCTestExpectation(description: "Fallback observation sampled")
+        let sleepEntries = (0 ..< (NativeSpaceInventoryStabilityGate.globalFallbackObservationCount - 1)).map {
+            XCTestExpectation(description: "Topology sleep \($0)")
+        }
+        let probe = NativeSpaceInventoryTestProbe(sleepEntries: sleepEntries)
+        var sampleCount = 0
         defer {
+            manager.topologyInventory.cancel()
+            probe.resumeAll()
+            _ = manager.topologyInventory.endPerformanceCapture()
             refreshController.resetState()
             controller.isLockScreenActive = false
         }
-        manager.topologyInventory.sampleProvider = { nil }
-        manager.topologyInventory.sleeper = { _ in await Task.yield() }
+        manager.topologyInventory.sampleProvider = {
+            sampleCount += 1
+            if sampleCount == NativeSpaceInventoryStabilityGate.globalFallbackObservationCount {
+                terminalSample.fulfill()
+            }
+            XCTAssertLessThanOrEqual(sampleCount, NativeSpaceInventoryStabilityGate.globalFallbackObservationCount)
+            return nil
+        }
+        manager.topologyInventory.sleeper = { _ in await probe.sleep() }
         manager.topologyInventory.beginPerformanceCapture()
         controller.isLockScreenActive = true
 
         manager.handleActiveSpaceDidChange()
-        for _ in 0 ..< 100 {
-            if manager.topologyInventory.performanceSnapshot()?.topologyGlobalFallbacks == 1 {
-                break
-            }
-            await Task.yield()
+        for entry in sleepEntries {
+            await fulfillment(of: [entry], timeout: 2)
+            try probe.resumeNext()
         }
+        await fulfillment(of: [terminalSample], timeout: 2)
 
         let terminalSnapshot = try XCTUnwrap(manager.topologyInventory.performanceSnapshot())
         XCTAssertEqual(
@@ -37,14 +52,9 @@ final class NativeSpaceInventoryStabilityTests: XCTestCase {
         XCTAssertEqual(terminalSnapshot.lastTopologyTerminalReason, .globalFallback)
         XCTAssertFalse(refreshController.layoutState.inventoryStabilityBarrierActive)
 
-        for _ in 0 ..< 20 {
-            await Task.yield()
-        }
-        XCTAssertEqual(
-            manager.topologyInventory.performanceSnapshot()?.topologySamples,
-            terminalSnapshot.topologySamples
-        )
-        _ = manager.topologyInventory.endPerformanceCapture()
+        XCTAssertEqual(sampleCount, NativeSpaceInventoryStabilityGate.globalFallbackObservationCount)
+        XCTAssertEqual(probe.sleepCount, sleepEntries.count)
+        XCTAssertTrue(probe.isEmpty)
     }
 
     @MainActor
@@ -55,25 +65,38 @@ final class NativeSpaceInventoryStabilityTests: XCTestCase {
         let first = try XCTUnwrap(NativeSpaceTopologySample(topology: makeTopology(currentSpaceId: 1)))
         let second = try XCTUnwrap(NativeSpaceTopologySample(topology: makeTopology(currentSpaceId: 2)))
         var returnsFirst = true
+        let terminalSample = XCTestExpectation(description: "Fallback observation sampled")
+        let sleepEntries = (0 ..< (NativeSpaceInventoryStabilityGate.globalFallbackObservationCount - 1)).map {
+            XCTestExpectation(description: "Topology sleep \($0)")
+        }
+        let probe = NativeSpaceInventoryTestProbe(sleepEntries: sleepEntries)
+        var sampleCount = 0
         defer {
+            manager.topologyInventory.cancel()
+            probe.resumeAll()
+            _ = manager.topologyInventory.endPerformanceCapture()
             refreshController.resetState()
             controller.isLockScreenActive = false
         }
         manager.topologyInventory.sampleProvider = {
+            sampleCount += 1
+            if sampleCount == NativeSpaceInventoryStabilityGate.globalFallbackObservationCount {
+                terminalSample.fulfill()
+            }
+            XCTAssertLessThanOrEqual(sampleCount, NativeSpaceInventoryStabilityGate.globalFallbackObservationCount)
             defer { returnsFirst.toggle() }
             return returnsFirst ? first : second
         }
-        manager.topologyInventory.sleeper = { _ in await Task.yield() }
+        manager.topologyInventory.sleeper = { _ in await probe.sleep() }
         manager.topologyInventory.beginPerformanceCapture()
         controller.isLockScreenActive = true
 
         manager.handleActiveSpaceDidChange()
-        for _ in 0 ..< 100 {
-            if manager.topologyInventory.performanceSnapshot()?.topologyGlobalFallbacks == 1 {
-                break
-            }
-            await Task.yield()
+        for entry in sleepEntries {
+            await fulfillment(of: [entry], timeout: 2)
+            try probe.resumeNext()
         }
+        await fulfillment(of: [terminalSample], timeout: 2)
 
         let terminalSnapshot = try XCTUnwrap(manager.topologyInventory.performanceSnapshot())
         XCTAssertEqual(
@@ -85,14 +108,9 @@ final class NativeSpaceInventoryStabilityTests: XCTestCase {
         XCTAssertEqual(terminalSnapshot.lastTopologyTerminalReason, .globalFallback)
         XCTAssertFalse(refreshController.layoutState.inventoryStabilityBarrierActive)
 
-        for _ in 0 ..< 20 {
-            await Task.yield()
-        }
-        XCTAssertEqual(
-            manager.topologyInventory.performanceSnapshot()?.topologySamples,
-            terminalSnapshot.topologySamples
-        )
-        _ = manager.topologyInventory.endPerformanceCapture()
+        XCTAssertEqual(sampleCount, NativeSpaceInventoryStabilityGate.globalFallbackObservationCount)
+        XCTAssertEqual(probe.sleepCount, sleepEntries.count)
+        XCTAssertTrue(probe.isEmpty)
     }
 
     @MainActor
@@ -103,19 +121,26 @@ final class NativeSpaceInventoryStabilityTests: XCTestCase {
         let usableSample = try XCTUnwrap(NativeSpaceTopologySample(topology: makeTopology()))
         let firstWorkspaceId = WorkspaceDescriptor.ID()
         let secondWorkspaceId = WorkspaceDescriptor.ID()
-        let probe = NativeSpaceInventoryTestProbe()
+        let sleepEntries = (0 ..< 2).map { XCTestExpectation(description: "Unlock topology sleep \($0)") }
+        let probe = NativeSpaceInventoryTestProbe(sleepEntries: sleepEntries)
+        let terminalSample = XCTestExpectation(description: "Authoritative topology sampled")
+        var sampleCount = 0
         defer {
+            manager.topologyInventory.cancel()
+            probe.resumeAll()
             _ = manager.topologyInventory.endPerformanceCapture()
             _ = refreshController.endPerformanceCapture()
             refreshController.resetState()
             controller.isLockScreenActive = false
         }
-        manager.topologyInventory.sampleProvider = { probe.sample }
-        manager.topologyInventory.sleeper = { _ in
-            await withCheckedContinuation { continuation in
-                probe.sleeper = continuation
+        manager.topologyInventory.sampleProvider = {
+            sampleCount += 1
+            if sampleCount == 3 {
+                terminalSample.fulfill()
             }
+            return probe.sample
         }
+        manager.topologyInventory.sleeper = { _ in await probe.sleep() }
         manager.topologyInventory.beginPerformanceCapture()
         refreshController.beginPerformanceCapture()
         controller.isLockScreenActive = true
@@ -130,27 +155,16 @@ final class NativeSpaceInventoryStabilityTests: XCTestCase {
 
         controller.isLockScreenActive = false
         manager.handleUnlockDetected()
-        for _ in 0 ..< 100 where probe.sleeper == nil {
-            await Task.yield()
-        }
+        await fulfillment(of: [sleepEntries[0]], timeout: 2)
 
-        XCTAssertNotNil(probe.sleeper)
+        XCTAssertFalse(probe.isEmpty)
         XCTAssertTrue(refreshController.layoutState.isRefreshSuspendedForLockScreen)
         XCTAssertTrue(refreshController.layoutState.isAwaitingPostUnlockTopologySample)
         XCTAssertEqual(refreshController.performanceSnapshot()?.refreshesStarted, 0)
 
         probe.sample = usableSample
-        let firstSleep = probe.sleeper
-        probe.sleeper = nil
-        firstSleep?.resume()
-        for _ in 0 ..< 100 {
-            if refreshController.performanceSnapshot()?.refreshesStarted == 1,
-               probe.sleeper != nil
-            {
-                break
-            }
-            await Task.yield()
-        }
+        try probe.resumeNext()
+        await fulfillment(of: [sleepEntries[1]], timeout: 2)
         await WindowAdmissionTestSupport.drainLayoutRefreshes(controller)
 
         let snapshot = try XCTUnwrap(refreshController.performanceSnapshot())
@@ -160,15 +174,8 @@ final class NativeSpaceInventoryStabilityTests: XCTestCase {
         XCTAssertFalse(refreshController.layoutState.isAwaitingPostUnlockTopologySample)
 
         controller.isLockScreenActive = true
-        let secondSleep = probe.sleeper
-        probe.sleeper = nil
-        secondSleep?.resume()
-        for _ in 0 ..< 100 {
-            if manager.topologyInventory.performanceSnapshot()?.authoritativeTerminations == 1 {
-                break
-            }
-            await Task.yield()
-        }
+        try probe.resumeNext()
+        await fulfillment(of: [terminalSample], timeout: 2)
         XCTAssertEqual(manager.topologyInventory.performanceSnapshot()?.authoritativeTerminations, 1)
     }
 
@@ -586,6 +593,45 @@ final class NativeSpaceInventoryStabilityTests: XCTestCase {
 
 @MainActor
 private final class NativeSpaceInventoryTestProbe {
+    private enum ProbeError: Error {
+        case missingSleep
+    }
+
     var sample: NativeSpaceTopologySample?
-    var sleeper: CheckedContinuation<Void, Never>?
+    private let sleepEntries: [XCTestExpectation]
+    private var sleepers: [CheckedContinuation<Void, Never>] = []
+    private(set) var sleepCount = 0
+
+    init(sleepEntries: [XCTestExpectation]) {
+        self.sleepEntries = sleepEntries
+    }
+
+    var isEmpty: Bool {
+        sleepers.isEmpty
+    }
+
+    func sleep() async {
+        await withCheckedContinuation { continuation in
+            sleepers.append(continuation)
+            if sleepCount < sleepEntries.count {
+                sleepEntries[sleepCount].fulfill()
+            } else {
+                XCTFail("Unexpected topology sleep")
+            }
+            sleepCount += 1
+        }
+    }
+
+    func resumeNext() throws {
+        guard !sleepers.isEmpty else { throw ProbeError.missingSleep }
+        sleepers.removeFirst().resume()
+    }
+
+    func resumeAll() {
+        let pending = sleepers
+        sleepers.removeAll()
+        for sleeper in pending {
+            sleeper.resume()
+        }
+    }
 }

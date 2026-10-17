@@ -4,6 +4,7 @@
 import CoreGraphics
 import Foundation
 @testable import OmniWM
+import Synchronization
 import XCTest
 
 final class InputTapThreadTests: XCTestCase {
@@ -23,6 +24,14 @@ final class InputTapThreadTests: XCTestCase {
         let thread = InputTapThread()
         let iterations = 1000
         let group = DispatchGroup()
+        let incoherentSnapshots = Mutex(0)
+        thread.updateFilterSnapshot {
+            $0.activeCapture = .left
+            $0.gestureActiveOrLatched = true
+        }
+        let initial = thread.filterSnapshot
+        XCTAssertEqual(initial.activeCapture, .left)
+        XCTAssertTrue(initial.gestureActiveOrLatched)
 
         for i in 0 ..< 4 {
             group.enter()
@@ -39,13 +48,19 @@ final class InputTapThreadTests: XCTestCase {
                             $0.gestureActiveOrLatched = false
                         }
                     }
-                    _ = thread.filterSnapshot
+                    let snapshot = thread.filterSnapshot
+                    if !((snapshot.activeCapture == .left && snapshot.gestureActiveOrLatched)
+                        || (snapshot.activeCapture == nil && !snapshot.gestureActiveOrLatched))
+                    {
+                        incoherentSnapshots.withLock { $0 += 1 }
+                    }
                 }
                 group.leave()
             }
         }
 
         XCTAssertEqual(group.wait(timeout: .now() + 5), .success)
+        XCTAssertEqual(incoherentSnapshots.withLock { $0 }, 0)
     }
 
     @MainActor
@@ -210,13 +225,6 @@ final class InputTapThreadTests: XCTestCase {
 
     @MainActor
     private func makeController() -> WMController {
-        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        let settings = SettingsStore(
-            persistence: SettingsFilePersistence(directory: directory, startWatching: false, deferSaves: false),
-            runtimeState: RuntimeStateStore(directory: directory.appendingPathComponent("state"), deferSaves: false),
-            autosaveEnabled: false
-        )
-        settings.animationsEnabled = false
-        return WMController(settings: settings)
+        InputControllerTestSupport.controller(for: self)
     }
 }

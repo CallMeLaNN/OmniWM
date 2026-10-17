@@ -59,8 +59,6 @@ final class NuCompletionTests: XCTestCase {
             ("omniwmctl capture ", CLICompletionCatalog.captureActionNames),
             ("omniwmctl workspace ", CLICompletionCatalog.workspaceActionNames),
             ("omniwmctl window ", CLICompletionCatalog.windowActionNames),
-            ("omniwmctl window mark ", CLICompletionCatalog.windowMarkActionNames),
-            ("omniwmctl window mark list ", CLICompletionCatalog.windowMarkListFlags),
             ("omniwmctl completion ", CLIShell.allCases.map(\.rawValue)),
             ("omniwmctl que", ["query"])
         ]

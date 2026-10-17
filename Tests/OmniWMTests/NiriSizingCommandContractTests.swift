@@ -135,8 +135,4 @@ final class NiriSizingCommandContractTests: XCTestCase {
         XCTAssertEqual(decoded.niri.containerPrimarySpanPresets, [0.25, 0.5, 0.75])
         XCTAssertEqual(decoded.niri.defaultContainerPrimarySpan, 0.5)
     }
-
-    func testCurrentProtocolVersion() {
-        XCTAssertEqual(OmniWMIPCProtocol.version, 20)
-    }
 }

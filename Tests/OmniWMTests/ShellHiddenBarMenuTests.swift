@@ -118,8 +118,9 @@ final class ShellHiddenBarMenuTests: XCTestCase {
             onFailure: { failures += 1 }
         )
         defer { menu.close() }
-        while !menu.popout.panel.isVisible, failures == 0 { await Task.yield() }
+        await until { menu.popout.panel.isVisible || failures > 0 }
         XCTAssertEqual(failures, 0)
+        guard menu.popout.panel.isVisible else { return XCTFail("The child menu did not become visible") }
         XCTAssertTrue(OwnedWindowRegistry.shared.contains(window: parent.panel))
         XCTAssertTrue(OwnedWindowRegistry.shared.contains(window: menu.popout.panel))
         XCTAssertEqual(menu.popout.panel.frame.midX, icon.midX, accuracy: 0.5)
@@ -133,7 +134,9 @@ final class ShellHiddenBarMenuTests: XCTestCase {
         menu.popout.surface.press(at: CGPoint(x: 40, y: 18))
         menu.popout.surface.release(at: CGPoint(x: 40, y: 18))
         XCTAssertEqual(selected, ["first"])
-        while menu.popout.surface.size.height < 90, failures == 0 { await Task.yield() }
+        await until { menu.popout.surface.size.height >= 90 || failures > 0 }
+        XCTAssertEqual(failures, 0)
+        guard menu.popout.surface.size.height >= 90 else { return XCTFail("The next menu page did not render") }
         menu.popout.surface.press(at: CGPoint(x: 40, y: 18))
         menu.popout.surface.release(at: CGPoint(x: 40, y: 18))
         XCTAssertEqual(selected, ["first", "back"])
@@ -163,7 +166,7 @@ final class ShellHiddenBarMenuTests: XCTestCase {
             onFailure: { failures += 1 }
         )
         defer { menu.close() }
-        while failures == 0 { await Task.yield() }
+        await until { failures > 0 }
         XCTAssertEqual(failures, 1)
         XCTAssertFalse(menu.popout.panel.isVisible)
         menu.update(page: HiddenBarMenuPage(title: nil, rows: [row("closed")], backID: nil))

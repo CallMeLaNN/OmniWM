@@ -295,8 +295,8 @@ final class PerformanceCaptureTests: XCTestCase {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("OmniWMPerformanceCapture-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let sleepGate = PerformanceCaptureSleepGate()
+        let sleepEntries = (0 ..< 2).map { XCTestExpectation(description: "Capture timer \($0) installed") }
+        let sleepGate = PerformanceCaptureSleepGate(entries: sleepEntries)
         let coordinator = RuntimeTraceCaptureCoordinator(
             diagnosticsDirectory: directory,
             recorders: [],
@@ -305,6 +305,7 @@ final class PerformanceCaptureTests: XCTestCase {
                 try await sleepGate.sleep(duration)
             }
         )
+        ownPerformanceCapture(coordinator, sleepGate: sleepGate, directory: directory)
 
         guard case .started = await coordinator.toggle(
             desiredState: .active,
@@ -313,7 +314,7 @@ final class PerformanceCaptureTests: XCTestCase {
         ) else {
             return XCTFail("expected first capture to start")
         }
-        await sleepGate.waitUntilCount(1)
+        await fulfillment(of: [sleepEntries[0]], timeout: 2)
         _ = await coordinator.toggle(
             desiredState: .inactive,
             profile: .performance,
@@ -328,9 +329,9 @@ final class PerformanceCaptureTests: XCTestCase {
             return XCTFail("expected replacement capture to start")
         }
         let replacementStartedAt = try XCTUnwrap(coordinator.status.startedAt)
-        await sleepGate.waitUntilCount(2)
+        await fulfillment(of: [sleepEntries[1]], timeout: 2)
 
-        await sleepGate.resumeFirst()
+        try await sleepGate.resumeFirst()
         for _ in 0 ..< 10 {
             await Task.yield()
         }
@@ -344,7 +345,7 @@ final class PerformanceCaptureTests: XCTestCase {
             profile: .performance,
             reportProvider: { "unused" }
         )
-        await sleepGate.resumeFirst()
+        try await sleepGate.resumeFirst()
     }
 
     @MainActor
@@ -352,8 +353,8 @@ final class PerformanceCaptureTests: XCTestCase {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("OmniWMPerformanceCapture-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let sleepGate = PerformanceCaptureSleepGate()
+        let sleepEntries = [XCTestExpectation(description: "Automatic capture timer installed")]
+        let sleepGate = PerformanceCaptureSleepGate(entries: sleepEntries)
         let metricEnds = Atomic<UInt64>(0)
         let coordinator = RuntimeTraceCaptureCoordinator(
             diagnosticsDirectory: directory,
@@ -363,6 +364,14 @@ final class PerformanceCaptureTests: XCTestCase {
                 try await sleepGate.sleep(duration)
             }
         )
+        let finalized = XCTestExpectation(description: "Automatic capture finalized")
+        finalized.assertForOverFulfill = false
+        coordinator.onStateChange = {
+            if coordinator.status.phase == .idle {
+                finalized.fulfill()
+            }
+        }
+        ownPerformanceCapture(coordinator, sleepGate: sleepGate, directory: directory)
 
         guard case .started = await coordinator.toggle(
             desiredState: .active,
@@ -374,12 +383,12 @@ final class PerformanceCaptureTests: XCTestCase {
         ) else {
             return XCTFail("expected performance capture to start")
         }
-        await sleepGate.waitUntilCount(1)
+        await fulfillment(of: [sleepEntries[0]], timeout: 2)
 
-        await sleepGate.resumeFirst()
-        for _ in 0 ..< 100 where coordinator.status.phase != .idle {
-            await Task.yield()
-        }
+        try await sleepGate.resumeFirst()
+        await fulfillment(of: [finalized], timeout: 2)
+        let requestedDurations = await sleepGate.requestedDurations
+        XCTAssertEqual(requestedDurations, [.seconds(600)])
 
         XCTAssertEqual(coordinator.status.phase, .idle)
         XCTAssertEqual(metricEnds.load(ordering: .relaxed), 1)
@@ -452,6 +461,29 @@ final class PerformanceCaptureTests: XCTestCase {
         }
     }
 
+    private enum CaptureFixtureError: Error {
+        case finalizationUnfinished
+    }
+
+    @MainActor
+    private func ownPerformanceCapture(
+        _ coordinator: RuntimeTraceCaptureCoordinator,
+        sleepGate: PerformanceCaptureSleepGate,
+        directory: URL
+    ) {
+        addTeardownBlock { @MainActor in
+            defer { coordinator.onStateChange = nil }
+            if coordinator.status.phase == .recording {
+                _ = await coordinator.toggle(desiredState: .inactive, reportProvider: { "cleanup" })
+            }
+            await sleepGate.resumeAll()
+            guard coordinator.status.phase == .idle else {
+                throw CaptureFixtureError.finalizationUnfinished
+            }
+            try FileManager.default.removeItem(at: directory)
+        }
+    }
+
     @MainActor
     private func makeSnapshot(
         capturedAt: UInt64,
@@ -488,22 +520,45 @@ final class PerformanceCaptureTests: XCTestCase {
 }
 
 private actor PerformanceCaptureSleepGate {
+    private let entries: [XCTestExpectation]
     private var continuations: [CheckedContinuation<Void, Never>] = []
+    private var released = false
+    private(set) var requestedDurations: [Duration] = []
 
-    func sleep(_: Duration) async throws {
+    init(entries: [XCTestExpectation]) {
+        self.entries = entries
+    }
+
+    func sleep(_ duration: Duration) async throws {
+        let index = requestedDurations.count
+        requestedDurations.append(duration)
         await withCheckedContinuation { continuation in
-            continuations.append(continuation)
+            if released {
+                continuation.resume()
+            } else {
+                continuations.append(continuation)
+            }
+            if index < entries.count {
+                entries[index].fulfill()
+            } else {
+                XCTFail("Unexpected capture timer")
+            }
         }
     }
 
-    func waitUntilCount(_ count: Int) async {
-        while continuations.count < count {
-            await Task.yield()
-        }
+    func resumeFirst() throws {
+        let continuation = try XCTUnwrap(continuations.first, "Expected an installed capture timer")
+        continuations.removeFirst()
+        continuation.resume()
     }
 
-    func resumeFirst() {
-        continuations.removeFirst().resume()
+    func resumeAll() {
+        released = true
+        let pending = continuations
+        continuations.removeAll()
+        for continuation in pending {
+            continuation.resume()
+        }
     }
 }
 

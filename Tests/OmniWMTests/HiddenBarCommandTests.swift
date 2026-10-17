@@ -52,6 +52,9 @@ final class HiddenBarCommandTests: XCTestCase {
     private func makeSettingsStore() -> SettingsStore {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("OmniWMHiddenBarCommandTests-\(UUID().uuidString)", isDirectory: true)
+        addTeardownBlock {
+            try FileManager.default.removeItem(at: root)
+        }
         return SettingsStore(
             persistence: SettingsFilePersistence(
                 directory: root.appendingPathComponent("config", isDirectory: true),

@@ -23,7 +23,7 @@ final class DwindleCommandRoutingTests: XCTestCase {
 
     func testFocusAtGroupEdgeUsesEligibleAdjacentMonitorWithoutLocalWrap() throws {
         let fixture = try makeFixture(groupedSource: true, includeTargetCandidate: true)
-        let blocker = blockLayoutRefresh(fixture)
+        let blocker = try blockLayoutRefresh(fixture)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         XCTAssertEqual(fixture.engine.activeToken(in: fixture.sourceWorkspaceId), fixture.activeToken)
@@ -46,7 +46,7 @@ final class DwindleCommandRoutingTests: XCTestCase {
 
     func testFocusAtGroupEdgeWrapsLocallyWhenAdjacentWorkspaceHasNoCandidate() throws {
         let fixture = try makeFixture(groupedSource: true, includeTargetCandidate: false)
-        let blocker = blockLayoutRefresh(fixture)
+        let blocker = try blockLayoutRefresh(fixture)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         XCTAssertEqual(fixture.engine.activeToken(in: fixture.sourceWorkspaceId), fixture.activeToken)
@@ -91,7 +91,7 @@ final class DwindleCommandRoutingTests: XCTestCase {
                 in: fixture.sourceWorkspaceId
             )
         }
-        let blocker = blockLayoutRefresh(fixture)
+        let blocker = try blockLayoutRefresh(fixture)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         XCTAssertEqual(
@@ -108,7 +108,7 @@ final class DwindleCommandRoutingTests: XCTestCase {
 
     func testSharedWrapAndReorderCommandsRouteToDwindleGroups() throws {
         let fixture = try makeFixture(groupedSource: true, includeTargetCandidate: true)
-        let blocker = blockLayoutRefresh(fixture)
+        let blocker = try blockLayoutRefresh(fixture)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         XCTAssertEqual(
@@ -166,7 +166,7 @@ final class DwindleCommandRoutingTests: XCTestCase {
         let fixture = try makeFixture(groupedSource: false, includeTargetCandidate: false)
         fixture.controller.settings.focus.moveCrossesMonitorAtEdge = true
         fixture.controller.settings.focus.followsWindowToMonitor = false
-        let blocker = blockLayoutRefresh(fixture)
+        let blocker = try blockLayoutRefresh(fixture)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         XCTAssertEqual(
@@ -203,7 +203,7 @@ final class DwindleCommandRoutingTests: XCTestCase {
             .nativeFullscreen,
             for: fixture.activeToken
         )
-        let blocker = blockLayoutRefresh(fixture)
+        let blocker = try blockLayoutRefresh(fixture)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         XCTAssertEqual(
@@ -263,7 +263,7 @@ final class DwindleCommandRoutingTests: XCTestCase {
         let thirdNodeIdBefore = try XCTUnwrap(
             fixture.engine.findNode(for: thirdToken, in: fixture.sourceWorkspaceId)?.id
         )
-        let blocker = blockLayoutRefresh(fixture)
+        let blocker = try blockLayoutRefresh(fixture)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
 
         XCTAssertEqual(
@@ -328,7 +328,7 @@ final class DwindleCommandRoutingTests: XCTestCase {
             )
         }
         let before = try XCTUnwrap(fixture.engine.root(for: fixture.sourceWorkspaceId)?.splitRatio)
-        let blocker = blockLayoutRefresh(fixture)
+        let blocker = try blockLayoutRefresh(fixture)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
         fixture.controller.layoutRefreshController.layoutState.pendingRefresh = nil
 
@@ -369,7 +369,7 @@ final class DwindleCommandRoutingTests: XCTestCase {
                 in: fixture.sourceWorkspaceId
             )
         }
-        let blocker = blockLayoutRefresh(fixture)
+        let blocker = try blockLayoutRefresh(fixture)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
         let router = IPCCommandRouter(controller: fixture.controller, sessionToken: "test")
         let root = try XCTUnwrap(fixture.engine.root(for: fixture.sourceWorkspaceId))
@@ -408,7 +408,7 @@ final class DwindleCommandRoutingTests: XCTestCase {
         XCTAssertEqual(fixture.engine.tileCount(in: fixture.sourceWorkspaceId), 2)
         let before = fixture.engine.tileSnapshot(for: fixture.activeToken, in: fixture.sourceWorkspaceId)
         let children = root.children.map(\.id)
-        let blocker = blockLayoutRefresh(fixture)
+        let blocker = try blockLayoutRefresh(fixture)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
         fixture.controller.layoutRefreshController.layoutState.pendingRefresh = nil
         let router = IPCCommandRouter(controller: fixture.controller, sessionToken: "test")
@@ -431,7 +431,7 @@ final class DwindleCommandRoutingTests: XCTestCase {
         let root = try XCTUnwrap(fixture.engine.root(for: fixture.sourceWorkspaceId))
         let nested = try XCTUnwrap(fixture.engine.findNode(for: nestedToken, in: fixture.sourceWorkspaceId))
         XCTAssertFalse(nested.parent === root)
-        let blocker = blockLayoutRefresh(fixture)
+        let blocker = try blockLayoutRefresh(fixture)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
         fixture.controller.layoutRefreshController.layoutState.pendingRefresh = nil
         let router = IPCCommandRouter(controller: fixture.controller, sessionToken: "test")
@@ -448,7 +448,7 @@ final class DwindleCommandRoutingTests: XCTestCase {
     func testIPCSplitCommandsReportChangesAndSingleTileNoOps() throws {
         for command in [IPCDwindleCommand.toggleSplit, .swapSplit] {
             let fixture = try makeFixture(groupedSource: true, includeTargetCandidate: false)
-            let blocker = blockLayoutRefresh(fixture)
+            let blocker = try blockLayoutRefresh(fixture)
             defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
             fixture.controller.layoutRefreshController.layoutState.pendingRefresh = nil
             let router = IPCCommandRouter(controller: fixture.controller, sessionToken: "test")
@@ -490,7 +490,7 @@ final class DwindleCommandRoutingTests: XCTestCase {
             }
             let root = try XCTUnwrap(fixture.engine.root(for: fixture.sourceWorkspaceId))
             let before = try XCTUnwrap(root.splitRatio)
-            let blocker = blockLayoutRefresh(fixture)
+            let blocker = try blockLayoutRefresh(fixture)
             defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
             fixture.controller.layoutRefreshController.layoutState.pendingRefresh = nil
             let router = IPCCommandRouter(controller: fixture.controller, sessionToken: "test")
@@ -520,7 +520,7 @@ final class DwindleCommandRoutingTests: XCTestCase {
 
     func testIPCPreselectionCommandsReportChangesWithoutRelayout() throws {
         let fixture = try makeFixture(groupedSource: false, includeTargetCandidate: false)
-        let blocker = blockLayoutRefresh(fixture)
+        let blocker = try blockLayoutRefresh(fixture)
         defer { unblockLayoutRefresh(fixture.controller, blocker: blocker) }
         fixture.controller.layoutRefreshController.layoutState.pendingRefresh = nil
         let router = IPCCommandRouter(controller: fixture.controller, sessionToken: "test")
@@ -713,28 +713,14 @@ final class DwindleCommandRoutingTests: XCTestCase {
         )
     }
 
-    private func blockLayoutRefresh(_ fixture: Fixture) -> Task<Void, Never> {
-        let blocker = Task { @MainActor in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(1))
-            }
-        }
-        fixture.controller.layoutRefreshController.layoutState.activeRefreshTask = blocker
-        fixture.controller.layoutRefreshController.layoutState.activeRefresh = .init(
-            kind: .immediateRelayout,
-            reason: .layoutCommand,
-            affectedWorkspaceIds: [fixture.sourceWorkspaceId]
-        )
-        return blocker
+    private func blockLayoutRefresh(_ fixture: Fixture) throws -> Task<Void, Never> {
+        try LayoutRefreshTestSupport.block(fixture.controller, in: fixture.sourceWorkspaceId, reason: .layoutCommand)
     }
 
     private func unblockLayoutRefresh(
         _ controller: WMController,
         blocker: Task<Void, Never>
     ) {
-        blocker.cancel()
-        controller.layoutRefreshController.layoutState.activeRefreshTask = nil
-        controller.layoutRefreshController.layoutState.activeRefresh = nil
-        controller.layoutRefreshController.layoutState.pendingRefresh = nil
+        LayoutRefreshTestSupport.unblock(controller, blocker: blocker)
     }
 }

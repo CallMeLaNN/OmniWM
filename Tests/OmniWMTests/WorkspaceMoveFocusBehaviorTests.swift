@@ -1095,7 +1095,7 @@ extension WorkspaceMoveFocusBehaviorTests {
     private func withBlockedLayoutRefreshes<T>(
         _ fixture: Fixture,
         _ body: () throws -> T
-    ) rethrows -> T {
+    ) throws -> T {
         try withBlockedLayoutRefreshes(
             controller: fixture.controller,
             affectedWorkspaceId: fixture.workspaceIds[0],
@@ -1107,25 +1107,9 @@ extension WorkspaceMoveFocusBehaviorTests {
         controller: WMController,
         affectedWorkspaceId: WorkspaceDescriptor.ID,
         _ body: () throws -> T
-    ) rethrows -> T {
-        let blocker = Task { @MainActor in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(1))
-            }
-        }
-        let refreshController = controller.layoutRefreshController
-        refreshController.layoutState.activeRefreshTask = blocker
-        refreshController.layoutState.activeRefresh = .init(
-            kind: .immediateRelayout,
-            reason: .workspaceTransition,
-            affectedWorkspaceIds: [affectedWorkspaceId]
+    ) throws -> T {
+        try LayoutRefreshTestSupport.withBlocked(
+            controller, in: affectedWorkspaceId, reason: .workspaceTransition, body
         )
-        defer {
-            blocker.cancel()
-            refreshController.layoutState.activeRefreshTask = nil
-            refreshController.layoutState.activeRefresh = nil
-            refreshController.layoutState.pendingRefresh = nil
-        }
-        return try body()
     }
 }

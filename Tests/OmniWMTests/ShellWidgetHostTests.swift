@@ -146,10 +146,13 @@ final class ShellWidgetOutboxTests: XCTestCase {
 @MainActor
 final class ShellWidgetBarLifecycleTests: XCTestCase {
     private var controller: WMController!
+    private var root: URL?
+    private var managers: [WorkspaceBarManager] = []
 
     override func setUp() async throws {
         try await super.setUp()
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        self.root = root
         let config = root.appendingPathComponent("config", isDirectory: true)
         let settings = SettingsStore(
             persistence: SettingsFilePersistence(directory: config, startWatching: false, deferSaves: false),
@@ -169,7 +172,28 @@ final class ShellWidgetBarLifecycleTests: XCTestCase {
     }
 
     override func tearDown() async throws {
+        for manager in managers { manager.cleanup() }
+        if let controller {
+            controller.hasStartedServices = false
+            controller.workspaceBarManager.cleanup()
+            controller.layoutRefreshController.resetState()
+            controller.mouseEventHandler.cleanup()
+            controller.surfaceReconciler.cleanup()
+            controller.axManager.cleanup()
+        }
+        for manager in managers { await manager.flushShellForQuit() }
+        if let controller { await controller.workspaceBarManager.flushShellForQuit() }
+        managers.removeAll()
         controller = nil
+        await ShellWidgetHost.flushRetiredWork()
+        if let root, FileManager.default.fileExists(atPath: root.path) {
+            do {
+                try FileManager.default.removeItem(at: root)
+            } catch {
+                XCTFail("Could not remove shell lifecycle fixture at \(root.path): \(error)")
+            }
+        }
+        root = nil
         try await super.tearDown()
     }
 
@@ -590,15 +614,12 @@ final class ShellWidgetBarLifecycleTests: XCTestCase {
         )
         let toggle = manager.makeShellHiddenBarDrawer()
         XCTAssertTrue(toggle.isActive())
-        while host.popout == nil {
-            toggle.show([], main, placement)
-            await Task.yield()
-        }
+        await until { host.widgets["drawer"]?.package != nil }
+        _ = try XCTUnwrap(host.widgets["drawer"]?.package)
+        toggle.show([], main, placement)
         let popout = try XCTUnwrap(host.popout)
         XCTAssertEqual(popout.drawerPlacement, placement)
-        while popout.surface.size.width == 0 {
-            await Task.yield()
-        }
+        await until { popout.surface.size.width > 0 }
         XCTAssertEqual(popout.surface.size, CGSize(width: 260, height: 30))
         XCTAssertTrue(host.slots(for: main).isEmpty)
 
@@ -607,14 +628,11 @@ final class ShellWidgetBarLifecycleTests: XCTestCase {
         function popout(ctx) return ui.box{ w = 200, h = 30 } end
         """.utf8).write(to: drawer.appendingPathComponent("init.luau"))
         host.rescan()
-        while host.popout != nil {
-            await Task.yield()
-        }
+        await until { host.popout == nil }
+        guard host.popout == nil else { return XCTFail("The old drawer did not close during reload") }
         toggle.show([], main, placement)
         let reloaded = try XCTUnwrap(host.popout)
-        while reloaded.surface.size.width == 0 {
-            await Task.yield()
-        }
+        await until { reloaded.surface.size.width > 0 }
         XCTAssertEqual(reloaded.surface.size, CGSize(width: 200, height: 30))
 
         toggle.close(false)
@@ -778,6 +796,7 @@ final class ShellWidgetBarLifecycleTests: XCTestCase {
         manager.setup(controller: controller, settings: controller.settings)
         manager.panelFactory = { WorkspaceBarPanel.defaultPanel() }
         manager.frameApplier = { _, _ in }
+        managers.append(manager)
         return manager
     }
 
@@ -1213,9 +1232,7 @@ final class ShellWidgetClickTests: XCTestCase {
         try await layoutChanges.change()
         let surface = try harness.barSurface()
         surface.hover(at: CGPoint(x: 5, y: 5))
-        while harness.host.tooltip.text == nil {
-            await Task.yield()
-        }
+        await until { harness.host.tooltip.text != nil }
         XCTAssertEqual(harness.host.tooltip.text, "Focus workspace")
         surface.hover(at: nil)
         XCTAssertNil(harness.host.tooltip.text)
@@ -2839,8 +2856,8 @@ final class ShellWidgetClickTests: XCTestCase {
         XCTAssertTrue(harness.host.toggle("controls", on: main))
         let drawer = try XCTUnwrap(harness.host.drawer)
         XCTAssertEqual(drawer.sections.map(\.widget), ["test", "second"])
-        while !drawer.panel.isVisible || drawer.sections.contains(where: { $0.surface.size.height == 0 }) {
-            await Task.yield()
+        await until {
+            drawer.panel.isVisible && drawer.sections.allSatisfy { $0.surface.size.height > 0 }
         }
         XCTAssertEqual(drawer.panel.frame.size, CGSize(width: 80 + 24, height: 12 + 20 + 12 + 30 + 12))
         XCTAssertEqual(drawer.panel.frame.maxX, screen.visibleFrame.maxX - 8, accuracy: 1)
@@ -3258,22 +3275,28 @@ final class ShellWidgetClickTests: XCTestCase {
         let items = (0 ..< 6).map {
             ShellHiddenBarItem(id: "com.example.\($0)#0", name: "\($0)", image: nil, width: 30, height: 16)
         }
+        await until { harness.host.widgets["test"]?.package != nil }
+        _ = try XCTUnwrap(harness.host.widgets["test"]?.package)
         var previous = 0
-        let size = { (data: ShellHiddenBarData) async -> CGSize? in
+        let size = { (data: ShellHiddenBarData) async throws -> CGSize in
             harness.host.updateHiddenBar(data)
-            while !harness.host.togglePopout(of: "test", on: main) {
-                await Task.yield()
-            }
-            while (harness.host.popout?.surface.sequence ?? 0) <= previous {
-                await Task.yield()
-            }
-            previous = harness.host.popout?.surface.sequence ?? previous
+            XCTAssertTrue(harness.host.togglePopout(of: "test", on: main))
+            let popout = try XCTUnwrap(harness.host.popout)
             defer { harness.host.closePopout(animated: false) }
-            return harness.host.popout?.surface.size
+            await until { popout.surface.sequence > previous }
+            XCTAssertGreaterThan(popout.surface.sequence, previous)
+            previous = popout.surface.sequence
+            return popout.surface.size
         }
-        let rows = await size(ShellHiddenBarData(enabled: true, available: true, items: items, maxWidth: 70, cell: 20))
+        let rows = try await size(ShellHiddenBarData(
+            enabled: true,
+            available: true,
+            items: items,
+            maxWidth: 70,
+            cell: 20
+        ))
         XCTAssertEqual(rows, CGSize(width: 2 + 2 + 60 + 2 + 2, height: 2 + 3 * 20 + 2 * 2 + 2))
-        let columns = await size(ShellHiddenBarData(
+        let columns = try await size(ShellHiddenBarData(
             enabled: true,
             available: true,
             items: items,
@@ -3282,7 +3305,7 @@ final class ShellWidgetClickTests: XCTestCase {
             vertical: true
         ))
         XCTAssertEqual(columns, CGSize(width: 2 + 3 * 30 + 2 * 2 + 2, height: 2 + 2 + 2 * 20 + 2 + 2))
-        let single = await size(ShellHiddenBarData(enabled: true, available: true, items: items, cell: 20))
+        let single = try await size(ShellHiddenBarData(enabled: true, available: true, items: items, cell: 20))
         XCTAssertEqual(single, CGSize(width: 2 + 2 + 6 * 30 + 2 + 2, height: 2 + 20 + 2))
     }
 

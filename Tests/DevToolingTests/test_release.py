@@ -17,6 +17,43 @@ RELEASE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(RELEASE)
 
 
+class ReleaseConfigTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="omniwm-release-config-test-")
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        self.version = "0.7.4"
+
+    def test_config_requires_explicit_ci_checkout(self):
+        for value in (None, "", str(self.root / "missing"), str(self.root)):
+            with self.subTest(value=value), patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}, clear=True):
+                if value is not None:
+                    os.environ["OMNIWM_RELEASE_MAIN_REPO"] = value
+                with self.assertRaisesRegex(RELEASE.ReleaseError, "OMNIWM_RELEASE_MAIN_REPO"):
+                    RELEASE.Config.from_environment()
+
+    def test_config_accepts_explicit_ci_git_checkout(self):
+        subprocess.run(["git", "init", self.root], check=True, capture_output=True)
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "OMNIWM_RELEASE_MAIN_REPO": str(self.root)}, clear=True):
+            self.assertEqual(RELEASE.Config.from_environment().main_repo, self.root)
+
+    def test_config_rejects_invalid_git_directory_in_ci(self):
+        (self.root / ".git").mkdir()
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "OMNIWM_RELEASE_MAIN_REPO": str(self.root)}, clear=True):
+            with self.assertRaisesRegex(RELEASE.ReleaseError, "OMNIWM_RELEASE_MAIN_REPO"):
+                RELEASE.Config.from_environment()
+
+    def test_cli_reports_missing_ci_checkout_without_traceback(self):
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}, clear=True), patch.object(
+            RELEASE.sys, "argv", ["omniwm_release.py", "status", self.version]
+        ), patch.object(RELEASE.sys, "stderr") as stderr:
+            self.assertEqual(RELEASE.main(), 1)
+        self.assertIn("OMNIWM_RELEASE_MAIN_REPO", "".join(call.args[0] for call in stderr.write.call_args_list))
+
+    def test_config_keeps_local_default_checkout(self):
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(RELEASE.Config.from_environment().main_repo, RELEASE.DEFAULT_MAIN_REPO)
+
 class ReleaseTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix="omniwm-release-test-")
@@ -306,36 +343,6 @@ class ReleaseTests(unittest.TestCase):
         self.assertIn("app failed to connect to WindowServer", str(error.exception))
         self.assertLess(len(str(error.exception)), 9000)
         process.terminate.assert_not_called()
-
-    def test_config_requires_explicit_ci_checkout(self):
-        for value in (None, "", str(self.root / "missing"), str(self.root)):
-            with self.subTest(value=value), patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}, clear=True):
-                if value is not None:
-                    os.environ["OMNIWM_RELEASE_MAIN_REPO"] = value
-                with self.assertRaisesRegex(RELEASE.ReleaseError, "OMNIWM_RELEASE_MAIN_REPO"):
-                    RELEASE.Config.from_environment()
-
-    def test_config_accepts_explicit_ci_git_checkout(self):
-        subprocess.run(["git", "init", self.root], check=True, capture_output=True)
-        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "OMNIWM_RELEASE_MAIN_REPO": str(self.root)}, clear=True):
-            self.assertEqual(RELEASE.Config.from_environment().main_repo, self.root)
-
-    def test_config_rejects_invalid_git_directory_in_ci(self):
-        (self.root / ".git").mkdir()
-        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "OMNIWM_RELEASE_MAIN_REPO": str(self.root)}, clear=True):
-            with self.assertRaisesRegex(RELEASE.ReleaseError, "OMNIWM_RELEASE_MAIN_REPO"):
-                RELEASE.Config.from_environment()
-
-    def test_cli_reports_missing_ci_checkout_without_traceback(self):
-        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}, clear=True), patch.object(
-            RELEASE.sys, "argv", ["omniwm_release.py", "status", self.version]
-        ), patch.object(RELEASE.sys, "stderr") as stderr:
-            self.assertEqual(RELEASE.main(), 1)
-        self.assertIn("OMNIWM_RELEASE_MAIN_REPO", "".join(call.args[0] for call in stderr.write.call_args_list))
-
-    def test_config_keeps_local_default_checkout(self):
-        with patch.dict(os.environ, {}, clear=True):
-            self.assertEqual(RELEASE.Config.from_environment().main_repo, RELEASE.DEFAULT_MAIN_REPO)
 
     def test_smoke_test_requires_explicit_opt_out_and_logs_it(self):
         with patch.dict(os.environ, {"OMNIWM_RELEASE_SKIP_APP_LAUNCH": "1"}), patch("builtins.print") as log:

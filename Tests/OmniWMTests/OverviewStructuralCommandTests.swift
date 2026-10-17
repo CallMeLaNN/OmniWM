@@ -473,11 +473,23 @@ final class OverviewStructuralCommandTests: XCTestCase {
             )?.didMutate == true
         )
 
-        for _ in 0 ..< 100
-            where fixture.controller.layoutRefreshController.layoutState.activeRefreshTask != nil
-            || fixture.controller.layoutRefreshController.layoutState.pendingRefresh != nil
-        {
+        let refreshController = fixture.controller.layoutRefreshController
+        for _ in 0 ..< 100 {
+            if refreshController.layoutState.activeRefreshTask == nil,
+               refreshController.layoutState.activeRefresh == nil,
+               refreshController.layoutState.pendingRefresh == nil
+            {
+                break
+            }
             try await Task.sleep(for: .milliseconds(10))
+        }
+        try Task.checkCancellation()
+        guard refreshController.layoutState.activeRefreshTask == nil,
+              refreshController.layoutState.activeRefresh == nil,
+              refreshController.layoutState.pendingRefresh == nil
+        else {
+            XCTFail("Coalesced structural refresh did not finish within 100 samples")
+            return
         }
 
         XCTAssertEqual(refreshedWorkspaceSets.count, 1)

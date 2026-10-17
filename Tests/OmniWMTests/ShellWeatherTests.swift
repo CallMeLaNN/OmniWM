@@ -128,19 +128,26 @@ final class ShellWeatherTests: XCTestCase {
     func testFeedFetchesWeatherOnlyWhileDemandedAndRefetchesForNewLocations() async throws {
         let loads = Loads()
         let weather = try ShellWeatherClient.weather(from: Self.report, fahrenheit: false)
-        let (deliveries, delivered) = AsyncStream.makeStream(of: ShellWidgetData.self)
+        var publications: [ShellWidgetData] = []
+        let firstReading = expectation(description: "Toronto weather published")
+        var awaitedReading: XCTestExpectation? = firstReading
         let feed = ShellDataFeed(loadWeather: { query in
             loads.record(query)
             return ShellWeatherReading(weather: weather, latitude: 1, longitude: 2)
-        }, deliver: { delivered.yield($0) })
-        var updates = deliveries.makeAsyncIterator()
+        }, deliver: { data in
+            publications.append(data)
+            if data.weather == weather, let completed = awaitedReading {
+                awaitedReading = nil
+                completed.fulfill()
+            }
+        })
         defer { feed.stop() }
 
         feed.setWeatherLocation(ShellWeatherLocation(place: .city("Toronto")))
         XCTAssertTrue(loads.all.isEmpty)
 
         feed.setDemand(ShellDataKey.weather.bit, cadence: .of([(ShellDataKey.weather.bit, nil)]))
-        while await updates.next()?.weather != weather {}
+        await fulfillment(of: [firstReading], timeout: 5)
         XCTAssertEqual(loads.all, [ShellWeatherLocation(place: .city("Toronto"))])
 
         feed.setDemand(
@@ -150,10 +157,15 @@ final class ShellWeatherTests: XCTestCase {
         XCTAssertEqual(loads.all.count, 1)
 
         let paris = ShellWeatherLocation(place: .coordinates(latitude: 48.9, longitude: 2.3))
+        let replacementStart = publications.count
+        let replacementReading = expectation(description: "Paris weather published")
+        awaitedReading = replacementReading
         feed.setWeatherLocation(paris)
         XCTAssertNil(feed.current.weather)
-        while await updates.next()?.weather != nil {}
-        while await updates.next()?.weather != weather {}
+        let resetIndex = try XCTUnwrap(publications[replacementStart...].firstIndex { $0.weather == nil })
+        await fulfillment(of: [replacementReading], timeout: 5)
+        let readingIndex = try XCTUnwrap(publications[replacementStart...].firstIndex { $0.weather == weather })
+        XCTAssertLessThan(resetIndex, readingIndex)
         XCTAssertEqual(loads.all.last, paris)
     }
 
@@ -162,26 +174,44 @@ final class ShellWeatherTests: XCTestCase {
         let loads = Loads()
         var weather = try ShellWeatherClient.weather(from: Self.report, fahrenheit: false)
         weather.place = "Toronto"
-        let (deliveries, delivered) = AsyncStream.makeStream(of: ShellWidgetData.self)
+        var publications: [ShellWidgetData] = []
+        let firstReading = expectation(description: "Initial weather published")
+        var awaitedReading: XCTestExpectation? = firstReading
+        var awaitedStaleReading: XCTestExpectation?
         let feed = ShellDataFeed(loadWeather: { [weather] query in
             loads.record(query)
             if failing.withLock({ $0 }) {
                 throw URLError(.notConnectedToInternet)
             }
             return ShellWeatherReading(weather: weather, latitude: 1, longitude: 2)
-        }, deliver: { delivered.yield($0) })
-        var updates = deliveries.makeAsyncIterator()
+        }, deliver: { [weather] data in
+            publications.append(data)
+            if data.weather == weather, let completed = awaitedReading {
+                awaitedReading = nil
+                completed.fulfill()
+            }
+            if data.weather?.stale == true, let completed = awaitedStaleReading {
+                awaitedStaleReading = nil
+                completed.fulfill()
+            }
+        })
         defer { feed.stop() }
         feed.setWeatherLocation(ShellWeatherLocation(place: .city("Toronto"), refresh: .zero))
         feed.setDemand(ShellDataKey.weather.bit, cadence: .of([(ShellDataKey.weather.bit, nil)]))
-        while await updates.next()?.weather != weather {}
+        await fulfillment(of: [firstReading], timeout: 5)
 
+        let refreshStart = publications.count
+        let staleReading = expectation(description: "Stale weather published")
+        awaitedStaleReading = staleReading
         failing.withLock { $0 = true }
         feed.setDemand(
             ShellDataKey.weather.bit | ShellDataKey.cpu.bit,
             cadence: .of([(ShellDataKey.weather.bit | ShellDataKey.cpu.bit, nil)])
         )
-        while await updates.next()?.weather?.stale != true {}
+        await fulfillment(of: [staleReading], timeout: 5)
+        let stale = try XCTUnwrap(publications[refreshStart...].first { $0.weather?.stale == true }?.weather)
+        XCTAssertEqual(stale.temp, weather.temp)
+        XCTAssertEqual(stale.place, "Toronto")
         XCTAssertEqual(feed.current.weather?.temp, weather.temp)
         XCTAssertEqual(loads.all.last?.name, "Toronto")
         XCTAssertEqual(loads.all.last?.place, .coordinates(latitude: 1, longitude: 2))

@@ -507,7 +507,7 @@ final class WindowAdmissionFrameLifecycleTests: XCTestCase {
         XCTAssertFalse(ledger.hasPendingFrameWrite(for: window.windowId))
     }
 
-    func testScheduledRetryCancellationPreservesObserverRequestIdentityForGenericFailure() async throws {
+    func testScheduledRetryCancellationPreservesObserverRequestIdentityForGenericFailure() throws {
         let manager = AXManager()
         let pid: pid_t = 467_321
         let window = AXWindowRef(
@@ -518,6 +518,10 @@ final class WindowAdmissionFrameLifecycleTests: XCTestCase {
         var observerResults: [AXFrameApplyResult] = []
         var genericFailures: [AXFrameApplyResult] = []
         manager.onFrameApplyTerminated = { genericFailures.append($0) }
+        defer {
+            manager.onFrameApplyTerminated = nil
+            manager.cancelPendingFrameJobs([(pid: pid, windowId: window.windowId)], reason: "test-cleanup")
+        }
 
         manager.applyFramesParallel(
             [AXFrameApplicationTarget(pid: pid, window: window, frame: target)],
@@ -527,7 +531,6 @@ final class WindowAdmissionFrameLifecycleTests: XCTestCase {
         XCTAssertTrue(genericFailures.isEmpty)
 
         manager.cancelPendingFrameJobs([(pid: pid, windowId: window.windowId)], reason: "test")
-        await Task.yield()
 
         let observerResult = try XCTUnwrap(observerResults.first)
         let genericFailure = try XCTUnwrap(genericFailures.first)
@@ -551,14 +554,23 @@ final class WindowAdmissionFrameLifecycleTests: XCTestCase {
         )
         let target = CGRect(x: 20, y: 30, width: 640, height: 480)
         var genericFailures: [AXFrameApplyResult] = []
-        manager.onFrameApplyTerminated = { genericFailures.append($0) }
+        let terminated = expectation(description: "Frame retry terminated")
+        terminated.assertForOverFulfill = false
+        manager.onFrameApplyTerminated = {
+            genericFailures.append($0)
+            terminated.fulfill()
+        }
+        defer {
+            manager.onFrameApplyTerminated = nil
+            manager.cancelPendingFrameJobs([(pid: pid, windowId: window.windowId)], reason: "test-cleanup")
+        }
 
         manager.applyFramesParallel([
             AXFrameApplicationTarget(pid: pid, window: window, frame: target)
         ])
         XCTAssertTrue(genericFailures.isEmpty)
 
-        await Task.yield()
+        await fulfillment(of: [terminated], timeout: 2)
 
         let genericFailure = try XCTUnwrap(genericFailures.first)
         XCTAssertEqual(genericFailures.count, 1)

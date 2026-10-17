@@ -441,19 +441,24 @@ final class WorkspaceBarManagerTests: XCTestCase {
     func testAutoHideRevealDelayWaitsWhileThePointerRestsAtTheEdge() async throws {
         var pointer = monitor.frame.center
         let manager = try autoHidingManager { pointer }
-        defer { manager.cleanup() }
-        var sleeps: [CheckedContinuation<Void, Never>] = []
-        manager.autoHideDelays.sleep = { _ in await withCheckedContinuation { sleeps.append($0) } }
+        let sleepEntries = (0 ..< 1).map { XCTestExpectation(description: "Auto-hide sleep \($0) entered") }
+        let sleeps = WorkspaceBarSleepProbe(entries: sleepEntries)
+        defer {
+            manager.cleanup()
+            sleeps.resumeAll()
+        }
+        manager.autoHideDelays.sleep = { duration in await sleeps.sleep(duration) }
         controller.settings.workspaceBar.autoHideRevealDelayMilliseconds = 300
 
         pointer = Self.edgePoint
         manager.handleAutoHideMouseMoved(at: pointer)
-        await waitUntil { sleeps.count == 1 }
+        await fulfillment(of: [sleepEntries[0]], timeout: 2)
+        XCTAssertEqual(sleeps.requestedDurations.last, .milliseconds(300))
         manager.handleAutoHideMouseMoved(at: pointer)
 
         XCTAssertFalse(manager.isPointerRevealed(on: monitor.id))
-        try resumeNextSleep(&sleeps)
-        await waitUntil { manager.isPointerRevealed(on: monitor.id) }
+        try sleeps.resumeNext()
+        try await waitUntil { manager.isPointerRevealed(on: monitor.id) }
         XCTAssertTrue(manager.isPointerRevealed(on: monitor.id))
         XCTAssertTrue(sleeps.isEmpty)
     }
@@ -461,17 +466,22 @@ final class WorkspaceBarManagerTests: XCTestCase {
     func testAutoHideRevealDelayIsCancelledWhenThePointerLeavesTheEdge() async throws {
         var pointer = monitor.frame.center
         let manager = try autoHidingManager { pointer }
-        defer { manager.cleanup() }
-        var sleeps: [CheckedContinuation<Void, Never>] = []
-        manager.autoHideDelays.sleep = { _ in await withCheckedContinuation { sleeps.append($0) } }
+        let sleepEntries = (0 ..< 1).map { XCTestExpectation(description: "Auto-hide sleep \($0) entered") }
+        let sleeps = WorkspaceBarSleepProbe(entries: sleepEntries)
+        defer {
+            manager.cleanup()
+            sleeps.resumeAll()
+        }
+        manager.autoHideDelays.sleep = { duration in await sleeps.sleep(duration) }
         controller.settings.workspaceBar.autoHideRevealDelayMilliseconds = 300
         pointer = Self.edgePoint
         manager.handleAutoHideMouseMoved(at: pointer)
-        await waitUntil { sleeps.count == 1 }
+        await fulfillment(of: [sleepEntries[0]], timeout: 2)
+        XCTAssertEqual(sleeps.requestedDurations.last, .milliseconds(300))
 
         pointer = monitor.frame.center
         manager.handleAutoHideMouseMoved(at: pointer)
-        try resumeNextSleep(&sleeps)
+        try sleeps.resumeNext()
         await settle()
 
         XCTAssertFalse(manager.isPointerRevealed(on: monitor.id))
@@ -493,41 +503,52 @@ final class WorkspaceBarManagerTests: XCTestCase {
     func testAutoHideHideDelayKeepsTheBarAndReturningToItCancelsTheHide() async throws {
         var pointer = Self.edgePoint
         let manager = try autoHidingManager { pointer }
-        defer { manager.cleanup() }
-        var sleeps: [CheckedContinuation<Void, Never>] = []
-        manager.autoHideDelays.sleep = { _ in await withCheckedContinuation { sleeps.append($0) } }
+        let sleepEntries = (0 ..< 2).map { XCTestExpectation(description: "Auto-hide sleep \($0) entered") }
+        let sleeps = WorkspaceBarSleepProbe(entries: sleepEntries)
+        defer {
+            manager.cleanup()
+            sleeps.resumeAll()
+        }
+        manager.autoHideDelays.sleep = { duration in await sleeps.sleep(duration) }
         controller.settings.workspaceBar.autoHideHideDelayMilliseconds = 300
         manager.handleAutoHideMouseMoved(at: pointer)
         XCTAssertTrue(manager.isPointerRevealed(on: monitor.id))
 
         pointer = monitor.frame.center
         manager.handleAutoHideMouseMoved(at: pointer)
-        await waitUntil { sleeps.count == 1 }
+        await fulfillment(of: [sleepEntries[0]], timeout: 2)
+        XCTAssertEqual(sleeps.requestedDurations.last, .milliseconds(300))
         XCTAssertTrue(manager.isPointerRevealed(on: monitor.id))
         pointer = Self.retentionPoint
         manager.handleAutoHideMouseMoved(at: pointer)
-        try resumeNextSleep(&sleeps)
+        try sleeps.resumeNext()
         await settle()
         XCTAssertTrue(manager.isPointerRevealed(on: monitor.id))
 
         pointer = monitor.frame.center
         manager.handleAutoHideMouseMoved(at: pointer)
-        await waitUntil { sleeps.count == 1 }
-        try resumeNextSleep(&sleeps)
-        await waitUntil { !manager.isPointerRevealed(on: monitor.id) }
+        await fulfillment(of: [sleepEntries[1]], timeout: 2)
+        XCTAssertEqual(sleeps.requestedDurations.last, .milliseconds(300))
+        try sleeps.resumeNext()
+        try await waitUntil { !manager.isPointerRevealed(on: monitor.id) }
         XCTAssertFalse(manager.isPointerRevealed(on: monitor.id))
     }
 
     func testRemovingTheLastAutoHideTargetRestartsAPendingRevealDelay() async throws {
         var pointer = monitor.frame.center
         let manager = try autoHidingManager { pointer }
-        defer { manager.cleanup() }
-        var sleeps: [CheckedContinuation<Void, Never>] = []
-        manager.autoHideDelays.sleep = { _ in await withCheckedContinuation { sleeps.append($0) } }
+        let sleepEntries = (0 ..< 2).map { XCTestExpectation(description: "Auto-hide sleep \($0) entered") }
+        let sleeps = WorkspaceBarSleepProbe(entries: sleepEntries)
+        defer {
+            manager.cleanup()
+            sleeps.resumeAll()
+        }
+        manager.autoHideDelays.sleep = { duration in await sleeps.sleep(duration) }
         controller.settings.workspaceBar.autoHideRevealDelayMilliseconds = 300
         pointer = Self.edgePoint
         manager.handleAutoHideMouseMoved(at: pointer)
-        await waitUntil { sleeps.count == 1 }
+        await fulfillment(of: [sleepEntries[0]], timeout: 2)
+        XCTAssertEqual(sleeps.requestedDurations.last, .milliseconds(300))
         let hiddenBar = DesiredBarSurface(
             monitor: monitor,
             visible: false,
@@ -541,14 +562,15 @@ final class WorkspaceBarManagerTests: XCTestCase {
 
         controller.settings.workspaceBar.autoHide = true
         manager.apply([hiddenBar])
-        await waitUntil { sleeps.count == 2 }
+        await fulfillment(of: [sleepEntries[1]], timeout: 2)
+        XCTAssertEqual(sleeps.requestedDurations.last, .milliseconds(300))
         XCTAssertEqual(sleeps.count, 2)
-        try resumeNextSleep(&sleeps)
+        try sleeps.resumeNext()
         await settle()
         XCTAssertFalse(manager.isPointerRevealed(on: monitor.id))
 
-        try resumeNextSleep(&sleeps)
-        await waitUntil { manager.isPointerRevealed(on: monitor.id) }
+        try sleeps.resumeNext()
+        try await waitUntil { manager.isPointerRevealed(on: monitor.id) }
         XCTAssertTrue(manager.isPointerRevealed(on: monitor.id))
     }
 
@@ -592,18 +614,18 @@ final class WorkspaceBarManagerTests: XCTestCase {
         return manager
     }
 
-    private func waitUntil(_ condition: () -> Bool) async {
-        var attempts = 0
-        while !condition(), attempts < 200 {
-            attempts += 1
-            await Task.yield()
-        }
+    private enum AutoHideFixtureError: Error {
+        case conditionNotReached
     }
 
-    private func resumeNextSleep(_ sleeps: inout [CheckedContinuation<Void, Never>]) throws {
-        let next = try XCTUnwrap(sleeps.first, "Expected a pending auto-hide delay")
-        sleeps.removeFirst()
-        next.resume()
+    private func waitUntil(_ condition: () -> Bool) async throws {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(2))
+        while !condition(), clock.now < deadline {
+            try Task.checkCancellation()
+            await Task.yield()
+        }
+        guard condition() else { throw AutoHideFixtureError.conditionNotReached }
     }
 
     private func settle() async {
@@ -652,5 +674,57 @@ final class WorkspaceBarManagerTests: XCTestCase {
             backgroundOpacity: 0.6,
             barHeight: 24
         )
+    }
+}
+
+@MainActor
+private final class WorkspaceBarSleepProbe {
+    private let entries: [XCTestExpectation]
+    private var pending: [CheckedContinuation<Void, Never>] = []
+    private var released = false
+    private(set) var requestedDurations: [Duration] = []
+
+    init(entries: [XCTestExpectation]) {
+        self.entries = entries
+    }
+
+    var count: Int {
+        pending.count
+    }
+
+    var isEmpty: Bool {
+        pending.isEmpty
+    }
+
+    func sleep(_ duration: Duration) async {
+        let index = requestedDurations.count
+        requestedDurations.append(duration)
+        await withCheckedContinuation { continuation in
+            if released {
+                continuation.resume()
+            } else {
+                pending.append(continuation)
+            }
+            if index < entries.count {
+                entries[index].fulfill()
+            } else {
+                XCTFail("Unexpected auto-hide sleep")
+            }
+        }
+    }
+
+    func resumeNext() throws {
+        let continuation = try XCTUnwrap(pending.first, "Expected a pending auto-hide delay")
+        pending.removeFirst()
+        continuation.resume()
+    }
+
+    func resumeAll() {
+        released = true
+        let continuations = pending
+        pending.removeAll()
+        for continuation in continuations {
+            continuation.resume()
+        }
     }
 }

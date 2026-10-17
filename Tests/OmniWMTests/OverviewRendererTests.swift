@@ -62,20 +62,6 @@ final class OverviewRendererTests: XCTestCase {
             hoveredBorderColor: SettingsColor(red: 0, green: 1, blue: 0, alpha: 1),
             selectedBorderColor: SettingsColor(red: 0, green: 0, blue: 1, alpha: 1)
         )
-        let token = WindowToken(pid: 1, windowId: 1)
-        let window = OverviewWindowItem(
-            handle: WindowHandle(id: token),
-            windowId: token.windowId,
-            workspaceId: UUID(),
-            title: "Window",
-            appName: "App",
-            appIcon: nil,
-            originalFrame: .zero,
-            overviewFrame: .zero,
-            matchesSearch: true
-        )
-
-        XCTAssertEqual(window.title, "Window")
         assertColor(
             OverviewRenderer.borderColor(isSelected: false, isHovered: false, palette: palette),
             equals: [1, 0, 0, 1]

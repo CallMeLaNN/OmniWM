@@ -130,9 +130,13 @@ final class WorkspaceBarIconOverridesSettingsTests: XCTestCase {
             settings.workspaceBar.setIconOverride("before.png", for: "com.example.Before")
         )
         var externalReloadCount = 0
+        let reloaded = expectation(description: "External settings applied")
+        reloaded.assertForOverFulfill = false
         settings.onExternalSettingsReloaded = {
             externalReloadCount += 1
+            reloaded.fulfill()
         }
+        defer { settings.onExternalSettingsReloaded = nil }
         var external = SettingsExport.defaults()
         external.workspaceBar.iconOverrides = [
             "  com.example.After  ": " icons/after.icns ",
@@ -140,10 +144,7 @@ final class WorkspaceBarIconOverridesSettingsTests: XCTestCase {
         ]
 
         try SettingsTOMLCodec.encode(external).write(to: persistence.fileURL, options: .atomic)
-        for _ in 0 ..< 200 {
-            if externalReloadCount > 0 { break }
-            try await Task.sleep(for: .milliseconds(10))
-        }
+        await fulfillment(of: [reloaded], timeout: 2)
 
         XCTAssertEqual(externalReloadCount, 1)
         XCTAssertEqual(

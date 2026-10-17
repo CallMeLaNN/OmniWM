@@ -25,12 +25,6 @@ final class ScratchpadCommandTests: XCTestCase {
         }
     }
 
-    func testActionSpecIDsUnique() {
-        let ids = ActionCatalog.allSpecs().map(\.id)
-
-        XCTAssertEqual(ids.count, Set(ids).count)
-    }
-
     func testCommandNameMapping() {
         XCTAssertEqual(IPCCommandRequest.scratchpad(.assign(index: 4)).name, .scratchpad(.assign))
         XCTAssertEqual(IPCCommandRequest.scratchpad(.toggle(index: 4)).name, .scratchpad(.toggle))

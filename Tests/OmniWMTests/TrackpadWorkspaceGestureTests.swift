@@ -920,26 +920,10 @@ final class TrackpadWorkspaceGestureTests: XCTestCase {
     private func withBlockedLayoutRefreshes<T>(
         _ fixture: Fixture,
         _ body: () throws -> T
-    ) rethrows -> T {
-        let blocker = Task { @MainActor in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(1))
-            }
-        }
-        let refreshController = fixture.controller.layoutRefreshController
-        refreshController.layoutState.activeRefreshTask = blocker
-        refreshController.layoutState.activeRefresh = .init(
-            kind: .immediateRelayout,
-            reason: .workspaceTransition,
-            affectedWorkspaceIds: [fixture.ws1]
+    ) throws -> T {
+        try LayoutRefreshTestSupport.withBlocked(
+            fixture.controller, in: fixture.ws1, reason: .workspaceTransition, body
         )
-        defer {
-            blocker.cancel()
-            refreshController.layoutState.activeRefreshTask = nil
-            refreshController.layoutState.activeRefresh = nil
-            refreshController.layoutState.pendingRefresh = nil
-        }
-        return try body()
     }
 
     private func touches(_ count: Int, x: CGFloat, y: CGFloat) -> [MouseEventHandler.GestureTouchSample] {
@@ -1164,6 +1148,7 @@ final class TrackpadWorkspaceGestureTests: XCTestCase {
                 raiseWindow: { _ in }
             )
         )
+        fixture.controller.layoutRefreshController.resetState()
         let manager = fixture.controller.workspaceManager
         let ws2Token = addManagedWindow(
             to: fixture.ws2,
@@ -1208,6 +1193,7 @@ final class TrackpadWorkspaceGestureTests: XCTestCase {
                 raiseWindow: { _ in }
             )
         )
+        fixture.controller.layoutRefreshController.resetState()
         let manager = fixture.controller.workspaceManager
         XCTAssertFalse(manager.nativeFocusOwner.isExternal)
 
@@ -1236,6 +1222,7 @@ final class TrackpadWorkspaceGestureTests: XCTestCase {
                 raiseWindow: { _ in }
             )
         )
+        fixture.controller.layoutRefreshController.resetState()
         let manager = fixture.controller.workspaceManager
         let token = addManagedWindow(to: fixture.ws1, controller: fixture.controller, pid: 7_010, windowId: 7_110)
         XCTAssertTrue(manager.confirmManagedFocus(token, in: fixture.ws1, activateWorkspaceOnMonitor: false))
@@ -1267,6 +1254,7 @@ final class TrackpadWorkspaceGestureTests: XCTestCase {
                 raiseWindow: { _ in }
             )
         )
+        fixture.controller.layoutRefreshController.resetState()
         let manager = fixture.controller.workspaceManager
         let ws1Token = addManagedWindow(to: fixture.ws1, controller: fixture.controller, pid: 7_011, windowId: 7_111)
         let ws3Token = addManagedWindow(to: fixture.ws3, controller: fixture.controller, pid: 7_013, windowId: 7_113)

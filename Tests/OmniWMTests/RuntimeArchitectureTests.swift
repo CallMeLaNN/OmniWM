@@ -1907,7 +1907,7 @@ final class RuntimeArchitectureTests: XCTestCase {
     }
 
     @MainActor
-    func testFocusFollowsMouseRetriesSameUnconfirmedHoveredWindowAfterDebounce() async throws {
+    func testFocusFollowsMouseRetriesSameUnconfirmedHoveredWindowAfterDebounce() throws {
         var focusedTokens: [WindowToken] = []
         let controller = Self.controller(
             windowFocusOperations: WindowFocusOperations(
@@ -1940,15 +1940,29 @@ final class RuntimeArchitectureTests: XCTestCase {
             to: workspaceId,
             afterSelection: nil
         ))
+        controller.layoutRefreshController.resetState()
+        defer { controller.layoutRefreshController.resetState() }
         node.frame = targetFrame
         node.renderedFrame = targetFrame
 
+        controller.mouseEventHandler.state.lastFocusFollowsMouseTime = .distantPast
         controller.mouseEventHandler.dispatchMouseMoved(at: targetFrame.center)
-        try await Task.sleep(for: .milliseconds(120))
-        controller.mouseEventHandler.dispatchMouseMoved(at: targetFrame.center)
+        XCTAssertEqual(focusedTokens, [token])
+        let firstRequest = try XCTUnwrap(controller.intentLedger.activeManagedRequest)
+        XCTAssertEqual(firstRequest.token, token)
+        XCTAssertEqual(firstRequest.origin, .focusFollowsMouse)
 
+        controller.mouseEventHandler.state.lastFocusFollowsMouseTime = .distantFuture
+        controller.mouseEventHandler.dispatchMouseMoved(at: targetFrame.center)
+        XCTAssertEqual(focusedTokens, [token])
+        XCTAssertEqual(controller.intentLedger.activeManagedRequest?.requestId, firstRequest.requestId)
+
+        controller.mouseEventHandler.state.lastFocusFollowsMouseTime = .distantPast
+        controller.mouseEventHandler.dispatchMouseMoved(at: targetFrame.center)
         XCTAssertEqual(focusedTokens, [token, token])
         let request = try XCTUnwrap(controller.intentLedger.activeManagedRequest)
+        XCTAssertEqual(request.token, token)
+        XCTAssertEqual(request.origin, .focusFollowsMouse)
         _ = controller.workspaceManager.confirmManagedFocus(
             token,
             in: workspaceId,
@@ -1958,7 +1972,7 @@ final class RuntimeArchitectureTests: XCTestCase {
         )
         _ = controller.intentLedger.confirmManagedRequest(token: token, source: .focusedWindowChanged)
 
-        try await Task.sleep(for: .milliseconds(120))
+        controller.mouseEventHandler.state.lastFocusFollowsMouseTime = .distantPast
         controller.mouseEventHandler.dispatchMouseMoved(at: targetFrame.center)
 
         XCTAssertEqual(focusedTokens, [token, token])
@@ -5738,7 +5752,7 @@ final class RuntimeArchitectureTests: XCTestCase {
             workspaceId: workspaceId,
             removedColumn: false
         )
-        await Self.waitForRemovalRefresh(controller, removedToken: tokens[2])
+        guard await Self.waitForRemovalRefresh(controller, removedToken: tokens[2]) else { return }
 
         let finalColumns = engine.columns(in: workspaceId)
         let finalState = controller.workspaceManager.niriViewportState(for: workspaceId)
@@ -5817,7 +5831,7 @@ final class RuntimeArchitectureTests: XCTestCase {
         )
 
         controller.axEventHandler.handleRemoved(token: closingToken)
-        await Self.waitForRemovalRefresh(controller, removedToken: closingToken)
+        guard await Self.waitForRemovalRefresh(controller, removedToken: closingToken) else { return }
 
         XCTAssertEqual(controller.workspaceManager.invariantViolationCountsDump(), "clean")
         XCTAssertNil(controller.workspaceManager.entry(for: closingToken))
@@ -6544,7 +6558,7 @@ final class RuntimeArchitectureTests: XCTestCase {
         _ = controller.workspaceManager.rememberFocus(resolverFallbackToken, in: workspaceId)
 
         controller.axEventHandler.handleRemoved(token: closingToken)
-        await Self.waitForRemovalRefresh(controller, removedToken: closingToken)
+        guard await Self.waitForRemovalRefresh(controller, removedToken: closingToken) else { return }
 
         XCTAssertNil(controller.workspaceManager.entry(for: closingToken))
         XCTAssertEqual(
@@ -6631,7 +6645,7 @@ final class RuntimeArchitectureTests: XCTestCase {
         _ = controller.workspaceManager.rememberFocus(resolverFallbackToken, in: workspaceId)
 
         controller.axEventHandler.handleRemoved(pid: closingToken.pid, winId: closingToken.windowId)
-        await Self.waitForRemovalRefresh(controller, removedToken: closingToken)
+        guard await Self.waitForRemovalRefresh(controller, removedToken: closingToken) else { return }
 
         XCTAssertNil(controller.workspaceManager.entry(for: closingToken))
         XCTAssertEqual(
@@ -6884,7 +6898,9 @@ final class RuntimeArchitectureTests: XCTestCase {
             file: file,
             line: line
         )
-        await Self.waitForRemovalRefresh(controller, removedToken: tokens[2])
+        guard await Self.waitForRemovalRefresh(
+            controller, removedToken: tokens[2], file: file, line: line
+        ) else { return }
 
         let finalColumns = engine.columns(in: workspaceId)
         let finalState = controller.workspaceManager.niriViewportState(for: workspaceId)
@@ -6905,25 +6921,44 @@ final class RuntimeArchitectureTests: XCTestCase {
     @MainActor
     private static func waitForRemovalRefresh(
         _ controller: WMController,
-        removedToken: WindowToken
-    ) async {
+        removedToken: WindowToken,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) async -> Bool {
         for _ in 0 ..< 80 {
-            if let refreshTask = controller.layoutRefreshController.layoutState.activeRefreshTask {
-                await refreshTask.value
-                continue
+            guard !Task.isCancelled else {
+                XCTFail("Window removal refresh wait was cancelled", file: file, line: line)
+                return false
             }
+            let state = controller.layoutRefreshController.layoutState
             if controller.workspaceManager.entry(for: removedToken) == nil,
-               controller.layoutRefreshController.layoutState.pendingRefresh == nil
+               state.activeRefreshTask == nil,
+               state.activeRefresh == nil,
+               state.pendingRefresh == nil
             {
-                await Task.yield()
-                if controller.layoutRefreshController.layoutState.activeRefreshTask == nil,
-                   controller.layoutRefreshController.layoutState.pendingRefresh == nil
-                {
-                    return
-                }
+                return true
             }
-            try? await Task.sleep(for: .milliseconds(10))
+            do {
+                try await Task.sleep(for: .milliseconds(10))
+            } catch {
+                XCTFail("Window removal refresh wait was cancelled", file: file, line: line)
+                return false
+            }
         }
+        guard !Task.isCancelled else {
+            XCTFail("Window removal refresh wait was cancelled", file: file, line: line)
+            return false
+        }
+        let state = controller.layoutRefreshController.layoutState
+        if controller.workspaceManager.entry(for: removedToken) == nil,
+           state.activeRefreshTask == nil,
+           state.activeRefresh == nil,
+           state.pendingRefresh == nil
+        {
+            return true
+        }
+        XCTFail("Window removal refresh did not finish within 80 samples", file: file, line: line)
+        return false
     }
 
     private enum NiriTabLocalViewportPosition {

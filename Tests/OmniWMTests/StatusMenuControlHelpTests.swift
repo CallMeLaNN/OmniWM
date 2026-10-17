@@ -316,12 +316,15 @@ final class StatusMenuControlHelpTests: XCTestCase {
     }
 
     func testHiddenBarTileInclusionMatchesControllerAvailability() {
-        let fixture = makeStatusMenuModelFixture()
-        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let unavailable = makeStatusMenuModelFixture()
+        defer { try? FileManager.default.removeItem(at: unavailable.root) }
+        let available = makeStatusMenuModelFixture(hiddenBarAvailable: true)
+        defer { try? FileManager.default.removeItem(at: available.root) }
 
-        let hiddenBarTiles = fixture.model.toggleTiles.filter { $0.control == .hiddenBarEnabled }
-
-        XCTAssertEqual(hiddenBarTiles.count, fixture.controller.isHiddenBarHidingAvailable ? 1 : 0)
+        XCTAssertFalse(unavailable.controller.isHiddenBarHidingAvailable)
+        XCTAssertEqual(unavailable.model.toggleTiles.filter { $0.control == .hiddenBarEnabled }.count, 0)
+        XCTAssertTrue(available.controller.isHiddenBarHidingAvailable)
+        XCTAssertEqual(available.model.toggleTiles.filter { $0.control == .hiddenBarEnabled }.count, 1)
     }
 
     func testHiddenBarTileReadsAndWritesTheActiveProfileEnabledValue() async throws {

@@ -591,6 +591,7 @@ final class ScratchpadRevealTests: XCTestCase {
         for token in [first, second] {
             XCTAssertEqual(assign(token, to: 1, in: fixture), .executed)
         }
+        fixture.controller.layoutRefreshController.resetState()
         fixture.focusRecorder.reset()
         XCTAssertEqual(fixture.controller.toggleScratchpad(1), .executed)
         try completeReveal(first, in: fixture)
@@ -615,7 +616,7 @@ final class ScratchpadRevealTests: XCTestCase {
         )
         XCTAssertEqual(group.members.count, 2)
         XCTAssertEqual(group.activeToken, active)
-        let blocker = blockLayoutRefresh(fixture)
+        let blocker = try blockLayoutRefresh(fixture)
         defer { unblockLayoutRefresh(fixture, blocker: blocker) }
 
         XCTAssertNil(fixture.controller.focusWindow(inactive))
@@ -1594,29 +1595,15 @@ final class ScratchpadRevealTests: XCTestCase {
         )
     }
 
-    private func blockLayoutRefresh(_ fixture: Fixture) -> Task<Void, Never> {
-        let blocker = Task { @MainActor in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(1))
-            }
-        }
-        fixture.controller.layoutRefreshController.layoutState.activeRefreshTask = blocker
-        fixture.controller.layoutRefreshController.layoutState.activeRefresh = .init(
-            kind: .immediateRelayout,
-            reason: .layoutCommand,
-            affectedWorkspaceIds: [fixture.workspaceId]
-        )
-        return blocker
+    private func blockLayoutRefresh(_ fixture: Fixture) throws -> Task<Void, Never> {
+        try LayoutRefreshTestSupport.block(fixture.controller, in: fixture.workspaceId, reason: .layoutCommand)
     }
 
     private func unblockLayoutRefresh(
         _ fixture: Fixture,
         blocker: Task<Void, Never>
     ) {
-        blocker.cancel()
-        fixture.controller.layoutRefreshController.layoutState.activeRefreshTask = nil
-        fixture.controller.layoutRefreshController.layoutState.activeRefresh = nil
-        fixture.controller.layoutRefreshController.layoutState.pendingRefresh = nil
+        LayoutRefreshTestSupport.unblock(fixture.controller, blocker: blocker)
     }
 
     private func assign(

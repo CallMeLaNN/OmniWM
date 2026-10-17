@@ -137,7 +137,7 @@ final class CommandPaletteCommandSearchTests: XCTestCase {
             ),
             autosaveEnabled: false
         )
-        return WMController(
+        let controller = WMController(
             settings: settings,
             windowFocusOperations: WindowFocusOperations(
                 activateApp: { _ in },
@@ -145,5 +145,16 @@ final class CommandPaletteCommandSearchTests: XCTestCase {
                 raiseWindow: { _ in }
             )
         )
+        addTeardownBlock { @MainActor in
+            controller.hasStartedServices = false
+            controller.workspaceBarManager.cleanup()
+            controller.layoutRefreshController.resetState()
+            controller.mouseEventHandler.cleanup()
+            controller.surfaceReconciler.cleanup()
+            controller.axManager.cleanup()
+            await controller.workspaceBarManager.flushShellForQuit()
+            try FileManager.default.removeItem(at: root)
+        }
+        return controller
     }
 }

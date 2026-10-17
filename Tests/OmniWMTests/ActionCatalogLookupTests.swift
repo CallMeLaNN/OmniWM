@@ -5,6 +5,12 @@
 import XCTest
 
 final class ActionCatalogLookupTests: XCTestCase {
+    func testActionSpecIDsUnique() {
+        let ids = ActionCatalog.allSpecs().map(\.id)
+
+        XCTAssertEqual(ids.count, Set(ids).count)
+    }
+
     func testCommandLookupPreservesCatalogMetadata() {
         let specs = ActionCatalog.allSpecs()
         for spec in specs {

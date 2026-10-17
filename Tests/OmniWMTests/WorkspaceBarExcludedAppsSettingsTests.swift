@@ -166,17 +166,18 @@ final class WorkspaceBarExcludedAppsSettingsTests: XCTestCase {
         )
         XCTAssertTrue(settings.workspaceBar.addExcludedBundleID("com.example.before"))
         var externalReloadCount = 0
+        let reloaded = expectation(description: "External settings applied")
+        reloaded.assertForOverFulfill = false
         settings.onExternalSettingsReloaded = {
             externalReloadCount += 1
+            reloaded.fulfill()
         }
+        defer { settings.onExternalSettingsReloaded = nil }
         var external = SettingsExport.defaults()
         external.workspaceBar.excludedBundleIDs = ["  com.example.After  "]
 
         try SettingsTOMLCodec.encode(external).write(to: persistence.fileURL, options: .atomic)
-        for _ in 0 ..< 200 {
-            if externalReloadCount > 0 { break }
-            try await Task.sleep(for: .milliseconds(10))
-        }
+        await fulfillment(of: [reloaded], timeout: 2)
 
         XCTAssertEqual(externalReloadCount, 1)
         XCTAssertEqual(settings.workspaceBar.excludedBundleIDs, ["com.example.After"])
