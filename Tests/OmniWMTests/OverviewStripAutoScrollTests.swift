@@ -24,7 +24,11 @@ final class OverviewStripAutoScrollTests: XCTestCase {
         let drag: OverviewDragSession
     }
 
-    private func makeFixture(windowCount: Int = 4) throws -> Fixture {
+    private func makeFixture(
+        windowCount: Int = 4,
+        frame: CGRect = CGRect(x: 0, y: 0, width: 1280, height: 900),
+        workspaceCount: Int = 1
+    ) throws -> Fixture {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("OmniWMOverviewStripAutoScrollTests-\(UUID().uuidString)", isDirectory: true)
         let settings = SettingsStore(
@@ -34,18 +38,17 @@ final class OverviewStripAutoScrollTests: XCTestCase {
         )
         settings.animationsEnabled = false
         let displayId: CGDirectDisplayID = try XCTUnwrap(NSScreen.screens.first?.displayId)
-        let frame = CGRect(x: 0, y: 0, width: 1280, height: 900)
         let monitor = Monitor(
             id: .init(displayId: displayId), displayId: displayId, frame: frame, visibleFrame: frame,
             hasNotch: false, name: "Strip Auto Scroll Monitor"
         )
-        settings.workspaces.configurations = [
+        settings.workspaces.configurations = (1 ... workspaceCount).map { index in
             WorkspaceConfiguration(
-                name: "1",
+                name: "\(index)",
                 monitorAssignment: .specificDisplay(OutputId(from: monitor)),
                 layoutType: .niri
             )
-        ]
+        }
         let controller = WMController(
             settings: settings,
             windowFocusOperations: WindowFocusOperations(
@@ -61,8 +64,15 @@ final class OverviewStripAutoScrollTests: XCTestCase {
         let workspaceId = try XCTUnwrap(manager.workspaceId(named: "1"))
         XCTAssertTrue(manager.setActiveWorkspace(workspaceId, on: monitor.id))
         let handle = try populateNiriWindows(
-            manager: manager, engine: engine, workspaceId: workspaceId, count: windowCount
+            manager: manager, engine: engine, workspaceId: workspaceId, count: windowCount, firstWindowId: 92_110
         )
+        for index in (1 ... workspaceCount).dropFirst() {
+            _ = try populateNiriWindows(
+                manager: manager, engine: engine,
+                workspaceId: XCTUnwrap(manager.workspaceId(named: "\(index)")),
+                count: windowCount, firstWindowId: 92_110 + index * 100
+            )
+        }
         let stack = createOverviewStack(controller: controller, monitor: monitor)
         return Fixture(
             controller: controller, overview: stack.overview, projection: stack.projection, drag: stack.drag,
@@ -74,13 +84,14 @@ final class OverviewStripAutoScrollTests: XCTestCase {
         manager: WorkspaceManager,
         engine: NiriLayoutEngine,
         workspaceId: WorkspaceDescriptor.ID,
-        count: Int
+        count: Int,
+        firstWindowId: Int
     ) throws -> WindowHandle {
         var firstHandle: WindowHandle?
         var lastNode: NiriWindow?
         let sizing = engine.initialContainerSizingState(for: 0.8)
         for index in 0 ..< count {
-            let id = 92_110 + index
+            let id = firstWindowId + index
             let token = manager.addWindow(
                 AXWindowRef(element: AXUIElementCreateApplication(pid_t(id)), windowId: id),
                 pid: pid_t(id), windowId: id, to: workspaceId, mode: .tiling
@@ -175,5 +186,42 @@ final class OverviewStripAutoScrollTests: XCTestCase {
             ),
             0
         )
+    }
+
+    func testScrolledOverviewMeasuresAVerticalStripWhereItIsDrawn() throws {
+        let fixture = try makeFixture(
+            windowCount: 3, frame: CGRect(x: 0, y: 0, width: 900, height: 1600), workspaceCount: 4
+        )
+        defer { fixture.drag.cancelDrag() }
+        XCTAssertTrue(fixture.projection.adjustScrollOffset(by: -400, on: fixture.monitor.id))
+        let layout = try XCTUnwrap(fixture.projection.layoutsByMonitor[fixture.monitor.id])
+        let band = OverviewLayoutMetrics.dragAutoScrollBand
+        XCTAssertLessThan(layout.scrollOffset, -band)
+        let viewport = fixture.projection.viewportFrame(for: fixture.monitor.id)
+        func drawn(_ section: OverviewWorkspaceSection, y: CGFloat) -> CGPoint {
+            CGPoint(x: section.ribbonFrame.midX, y: y - layout.scrollOffset)
+        }
+        let section = try XCTUnwrap(layout.workspaceSections.first { section in
+            section.orientation == .vertical
+                && section.ribbonFrame.height > band * 2
+                && viewport.contains(drawn(section, y: section.ribbonFrame.midY))
+                && viewport.contains(drawn(section, y: section.ribbonFrame.maxY - 10))
+        })
+        fixture.drag.beginDrag(on: fixture.monitor.id, handle: fixture.handle, startPoint: .zero)
+
+        fixture.drag.updateDrag(on: fixture.monitor.id, at: drawn(section, y: section.ribbonFrame.midY))
+        XCTAssertEqual(try stripVelocity(of: fixture.drag), 0)
+
+        fixture.drag.updateDrag(on: fixture.monitor.id, at: drawn(section, y: section.ribbonFrame.maxY - 10))
+        XCTAssertGreaterThan(try stripVelocity(of: fixture.drag), 0)
+    }
+
+    private func stripVelocity(of drag: OverviewDragSession) throws -> CGFloat {
+        let autoScroll = try XCTUnwrap(
+            Mirror(reflecting: drag).children.first(where: { $0.label == "autoScroll" })?.value
+                as? OverviewDragAutoScroll
+        )
+        return Mirror(reflecting: autoScroll).children
+            .first(where: { $0.label == "horizontalVelocity" })?.value as? CGFloat ?? 0
     }
 }

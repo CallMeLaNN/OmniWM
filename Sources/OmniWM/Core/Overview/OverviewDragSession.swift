@@ -212,7 +212,7 @@ final class OverviewDragSession {
               !stripSection.ribbonFrame.isEmpty
         else { return (0, nil) }
         let velocity = OverviewLayoutCalculator.dragStripAutoScrollVelocity(
-            pointer: point,
+            pointer: CGPoint(x: point.x, y: point.y + layout.scrollOffset),
             stripFrame: stripSection.ribbonFrame,
             orientation: stripSection.orientation
         )
