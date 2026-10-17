@@ -49,10 +49,17 @@ extension ShellScriptHostTests {
 
     func testSortWithoutAComparatorStaysInterruptible() throws {
         let script = try Script("""
-        local values = {}
-        for index = 1, 600000 do
+        local values = table.create(600000)
+        for index = 1, 9375 do
             values[index] = (index * 7919) % 600000
         end
+        local filled = 9375
+        while filled < 600000 do
+            local copied = math.min(filled, 600000 - filled)
+            table.move(values, 1, copied, filled + 1)
+            filled += copied
+        end
+        assert(#values == 600000)
         function render(ctx)
             table.sort(values)
             return ui.text{ text = "sorted" }
