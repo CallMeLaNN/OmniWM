@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import CoreGraphics
@@ -1025,6 +1025,10 @@ final class BorderSurfaceTests: XCTestCase {
             cornerRadii: WindowCornerRadii(topLeft: 11.5, topRight: 9, bottomLeft: 8.5, bottomRight: 7)
         )
         XCTAssertNotEqual(recorder.layerPanels.first?.renderedCornerRadii, cornersAfterFirst)
+        XCTAssertEqual(
+            recorder.layerPanels.first?.renderedCornerRadii,
+            WindowCornerRadii(topLeft: 11.5, topRight: 9, bottomLeft: 8.5, bottomRight: 7)
+        )
     }
 
     @MainActor

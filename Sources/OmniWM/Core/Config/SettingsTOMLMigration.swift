@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 import TOML
@@ -73,7 +73,11 @@ enum SettingsTOMLMigration {
     }
 
     static func migrate(_ raw: inout [String: TOMLNode], from version: Int) throws -> SettingsMigrationReport {
-        let versionOneReport = version == 0 ? try migrateVersionZero(&raw) : nil
+        if case let .array(entries) = raw["hotkeys"] {
+            let validationData = try TOMLEncoder().encode(["hotkeys": TOMLNode.array(entries)])
+            _ = try TOMLDecoder().decode(PersistedHotkeyArray.self, from: validationData)
+        }
+        let versionOneReport = version == 0 ? migrateVersionZero(&raw) : nil
         let versionTwoAddedHotkeyIDs = version <= 1 ? migrateVersionOne(&raw) : []
         let versionThreeDefaultedPaths = version <= 2 ? try migrateVersionTwo(&raw) : []
         let versionFourAddedHotkeyIDs = version <= 3 ? migrateVersionThree(&raw) : []
@@ -90,7 +94,7 @@ enum SettingsTOMLMigration {
         )
     }
 
-    private static func migrateVersionZero(_ raw: inout [String: TOMLNode]) throws -> SettingsMigrationReport {
+    private static func migrateVersionZero(_ raw: inout [String: TOMLNode]) -> SettingsMigrationReport {
         var defaultedPaths: [String] = []
         if addMissingValue(
             in: &raw,
@@ -129,7 +133,7 @@ enum SettingsTOMLMigration {
         }
 
         stampMissingAppRuleIDs(in: &raw)
-        let hotkeyResult = try migrateVersionZeroHotkeys(in: &raw)
+        let hotkeyResult = migrateVersionZeroHotkeys(in: &raw)
         raw["schemaVersion"] = .integer(1)
         return SettingsMigrationReport(
             fromVersion: 0,
@@ -164,14 +168,11 @@ enum SettingsTOMLMigration {
 
     private static func migrateVersionZeroHotkeys(
         in raw: inout [String: TOMLNode]
-    ) throws -> SettingsHotkeyMigrationResult {
+    ) -> SettingsHotkeyMigrationResult {
         guard case let .array(entries) = raw["hotkeys"] else {
             return SettingsHotkeyMigrationResult(addedIDs: [], mapped: [], retired: [])
         }
 
-        let decoder = TOMLDecoder()
-        let validationData = try TOMLEncoder().encode(["hotkeys": TOMLNode.array(entries)])
-        _ = try decoder.decode(PersistedHotkeyArray.self, from: validationData)
         let mappings = [
             "assignFocusedWindowToScratchpad": "assignFocusedWindowToScratchpad.1",
             "toggleScratchpadWindow": "toggleScratchpad.1"

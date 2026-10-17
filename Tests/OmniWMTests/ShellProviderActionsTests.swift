@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWM
@@ -45,17 +45,24 @@ final class ShellProviderActionsTests: XCTestCase {
         let first = Data("first\n".utf8)
         let second = Data("second\n".utf8)
         XCTAssertNil(actions.append(first, id: id(1), identity: identity))
+        XCTAssertTrue(actions.cancel(id(1), identity: identity))
+        XCTAssertFalse(actions.cancel(id(1), identity: identity))
+        XCTAssertNil(actions.append(first, id: id(1), identity: identity))
         XCTAssertNil(actions.append(second, id: id(2), identity: identity))
         var writer = ShellProviderWriteQueue()
         for action in actions.takeBatch() { try writer.append(action.frame, id: action.id) }
+        XCTAssertFalse(actions.cancel(id(2), identity: identity))
         var calls = 0
         XCTAssertEqual(writer.drain { _ in
             calls += 1
             return calls == 1 ? .written(2) : .wouldBlock
         }, .blocked)
         actions.consumed(2, identity: identity)
-        let discarded = writer.discardUnsent { _ in true }
+        var unsent: [ShellServiceID] = []
+        let discarded = writer.discardUnsent(where: { _ in true }, onDiscard: { unsent.append($0) })
         XCTAssertEqual(discarded, second.count)
+        XCTAssertEqual(unsent, [id(2)])
+        XCTAssertEqual(writer.count, 1)
         actions.consumed(discarded, identity: identity)
         XCTAssertEqual(actions.pendingBytes, first.count - 2)
         var output = Data()

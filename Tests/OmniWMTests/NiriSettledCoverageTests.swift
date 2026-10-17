@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import CoreGraphics
 @testable import OmniWM
@@ -233,7 +233,7 @@ final class NiriSettledCoverageTests: NiriInteractionTestCase {
         XCTAssertNil(engine.interactiveResize)
         XCTAssertEqual(state.viewOffset, -1_241, accuracy: 0.001)
 
-        let layout = engine.calculateCombinedLayoutWithVisibility(
+        let layout = engine.calculateCombinedLayoutUsingPools(
             in: workspaceId,
             monitor: sourceMonitor,
             gaps: LayoutGaps(horizontal: 16, vertical: 16),

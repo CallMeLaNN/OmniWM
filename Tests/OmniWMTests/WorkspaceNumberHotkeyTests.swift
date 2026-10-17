@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Carbon
 @testable import OmniWM
@@ -140,6 +140,11 @@ final class WorkspaceNumberHotkeyTests: XCTestCase {
     private func makeSettingsStore() -> SettingsStore {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("OmniWMWorkspaceNumberHotkeyTests-\(UUID().uuidString)", isDirectory: true)
+        addTeardownBlock {
+            if FileManager.default.fileExists(atPath: root.path) {
+                try FileManager.default.removeItem(at: root)
+            }
+        }
         return SettingsStore(
             persistence: SettingsFilePersistence(
                 directory: root.appendingPathComponent("config", isDirectory: true),

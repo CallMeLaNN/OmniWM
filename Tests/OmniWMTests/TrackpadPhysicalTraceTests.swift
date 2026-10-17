@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWM
@@ -127,14 +127,14 @@ final class TrackpadPhysicalTraceTests: XCTestCase {
         ])]
         let sleeper = ManualMultitouchSleeper()
         let source = MultitouchGestureSource(operations: backend.operations(sleeper: sleeper))
-        source.startLifecycle()
-        await sleeper.waitForScheduledSleep(of: source)
-        await sleeper.resumeNext()
         defer {
             endTrace()
             source.shutdown()
             await sleeper.resumeAll()
         }
+        source.startLifecycle()
+        try await sleeper.waitForScheduledSleep(of: source)
+        try await sleeper.resumeNext()
         let generation = try XCTUnwrap(source.diagnosticsSnapshot().activeGeneration)
         backend.emitFrame(registryId: 101, touches: [(0.4, 0.5), (0.5, 0.5)], timestamp: 1.00)
         source.drainRawFrameMailbox(location: .zero)
@@ -158,14 +158,14 @@ final class TrackpadPhysicalTraceTests: XCTestCase {
         ])]
         let sleeper = ManualMultitouchSleeper()
         let source = MultitouchGestureSource(operations: backend.operations(sleeper: sleeper))
-        source.startLifecycle()
-        await sleeper.waitForScheduledSleep(of: source)
-        await sleeper.resumeNext()
         defer {
             endTrace()
             source.shutdown()
             await sleeper.resumeAll()
         }
+        source.startLifecycle()
+        try await sleeper.waitForScheduledSleep(of: source)
+        try await sleeper.resumeNext()
         let generation = try XCTUnwrap(source.diagnosticsSnapshot().activeGeneration)
 
         XCTAssertEqual(traceDetails, [

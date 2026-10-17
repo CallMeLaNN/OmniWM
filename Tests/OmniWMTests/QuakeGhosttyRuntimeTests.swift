@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import GhosttyKit
@@ -128,6 +128,11 @@ final class QuakeGhosttyRuntimeTests: XCTestCase {
     {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("OmniWMQuakeRuntimeTests-\(UUID().uuidString)", isDirectory: true)
+        addTeardownBlock {
+            if FileManager.default.fileExists(atPath: root.path) {
+                try FileManager.default.removeItem(at: root)
+            }
+        }
         let settings = SettingsStore(
             persistence: SettingsFilePersistence(
                 directory: root.appendingPathComponent("config", isDirectory: true),

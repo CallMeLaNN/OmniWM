@@ -155,12 +155,18 @@ class ReleaseCICredentialsTests(unittest.TestCase):
         return str(self.runner_temp / "omniwm-release.keychain-db")
 
     def test_missing_variables_exit_2_without_touching_tools(self):
-        result = self.run_script(omit=REQUIRED_VARS)
-
-        self.assertEqual(result.returncode, 2)
-        for name in REQUIRED_VARS:
-            self.assertIn(name, result.stderr)
-        self.assertEqual(self.commands(), [])
+        for label, omit, overrides, missing in (
+            ("all missing", REQUIRED_VARS, {}, REQUIRED_VARS),
+            ("empty password", (), {"KEYCHAIN_PASSWORD": ""}, ("KEYCHAIN_PASSWORD",)),
+        ):
+            with self.subTest(case=label):
+                result = self.run_script(omit=omit, overrides=overrides)
+                self.assertEqual(result.returncode, 2)
+                for name in missing:
+                    self.assertIn(name, result.stderr)
+                if label == "empty password":
+                    self.assertNotIn("APPLE_NOTARY_KEY_ID", result.stderr)
+                self.assertEqual(self.commands(), [])
 
     def test_newline_terminated_notary_key_is_accepted(self):
         result = self.run_script(overrides={"APPLE_NOTARY_KEY_P8": P8_BODY + "\n"})
@@ -168,14 +174,6 @@ class ReleaseCICredentialsTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("store-credentials", self.log_text())
         self.assert_no_secrets(result)
-
-    def test_single_missing_variable_is_listed_by_name(self):
-        result = self.run_script(overrides={"KEYCHAIN_PASSWORD": ""})
-
-        self.assertEqual(result.returncode, 2)
-        self.assertIn("KEYCHAIN_PASSWORD", result.stderr)
-        self.assertNotIn("APPLE_NOTARY_KEY_ID", result.stderr)
-        self.assertEqual(self.commands(), [])
 
     def test_happy_path_runs_expected_commands_and_removes_temp_files(self):
         result = self.run_script()
@@ -255,28 +253,16 @@ class ReleaseCICredentialsTests(unittest.TestCase):
         self.assertIn("find-identity", self.first_tokens())
         self.assert_not_stored()
 
-    def test_p8_without_end_line_fails_before_storing_credentials(self):
-        result = self.run_script(
-            overrides={"APPLE_NOTARY_KEY_P8": "-----BEGIN PRIVATE KEY-----\nMIGTAgEA"}
-        )
-
-        self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(self.commands(), [])
-
-    def test_p8_with_literal_newline_escapes_fails_before_storing_credentials(self):
-        literal = "\\n".join(P8_BODY.splitlines())
-
-        result = self.run_script(overrides={"APPLE_NOTARY_KEY_P8": literal})
-
-        self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(self.commands(), [])
-        self.assert_no_secrets(result)
-
-    def test_secrets_never_reach_stdout_or_stderr(self):
-        result = self.run_script()
-
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assert_no_secrets(result)
+    def test_malformed_p8_fails_before_storing_credentials(self):
+        for label, key in (
+            ("missing end line", "-----BEGIN PRIVATE KEY-----\nMIGTAgEA"),
+            ("literal newline escapes", "\\n".join(P8_BODY.splitlines())),
+        ):
+            with self.subTest(case=label):
+                result = self.run_script(overrides={"APPLE_NOTARY_KEY_P8": key})
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(self.commands(), [])
+                self.assert_no_secrets(result)
 
     def test_cleanup_deletes_existing_keychain(self):
         keychain = self.runner_temp / "omniwm-release.keychain-db"

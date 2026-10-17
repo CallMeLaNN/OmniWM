@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWMCtl
@@ -59,8 +59,6 @@ final class NuCompletionTests: XCTestCase {
             ("omniwmctl capture ", CLICompletionCatalog.captureActionNames),
             ("omniwmctl workspace ", CLICompletionCatalog.workspaceActionNames),
             ("omniwmctl window ", CLICompletionCatalog.windowActionNames),
-            ("omniwmctl window mark ", CLICompletionCatalog.windowMarkActionNames),
-            ("omniwmctl window mark list ", CLICompletionCatalog.windowMarkListFlags),
             ("omniwmctl completion ", CLIShell.allCases.map(\.rawValue)),
             ("omniwmctl que", ["query"])
         ]

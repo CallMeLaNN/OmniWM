@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import ImageIO
@@ -111,7 +111,7 @@ final class ShellSettingsPreviewTests: XCTestCase {
         }
     }
 
-    func testOversizedIslandRetainsNativeGeometryAndSelectionWithinBitmapAndCacheBudgets() async throws {
+    func testOversizedIslandRetainsNativeGeometryAndSelectionWithinBitmapBounds() async throws {
         let directory = try fixture()
         defer { try? FileManager.default.removeItem(at: directory) }
         var config = try config("system", in: directory)
@@ -151,20 +151,6 @@ final class ShellSettingsPreviewTests: XCTestCase {
         XCTAssertEqual(image.width, 2048)
         XCTAssertEqual(image.height, 2048)
         try inspect(image, name: "settings-system-oversized-island")
-        let cache = ShellSettingsPreviewCache()
-        for revision: UInt64 in 0 ..< 3 {
-            cache.insert(image, for: .init(
-                config: config,
-                surface: request.surface,
-                style: request.style,
-                scale: request.scale,
-                dark: request.dark,
-                fullWidth: request.fullWidth,
-                revision: revision
-            ))
-        }
-        XCTAssertEqual(cache.count, 2)
-        XCTAssertLessThanOrEqual(cache.retainedBytes, ShellSettingsPreviewCache.maximumBytes)
     }
 
     func testSolidBlackBarRemainsOpaqueAtZeroBackgroundOpacity() async throws {

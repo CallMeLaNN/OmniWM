@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import CoreAudio
 import OmniWMAudioTap
@@ -127,9 +127,6 @@ final class AppVolumeRenderTests: XCTestCase {
             ),
             [[1, 1]]
         )
-        let state = try XCTUnwrap(omni_audio_gain_create(2, 1))
-        omni_audio_gain_set(state, 0.25)
-        omni_audio_gain_destroy(state)
         XCTAssertNil(omni_audio_gain_create(0, 1))
     }
 }

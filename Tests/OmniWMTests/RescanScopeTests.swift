@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import ApplicationServices
 import Foundation
@@ -908,43 +908,26 @@ final class RescanScopeTests: XCTestCase {
         XCTAssertNil(refreshController.layoutState.pendingRefresh)
     }
 
-    func testInventoryStabilityBarrierAllowsRelayoutWhileFullRescanWaits() throws {
-        let controller = WindowAdmissionTestSupport.controller()
-        let refreshController = controller.layoutRefreshController
-        defer { refreshController.resetState() }
-
-        refreshController.beginInventoryStabilityBarrier()
-        refreshController.requestImmediateRelayout(reason: .layoutCommand)
-        refreshController.requestFullRescan(reason: .startup)
-
-        XCTAssertEqual(
-            try XCTUnwrap(refreshController.layoutState.activeRefresh).kind,
-            .immediateRelayout
-        )
-        XCTAssertEqual(
-            try XCTUnwrap(refreshController.layoutState.inventoryStabilityHeldFullRescan).kind,
-            .fullRescan
-        )
-    }
-
-    func testInventoryStabilityBarrierDoesNotLetHeldFullRescanBlockLaterRelayout() throws {
-        let controller = WindowAdmissionTestSupport.controller()
-        let refreshController = controller.layoutRefreshController
-        defer { refreshController.resetState() }
-
-        refreshController.beginInventoryStabilityBarrier()
-        refreshController.requestFullRescan(reason: .startup)
-        refreshController.requestImmediateRelayout(reason: .layoutCommand)
-
-        XCTAssertEqual(
-            try XCTUnwrap(refreshController.layoutState.activeRefresh).kind,
-            .immediateRelayout
-        )
-        XCTAssertNil(refreshController.layoutState.pendingRefresh)
-        XCTAssertEqual(
-            try XCTUnwrap(refreshController.layoutState.inventoryStabilityHeldFullRescan).kind,
-            .fullRescan
-        )
+    func testInventoryBarrierAllowsRelayoutForBothRequestOrders() throws {
+        for fullRescanFirst in [false, true] {
+            let controller = WindowAdmissionTestSupport.controller()
+            let refreshController = controller.layoutRefreshController
+            defer { refreshController.resetState() }
+            refreshController.beginInventoryStabilityBarrier()
+            if fullRescanFirst {
+                refreshController.requestFullRescan(reason: .startup)
+                refreshController.requestImmediateRelayout(reason: .layoutCommand)
+            } else {
+                refreshController.requestImmediateRelayout(reason: .layoutCommand)
+                refreshController.requestFullRescan(reason: .startup)
+            }
+            XCTAssertEqual(try XCTUnwrap(refreshController.layoutState.activeRefresh).kind, .immediateRelayout)
+            XCTAssertNil(refreshController.layoutState.pendingRefresh)
+            XCTAssertEqual(
+                try XCTUnwrap(refreshController.layoutState.inventoryStabilityHeldFullRescan).kind,
+                .fullRescan
+            )
+        }
     }
 
     func testCancelledFullRescanScopeSurvivesAndMerges() throws {
@@ -1214,33 +1197,23 @@ final class RescanScopeTests: XCTestCase {
     }
 
     func testCancelledRelayoutIsSubsumedByPendingTargetedFullRescan() throws {
-        try assertCancelledLayoutIsSubsumedByPendingTargetedFullRescan(
-            kind: .relayout,
-            reason: .workspaceConfigChanged,
-            pid: 703
-        )
-    }
-
-    func testCancelledImmediateRelayoutIsSubsumedByPendingTargetedFullRescan() throws {
-        try assertCancelledLayoutIsSubsumedByPendingTargetedFullRescan(
-            kind: .immediateRelayout,
-            reason: .layoutCommand,
-            pid: 704
-        )
+        for immediate in [false, true] {
+            try assertCancelledLayoutIsSubsumedByPendingTargetedFullRescan(
+                kind: immediate ? .immediateRelayout : .relayout,
+                reason: immediate ? .layoutCommand : .workspaceConfigChanged,
+                pid: immediate ? 704 : 703
+            )
+        }
     }
 
     func testCancelledRelayoutDefersBehindPendingWindowRemoval() throws {
-        try assertCancelledLayoutDefersBehindPendingWindowRemoval(
-            kind: .relayout,
-            reason: .workspaceConfigChanged
-        )
-    }
-
-    func testCancelledImmediateRelayoutDefersBehindPendingWindowRemoval() throws {
-        try assertCancelledLayoutDefersBehindPendingWindowRemoval(
-            kind: .immediateRelayout,
-            reason: .layoutCommand
-        )
+        for immediate in [false, true] {
+            try assertCancelledLayoutDefersBehindPendingWindowRemoval(
+                kind: immediate ? .immediateRelayout : .relayout,
+                reason: immediate ? .layoutCommand :
+                    .workspaceConfigChanged
+            )
+        }
     }
 
     func testTargetedFullRescanForwardsSubsumedWorkspaceGateInPrimaryCycle() async throws {

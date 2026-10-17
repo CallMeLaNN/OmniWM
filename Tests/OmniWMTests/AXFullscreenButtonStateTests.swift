@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import ApplicationServices
@@ -37,20 +37,36 @@ final class AXFullscreenButtonStateTests: XCTestCase {
         )
     }
 
-    func testFailedEnabledReadDefersAdmissionUntilSuccessfulEvidence() {
-        let engine = WindowRuleEngine()
-        for error in [AXError.cannotComplete, .invalidUIElement, .failure] {
-            let failed = decision(result: error, value: nil, engine: engine)
-
-            XCTAssertEqual(failed.disposition, .undecided, "\(error)")
-            XCTAssertEqual(failed.deferredReason, .attributeFetchFailed, "\(error)")
-            XCTAssertEqual(failed.admissionOutcome, .deferred, "\(error)")
-            XCTAssertFalse(failed.tracksWindow, "\(error)")
-
-            let recovered = decision(result: .success, value: kCFBooleanTrue, engine: engine)
-
-            XCTAssertEqual(recovered.disposition, .managed)
-            XCTAssertNil(recovered.deferredReason)
+    func testEnabledAttributeEvidenceControlsAdmissionAndRecovery() {
+        let cases: [(String, AXError, CFTypeRef?, Bool, Bool)] = [
+            ("disabled", .success, kCFBooleanFalse, true, false),
+            ("cannotComplete", .cannotComplete, nil, false, true),
+            ("invalidUIElement", .invalidUIElement, nil, false, true),
+            ("failure", .failure, nil, false, true),
+            ("malformedNull", .success, kCFNull, false, false),
+            ("malformedString", .success, "not a boolean" as CFString, false, false),
+            ("unavailableSuccess", .success, nil, true, false),
+            ("noValue", .noValue, nil, true, false),
+            ("unsupported", .attributeUnsupported, nil, true, false)
+        ]
+        for (label, error, value, floating, recovers) in cases {
+            let engine = WindowRuleEngine()
+            let result = decision(result: error, value: value, engine: engine)
+            if floating {
+                XCTAssertEqual(result.disposition, .floating, label)
+                XCTAssertEqual(result.heuristicReasons, [.disabledFullscreenButton], label)
+                XCTAssertNil(result.deferredReason, label)
+            } else {
+                XCTAssertEqual(result.disposition, .undecided, label)
+                XCTAssertEqual(result.deferredReason, .attributeFetchFailed, label)
+                XCTAssertEqual(result.admissionOutcome, .deferred, label)
+                XCTAssertFalse(result.tracksWindow, label)
+            }
+            if recovers {
+                let recovered = decision(result: .success, value: kCFBooleanTrue, engine: engine)
+                XCTAssertEqual(recovered.disposition, .managed, label)
+                XCTAssertNil(recovered.deferredReason, label)
+            }
         }
     }
 
@@ -63,35 +79,6 @@ final class AXFullscreenButtonStateTests: XCTestCase {
         XCTAssertEqual(failed.deferredReason, .attributeFetchFailed)
         for override in [ManualWindowOverride.forceTile, .forceFloat] {
             XCTAssertEqual(WindowRuleEngine.applyingManualOverride(failed, manualOverride: override), failed)
-        }
-    }
-
-    func testDisabledFullscreenButtonStillFloats() {
-        let disabled = decision(result: .success, value: kCFBooleanFalse, engine: WindowRuleEngine())
-
-        XCTAssertEqual(disabled.disposition, .floating)
-        XCTAssertEqual(disabled.heuristicReasons, [.disabledFullscreenButton])
-        XCTAssertNil(disabled.deferredReason)
-    }
-
-    func testUnavailableEnabledAttributePreservesFloatingClassification() {
-        let engine = WindowRuleEngine()
-        for result in [AXError.success, .noValue, .attributeUnsupported] {
-            let unavailable = decision(result: result, value: nil, engine: engine)
-
-            XCTAssertEqual(unavailable.disposition, .floating, "\(result)")
-            XCTAssertEqual(unavailable.heuristicReasons, [.disabledFullscreenButton], "\(result)")
-            XCTAssertNil(unavailable.deferredReason, "\(result)")
-        }
-    }
-
-    func testMalformedEnabledAttributeDefersAdmission() {
-        let engine = WindowRuleEngine()
-        for value: CFTypeRef in [kCFNull, "not a boolean" as CFString] {
-            let malformed = decision(result: .success, value: value, engine: engine)
-
-            XCTAssertEqual(malformed.disposition, .undecided)
-            XCTAssertEqual(malformed.deferredReason, .attributeFetchFailed)
         }
     }
 

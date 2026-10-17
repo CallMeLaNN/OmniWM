@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import ApplicationServices
@@ -554,45 +554,46 @@ final class WindowAdmissionTraceTests: XCTestCase {
         XCTAssertEqual(object["retryGeneration"] as? Int, 7)
     }
 
-    func testForEachLineStopsAfterRejectedRulesLine() throws {
-        let recorder = WindowAdmissionTrace(capacity: 4)
-        let observation = classificationObservation(rulesRevision: 7)
-        recorder.beginCapture()
-        recorder.record(.init(
-            action: .classificationObserved,
-            observation: observation,
-            classificationRulesSnapshot: .init(revision: 7, rules: [])
-        ))
-        var delivered: [String] = []
-
-        recorder.forEachLine { line in
-            delivered.append(line)
-            return false
+    func testForEachLineStopsAfterRejectedRulesPrefix() throws {
+        let cases: [(
+            label: String,
+            snapshot: WindowClassificationRulesSnapshot?,
+            kind: String,
+            omitted: Int?,
+            exactLine: String?
+        )] = [
+            ("provided", .init(revision: 7, rules: []), "rules_snapshot", nil, nil),
+            (
+                "omitted",
+                nil,
+                "rules_snapshots_truncated",
+                1,
+                "{\"kind\":\"rules_snapshots_truncated\",\"omittedCount\":1}"
+            )
+        ]
+        for row in cases {
+            let recorder = WindowAdmissionTrace(capacity: 4)
+            recorder.beginCapture()
+            recorder.record(.init(
+                action: .classificationObserved,
+                observation: classificationObservation(rulesRevision: 7),
+                classificationRulesSnapshot: row.snapshot
+            ))
+            var delivered: [String] = []
+            recorder.forEachLine { line in
+                delivered.append(line)
+                return false
+            }
+            XCTAssertEqual(delivered.count, 1, row.label)
+            let line = try XCTUnwrap(delivered.first)
+            let object = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any])
+            XCTAssertEqual(object["kind"] as? String, row.kind, row.label)
+            XCTAssertEqual(object["omittedCount"] as? Int, row.omitted, row.label)
+            if let exactLine = row.exactLine {
+                XCTAssertEqual(delivered, [exactLine], row.label)
+            }
+            XCTAssertEqual(recorder.recordsSnapshot().count, 1, row.label)
         }
-
-        XCTAssertEqual(delivered.count, 1)
-        let line = try XCTUnwrap(delivered.first)
-        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any])
-        XCTAssertEqual(object["kind"] as? String, "rules_snapshot")
-        XCTAssertEqual(recorder.recordsSnapshot().count, 1)
-    }
-
-    func testForEachLineStopsAfterRejectedOmittedRulesMarker() {
-        let recorder = WindowAdmissionTrace(capacity: 4)
-        recorder.beginCapture()
-        recorder.record(.init(
-            action: .classificationObserved,
-            observation: classificationObservation(rulesRevision: 7)
-        ))
-        var delivered: [String] = []
-
-        recorder.forEachLine { line in
-            delivered.append(line)
-            return false
-        }
-
-        XCTAssertEqual(delivered, ["{\"kind\":\"rules_snapshots_truncated\",\"omittedCount\":1}"])
-        XCTAssertEqual(recorder.recordsSnapshot().count, 1)
     }
 
     func testRepeatedClassificationObservationsAreRetained() {

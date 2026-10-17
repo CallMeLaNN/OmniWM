@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWM
@@ -129,46 +129,33 @@ final class WorkspaceBarIconOverridesSettingsTests: XCTestCase {
         XCTAssertTrue(
             settings.workspaceBar.setIconOverride("before.png", for: "com.example.Before")
         )
+        XCTAssertTrue(settings.workspaceBar.addExcludedBundleID("com.example.before"))
         var externalReloadCount = 0
+        let reloaded = expectation(description: "External settings applied")
+        reloaded.assertForOverFulfill = false
         settings.onExternalSettingsReloaded = {
             externalReloadCount += 1
+            reloaded.fulfill()
         }
+        defer { settings.onExternalSettingsReloaded = nil }
         var external = SettingsExport.defaults()
+        external.workspaceBar.excludedBundleIDs = ["  com.example.After  "]
         external.workspaceBar.iconOverrides = [
             "  com.example.After  ": " icons/after.icns ",
             "org.example.Blank": "\n"
         ]
 
         try SettingsTOMLCodec.encode(external).write(to: persistence.fileURL, options: .atomic)
-        for _ in 0 ..< 200 {
-            if externalReloadCount > 0 { break }
-            try await Task.sleep(for: .milliseconds(10))
-        }
+        await fulfillment(of: [reloaded], timeout: 2)
 
         XCTAssertEqual(externalReloadCount, 1)
+        XCTAssertEqual(settings.workspaceBar.excludedBundleIDs, ["com.example.After"])
+        XCTAssertFalse(settings.workspaceBar.excludedBundleIDs.contains("com.example.before"))
         XCTAssertEqual(
             settings.workspaceBar.iconOverrides,
             ["com.example.After": "icons/after.icns"]
         )
         XCTAssertNil(settings.workspaceBar.iconOverrideValue(for: "com.example.Before"))
-    }
-
-    private func removingTOMLTable(named tableName: String, from text: String) -> String {
-        var skipping = false
-        var retained: [Substring] = []
-        for line in text.split(separator: "\n", omittingEmptySubsequences: false) {
-            if line == "[\(tableName)]" {
-                skipping = true
-                continue
-            }
-            if skipping, line.hasPrefix("[") {
-                skipping = false
-            }
-            if !skipping {
-                retained.append(line)
-            }
-        }
-        return retained.joined(separator: "\n")
     }
 
     private func makeSettingsStore() -> SettingsStore {

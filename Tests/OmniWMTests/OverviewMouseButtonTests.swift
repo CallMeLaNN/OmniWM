@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 @testable import OmniWM
@@ -186,13 +186,6 @@ final class OverviewMouseButtonTests: XCTestCase {
     }
 
     private func makeController() -> WMController {
-        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        let settings = SettingsStore(
-            persistence: SettingsFilePersistence(directory: directory, startWatching: false, deferSaves: false),
-            runtimeState: RuntimeStateStore(directory: directory.appendingPathComponent("state"), deferSaves: false),
-            autosaveEnabled: false
-        )
-        settings.animationsEnabled = false
-        return WMController(settings: settings)
+        InputControllerTestSupport.controller(for: self)
     }
 }

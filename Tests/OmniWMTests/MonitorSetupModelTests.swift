@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import CoreGraphics
 @testable import OmniWM
@@ -31,39 +31,26 @@ final class MonitorSetupModelTests: XCTestCase {
         XCTAssertTrue(draft.isCardinallyConnected)
     }
 
-    func testMacOSModeSnapshotsGeometryInsteadOfInactiveCustomLayout() {
+    func testDraftFallsBackToGeometryForInactiveOrIncompleteCustomLayouts() {
         let monitors = sideBySideMonitors()
         let inactiveRouting = [
             routing(for: monitors[0], column: 0, row: 0),
             routing(for: monitors[1], column: 0, row: 1)
         ]
 
-        let draft = MonitorSetupDraft(
-            monitors: monitors,
-            routingMode: .macOS,
-            arrangements: [MonitorArrangement(monitors: inactiveRouting)],
-            mouseWarpEnabled: true,
-            workspaceConfigurations: []
-        )
-
-        XCTAssertEqual(draft.cell(for: monitors[0].id), .init(column: 0, row: 0))
-        XCTAssertEqual(draft.cell(for: monitors[1].id), .init(column: 1, row: 0))
-    }
-
-    func testIncompleteCustomLayoutFallsBackToMacOSSnapshot() {
-        let monitors = sideBySideMonitors()
-        let incompleteRouting = [routing(for: monitors[0], column: 0, row: 0)]
-
-        let draft = MonitorSetupDraft(
-            monitors: monitors,
-            routingMode: .custom,
-            arrangements: [MonitorArrangement(monitors: incompleteRouting)],
-            mouseWarpEnabled: true,
-            workspaceConfigurations: []
-        )
-
-        XCTAssertEqual(draft.cell(for: monitors[0].id), .init(column: 0, row: 0))
-        XCTAssertEqual(draft.cell(for: monitors[1].id), .init(column: 1, row: 0))
+        let cases: [(mode: MonitorRoutingMode, routing: [MonitorRoutingSettings])] = [
+            (.macOS, inactiveRouting),
+            (.custom, [routing(for: monitors[0], column: 0, row: 0)])
+        ]
+        for row in cases {
+            let draft = MonitorSetupDraft(
+                monitors: monitors, routingMode: row.mode,
+                arrangements: [MonitorArrangement(monitors: row.routing)],
+                mouseWarpEnabled: true, workspaceConfigurations: []
+            )
+            XCTAssertEqual(draft.cell(for: monitors[0].id), .init(column: 0, row: 0))
+            XCTAssertEqual(draft.cell(for: monitors[1].id), .init(column: 1, row: 0))
+        }
     }
 
     func testCollidingMacOSSnapshotProducesUniqueCompactedCells() {
@@ -192,30 +179,16 @@ final class MonitorSetupModelTests: XCTestCase {
         )
 
         XCTAssertEqual(draft.readiness(for: monitors.reversed()), .ready)
-        XCTAssertEqual(draft.readiness(for: [monitors[0], replacement]), .monitorConfigurationChanged)
-        XCTAssertNil(draft.routingSettings(monitors: [monitors[0], replacement]))
-    }
-
-    func testReadinessDetectsStableIdentityReplacementWithReusedRuntimeID() {
-        let monitors = sideBySideMonitors()
-        let replacement = makeMonitor(
+        let reusedRuntimeID = makeMonitor(
             displayId: monitors[1].displayId,
             name: monitors[1].name,
             displayUUID: "CCCCCCCC-CCCC-4CCC-8CCC-CCCCCCCCCCCC",
             frame: monitors[1].frame
         )
-        let draft = MonitorSetupDraft(
-            monitors: monitors,
-            routingMode: .macOS,
-            arrangements: [],
-            mouseWarpEnabled: true,
-            workspaceConfigurations: []
-        )
-
-        XCTAssertEqual(
-            draft.readiness(for: [monitors[0], replacement]),
-            .monitorConfigurationChanged
-        )
+        for current in [[monitors[0], replacement], [monitors[0], reusedRuntimeID]] {
+            XCTAssertEqual(draft.readiness(for: current), .monitorConfigurationChanged)
+            XCTAssertNil(draft.routingSettings(monitors: current))
+        }
     }
 
     func testRoutingSettingsStampStableIdentityForConnectedSet() throws {
@@ -245,33 +218,6 @@ final class MonitorSetupModelTests: XCTestCase {
         XCTAssertEqual(updated.count, connected.count)
         XCTAssertNil(MonitorSettingsStore.get(for: monitors[2], in: updated))
         XCTAssertEqual(arrangement.monitors.count, 3)
-    }
-
-    func testWorkspaceCoverageUsesRuntimeMonitorAssignmentResolution() throws {
-        let monitors = threeSideBySideMonitors()
-        let configurations = [
-            WorkspaceConfiguration(name: "1", monitorAssignment: .main),
-            WorkspaceConfiguration(name: "2", monitorAssignment: .secondary)
-        ]
-        var draft = MonitorSetupDraft(
-            monitors: monitors,
-            routingMode: .macOS,
-            arrangements: [],
-            mouseWarpEnabled: true,
-            workspaceConfigurations: configurations
-        )
-
-        XCTAssertFalse(draft.hasWorkspaceCoverage(in: monitors))
-        XCTAssertEqual(draft.uncoveredMonitors(in: monitors).count, 1)
-        let uncoveredMonitor = try XCTUnwrap(draft.uncoveredMonitors(in: monitors).first)
-        XCTAssertEqual(
-            Set(draft.uncoveredMonitors(in: monitors.reversed()).map(\.id)),
-            [uncoveredMonitor.id]
-        )
-
-        draft.addWorkspace(for: uncoveredMonitor)
-
-        XCTAssertTrue(draft.hasWorkspaceCoverage(in: monitors))
     }
 
     func testWorkspaceReassignmentChangesDraftCoverageWithoutChangingConfigurationIdentity() {
@@ -312,7 +258,13 @@ final class MonitorSetupModelTests: XCTestCase {
             mouseWarpEnabled: true,
             workspaceConfigurations: configurations
         )
+        XCTAssertFalse(draft.hasWorkspaceCoverage(in: monitors))
+        XCTAssertEqual(draft.uncoveredMonitors(in: monitors).count, 1)
         let uncoveredMonitor = try XCTUnwrap(draft.uncoveredMonitors(in: monitors).first)
+        XCTAssertEqual(
+            Set(draft.uncoveredMonitors(in: monitors.reversed()).map(\.id)),
+            [uncoveredMonitor.id]
+        )
 
         draft.addWorkspace(for: uncoveredMonitor)
 

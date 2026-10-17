@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 @testable import OmniWM
 import XCTest
@@ -51,27 +51,29 @@ final class ViewportGestureTests: XCTestCase {
     }
 
     func testMomentumFlingRestsAtProjectedOffsetWithoutSnapping() {
-        var state = makeState()
-        state.endGesture(
-            currentOffset: 20,
-            projectedOffset: 65,
-            columns: columns([100, 100, 100]),
-            geometry: NiriViewportGeometry(
-                gap: 10,
-                viewportSpan: 150,
-                orientation: .horizontal
-            ),
-            motion: .enabled,
-            snapToColumn: false
-        )
+        for orientation in [Monitor.Orientation.horizontal, .vertical] {
+            var state = makeState()
+            state.endGesture(
+                currentOffset: 20,
+                projectedOffset: 65,
+                columns: orientation == .horizontal ? columns([100, 100, 100]) : portraitColumns([100, 100, 100]),
+                geometry: NiriViewportGeometry(
+                    gap: 10,
+                    viewportSpan: 150,
+                    orientation: orientation
+                ),
+                motion: .enabled,
+                snapToColumn: false
+            )
 
-        XCTAssertEqual(state.activeColumnIndex, 1)
-        XCTAssertEqual(state.viewOffset, -45)
-        XCTAssertEqual(state.offsetTransition.rebaseDelta, -110)
-        XCTAssertEqual(state.offsetTransition.kind, .deceleration)
+            XCTAssertEqual(state.activeColumnIndex, 1)
+            XCTAssertEqual(state.viewOffset, -45)
+            XCTAssertEqual(state.offsetTransition.rebaseDelta, -110)
+            XCTAssertEqual(state.offsetTransition.kind, .deceleration)
 
-        let viewStart = 110 + state.viewOffset
-        XCTAssertEqual(viewStart, 65)
+            let viewStart = 110 + state.viewOffset
+            XCTAssertEqual(viewStart, 65)
+        }
     }
 
     func testMomentumSpringsBackAtContentEdge() {
@@ -132,27 +134,5 @@ final class ViewportGestureTests: XCTestCase {
         XCTAssertEqual(state.activeColumnIndex, 1)
         XCTAssertEqual(state.viewOffset, -40)
         XCTAssertEqual(state.offsetTransition.kind, .jump)
-    }
-
-    func testPortraitMomentumUsesContainerHeights() {
-        var state = makeState()
-        state.endGesture(
-            currentOffset: 20,
-            projectedOffset: 65,
-            columns: portraitColumns([100, 100, 100]),
-            geometry: NiriViewportGeometry(
-                gap: 10,
-                viewportSpan: 150,
-                orientation: .vertical
-            ),
-            motion: .enabled,
-            snapToColumn: false
-        )
-
-        XCTAssertEqual(state.activeColumnIndex, 1)
-        XCTAssertEqual(state.viewOffset, -45)
-        XCTAssertEqual(state.offsetTransition.rebaseDelta, -110)
-        XCTAssertEqual(state.offsetTransition.kind, .deceleration)
-        XCTAssertEqual(110 + state.viewOffset, 65)
     }
 }

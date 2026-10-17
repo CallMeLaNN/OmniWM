@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import CoreGraphics
 @testable import OmniWM
@@ -157,10 +157,11 @@ final class OverviewCanonicalGeometryTests: XCTestCase {
     func testColumnWidthDoesNotDependOnWorkspaceColumnCount() throws {
         let narrow = try makeFixture(count: 2).snapshot()
         let wide = try makeFixture(count: 12).snapshot()
-        XCTAssertEqual(
-            narrow.columns.first?.tiles.first?.stripFrame?.size,
-            wide.columns.first?.tiles.first?.stripFrame?.size
-        )
+        XCTAssertEqual(narrow.columns.count, 2)
+        XCTAssertEqual(wide.columns.count, 12)
+        let narrowFrame = try XCTUnwrap(narrow.columns.first?.tiles.first?.stripFrame)
+        let wideFrame = try XCTUnwrap(wide.columns.first?.tiles.first?.stripFrame)
+        XCTAssertEqual(narrowFrame.size, wideFrame.size)
     }
 
     func testExcludedColumnsKeepDurableIndicesAndProjectedGeometry() throws {

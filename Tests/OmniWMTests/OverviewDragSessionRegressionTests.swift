@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import ApplicationServices
@@ -319,6 +319,14 @@ final class OverviewDragSessionRegressionTests: XCTestCase {
         )
         controller.niriEngine = NiriLayoutEngine()
         controller.dwindleEngine = DwindleLayoutEngine()
+        addTeardownBlock { @MainActor in
+            let activeRefresh = controller.layoutRefreshController.layoutState.activeRefreshTask
+            let debounce = controller.layoutRefreshController.layoutState.pendingDebounceTask
+            controller.layoutRefreshController.resetState()
+            await activeRefresh?.value
+            await debounce?.value
+            try FileManager.default.removeItem(at: directory)
+        }
         return (controller, monitors)
     }
 

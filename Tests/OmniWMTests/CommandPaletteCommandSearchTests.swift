@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import Carbon
@@ -55,6 +55,17 @@ final class CommandPaletteCommandSearchTests: XCTestCase {
         let reversed = Array(items.reversed())
 
         XCTAssertEqual(CommandPaletteSearch.filterCommandItems(reversed, query: "  ").map(\.id), items.map(\.id))
+
+        let literalItems = [
+            item(id: "focus-alpha", title: "Alpha", category: .focus),
+            item(id: "workspace-beta", title: "Beta"),
+            item(id: "workspace-alpha-b", title: "Alpha"),
+            item(id: "workspace-alpha-a", title: "Alpha")
+        ]
+        XCTAssertEqual(
+            CommandPaletteSearch.filterCommandItems(literalItems, query: "  ").map(\.id),
+            ["workspace-alpha-a", "workspace-alpha-b", "workspace-beta", "focus-alpha"]
+        )
     }
 
     func testSearchFindsCatalogMetadataCategoryLayoutAndConfiguredShortcut() {
@@ -99,6 +110,7 @@ final class CommandPaletteCommandSearchTests: XCTestCase {
         id: String,
         title: String,
         localizedTitle: String? = nil,
+        category: HotkeyCategory = .workspace,
         keywords: [String] = [],
         shortcutSearchTerms: [String] = []
     ) -> CommandPaletteCommandItem {
@@ -109,7 +121,7 @@ final class CommandPaletteCommandSearchTests: XCTestCase {
                 title: title,
                 localizedTitle: localizedTitle ?? title,
                 keywords: keywords,
-                category: .workspace,
+                category: category,
                 visibility: .normal,
                 layoutCompatibility: .shared,
                 defaultBinding: .unassigned,
@@ -137,7 +149,7 @@ final class CommandPaletteCommandSearchTests: XCTestCase {
             ),
             autosaveEnabled: false
         )
-        return WMController(
+        let controller = WMController(
             settings: settings,
             windowFocusOperations: WindowFocusOperations(
                 activateApp: { _ in },
@@ -145,5 +157,16 @@ final class CommandPaletteCommandSearchTests: XCTestCase {
                 raiseWindow: { _ in }
             )
         )
+        addTeardownBlock { @MainActor in
+            controller.hasStartedServices = false
+            controller.workspaceBarManager.cleanup()
+            controller.layoutRefreshController.resetState()
+            controller.mouseEventHandler.cleanup()
+            controller.surfaceReconciler.cleanup()
+            controller.axManager.cleanup()
+            await controller.workspaceBarManager.flushShellForQuit()
+            try FileManager.default.removeItem(at: root)
+        }
+        return controller
     }
 }

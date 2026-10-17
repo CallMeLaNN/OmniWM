@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWM
@@ -59,13 +59,17 @@ final class OverviewPreviewCaptureTests: XCTestCase {
     func testFirstPreviewPublishesBeforeOtherSourcesStartOrProduceFrames() async throws {
         let driver = OverviewPreviewTestDriver()
         let capture = driver.makeCapture()
+        defer {
+            capture.clear()
+            driver.finish()
+        }
         let first = WindowHandle(id: WindowToken(pid: 123, windowId: 1))
         let second = WindowHandle(id: WindowToken(pid: 123, windowId: 2))
         capture.reconcile(represented: [first, second], visible: [
             OverviewPreviewRequest(handle: first, pixelWidth: 80, pixelHeight: 60),
             OverviewPreviewRequest(handle: second, pixelWidth: 80, pixelHeight: 60)
         ])
-        await driver.waitForStarts(2)
+        try await driver.waitForStarts(2)
         driver.streams[0].completeStart()
         let frame = try makeOverviewPreviewFrame()
         let published = expectation(description: "first source publishes independently")
@@ -73,33 +77,52 @@ final class OverviewPreviewCaptureTests: XCTestCase {
             if handle === first, preview != nil { published.fulfill() }
         }
         driver.streams[0].output.offer(frame)
-        await fulfillment(of: [published], timeout: 1)
+        guard await XCTWaiter.fulfillment(of: [published], timeout: 1) == .completed else {
+            XCTFail("Expected preview publication")
+            throw OverviewPreviewTestWaitError.publication
+        }
         XCTAssertTrue(capture.preview(for: first) === frame)
         XCTAssertNil(capture.preview(for: second))
         capture.clear()
         driver.completeAllStarts()
-        await driver.waitForStops(2)
+        try await driver.waitForStops(2)
     }
 
     @MainActor
     func testCaptureDeduplicatesPanelsAndPreservesRunningDimensions() async throws {
         let driver = OverviewPreviewTestDriver()
         let capture = driver.makeCapture()
+        defer {
+            capture.clear()
+            driver.finish()
+        }
         let handle = WindowHandle(id: WindowToken(pid: 123, windowId: 456))
         capture.reconcile(represented: [handle], visible: [
             OverviewPreviewRequest(handle: handle, pixelWidth: 100, pixelHeight: 60),
             OverviewPreviewRequest(handle: handle, pixelWidth: 200, pixelHeight: 80)
         ])
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
         XCTAssertEqual(driver.streams.count, 1)
         XCTAssertEqual(driver.streams[0].request.pixelWidth, 200)
         XCTAssertEqual(driver.streams[0].request.pixelHeight, 80)
+        let running = expectation(description: "preview stream is running")
+        capture.onReadinessChange = { running.fulfill() }
         driver.completeAllStarts()
+        guard await XCTWaiter.fulfillment(of: [running], timeout: 1) == .completed else {
+            XCTFail("Expected the preview stream to finish starting")
+            throw OverviewPreviewTestWaitError.publication
+        }
+        capture.onReadinessChange = {}
+        XCTAssertEqual(driver.streams[0].stopCount, 0)
+        XCTAssertTrue(capture.hasPendingFirstFrames)
         capture.reconcile(represented: [handle], visible: [
             OverviewPreviewRequest(handle: handle, pixelWidth: 400, pixelHeight: 200)
         ])
         XCTAssertEqual(driver.streams.count, 1)
         XCTAssertEqual(driver.streams[0].request.pixelWidth, 200)
+        XCTAssertEqual(driver.streams[0].request.pixelHeight, 80)
+        XCTAssertEqual(driver.streams[0].stopCount, 0)
+        XCTAssertTrue(capture.hasPendingFirstFrames)
         capture.clear()
     }
 
@@ -107,13 +130,17 @@ final class OverviewPreviewCaptureTests: XCTestCase {
     func testCaptureLimitsStartsAndRetiresLateStart() async throws {
         let driver = OverviewPreviewTestDriver()
         let capture = driver.makeCapture()
+        defer {
+            capture.clear()
+            driver.finish()
+        }
         let handles = (1 ... 6).map { WindowHandle(id: WindowToken(pid: 123, windowId: $0)) }
         let requests = handles.map { OverviewPreviewRequest(handle: $0, pixelWidth: 80, pixelHeight: 60) }
         capture.reconcile(represented: Set(handles), visible: requests)
-        await driver.waitForStarts(4)
+        try await driver.waitForStarts(4)
         XCTAssertEqual(driver.streams.count, 4)
         driver.streams[0].completeStart()
-        await driver.waitForStarts(5)
+        try await driver.waitForStarts(5)
         XCTAssertEqual(driver.streams.count, 5)
         capture.clear()
         driver.completeAllStarts()
@@ -121,8 +148,8 @@ final class OverviewPreviewCaptureTests: XCTestCase {
         capture.reconcile(represented: [laterHandle], visible: [
             OverviewPreviewRequest(handle: laterHandle, pixelWidth: 80, pixelHeight: 60)
         ])
-        await driver.waitForStarts(6)
-        await driver.waitForStops(5)
+        try await driver.waitForStarts(6)
+        try await driver.waitForStops(5)
         XCTAssertEqual(driver.streams.filter { $0.stopCount == 1 }.count, 5)
         XCTAssertEqual(capture.cachedByteCount, 0)
         driver.completeAllStarts()
@@ -133,16 +160,23 @@ final class OverviewPreviewCaptureTests: XCTestCase {
     func testInvisiblePreviewKeepsLastFrameButRemovalRetiresIt() async throws {
         let driver = OverviewPreviewTestDriver()
         let capture = driver.makeCapture()
+        defer {
+            capture.clear()
+            driver.finish()
+        }
         let handle = WindowHandle(id: WindowToken(pid: 123, windowId: 456))
         capture.reconcile(represented: [handle], visible: [
             OverviewPreviewRequest(handle: handle, pixelWidth: 80, pixelHeight: 60)
         ])
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
         let frame = try makeOverviewPreviewFrame()
         let published = expectation(description: "first complete frame")
         capture.onPreview = { _, image in if image != nil { published.fulfill() } }
         driver.streams[0].output.offer(frame)
-        await fulfillment(of: [published], timeout: 1)
+        guard await XCTWaiter.fulfillment(of: [published], timeout: 1) == .completed else {
+            XCTFail("Expected preview publication")
+            throw OverviewPreviewTestWaitError.publication
+        }
         driver.completeAllStarts()
         capture.reconcile(represented: [handle], visible: [])
         XCTAssertTrue(capture.preview(for: handle) === frame)
@@ -154,10 +188,14 @@ final class OverviewPreviewCaptureTests: XCTestCase {
     func testClearRetainsFramesUntilReconcilePrunesOrPressureReleasesThem() async throws {
         let driver = OverviewPreviewTestDriver()
         let capture = driver.makeCapture()
+        defer {
+            capture.clear()
+            driver.finish()
+        }
         let handle = WindowHandle(id: WindowToken(pid: 123, windowId: 456))
         let request = OverviewPreviewRequest(handle: handle, pixelWidth: 80, pixelHeight: 60)
         capture.reconcile(represented: [handle], visible: [request])
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
         driver.completeAllStarts()
         let frame = try makeOverviewPreviewFrame()
         let published = expectation(description: "frame published")
@@ -167,17 +205,20 @@ final class OverviewPreviewCaptureTests: XCTestCase {
             if preview == nil { clearedHandles.append(handle) }
         }
         driver.streams[0].output.offer(frame)
-        await fulfillment(of: [published], timeout: 1)
+        guard await XCTWaiter.fulfillment(of: [published], timeout: 1) == .completed else {
+            XCTFail("Expected preview publication")
+            throw OverviewPreviewTestWaitError.publication
+        }
 
         capture.releaseCache()
         XCTAssertTrue(capture.preview(for: handle) === frame, "Pressure must not blank a card with a live source")
         capture.clear()
-        await driver.waitForStops(1)
+        try await driver.waitForStops(1)
         XCTAssertTrue(capture.preview(for: handle) === frame)
         XCTAssertTrue(clearedHandles.isEmpty)
 
         capture.reconcile(represented: [handle], visible: [request])
-        await driver.waitForStarts(2)
+        try await driver.waitForStarts(2)
         XCTAssertTrue(capture.preview(for: handle) === frame)
         capture.clear()
         capture.reconcile(represented: [], visible: [])
@@ -185,7 +226,7 @@ final class OverviewPreviewCaptureTests: XCTestCase {
         XCTAssertEqual(clearedHandles.map(\.id), [handle.id])
 
         capture.reconcile(represented: [handle], visible: [request])
-        await driver.waitForStarts(3)
+        try await driver.waitForStarts(3)
         driver.completeAllStarts()
         let second = try makeOverviewPreviewFrame()
         let republished = expectation(description: "second frame published")
@@ -211,18 +252,25 @@ final class OverviewPreviewCaptureTests: XCTestCase {
         }
         let driver = OverviewPreviewTestDriver()
         let capture = driver.makeCapture()
+        defer {
+            capture.clear()
+            driver.finish()
+        }
         let handles = (1 ... 5).map { WindowHandle(id: WindowToken(pid: 123, windowId: $0)) }
         capture.reconcile(represented: Set(handles), visible: handles.map {
             OverviewPreviewRequest(handle: $0, pixelWidth: 80, pixelHeight: 60)
         })
-        await driver.waitForStarts(4)
+        try await driver.waitForStarts(4)
         driver.streams[0].completeStart()
-        await driver.waitForStarts(5)
+        try await driver.waitForStarts(5)
         for frame in [try makeOverviewPreviewFrame(), try makeOverviewPreviewFrame()] {
             let published = expectation(description: "frame published")
             capture.onPreview = { _, preview in if preview === frame { published.fulfill() } }
             driver.streams[0].output.offer(frame)
-            await fulfillment(of: [published], timeout: 1)
+            guard await XCTWaiter.fulfillment(of: [published], timeout: 1) == .completed else {
+                XCTFail("Expected preview publication")
+                throw OverviewPreviewTestWaitError.publication
+            }
         }
 
         let lines = trace.dump().split(separator: "\n").map(String.init)
@@ -239,21 +287,25 @@ final class OverviewPreviewCaptureTests: XCTestCase {
     func testReusedWindowNumberDoesNotReceiveRetiredFrames() async throws {
         let driver = OverviewPreviewTestDriver()
         let capture = driver.makeCapture()
+        defer {
+            capture.clear()
+            driver.finish()
+        }
         let token = WindowToken(pid: 123, windowId: 456)
         let first = WindowHandle(id: token)
         let second = WindowHandle(id: token)
         capture.reconcile(represented: [first], visible: [
             OverviewPreviewRequest(handle: first, pixelWidth: 80, pixelHeight: 60)
         ])
-        await driver.waitForStarts(1)
+        try await driver.waitForStarts(1)
         let frame = try makeOverviewPreviewFrame()
         driver.streams[0].output.offer(frame)
         capture.reconcile(represented: [second], visible: [
             OverviewPreviewRequest(handle: second, pixelWidth: 80, pixelHeight: 60)
         ])
         driver.completeAllStarts()
-        await driver.waitForStarts(2)
-        await driver.waitForStops(1)
+        try await driver.waitForStarts(2)
+        try await driver.waitForStops(1)
         XCTAssertEqual(capture.cachedByteCount, 0)
         XCTAssertEqual(driver.streams[0].stopCount, 1)
         driver.streams[0].output.offer(frame)

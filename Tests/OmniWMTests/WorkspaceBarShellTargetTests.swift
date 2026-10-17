@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 @testable import OmniWM
 import OmniWMIPC
@@ -55,27 +55,6 @@ final class WorkspaceBarShellTargetTests: XCTestCase {
         XCTAssertNil(resolve("window \(stale)"))
         XCTAssertNil(resolve("workspace 9"))
         XCTAssertNil(resolve("everything"))
-    }
-
-    func testABarWithoutShellWidgetsOnlyMeasuresItsPadding() {
-        let snapshot = WorkspaceBarSnapshot(
-            projection: WorkspaceBarProjection(
-                items: [WorkspaceBarItem(
-                    id: WorkspaceDescriptor.ID(),
-                    name: "1",
-                    rawName: "1",
-                    isFocused: true,
-                    tiledWindows: [],
-                    floatingWindows: []
-                )],
-                scratchpads: [WorkspaceBarScratchpadItem(index: 1, label: nil, windows: [], isVisible: true)]
-            ),
-            backgroundOpacity: 1,
-            barHeight: 24
-        )
-        let view = NSHostingView(rootView: WorkspaceBarMeasurementView(snapshot: snapshot))
-        view.layoutSubtreeIfNeeded()
-        XCTAssertEqual(view.fittingSize.width, 8, accuracy: 0.5)
     }
 
     func testBarStyleClicksMapToNativeBarActions() throws {

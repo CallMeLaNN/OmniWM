@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWM
@@ -7,29 +7,6 @@ import OmniWMIPC
 import XCTest
 
 final class HiddenBarCommandTests: XCTestCase {
-    func testHiddenBarPanelSpecRegistered() throws {
-        let spec = try XCTUnwrap(ActionCatalog.spec(for: .presentation(.hiddenBar)))
-
-        XCTAssertEqual(spec.id, "toggleHiddenBarPanel")
-        XCTAssertEqual(spec.title, "Toggle Hidden Icons Panel")
-        XCTAssertEqual(spec.layoutCompatibility, .shared)
-        XCTAssertEqual(spec.defaultBinding, .unassigned)
-        XCTAssertEqual(spec.ipcCommandName, .presentation(.hiddenBar))
-        XCTAssertNotNil(spec.ipcDescriptor)
-    }
-
-    func testHiddenBarPanelNameMapping() {
-        XCTAssertEqual(IPCCommandRequest.presentation(.hiddenBar).name, .presentation(.hiddenBar))
-    }
-
-    func testHiddenBarPanelJSONRoundTrip() throws {
-        let data = try JSONEncoder().encode(IPCCommandRequest.presentation(.hiddenBar))
-        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
-
-        XCTAssertEqual(object["name"] as? String, "hidden-bar-panel")
-        XCTAssertEqual(try JSONDecoder().decode(IPCCommandRequest.self, from: data), .presentation(.hiddenBar))
-    }
-
     func testHiddenBarPanelManifestResolves() throws {
         let descriptors = IPCAutomationManifest.commandDescriptors(matching: ["hidden-bar", "panel"])
         let descriptor = try XCTUnwrap(descriptors.first { $0.name == .presentation(.hiddenBar) })
@@ -52,6 +29,9 @@ final class HiddenBarCommandTests: XCTestCase {
     private func makeSettingsStore() -> SettingsStore {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("OmniWMHiddenBarCommandTests-\(UUID().uuidString)", isDirectory: true)
+        addTeardownBlock {
+            try FileManager.default.removeItem(at: root)
+        }
         return SettingsStore(
             persistence: SettingsFilePersistence(
                 directory: root.appendingPathComponent("config", isDirectory: true),

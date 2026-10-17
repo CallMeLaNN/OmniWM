@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import ApplicationServices
@@ -144,15 +144,6 @@ final class WindowRuleEngineTests: XCTestCase {
         XCTAssertNotEqual(main.source, .userRule(rule.id))
     }
 
-    func testEmptyBundleAxOnlyRuleIsDropped() {
-        let engine = WindowRuleEngine()
-        let axOnly = AppRule(bundleId: "", axSubrole: kAXStandardWindowSubrole as String, layout: .float)
-        engine.rebuild(rules: [axOnly])
-
-        let decision = evaluate(engine, facts(appName: "VMD", bundleId: nil, title: "VMD Main"))
-        XCTAssertNotEqual(decision.source, .userRule(axOnly.id))
-    }
-
     func testBundledAxSubroleRefinesMatch() {
         let engine = WindowRuleEngine()
         let rule = AppRule(
@@ -173,13 +164,21 @@ final class WindowRuleEngineTests: XCTestCase {
         XCTAssertNotEqual(wrongSubrole.source, .userRule(rule.id))
     }
 
-    func testEmptyBundleActionOnlyRuleIsDropped() {
-        let engine = WindowRuleEngine()
-        let actionOnly = AppRule(bundleId: "", layout: .float)
-        engine.rebuild(rules: [actionOnly])
-
-        let decision = evaluate(engine, facts(appName: "Anything", bundleId: nil))
-        XCTAssertNotEqual(decision.source, .userRule(actionOnly.id))
+    func testUnanchoredRuntimeRulesAreDropped() {
+        let cases: [(label: String, rule: AppRule, facts: WindowRuleFacts)] = [
+            ("action only", AppRule(bundleId: "", layout: .float), facts(appName: "Anything", bundleId: nil)),
+            (
+                "AX subrole only",
+                AppRule(bundleId: "", axSubrole: kAXStandardWindowSubrole as String, layout: .float),
+                facts(appName: "VMD", bundleId: nil, title: "VMD Main")
+            )
+        ]
+        for row in cases {
+            let engine = WindowRuleEngine()
+            engine.rebuild(rules: [row.rule])
+            let decision = evaluate(engine, row.facts)
+            XCTAssertNotEqual(decision.source, .userRule(row.rule.id), row.label)
+        }
     }
 
     func testBundledRuleDoesNotMatchNoBundleWindow() {
@@ -307,18 +306,11 @@ final class WindowRuleEngineTests: XCTestCase {
         engine.rebuild(rules: [rule])
 
         XCTAssertTrue(engine.requiresTitle(for: nil))
+        XCTAssertTrue(engine.requiresTitle(for: "example.app"))
 
         let decision = evaluate(engine, facts(appName: "VMD", bundleId: nil, title: "VMD Main"))
         XCTAssertEqual(decision.disposition, .floating)
         XCTAssertEqual(decision.source, .userRule(rule.id))
-    }
-
-    func testUnscopedTitleRuleFetchesTitleForBundledApp() {
-        let engine = WindowRuleEngine()
-        let rule = AppRule(bundleId: "", titleSubstring: "Main", layout: .float)
-        engine.rebuild(rules: [rule])
-
-        XCTAssertTrue(engine.requiresTitle(for: "example.app"))
     }
 
     func testAppNameScopedTitleRuleFetchesOnlyForMatchingApp() {
@@ -395,16 +387,17 @@ final class WindowRuleEngineTests: XCTestCase {
         )
     }
 
-    func testProjectionSnapshotValidWhenAnchoredOnAppName() {
-        let rule = AppRule(bundleId: "", appNameSubstring: "VMD", layout: .float)
-        let snapshot = IPCRuleProjection.snapshot(from: rule, position: 1, invalidRegexMessagesByRuleId: [:])
-        XCTAssertTrue(snapshot.isValid)
-    }
-
-    func testProjectionSnapshotInvalidWhenNoAnchor() {
-        let rule = AppRule(bundleId: "", layout: .float)
-        let snapshot = IPCRuleProjection.snapshot(from: rule, position: 1, invalidRegexMessagesByRuleId: [:])
-        XCTAssertFalse(snapshot.isValid)
+    func testRuleProjectionValidityMatrix() {
+        let cases: [(label: String, rule: AppRule, valid: Bool)] = [
+            ("anchored app name", AppRule(bundleId: "", appNameSubstring: "VMD", layout: .float), true),
+            ("no anchor", AppRule(bundleId: "", layout: .float), false),
+            ("effectless", AppRule(bundleId: "com.test.app", appNameSubstring: "Test"), false)
+        ]
+        for row in cases {
+            let snapshot = IPCRuleProjection.snapshot(from: row.rule, position: 1, invalidRegexMessagesByRuleId: [:])
+            XCTAssertEqual(snapshot.isValid, row.valid, row.label)
+            XCTAssertEqual(snapshot.validationMessages.isEmpty, row.valid, row.label)
+        }
     }
 
     func testEffectlessRuleDoesNotShadowEffectiveRule() {
@@ -418,13 +411,6 @@ final class WindowRuleEngineTests: XCTestCase {
         let decision = evaluate(engine, facts(appName: "Test", bundleId: "com.test.app"))
         XCTAssertEqual(decision.disposition, .floating)
         XCTAssertEqual(decision.source, .userRule(effective.id))
-    }
-
-    func testEffectlessRuleSnapshotIsInvalidWithMessage() {
-        let rule = AppRule(bundleId: "com.test.app", appNameSubstring: "Test")
-        let snapshot = IPCRuleProjection.snapshot(from: rule, position: 1, invalidRegexMessagesByRuleId: [:])
-        XCTAssertFalse(snapshot.isValid)
-        XCTAssertFalse(snapshot.validationMessages.isEmpty)
     }
 
     func testParentedSurfacesAreExternalAcrossBundles() {

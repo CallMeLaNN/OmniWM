@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 
@@ -149,7 +149,7 @@ final class LyricsController {
     private let load: @Sendable (ShellLyricsTrack) async throws -> ShellLyrics
     private var cache: [ShellLyricsTrack: ShellLyrics] = [:]
     private var track: ShellLyricsTrack?
-    private var task: Task<Void, Never>?
+    private(set) var task: Task<Void, Never>?
     private(set) var lyrics: ShellLyrics?
     var onLoad: ((ShellLyrics) -> Void)?
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 @testable import OmniWM
@@ -8,7 +8,7 @@ import XCTest
 
 @MainActor
 final class ShellSpringContinuityTests: XCTestCase {
-    func testSpringRecipeBuildsNativeSpringBeforeCurveParsing() throws {
+    func testSpringRecipeValidatesBoundsAndScalesNativeDurationBySpeed() throws {
         let motion = try XCTUnwrap(ShellMotion(recipe: "spring:0.31:0.22"))
         XCTAssertEqual(motion, .spring(response: 0.31, bounce: 0.22))
         let animation = try XCTUnwrap(ShellAnimation(motion: motion, speed: 2).make("opacity") as? CASpringAnimation)

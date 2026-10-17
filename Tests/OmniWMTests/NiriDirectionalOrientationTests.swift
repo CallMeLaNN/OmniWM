@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import ApplicationServices
 import CoreGraphics
@@ -802,7 +802,7 @@ extension NiriDirectionalOrientationTests {
 
         let workingFrame = controller.insetWorkingFrame(for: sourceMonitor)
         let gap = controller.innerGap(for: sourceMonitor)
-        _ = engine.calculateCombinedLayoutWithVisibility(
+        _ = engine.calculateCombinedLayoutUsingPools(
             in: workspaceId,
             monitor: sourceMonitor,
             gaps: LayoutGaps(
@@ -856,7 +856,7 @@ extension NiriDirectionalOrientationTests {
 
         for offset in sampleOffsets {
             let sampleTime = startTime + offset
-            let layout = fixture.engine.calculateCombinedLayoutWithVisibility(
+            let layout = fixture.engine.calculateCombinedLayoutUsingPools(
                 in: fixture.workspaceId,
                 monitor: fixture.sourceMonitor,
                 gaps: gaps,

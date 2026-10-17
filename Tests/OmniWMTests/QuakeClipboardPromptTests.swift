@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import Foundation
@@ -66,31 +66,41 @@ final class QuakeClipboardPromptTests: XCTestCase {
         XCTAssertEqual(secondResolutions, [false])
     }
 
-    func testCancelForOriginDismissesAndResolvesDenyExactlyOnce() {
-        let coordinator = QuakeClipboardPromptCoordinator()
-        let origin = NSObject()
-        var completion: (@MainActor (Bool) -> Void)?
-        var dismissCount = 0
-        var resolutions: [Bool] = []
+    func testCancellationEntryPointsResolveDenyExactlyOnce() {
+        for cancelByOrigin in [true, false] {
+            let coordinator = QuakeClipboardPromptCoordinator()
+            let origin = NSObject()
+            var completion: (@MainActor (Bool) -> Void)?
+            var dismissCount = 0
+            var resolutions: [Bool] = []
 
-        coordinator.request(
-            origin: origin,
-            isOriginAttached: { true },
-            present: { completion = $0 },
-            dismiss: { dismissCount += 1 },
-            resolve: { resolutions.append($0) }
-        )
-        coordinator.cancelPrompt(for: origin)
+            coordinator.request(
+                origin: origin,
+                isOriginAttached: { true },
+                present: { completion = $0 },
+                dismiss: { dismissCount += 1 },
+                resolve: { resolutions.append($0) }
+            )
+            let cancel = {
+                if cancelByOrigin {
+                    coordinator.cancelPrompt(for: origin)
+                } else {
+                    coordinator.cancelActivePrompt()
+                }
+            }
+            cancel()
+            cancel()
 
-        XCTAssertEqual(dismissCount, 1)
-        XCTAssertEqual(resolutions, [false])
-        XCTAssertFalse(coordinator.hasActivePrompt)
+            XCTAssertEqual(dismissCount, 1)
+            XCTAssertEqual(resolutions, [false])
+            XCTAssertFalse(coordinator.hasActivePrompt)
 
-        completion?(true)
-        coordinator.cancelPrompt(for: origin)
-        coordinator.cancelActivePrompt()
-        XCTAssertEqual(dismissCount, 1)
-        XCTAssertEqual(resolutions, [false])
+            completion?(true)
+            coordinator.cancelPrompt(for: origin)
+            coordinator.cancelActivePrompt()
+            XCTAssertEqual(dismissCount, 1)
+            XCTAssertEqual(resolutions, [false])
+        }
     }
 
     func testCancelForDifferentOriginKeepsPromptActive() {
@@ -112,28 +122,6 @@ final class QuakeClipboardPromptTests: XCTestCase {
         XCTAssertTrue(coordinator.hasActivePrompt)
         XCTAssertEqual(dismissCount, 0)
         XCTAssertEqual(resolutions, [])
-    }
-
-    func testCancelActivePromptResolvesDenyExactlyOnce() {
-        let coordinator = QuakeClipboardPromptCoordinator()
-        var completion: (@MainActor (Bool) -> Void)?
-        var dismissCount = 0
-        var resolutions: [Bool] = []
-
-        coordinator.request(
-            origin: NSObject(),
-            isOriginAttached: { true },
-            present: { completion = $0 },
-            dismiss: { dismissCount += 1 },
-            resolve: { resolutions.append($0) }
-        )
-        coordinator.cancelActivePrompt()
-        coordinator.cancelActivePrompt()
-        completion?(true)
-
-        XCTAssertEqual(dismissCount, 1)
-        XCTAssertEqual(resolutions, [false])
-        XCTAssertFalse(coordinator.hasActivePrompt)
     }
 
     func testAllowAfterOriginDetachedResolvesDenyAndSkipsWrite() {

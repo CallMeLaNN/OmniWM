@@ -128,7 +128,7 @@ LUAU_DYNAMIC_FASTFLAGVARIABLE(LuauGcHeapShrinkFix, false)
 
 #define GC_INTERRUPT(state) \
     { \
-        void (*interrupt)(lua_State*, int) = g->cb.interrupt; \
+        void (*interrupt)(lua_State*, int) = __atomic_load_n(&g->cb.interrupt, __ATOMIC_RELAXED); \
         if (LUAU_UNLIKELY(!!interrupt)) \
             interrupt(L, state); \
     }

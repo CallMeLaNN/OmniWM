@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import CoreGraphics
 @testable import OmniWM
@@ -112,6 +112,13 @@ final class DwindleGroupVisibilityTests: XCTestCase {
             )
         )
         XCTAssertEqual(pending.visibilityChanges.count, 1)
+        guard let pendingChange = pending.visibilityChanges.first,
+              case let .hide(pendingToken, pendingSide) = pendingChange
+        else {
+            return XCTFail("expected pending inactive group member to be parked")
+        }
+        XCTAssertEqual(pendingToken, fixture.first)
+        XCTAssertEqual(pendingSide, .left)
 
         let settling = fixture.handler.layoutDiff(
             windows: windows,
@@ -128,6 +135,29 @@ final class DwindleGroupVisibilityTests: XCTestCase {
             )
         )
         XCTAssertEqual(settling.visibilityChanges.count, 1)
+        guard let settlingChange = settling.visibilityChanges.first,
+              case let .hide(settlingToken, settlingSide) = settlingChange
+        else {
+            return XCTFail("expected settling inactive group member to be parked")
+        }
+        XCTAssertEqual(settlingToken, fixture.first)
+        XCTAssertEqual(settlingSide, .left)
+
+        let unrelated = fixture.handler.layoutDiff(
+            windows: windows,
+            frames: frames,
+            context: .init(
+                engine: fixture.engine,
+                workspaceId: fixture.workspaceId,
+                preferredHideSide: .right,
+                canRestoreHiddenWorkspaceWindows: true,
+                scale: 1,
+                reassertHidden: false,
+                pendingParkWindowIds: [fixture.second.windowId],
+                animationTime: nil
+            )
+        )
+        XCTAssertTrue(unrelated.visibilityChanges.isEmpty)
     }
 
     func testLayoutDiffProjectsOnlyActiveSuspendedGroupMemberAsVisible() throws {

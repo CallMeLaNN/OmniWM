@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import ApplicationServices
@@ -295,10 +295,10 @@ final class WorkspaceSwipePresentationTests: XCTestCase {
 
         XCTAssertNotNil(fixture.swipe.preparation)
         try requireContactWarmup(fixture)
-        await fixture.driver.waitForStarts(1)
+        try await fixture.driver.waitForStarts(1)
         fixture.driver.completeAllStarts()
-        await publish(try makeOverviewPreviewFrame(), through: fixture.driver.streams[0], into: fixture.capture)
-        await fixture.driver.waitForStops(1)
+        try await publish(try makeOverviewPreviewFrame(), through: fixture.driver.streams[0], into: fixture.capture)
+        try await fixture.driver.waitForStops(1)
         XCTAssertFalse(fixture.preview.isWarming)
         XCTAssertNotNil(fixture.capture.preview(for: fixture.handle))
         XCTAssertEqual(fixture.driver.streams.count, 1)
@@ -330,14 +330,14 @@ final class WorkspaceSwipePresentationTests: XCTestCase {
             fixture.capture.hasPendingFirstFrames ? fixture.capture : nil,
             "Recognition must start continuous capture for the swipe"
         )
-        await fixture.driver.waitForStarts(2)
+        try await fixture.driver.waitForStarts(2)
         XCTAssertFalse(fixture.preview.isWarming)
         let stream = fixture.driver.streams[1]
         XCTAssertTrue(stream.request.handle === fixture.handle)
         fixture.driver.completeAllStarts()
         for _ in 0 ..< 2 {
             let frame = try makeOverviewPreviewFrame()
-            await publish(frame, through: stream, into: fixture.capture)
+            try await publish(frame, through: stream, into: fixture.capture)
             XCTAssertTrue(fixture.capture.preview(for: fixture.handle) === frame)
             XCTAssertEqual(stream.stopCount, 0)
         }
@@ -348,10 +348,12 @@ final class WorkspaceSwipePresentationTests: XCTestCase {
 
     func testCommittedSwipeKeepsOverlayUntilWindowServerParksTheSourceWindow() async throws {
         let fixture = try previewFixture()
+        defer { fixture.swipe.cancel(reason: "test") }
         try await cachePreviewThroughContact(fixture)
+        let sleeper = ManualSleeper()
         var parked = false
         var reads = 0
-        fixture.swipe.handoffSleep = { _ in try await Task.sleep(for: .seconds(3_600)) }
+        fixture.swipe.handoffSleep = { try await sleeper.sleep(for: $0) }
         fixture.swipe.handoffWindowInfo = { ids in
             reads += 1
             return Dictionary(uniqueKeysWithValues: ids.map {
@@ -361,22 +363,31 @@ final class WorkspaceSwipePresentationTests: XCTestCase {
         commitSwipe(fixture)
 
         fixture.swipe.didSubmitPlacement()
-        await waitUntil { reads == 1 }
+        let handoff = try XCTUnwrap(fixture.swipe.flight?.handoff)
+        let firstReadback = try XCTUnwrap(handoff.readback)
+        await firstReadback.value
 
+        XCTAssertEqual(reads, 1)
         XCTAssertTrue(fixture.swipe.hasPresentation)
         parked = true
         fixture.swipe.windowFrameChanged(764_942)
-        await waitUntil { !fixture.swipe.hasPresentation }
+        let confirmedReadback = try XCTUnwrap(handoff.readback)
+        await confirmedReadback.value
         XCTAssertFalse(fixture.swipe.hasPresentation)
         XCTAssertEqual(reads, 2)
     }
 
     func testHandoffDeadlineRemovesTheOverlayWithoutConfirmation() async throws {
         let fixture = try previewFixture()
+        defer { fixture.swipe.cancel(reason: "test") }
         try await cachePreviewThroughContact(fixture)
-        var deadline: CheckedContinuation<Void, Never>?
+        let sleeper = ManualSleeper()
+        let waiting = expectation(description: "Handoff deadline entered the controlled sleep")
         var reads = 0
-        fixture.swipe.handoffSleep = { _ in await withCheckedContinuation { deadline = $0 } }
+        fixture.swipe.handoffSleep = {
+            waiting.fulfill()
+            try await sleeper.sleep(for: $0)
+        }
         fixture.swipe.handoffWindowInfo = { ids in
             reads += 1
             return Dictionary(uniqueKeysWithValues: ids.map {
@@ -386,11 +397,20 @@ final class WorkspaceSwipePresentationTests: XCTestCase {
         commitSwipe(fixture)
 
         fixture.swipe.didSubmitPlacement()
-        await waitUntil { deadline != nil && reads == 1 }
+        let handoff = try XCTUnwrap(fixture.swipe.flight?.handoff)
+        let readback = try XCTUnwrap(handoff.readback)
+        let deadline = try XCTUnwrap(handoff.deadline)
+        await readback.value
+        await fulfillment(of: [waiting], timeout: 2)
+        guard sleeper.pendingCount == 1 else {
+            XCTFail("Handoff deadline did not enter the controlled sleep")
+            return
+        }
 
+        XCTAssertEqual(reads, 1)
         XCTAssertTrue(fixture.swipe.hasPresentation)
-        deadline?.resume()
-        await waitUntil { !fixture.swipe.hasPresentation }
+        sleeper.resumeNext()
+        await deadline.value
         XCTAssertFalse(fixture.swipe.hasPresentation)
     }
 
@@ -428,14 +448,16 @@ final class WorkspaceSwipePresentationTests: XCTestCase {
 
     func testHandoffWithoutWindowServerAccessRemovesTheOverlayAtSettlement() async throws {
         let fixture = try previewFixture()
+        defer { fixture.swipe.cancel(reason: "test") }
         try await cachePreviewThroughContact(fixture)
-        fixture.swipe.handoffSleep = { _ in try await Task.sleep(for: .seconds(3_600)) }
+        let sleeper = ManualSleeper()
+        fixture.swipe.handoffSleep = { try await sleeper.sleep(for: $0) }
         fixture.swipe.handoffWindowInfo = { _ in nil }
         commitSwipe(fixture)
 
         fixture.swipe.didSubmitPlacement()
-
-        await waitUntil { !fixture.swipe.hasPresentation }
+        let readback = try XCTUnwrap(fixture.swipe.flight?.handoff?.readback)
+        await readback.value
         XCTAssertFalse(fixture.swipe.hasPresentation)
     }
 
@@ -453,21 +475,30 @@ final class WorkspaceSwipePresentationTests: XCTestCase {
                 backdrop: makeBackdrop(), hasCaptureAccess: { true }
             )
             let (controller, swipe, _, _) = try fixture(previewSurface: preview)
+            defer {
+                swipe.cancel(reason: "test")
+                preview.stop()
+                capture.clear()
+                driver.finish()
+            }
             controller.settings.gestures.workspaceSwipeEnabled = true
             let handle = WindowHandle(id: WindowToken(pid: 764_951, windowId: 1))
             capture.reconcile(
                 represented: [handle],
                 visible: [OverviewPreviewRequest(handle: handle, pixelWidth: 80, pixelHeight: 60)]
             )
-            await driver.waitForStarts(1)
+            try await driver.waitForStarts(1)
             driver.completeAllStarts()
             let frame = try makeOverviewPreviewFrame()
             let published = expectation(description: "swipe frame published")
             capture.onPreview = { _, image in if image === frame { published.fulfill() } }
             driver.streams[0].output.offer(frame)
-            await fulfillment(of: [published], timeout: 1)
+            guard await XCTWaiter.fulfillment(of: [published], timeout: 1) == .completed else {
+                XCTFail("Expected preview publication")
+                throw OverviewPreviewTestWaitError.publication
+            }
             capture.clear()
-            await driver.waitForStops(1)
+            try await driver.waitForStops(1)
             XCTAssertGreaterThan(capture.cachedByteCount, 0)
 
             disable(controller)
@@ -544,14 +575,6 @@ final class WorkspaceSwipePresentationTests: XCTestCase {
         XCTAssertEqual(fixture.swipe.flight?.phase, .waitingForPlacement)
     }
 
-    private func waitUntil(_ condition: () -> Bool) async {
-        var attempts = 0
-        while !condition(), attempts < 1_000 {
-            attempts += 1
-            await Task.yield()
-        }
-    }
-
     private struct PreviewFixture {
         let controller: WMController
         let driver: OverviewPreviewTestDriver
@@ -570,6 +593,12 @@ final class WorkspaceSwipePresentationTests: XCTestCase {
             backdrop: makeBackdrop(), hasCaptureAccess: { true }
         )
         let (controller, swipe, monitor, source) = try fixture(previewSurface: preview)
+        addTeardownBlock { @MainActor in
+            swipe.cancel(reason: "test")
+            preview.stop()
+            capture.clear()
+            driver.finish()
+        }
         controller.niriLayoutHandler.enableNiriLayout()
         let pid: pid_t = 764_941
         let windowId = 764_942
@@ -603,10 +632,10 @@ final class WorkspaceSwipePresentationTests: XCTestCase {
     private func cachePreviewThroughContact(_ fixture: PreviewFixture) async throws {
         XCTAssertFalse(fixture.swipe.prepare(monitorId: fixture.monitor.id, timestamp: 1))
         try requireContactWarmup(fixture)
-        await fixture.driver.waitForStarts(1)
+        try await fixture.driver.waitForStarts(1)
         fixture.driver.completeAllStarts()
-        await publish(try makeOverviewPreviewFrame(), through: fixture.driver.streams[0], into: fixture.capture)
-        await fixture.driver.waitForStops(1)
+        try await publish(try makeOverviewPreviewFrame(), through: fixture.driver.streams[0], into: fixture.capture)
+        try await fixture.driver.waitForStops(1)
         fixture.swipe.stopPreparing()
         XCTAssertNotNil(fixture.capture.preview(for: fixture.handle))
     }
@@ -615,11 +644,14 @@ final class WorkspaceSwipePresentationTests: XCTestCase {
         _ frame: OverviewPreviewFrame,
         through stream: OverviewPreviewTestStream,
         into capture: OverviewThumbnailCapture
-    ) async {
+    ) async throws {
         let published = expectation(description: "swipe preview frame published")
         capture.onPreview = { _, preview in if preview === frame { published.fulfill() } }
         stream.output.offer(frame)
-        await fulfillment(of: [published], timeout: 1)
+        guard await XCTWaiter.fulfillment(of: [published], timeout: 1) == .completed else {
+            XCTFail("Expected preview publication")
+            throw OverviewPreviewTestWaitError.publication
+        }
     }
 
     private func makeBackdrop() throws -> WorkspaceSwipeBackdrop {

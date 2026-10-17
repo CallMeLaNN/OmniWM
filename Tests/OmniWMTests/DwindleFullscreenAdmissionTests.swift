@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import CoreGraphics
 @testable import OmniWM
@@ -12,35 +12,28 @@ final class DwindleFullscreenAdmissionTests: XCTestCase {
     private let third = WindowToken(pid: 3, windowId: 3)
 
     func testNewWindowExitsFullscreenAndSplitsTheTiledFrame() {
-        for smartSplit in [false, true] {
+        for (existingCount, smartSplit) in [(2, false), (2, true), (1, false)] {
+            let tokens = [first, second, third]
+            let existing = Array(tokens.prefix(existingCount))
+            let admitted = Array(tokens.prefix(existingCount + 1))
             let (control, controlWorkspace) = makeEngine(smartSplit: smartSplit)
-            _ = sync(control, [first], in: controlWorkspace)
-            _ = sync(control, [first, second], in: controlWorkspace)
-            let expected = sync(control, [first, second, third], in: controlWorkspace)
-
+            for count in 1 ... existingCount {
+                _ = sync(control, Array(tokens.prefix(count)), in: controlWorkspace)
+            }
+            let expected = sync(control, admitted, in: controlWorkspace)
             let (engine, workspace) = makeEngine(smartSplit: smartSplit)
-            _ = sync(engine, [first], in: workspace)
-            _ = sync(engine, [first, second], in: workspace)
+            for count in 1 ... existingCount {
+                _ = sync(engine, Array(tokens.prefix(count)), in: workspace)
+            }
             XCTAssertEqual(engine.toggleFullscreen(in: workspace), first)
-            XCTAssertEqual(sync(engine, [first, second], in: workspace)[first], screen)
-
-            XCTAssertEqual(sync(engine, [first, second, third], in: workspace), expected, "smartSplit=\(smartSplit)")
-            XCTAssertTrue(engine.fullscreenTokens(in: workspace).isEmpty, "smartSplit=\(smartSplit)")
+            XCTAssertEqual(sync(engine, existing, in: workspace)[first], screen)
+            XCTAssertEqual(
+                sync(engine, admitted, in: workspace),
+                expected,
+                "count=\(existingCount),smartSplit=\(smartSplit)"
+            )
+            XCTAssertTrue(engine.fullscreenTokens(in: workspace).isEmpty)
         }
-    }
-
-    func testNewWindowExitsLoneWindowFullscreen() {
-        let (control, controlWorkspace) = makeEngine(smartSplit: false)
-        _ = sync(control, [first], in: controlWorkspace)
-        let expected = sync(control, [first, second], in: controlWorkspace)
-
-        let (engine, workspace) = makeEngine(smartSplit: false)
-        _ = sync(engine, [first], in: workspace)
-        XCTAssertEqual(engine.toggleFullscreen(in: workspace), first)
-        _ = sync(engine, [first], in: workspace)
-
-        XCTAssertEqual(sync(engine, [first, second], in: workspace), expected)
-        XCTAssertTrue(engine.fullscreenTokens(in: workspace).isEmpty)
     }
 
     func testRelayoutWithoutNewWindowsKeepsFullscreen() {

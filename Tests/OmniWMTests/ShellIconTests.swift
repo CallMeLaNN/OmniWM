@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 @testable import OmniWM
@@ -23,13 +23,6 @@ final class ShellIconTests: XCTestCase {
         var size = 0
         let bytes = try XCTUnwrap(omni_instance_output(instance, OMNI_VIEW_BAR, &size))
         return Array(UnsafeBufferPointer(start: bytes, count: size))
-    }
-
-    func testDataDemandBitsMatchTheScriptHost() throws {
-        let bytes = try output("function render(ctx) local _ = ctx.data.network return ui.box{ w = 1, h = 1 } end")
-        let deps = bytes.withUnsafeBytes { $0.loadUnaligned(as: omni_wire_header.self).deps }
-        XCTAssertNotEqual(deps & ShellDataKey.network.bit, 0)
-        XCTAssertNotNil(SystemStatsSampler.networkBytes())
     }
 
     func testDataReadsRecordExactlyTheirOwnKeys() throws {

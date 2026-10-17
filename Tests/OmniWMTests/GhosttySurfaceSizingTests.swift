@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import CoreGraphics
 import Foundation
@@ -7,38 +7,25 @@ import Foundation
 import XCTest
 
 final class GhosttySurfaceSizingTests: XCTestCase {
-    func testNormalizeScalesPointSizeByBackingScale() {
+    func testNormalizePointAndBackingScaleInputsToExactPixels() {
         let metrics = GhosttySurfaceCellMetrics(cellWidthPx: 8, cellHeightPx: 16)
-        let oneX = GhosttySurfacePixelSizeNormalizer.normalize(
-            pointSize: CGSize(width: 800, height: 400),
-            backingScale: 1,
-            cellMetrics: metrics
-        )
-        let twoX = GhosttySurfacePixelSizeNormalizer.normalize(
-            pointSize: CGSize(width: 800, height: 400),
-            backingScale: 2,
-            cellMetrics: metrics
-        )
-        XCTAssertEqual(oneX, GhosttySurfacePixelSize(widthPx: 800, heightPx: 400))
-        XCTAssertEqual(twoX, GhosttySurfacePixelSize(widthPx: 1600, heightPx: 800))
-        XCTAssertNotEqual(oneX, twoX)
-    }
-
-    func testNormalizeChangesWithPointHeight() {
-        let metrics = GhosttySurfaceCellMetrics(cellWidthPx: 8, cellHeightPx: 16)
-        let external = GhosttySurfacePixelSizeNormalizer.normalize(
-            pointSize: CGSize(width: 1720, height: 656),
-            backingScale: 2,
-            cellMetrics: metrics
-        )
-        let builtIn = GhosttySurfacePixelSizeNormalizer.normalize(
-            pointSize: CGSize(width: 756, height: 491),
-            backingScale: 2,
-            cellMetrics: metrics
-        )
-        XCTAssertNotNil(external)
-        XCTAssertNotNil(builtIn)
-        XCTAssertNotEqual(external, builtIn)
+        let cases: [(points: CGSize, scale: CGFloat, pixels: GhosttySurfacePixelSize)] = [
+            (CGSize(width: 800, height: 400), 1, GhosttySurfacePixelSize(widthPx: 800, heightPx: 400)),
+            (CGSize(width: 800, height: 400), 2, GhosttySurfacePixelSize(widthPx: 1600, heightPx: 800)),
+            (CGSize(width: 1720, height: 656), 2, GhosttySurfacePixelSize(widthPx: 3440, heightPx: 1312)),
+            (CGSize(width: 756, height: 491), 2, GhosttySurfacePixelSize(widthPx: 1512, heightPx: 982))
+        ]
+        for row in cases {
+            XCTAssertEqual(
+                GhosttySurfacePixelSizeNormalizer.normalize(
+                    pointSize: row.points,
+                    backingScale: row.scale,
+                    cellMetrics: metrics
+                ),
+                row.pixels,
+                "\(row.points) @\(row.scale)"
+            )
+        }
     }
 
     func testNormalizeRejectsNonPositiveInputs() {
@@ -100,11 +87,14 @@ final class GhosttySurfaceSizingTests: XCTestCase {
 
     @MainActor
     func testFocusedWindowDisplayIdSkipsOwnPIDTinyAndNonZeroLayer() {
-        let monitors = [makeMonitor(displayId: 1, frame: CGRect(x: 0, y: 0, width: 2000, height: 2000))]
+        let monitors = [
+            makeMonitor(displayId: 1, frame: CGRect(x: 0, y: 0, width: 2000, height: 2000)),
+            makeMonitor(displayId: 2, frame: CGRect(x: 2000, y: 0, width: 2000, height: 2000))
+        ]
         let windowList: [[String: Any]] = [
-            makeWindow(pid: 7, layer: 0, x: 100, y: 100, width: 400, height: 300),
-            makeWindow(pid: 42, layer: 5, x: 100, y: 100, width: 400, height: 300),
-            makeWindow(pid: 42, layer: 0, x: 100, y: 100, width: 40, height: 40),
+            makeWindow(pid: 7, layer: 0, x: 2100, y: 100, width: 400, height: 300),
+            makeWindow(pid: 42, layer: 5, x: 2100, y: 100, width: 400, height: 300),
+            makeWindow(pid: 42, layer: 0, x: 2100, y: 100, width: 40, height: 40),
             makeWindow(pid: 99, layer: 0, x: 500, y: 500, width: 200, height: 200)
         ]
         let result = QuakeFocusedWindowScreen.displayId(

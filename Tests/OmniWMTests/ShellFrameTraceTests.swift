@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 @testable import OmniWM
@@ -69,10 +69,13 @@ final class ShellFrameTraceTests: XCTestCase {
     }
 
     @MainActor
-    func testInactiveCaptureDoesNotInstallDisplayLinks() {
+    func testInactiveCaptureDoesNotInstallDisplayLinks() throws {
+        guard let screen = NSScreen.main, screen.displayId != nil else {
+            throw XCTSkip("A main screen with a display ID is unavailable")
+        }
         ShellFrameTrace.shared.endCapture()
         ShellFrameTraceDisplayLink.stop()
-        ShellFrameTraceDisplayLink.prepare(screen: NSScreen.main)
+        ShellFrameTraceDisplayLink.prepare(screen: screen)
         XCTAssertEqual(ShellFrameTraceDisplayLink.count, 0)
     }
 

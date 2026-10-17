@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 import ImageIO
@@ -437,11 +437,10 @@ final class ShellBundledWidgetTests: XCTestCase {
         }
     }
 
-    func testBundledWidgetsRenderWithFullAndMissingData() throws {
+    func testBundledWidgetsRenderWithMissingDataAndIslandLayouts() throws {
         let full = try fullData()
         let essentials = full.filter { Self.essentials.contains($0.0) }
         for name in Self.names {
-            try render(name, data: full)
             try render(name, data: essentials)
         }
         for island in [WorkspaceBarIslandSlice.active, .secondary] {

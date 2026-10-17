@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 @testable import OmniWM
 import XCTest
@@ -7,34 +7,26 @@ import XCTest
 final class ApplicationCatalogFilterTests: XCTestCase {
     private let home = "/Users/tester"
 
-    func testRootsAndOneLevelSubfoldersAreCatalogPaths() {
-        let included = [
-            "/Applications/Safari.app",
-            "/Applications/Utilities/Terminal.app",
-            "/System/Applications/Calculator.app",
-            "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app",
-            "/Users/tester/Applications/Chrome Apps.localized/Docs.app",
-            "/Users/Shared/Tool.app",
-            "/Users/tester/Downloads/Installer.app",
-            "/System/Library/CoreServices/Applications/Keychain Access.app",
-            ApplicationCatalogFilter.finderPath
+    func testCatalogPathMembership() {
+        let cases: [(String, Bool)] = [
+            ("/Applications/Safari.app", true),
+            ("/Applications/Utilities/Terminal.app", true),
+            ("/System/Applications/Calculator.app", true),
+            ("/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app", true),
+            ("/Users/tester/Applications/Chrome Apps.localized/Docs.app", true),
+            ("/Users/Shared/Tool.app", true),
+            ("/Users/tester/Downloads/Installer.app", true),
+            ("/System/Library/CoreServices/Applications/Keychain Access.app", true),
+            (ApplicationCatalogFilter.finderPath, true),
+            ("/Applications/Xcode.app/Contents/Applications/Instruments.app", false),
+            ("/Applications/Suite.app/Helper.app", false),
+            ("/Applications/Vendor/Nested/Tool.app", false),
+            ("/Users/tester/Downloads/Archive/Installer.app", false),
+            ("/System/Library/CoreServices/Dock.app", false),
+            ("/Applications/README.txt", false)
         ]
-        for path in included {
-            XCTAssertTrue(ApplicationCatalogFilter.isCatalogPath(path, home: home), path)
-        }
-    }
-
-    func testNestedBundlesDeepFoldersAndDownloadsSubfoldersAreExcluded() {
-        let excluded = [
-            "/Applications/Xcode.app/Contents/Applications/Instruments.app",
-            "/Applications/Suite.app/Helper.app",
-            "/Applications/Vendor/Nested/Tool.app",
-            "/Users/tester/Downloads/Archive/Installer.app",
-            "/System/Library/CoreServices/Dock.app",
-            "/Applications/README.txt"
-        ]
-        for path in excluded {
-            XCTAssertFalse(ApplicationCatalogFilter.isCatalogPath(path, home: home), path)
+        for (path, expected) in cases {
+            XCTAssertEqual(ApplicationCatalogFilter.isCatalogPath(path, home: home), expected, path)
         }
     }
 }

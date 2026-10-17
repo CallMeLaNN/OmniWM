@@ -1,10 +1,16 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 @testable import OmniWM
 import XCTest
 
 final class ActionCatalogLookupTests: XCTestCase {
+    func testActionSpecIDsUnique() {
+        let ids = ActionCatalog.allSpecs().map(\.id)
+
+        XCTAssertEqual(ids.count, Set(ids).count)
+    }
+
     func testCommandLookupPreservesCatalogMetadata() {
         let specs = ActionCatalog.allSpecs()
         for spec in specs {

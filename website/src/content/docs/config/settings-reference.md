@@ -10,7 +10,7 @@ This reference follows current `main`; features newer than the latest release ar
 Complete reference for `settings.toml`, in the file's canonical order. The authoritative schema is [`CanonicalTOMLConfig.swift`](https://github.com/OmniNull/OmniWM/blob/main/Sources/OmniWM/Core/Config/CanonicalTOMLConfig.swift); defaults come from [`SettingsExport.swift`](https://github.com/OmniNull/OmniWM/blob/main/Sources/OmniWM/Core/Config/SettingsExport.swift) and [`BuiltInSettingsDefaults.swift`](https://github.com/OmniNull/OmniWM/blob/main/Sources/OmniWM/Core/Config/BuiltInSettingsDefaults.swift).
 
 :::caution
-The current schema is strict — a missing required key in a version 4 file invalidates the whole file, `hotkeys` may list each action only once (an action left out is unassigned), and an enumerated string key must use one of its listed values (an unknown value rejects the whole file, exactly like a missing key). Conflicting trackpad gesture finger counts under [`gestures`](#gestures), or one mouse button shared by a hotkey, `systemHyperTrigger`, or Overview, reject the whole file too. Edit values in place; see [Configuration](/config/configuration/).
+The current schema is strict — a missing required key in a version 5 file invalidates the whole file, `hotkeys` may list each action only once (an action left out is unassigned), and an enumerated string key must use one of its listed values (an unknown value rejects the whole file, exactly like a missing key). Conflicting trackpad gesture finger counts under [`gestures`](#gestures), or one mouse button shared by a hotkey, `systemHyperTrigger`, or Overview, reject the whole file too. Edit values in place; see [Configuration](/config/configuration/).
 :::
 
 **Conventions**

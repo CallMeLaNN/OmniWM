@@ -8,7 +8,7 @@ import subprocess
 root = pathlib.Path(__file__).resolve().parents[1]
 models = root / 'Sources/OmniWMIPC'
 schemas = read_models(models)
-header = '// SPDX-License-Identifier: GPL-2.0-only\n// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM\n\nimport Foundation\n\n'
+header = '// SPDX-License-Identifier: GPL-2.0-only\n// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM\n\nimport Foundation\n\n'
 seen = set()
 output = []
 primitive = {'String', 'Int', 'Int32', 'Int64', 'UInt', 'UInt32', 'UInt64', 'Bool', 'Double'}

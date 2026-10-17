@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWM
@@ -23,16 +23,6 @@ final class GlobalWindowCornerPreferencesTests: XCTestCase {
         XCTAssertEqual(fixture.writeRecords.count, 0)
         XCTAssertEqual(fixture.synchronizeCount, 1)
         XCTAssertEqual(fixture.copyMultipleCount, 1)
-    }
-
-    func testEqualFractionalValuesDecodeAsCustom() {
-        let fixture = Fixture()
-        fixture.setBoth(12.25)
-
-        let preferences = fixture.makePreferences()
-
-        XCTAssertEqual(preferences.state, .custom(12.25))
-        XCTAssertEqual(preferences.draftRadius, 12.25)
     }
 
     func testSquareSentinelDecodesAsZero() {
@@ -60,16 +50,6 @@ final class GlobalWindowCornerPreferencesTests: XCTestCase {
         let fixture = Fixture()
         fixture.set("12", for: GlobalWindowCornerPreferences.standardWindowKey)
         fixture.set(12, for: GlobalWindowCornerPreferences.panelWindowKey)
-
-        let preferences = fixture.makePreferences()
-
-        XCTAssertEqual(preferences.state, .malformed)
-    }
-
-    func testBooleanValuesAreMalformed() {
-        let fixture = Fixture()
-        fixture.set(NSNumber(value: true), for: GlobalWindowCornerPreferences.standardWindowKey)
-        fixture.set(NSNumber(value: true), for: GlobalWindowCornerPreferences.panelWindowKey)
 
         let preferences = fixture.makePreferences()
 
@@ -163,7 +143,10 @@ final class GlobalWindowCornerPreferencesTests: XCTestCase {
 
     func testCustomWritePreservesFractionalRadius() throws {
         let fixture = Fixture()
+        fixture.setBoth(12.25)
         let preferences = fixture.makePreferences()
+        XCTAssertEqual(preferences.state, .custom(12.25))
+        XCTAssertEqual(preferences.draftRadius, 12.25)
         fixture.resetEvents()
 
         preferences.setCustomRadius(17.5)
@@ -384,6 +367,7 @@ final class GlobalWindowCornerPreferencesTests: XCTestCase {
         fixture.set(NSNumber(value: true), for: GlobalWindowCornerPreferences.standardWindowKey)
         fixture.set(NSNumber(value: true), for: GlobalWindowCornerPreferences.panelWindowKey)
         let preferences = fixture.makePreferences()
+        XCTAssertEqual(preferences.state, .malformed)
         preferences.setCustomRadius(.nan)
         XCTAssertNotNil(preferences.errorMessage)
 

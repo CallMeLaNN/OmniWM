@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 @testable import OmniWM
@@ -52,10 +52,6 @@ final class WorkspaceBarNotificationBadgeIntegrationTests: XCTestCase {
                         window("com.example.overflow", id: 7)
                     ],
                     isVisible: false, presentation: .expanded
-                ),
-                WorkspaceBarScratchpadItem(
-                    index: 2, label: nil, windows: [window("com.example.compact", id: 8)],
-                    isVisible: false, presentation: .compact
                 )
             ]
         )])

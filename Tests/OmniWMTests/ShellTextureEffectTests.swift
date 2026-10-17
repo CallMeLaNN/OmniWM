@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import CoreGraphics
 import IOSurface
@@ -9,7 +9,7 @@ import QuartzCore
 import XCTest
 
 extension ShellShaderTests {
-    private func testTexture() throws -> any MTLTexture {
+    private func makeTexture() throws -> any MTLTexture {
         var bytes = [UInt8](repeating: 0, count: 80 * 40 * 4)
         for y in 0 ..< 40 {
             for x in 0 ..< 80 {
@@ -34,7 +34,7 @@ extension ShellShaderTests {
     }
 
     func testTextureEffectsPreserveIdentityOrientationAndPremultipliedAlpha() async throws {
-        let texture = try testTexture()
+        let texture = try makeTexture()
         for name in ["pixelate", "genie"] {
             let pipeline = try await effectPipeline(name)
             let closed = try effectImage(pipeline, values: SIMD4(0.5, 0, 0, 0), texture: texture)
@@ -49,7 +49,7 @@ extension ShellShaderTests {
     }
 
     func testPixelationSamplesBlocksAndGeniePinchesTowardTheAnchor() async throws {
-        let texture = try testTexture()
+        let texture = try makeTexture()
         let pixelate = try await effectPipeline("pixelate")
         let blocks = try effectImage(pixelate, values: SIMD4(40, 0, 0, 0.5), texture: texture)
         let pixel = { (image: [UInt8], x: Int, y: Int) in Array(image[(y * 80 + x) * 4 ..< (y * 80 + x) * 4 + 4]) }

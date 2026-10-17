@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 @testable import OmniWM
@@ -98,13 +98,11 @@ final class LockScreenObserverTests: XCTestCase {
         observer.onLockDetected = { lockDetections += 1 }
         observer.start()
 
-        observer.enqueueLockEventForTests()
+        let retiredTask = observer.enqueueLockEventForTests()
         observer.stop()
         observer.start()
         defer { observer.stop() }
-        for _ in 0 ..< 8 {
-            await Task.yield()
-        }
+        await retiredTask.value
 
         XCTAssertEqual(lockDetections, 0)
         guard case .unlocked = observer.state else {

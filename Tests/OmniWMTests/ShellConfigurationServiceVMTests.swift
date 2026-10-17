@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 @testable import OmniWM
 import OmniWMScriptHost
@@ -312,18 +312,24 @@ final class ShellConfigurationServiceVMTests: XCTestCase {
         XCTAssertEqual(fixture.number("completed"), 1)
     }
 
-    func testMalformedCompletionIsExplicitAndDoesNotLeakReservation() throws {
-        let fixture = try Fixture()
-        fixture.load("""
-        completed = 0
-        assert(omniwm.components.add("clock", nil, function(result)
-            assert(result.ok == false and result.error == "invalid_response")
-            completed += 1
-        end))
-        """)
-        XCTAssertTrue(fixture.complete(try XCTUnwrap(fixture.drain().first), [255]))
-        XCTAssertEqual(fixture.number("completed"), 1)
-        XCTAssertEqual(omni_vm_service_stats(fixture.vm).reserved, 0)
+    func testInvalidCompletionPayloadsReleaseReservation() throws {
+        var writer = ShellValueWriter()
+        writer.map(1)
+        writer.key("error")
+        writer.string(String(repeating: "x", count: 64 << 10))
+        for payload in [[UInt8(255)], writer.bytes] {
+            let fixture = try Fixture()
+            fixture.load("""
+            completed = 0
+            assert(omniwm.components.add("clock", nil, function(result)
+                assert(result.ok == false and result.error == "invalid_response")
+                completed += 1
+            end))
+            """)
+            XCTAssertTrue(fixture.complete(try XCTUnwrap(fixture.drain().first), payload))
+            XCTAssertEqual(fixture.number("completed"), 1)
+            XCTAssertEqual(omni_vm_service_stats(fixture.vm).reserved, 0)
+        }
     }
 
     func testMetadataIncludesReadonlyEffectiveOptionsForDisabledInstances() throws {
@@ -345,23 +351,5 @@ final class ShellConfigurationServiceVMTests: XCTestCase {
         fixture.configure(enabled: false, amount: 9)
         try fixture.render()
         XCTAssertEqual(fixture.number("amount"), 9)
-    }
-
-    func testConfigurationCompletionRemainsBoundedTo64KiB() throws {
-        let fixture = try Fixture()
-        fixture.load("""
-        completed = 0
-        assert(omniwm.components.add("clock", nil, function(result)
-            assert(result.ok == false and result.error == "invalid_response")
-            completed += 1
-        end))
-        """)
-        var writer = ShellValueWriter()
-        writer.map(1)
-        writer.key("error")
-        writer.string(String(repeating: "x", count: 64 << 10))
-        XCTAssertTrue(fixture.complete(try XCTUnwrap(fixture.drain().first), writer.bytes))
-        XCTAssertEqual(fixture.number("completed"), 1)
-        XCTAssertEqual(omni_vm_service_stats(fixture.vm).reserved, 0)
     }
 }

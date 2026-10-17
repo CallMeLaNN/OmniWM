@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import AppKit
 @testable import OmniWM
@@ -33,31 +33,6 @@ final class SurfaceSceneLifecycleTests: XCTestCase {
         secondWindow.close()
     }
 
-    func testDragSurfaceDestroyUnregistersAllOwnedWindowsIdempotently() {
-        let scene = SurfaceScene()
-        let coordinator = SurfaceCoordinator(scene: scene)
-        let controller = DragGhostController(
-            surfaceCoordinator: coordinator,
-            previews: PreviewCaptureCoordinator(ownedWindowRegistry: OwnedWindowRegistry()),
-            captureAccessAllowed: { false }
-        )
-
-        controller.beginDrag(
-            token: WindowToken(pid: 1, windowId: 720_001),
-            originalFrame: CGRect(x: 0, y: 0, width: 800, height: 600),
-            cursorLocation: CGPoint(x: 400, y: 300)
-        )
-        controller.showSwapTarget(frame: CGRect(x: 10, y: 20, width: 300, height: 200))
-        XCTAssertEqual(coordinator.visibleSurfaceIDs(kind: .dragGhost).count, 1)
-
-        controller.destroy()
-        controller.destroy()
-
-        XCTAssertTrue(coordinator.visibleSurfaceIDs(kind: .dragGhost).isEmpty)
-        XCTAssertEqual(coordinator.runtimeSnapshot().total, 0)
-        XCTAssertEqual(coordinator.runtimeSnapshot().orphanReverseEntries, 0)
-    }
-
     func testRepeatedDragControllerLifecyclesReturnAllIndexesToBaseline() {
         let scene = SurfaceScene()
         let coordinator = SurfaceCoordinator(scene: scene)
@@ -77,7 +52,10 @@ final class SurfaceSceneLifecycleTests: XCTestCase {
                 cursorLocation: CGPoint(x: 400, y: 300)
             )
             controller.showSwapTarget(frame: CGRect(x: 10, y: 20, width: 300, height: 200))
+            XCTAssertEqual(coordinator.visibleSurfaceIDs(kind: .dragGhost).count, 1)
             controller.destroy()
+            controller.destroy()
+            XCTAssertTrue(coordinator.visibleSurfaceIDs(kind: .dragGhost).isEmpty)
 
             let snapshot = coordinator.runtimeSnapshot()
             XCTAssertEqual(snapshot.total, 0)

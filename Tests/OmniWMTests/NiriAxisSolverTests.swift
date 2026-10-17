@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import CoreGraphics
 import Foundation
@@ -41,35 +41,22 @@ final class NiriAxisSolverTests: XCTestCase {
         XCTAssertEqual(outputs[1].value, 400, accuracy: 0.001)
     }
 
-    func testInfeasibleEqualMinsScaleProportionally() {
-        let outputs = NiriAxisSolver.solve(
-            windows: [auto(min: 800), auto(min: 800)],
-            availableSpace: 1000,
-            gapSize: 0
-        )
-        XCTAssertEqual(outputs[0].value, 500, accuracy: 0.001)
-        XCTAssertEqual(outputs[1].value, 500, accuracy: 0.001)
-        XCTAssertTrue(outputs.allSatisfy(\.wasConstrained))
-    }
-
-    func testInfeasibleUnequalMinsPreserveRatioWithoutCollapse() {
-        let outputs = NiriAxisSolver.solve(
-            windows: [auto(min: 900), auto(min: 300)],
-            availableSpace: 800,
-            gapSize: 0
-        )
-        XCTAssertEqual(outputs[0].value, 600, accuracy: 0.001)
-        XCTAssertEqual(outputs[1].value, 200, accuracy: 0.001)
-    }
-
-    func testInfeasibleIgnoresFixedValues() {
-        let outputs = NiriAxisSolver.solve(
-            windows: [fixed(value: 900, min: 100), auto(min: 700)],
-            availableSpace: 600,
-            gapSize: 0
-        )
-        XCTAssertEqual(outputs[0].value, 75, accuracy: 0.001)
-        XCTAssertEqual(outputs[1].value, 525, accuracy: 0.001)
+    func testInfeasibleInputsPreserveMinimumRatiosAndBackstop() {
+        let cases: [(String, [NiriAxisSolver.Input], CGFloat, [CGFloat])] = [
+            ("equalMinima", [auto(min: 800), auto(min: 800)], 1000, [500, 500]),
+            ("unequalMinima", [auto(min: 900), auto(min: 300)], 800, [600, 200]),
+            ("fixedValue", [fixed(value: 900, min: 100), auto(min: 700)], 600, [75, 525]),
+            ("zeroSpace", [auto(min: 500), auto(min: 500)], 0, [1, 1])
+        ]
+        for (label, inputs, space, expected) in cases {
+            let outputs = NiriAxisSolver.solve(windows: inputs, availableSpace: space, gapSize: 0)
+            XCTAssertEqual(outputs.count, 2, label)
+            guard outputs.count == 2 else { continue }
+            for (output, value) in zip(outputs, expected) {
+                XCTAssertEqual(output.value, value, accuracy: 0.001, label)
+                XCTAssertTrue(output.wasConstrained, label)
+            }
+        }
     }
 
     func testFeasibleFixedSurplusScalingKeepsEveryFixedTileAboveItsMin() {
@@ -81,15 +68,6 @@ final class NiriAxisSolverTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(outputs[0].value, 100)
         XCTAssertGreaterThanOrEqual(outputs[1].value, 290)
         XCTAssertEqual(outputs[0].value + outputs[1].value, 1000, accuracy: 0.01)
-    }
-
-    func testDegenerateSpaceKeepsOnePixelBackstop() {
-        let outputs = NiriAxisSolver.solve(
-            windows: [auto(min: 500), auto(min: 500)],
-            availableSpace: 0,
-            gapSize: 0
-        )
-        XCTAssertTrue(outputs.allSatisfy { $0.value >= 1 })
     }
 
     func testTabbedOversizedMinOverflows() {

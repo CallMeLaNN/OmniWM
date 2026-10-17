@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import Foundation
 @testable import OmniWM
@@ -68,6 +68,9 @@ final class RuntimeStateStoreTests: XCTestCase {
         XCTAssertEqual(dates, dates.sorted())
         XCTAssertEqual(dates.last, 5_000)
         XCTAssertTrue(dates.contains(1_000))
+        let allDates = store.launcherLaunchesSnapshot.values.flatMap { $0.map(\.date.timeIntervalSince1970) }
+        XCTAssertEqual(allDates.count, 1_000)
+        XCTAssertEqual(allDates.min(), 11)
     }
 
     func testLauncherShortcutKeyUsesTheQueryAsTyped() {

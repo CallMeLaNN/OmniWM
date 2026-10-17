@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 @testable import OmniWM
 import XCTest
@@ -41,11 +41,31 @@ final class ShellGestureBoxTests: XCTestCase {
 
     func testTerminalBoundaryKeepsOlderWakeFromTakingNextGesture() throws {
         let box = ShellGestureBox()
-        let earlier = try XCTUnwrap(box.post(gesture(kind: .gesture, dx: 10, dy: 0)))
+        var first = gesture(kind: .gesture, dx: 10, dy: 0)
+        first.event.invocationID = 1
+        let earlier = try XCTUnwrap(box.post(first))
+        var coalesced = gesture(kind: .gesture, dx: 20, dy: 0)
+        coalesced.event.invocationID = 2
+        XCTAssertNil(box.post(coalesced))
         box.seal()
-        let later = try XCTUnwrap(box.post(gesture(kind: .gesture, dx: 30, dy: 0)))
-        XCTAssertEqual(earlier.take()?.event.dx, 10)
-        XCTAssertEqual(later.take()?.event.dx, 30)
+        var next = gesture(kind: .gesture, dx: 30, dy: 0)
+        next.event.invocationID = 4
+        let later = try XCTUnwrap(box.post(next))
+        XCTAssertFalse(earlier === later)
+        let earlierSample = try XCTUnwrap(earlier.take())
+        let laterSample = try XCTUnwrap(later.take())
+        XCTAssertEqual(earlierSample.bar, coalesced.bar)
+        XCTAssertEqual(earlierSample.view, coalesced.view)
+        XCTAssertEqual(earlierSample.action, coalesced.action)
+        XCTAssertEqual(earlierSample.sequence, coalesced.sequence)
+        XCTAssertEqual(earlierSample.event, coalesced.event)
+        XCTAssertEqual(laterSample.bar, next.bar)
+        XCTAssertEqual(laterSample.view, next.view)
+        XCTAssertEqual(laterSample.action, next.action)
+        XCTAssertEqual(laterSample.sequence, next.sequence)
+        XCTAssertEqual(laterSample.event, next.event)
+        XCTAssertNil(earlier.take())
+        XCTAssertNil(later.take())
     }
 
     func testDifferentTargetAndMomentumKeepSeparateOrderedWakes() throws {

@@ -1,5 +1,5 @@
 -- SPDX-License-Identifier: GPL-2.0-only
--- Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+-- Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 local function cell(level: number, charging: boolean, low: boolean, scale: number)
     local w, h = 24 * scale, 13 * scale

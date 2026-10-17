@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2026 BarutSRB — https://github.com/OmniNull/OmniWM
+// Copyright (C) 2026 OmniNull — https://github.com/OmniNull/OmniWM
 
 import ApplicationServices
 @testable import OmniWM
@@ -188,7 +188,7 @@ final class RuntimeArchitectureTests: XCTestCase {
         XCTAssertEqual(plan.focusSession?.systemModalFocusToken, token)
     }
 
-    func testSystemModalFocusChangedClearsToken() {
+    func testSystemModalFocusChangedClearsToken() throws {
         let token = WindowToken(pid: 100, windowId: 42)
         let modalSnapshot = ReconcileSnapshot(
             topologyProfile: TopologyProfile(sortedMonitors: []),
@@ -205,7 +205,8 @@ final class RuntimeArchitectureTests: XCTestCase {
             monitors: []
         )
 
-        XCTAssertNil(plan.focusSession?.systemModalFocusToken)
+        let focusSession = try XCTUnwrap(plan.focusSession)
+        XCTAssertNil(focusSession.systemModalFocusToken)
     }
 
     func testWindowRekeyRekeysSystemModalFocusToken() {
@@ -236,7 +237,7 @@ final class RuntimeArchitectureTests: XCTestCase {
         XCTAssertEqual(plan.focusSession?.systemModalFocusToken, newToken)
     }
 
-    func testWindowRemovalClearsMatchingSystemModalFocusTokenOnly() {
+    func testWindowRemovalClearsMatchingSystemModalFocusTokenOnly() throws {
         let workspaceId = WorkspaceDescriptor.ID()
         let modalToken = WindowToken(pid: 100, windowId: 42)
         let removedToken = WindowToken(pid: 100, windowId: 43)
@@ -256,7 +257,8 @@ final class RuntimeArchitectureTests: XCTestCase {
             monitors: []
         )
 
-        XCTAssertNil(matchingPlan.focusSession?.systemModalFocusToken)
+        let focusSession = try XCTUnwrap(matchingPlan.focusSession)
+        XCTAssertNil(focusSession.systemModalFocusToken)
         XCTAssertEqual(nonmatchingPlan.focusSession?.systemModalFocusToken, modalToken)
     }
 
@@ -1907,7 +1909,7 @@ final class RuntimeArchitectureTests: XCTestCase {
     }
 
     @MainActor
-    func testFocusFollowsMouseRetriesSameUnconfirmedHoveredWindowAfterDebounce() async throws {
+    func testFocusFollowsMouseRetriesSameUnconfirmedHoveredWindowAfterDebounce() throws {
         var focusedTokens: [WindowToken] = []
         let controller = Self.controller(
             windowFocusOperations: WindowFocusOperations(
@@ -1940,15 +1942,29 @@ final class RuntimeArchitectureTests: XCTestCase {
             to: workspaceId,
             afterSelection: nil
         ))
+        controller.layoutRefreshController.resetState()
+        defer { controller.layoutRefreshController.resetState() }
         node.frame = targetFrame
         node.renderedFrame = targetFrame
 
+        controller.mouseEventHandler.state.lastFocusFollowsMouseTime = .distantPast
         controller.mouseEventHandler.dispatchMouseMoved(at: targetFrame.center)
-        try await Task.sleep(for: .milliseconds(120))
-        controller.mouseEventHandler.dispatchMouseMoved(at: targetFrame.center)
+        XCTAssertEqual(focusedTokens, [token])
+        let firstRequest = try XCTUnwrap(controller.intentLedger.activeManagedRequest)
+        XCTAssertEqual(firstRequest.token, token)
+        XCTAssertEqual(firstRequest.origin, .focusFollowsMouse)
 
+        controller.mouseEventHandler.state.lastFocusFollowsMouseTime = .distantFuture
+        controller.mouseEventHandler.dispatchMouseMoved(at: targetFrame.center)
+        XCTAssertEqual(focusedTokens, [token])
+        XCTAssertEqual(controller.intentLedger.activeManagedRequest?.requestId, firstRequest.requestId)
+
+        controller.mouseEventHandler.state.lastFocusFollowsMouseTime = .distantPast
+        controller.mouseEventHandler.dispatchMouseMoved(at: targetFrame.center)
         XCTAssertEqual(focusedTokens, [token, token])
         let request = try XCTUnwrap(controller.intentLedger.activeManagedRequest)
+        XCTAssertEqual(request.token, token)
+        XCTAssertEqual(request.origin, .focusFollowsMouse)
         _ = controller.workspaceManager.confirmManagedFocus(
             token,
             in: workspaceId,
@@ -1958,7 +1974,7 @@ final class RuntimeArchitectureTests: XCTestCase {
         )
         _ = controller.intentLedger.confirmManagedRequest(token: token, source: .focusedWindowChanged)
 
-        try await Task.sleep(for: .milliseconds(120))
+        controller.mouseEventHandler.state.lastFocusFollowsMouseTime = .distantPast
         controller.mouseEventHandler.dispatchMouseMoved(at: targetFrame.center)
 
         XCTAssertEqual(focusedTokens, [token, token])
@@ -3960,99 +3976,38 @@ final class RuntimeArchitectureTests: XCTestCase {
     }
 
     @MainActor
-    func testFocusOnlyInvalidationDoesNotCancelPendingAXFrameObserverThroughControllerWiring() throws {
-        let controller = Self.controller()
-        let workspaceId = try XCTUnwrap(controller.workspaceManager.workspaceId(for: "1", createIfMissing: true))
-        let pid: pid_t = 765_002
-        let windowId = 765_102
-        let axRef = AXWindowRef(element: AXUIElementCreateApplication(pid), windowId: windowId)
-        let token = controller.workspaceManager.addWindow(
-            axRef,
-            pid: pid,
-            windowId: windowId,
-            to: workspaceId
-        )
-        var terminalResults: [AXFrameApplyResult] = []
-
-        controller.axManager.applyFramesParallel(
-            [.init(pid: pid, window: axRef, frame: CGRect(x: 10, y: 20, width: 300, height: 200))]
-        ) { result in
-            terminalResults.append(result)
+    func testNonInvalidatingMutationsPreservePendingAXFrameObserverThroughControllerWiring() throws {
+        enum Mutation { case focus, layout, suppressedHidden }
+        let cases: [(Mutation, pid_t, Int)] = [
+            (.focus, 765_002, 765_102), (.layout, 765_008, 765_108), (.suppressedHidden, 765_003, 765_103)
+        ]
+        for (mutation, pid, windowId) in cases {
+            let controller = Self.controller()
+            let workspaceId = try XCTUnwrap(controller.workspaceManager.workspaceId(for: "1", createIfMissing: true))
+            let axRef = AXWindowRef(element: AXUIElementCreateApplication(pid), windowId: windowId)
+            let token = controller.workspaceManager.addWindow(axRef, pid: pid, windowId: windowId, to: workspaceId)
+            var terminalResults: [AXFrameApplyResult] = []
+            controller.axManager.applyFramesParallel(
+                [.init(pid: pid, window: axRef, frame: CGRect(x: 10, y: 20, width: 300, height: 200))]
+            ) { terminalResults.append($0) }
+            XCTAssertTrue(terminalResults.isEmpty)
+            switch mutation {
+            case .focus:
+                _ = controller.workspaceManager.beginManagedFocusRequest(token, in: workspaceId, requestId: 7)
+            case .layout:
+                controller.workspaceManager.setManualLayoutOverride(.forceFloat, for: token)
+            case .suppressedHidden:
+                controller.withRuntimeFrameJobCancellationSuppressed {
+                    controller.workspaceManager.setHiddenState(
+                        HiddenState(proportionalPosition: .zero, referenceMonitorId: nil, reason: .workspaceInactive),
+                        for: token
+                    )
+                }
+            }
+            XCTAssertTrue(terminalResults.isEmpty)
+            controller.axManager.cancelPendingFrameJobs([(pid, windowId)], reason: "test")
+            XCTAssertEqual(terminalResults.map(\.writeResult.failureReason), [.cancelled])
         }
-        XCTAssertTrue(terminalResults.isEmpty)
-
-        _ = controller.workspaceManager.beginManagedFocusRequest(token, in: workspaceId, requestId: 7)
-        XCTAssertTrue(terminalResults.isEmpty)
-
-        controller.axManager.cancelPendingFrameJobs([(pid, windowId)], reason: "test")
-        XCTAssertEqual(terminalResults.map(\.writeResult.failureReason), [.cancelled])
-    }
-
-    @MainActor
-    func testPureLayoutInvalidationDoesNotCancelPendingAXFrameObserverThroughControllerWiring() throws {
-        let controller = Self.controller()
-        let workspaceId = try XCTUnwrap(controller.workspaceManager.workspaceId(for: "1", createIfMissing: true))
-        let pid: pid_t = 765_008
-        let windowId = 765_108
-        let axRef = AXWindowRef(element: AXUIElementCreateApplication(pid), windowId: windowId)
-        let token = controller.workspaceManager.addWindow(
-            axRef,
-            pid: pid,
-            windowId: windowId,
-            to: workspaceId
-        )
-        var terminalResults: [AXFrameApplyResult] = []
-
-        controller.axManager.applyFramesParallel(
-            [.init(pid: pid, window: axRef, frame: CGRect(x: 10, y: 20, width: 300, height: 200))]
-        ) { result in
-            terminalResults.append(result)
-        }
-        XCTAssertTrue(terminalResults.isEmpty)
-
-        controller.workspaceManager.setManualLayoutOverride(.forceFloat, for: token)
-        XCTAssertTrue(terminalResults.isEmpty)
-
-        controller.axManager.cancelPendingFrameJobs([(pid, windowId)], reason: "test")
-        XCTAssertEqual(terminalResults.map(\.writeResult.failureReason), [.cancelled])
-    }
-
-    @MainActor
-    func testSuppressedLayoutInvalidationDoesNotCancelPendingAXFrameObserverThroughControllerWiring() throws {
-        let controller = Self.controller()
-        let workspaceId = try XCTUnwrap(controller.workspaceManager.workspaceId(for: "1", createIfMissing: true))
-        let pid: pid_t = 765_003
-        let windowId = 765_103
-        let axRef = AXWindowRef(element: AXUIElementCreateApplication(pid), windowId: windowId)
-        let token = controller.workspaceManager.addWindow(
-            axRef,
-            pid: pid,
-            windowId: windowId,
-            to: workspaceId
-        )
-        var terminalResults: [AXFrameApplyResult] = []
-
-        controller.axManager.applyFramesParallel(
-            [.init(pid: pid, window: axRef, frame: CGRect(x: 10, y: 20, width: 300, height: 200))]
-        ) { result in
-            terminalResults.append(result)
-        }
-        XCTAssertTrue(terminalResults.isEmpty)
-
-        controller.withRuntimeFrameJobCancellationSuppressed {
-            controller.workspaceManager.setHiddenState(
-                HiddenState(
-                    proportionalPosition: .zero,
-                    referenceMonitorId: nil,
-                    reason: .workspaceInactive
-                ),
-                for: token
-            )
-        }
-        XCTAssertTrue(terminalResults.isEmpty)
-
-        controller.axManager.cancelPendingFrameJobs([(pid, windowId)], reason: "test")
-        XCTAssertEqual(terminalResults.map(\.writeResult.failureReason), [.cancelled])
     }
 
     @MainActor
@@ -5738,7 +5693,7 @@ final class RuntimeArchitectureTests: XCTestCase {
             workspaceId: workspaceId,
             removedColumn: false
         )
-        await Self.waitForRemovalRefresh(controller, removedToken: tokens[2])
+        guard await Self.waitForRemovalRefresh(controller, removedToken: tokens[2]) else { return }
 
         let finalColumns = engine.columns(in: workspaceId)
         let finalState = controller.workspaceManager.niriViewportState(for: workspaceId)
@@ -5817,7 +5772,7 @@ final class RuntimeArchitectureTests: XCTestCase {
         )
 
         controller.axEventHandler.handleRemoved(token: closingToken)
-        await Self.waitForRemovalRefresh(controller, removedToken: closingToken)
+        guard await Self.waitForRemovalRefresh(controller, removedToken: closingToken) else { return }
 
         XCTAssertEqual(controller.workspaceManager.invariantViolationCountsDump(), "clean")
         XCTAssertNil(controller.workspaceManager.entry(for: closingToken))
@@ -5922,48 +5877,6 @@ final class RuntimeArchitectureTests: XCTestCase {
         XCTAssertFalse(publishedOwnerLoss)
         XCTAssertEqual(controller.workspaceManager.activeNativeFullscreenFocusOwnerToken, token)
         XCTAssertEqual(controller.workspaceManager.nativeFullscreenRecord(for: token)?.transition, .suspended)
-    }
-
-    @MainActor
-    func testNativeFullscreenSpaceObservationSuspendsBeforeFocusObservation() throws {
-        let controller = Self.controller()
-        let ws = try XCTUnwrap(controller.workspaceManager.workspaceId(for: "1", createIfMissing: true))
-        _ = controller.workspaceManager.focusWorkspace(named: "1")
-        controller.niriLayoutHandler.enableNiriLayout()
-
-        let targetToken = controller.workspaceManager.addWindow(
-            AXWindowRef(element: AXUIElementCreateApplication(931_001), windowId: 931_101),
-            pid: 931_001, windowId: 931_101, to: ws
-        )
-        _ = controller.niriEngine?.addWindow(token: targetToken, to: ws, afterSelection: nil)
-
-        let fullscreenSpaceId: UInt64 = 9_310
-        controller.workspaceManager.commitSpaceTopology(
-            SpaceTopology(
-                displays: [
-                    SpaceTopology.DisplaySpaces(
-                        displayIdentifier: "test-display",
-                        spaceIds: [fullscreenSpaceId],
-                        currentSpaceId: fullscreenSpaceId
-                    )
-                ],
-                activeSpaceId: fullscreenSpaceId,
-                fullscreenSpaceIds: [fullscreenSpaceId],
-                windowSpace: [:]
-            )
-        )
-
-        XCTAssertNil(controller.workspaceManager.nativeFullscreenRecord(for: targetToken))
-
-        controller.spaceTracker.noteWindowSpace(
-            windowId: targetToken.windowId,
-            spaceId: fullscreenSpaceId
-        )
-
-        let record = try XCTUnwrap(controller.workspaceManager.nativeFullscreenRecord(for: targetToken))
-        XCTAssertEqual(record.transition, .suspended)
-        XCTAssertEqual(controller.workspaceManager.layoutReason(for: targetToken), .nativeFullscreen)
-        XCTAssertTrue(controller.workspaceManager.observedState(for: targetToken)?.isNativeFullscreen == true)
     }
 
     @MainActor
@@ -6167,6 +6080,8 @@ final class RuntimeArchitectureTests: XCTestCase {
                 windowSpace: [:]
             )
         )
+
+        XCTAssertNil(controller.workspaceManager.nativeFullscreenRecord(for: targetToken))
 
         controller.spaceTracker.noteWindowSpace(
             windowId: targetToken.windowId,
@@ -6544,7 +6459,7 @@ final class RuntimeArchitectureTests: XCTestCase {
         _ = controller.workspaceManager.rememberFocus(resolverFallbackToken, in: workspaceId)
 
         controller.axEventHandler.handleRemoved(token: closingToken)
-        await Self.waitForRemovalRefresh(controller, removedToken: closingToken)
+        guard await Self.waitForRemovalRefresh(controller, removedToken: closingToken) else { return }
 
         XCTAssertNil(controller.workspaceManager.entry(for: closingToken))
         XCTAssertEqual(
@@ -6631,7 +6546,7 @@ final class RuntimeArchitectureTests: XCTestCase {
         _ = controller.workspaceManager.rememberFocus(resolverFallbackToken, in: workspaceId)
 
         controller.axEventHandler.handleRemoved(pid: closingToken.pid, winId: closingToken.windowId)
-        await Self.waitForRemovalRefresh(controller, removedToken: closingToken)
+        guard await Self.waitForRemovalRefresh(controller, removedToken: closingToken) else { return }
 
         XCTAssertNil(controller.workspaceManager.entry(for: closingToken))
         XCTAssertEqual(
@@ -6884,7 +6799,9 @@ final class RuntimeArchitectureTests: XCTestCase {
             file: file,
             line: line
         )
-        await Self.waitForRemovalRefresh(controller, removedToken: tokens[2])
+        guard await Self.waitForRemovalRefresh(
+            controller, removedToken: tokens[2], file: file, line: line
+        ) else { return }
 
         let finalColumns = engine.columns(in: workspaceId)
         let finalState = controller.workspaceManager.niriViewportState(for: workspaceId)
@@ -6905,25 +6822,44 @@ final class RuntimeArchitectureTests: XCTestCase {
     @MainActor
     private static func waitForRemovalRefresh(
         _ controller: WMController,
-        removedToken: WindowToken
-    ) async {
+        removedToken: WindowToken,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) async -> Bool {
         for _ in 0 ..< 80 {
-            if let refreshTask = controller.layoutRefreshController.layoutState.activeRefreshTask {
-                await refreshTask.value
-                continue
+            guard !Task.isCancelled else {
+                XCTFail("Window removal refresh wait was cancelled", file: file, line: line)
+                return false
             }
+            let state = controller.layoutRefreshController.layoutState
             if controller.workspaceManager.entry(for: removedToken) == nil,
-               controller.layoutRefreshController.layoutState.pendingRefresh == nil
+               state.activeRefreshTask == nil,
+               state.activeRefresh == nil,
+               state.pendingRefresh == nil
             {
-                await Task.yield()
-                if controller.layoutRefreshController.layoutState.activeRefreshTask == nil,
-                   controller.layoutRefreshController.layoutState.pendingRefresh == nil
-                {
-                    return
-                }
+                return true
             }
-            try? await Task.sleep(for: .milliseconds(10))
+            do {
+                try await Task.sleep(for: .milliseconds(10))
+            } catch {
+                XCTFail("Window removal refresh wait was cancelled", file: file, line: line)
+                return false
+            }
         }
+        guard !Task.isCancelled else {
+            XCTFail("Window removal refresh wait was cancelled", file: file, line: line)
+            return false
+        }
+        let state = controller.layoutRefreshController.layoutState
+        if controller.workspaceManager.entry(for: removedToken) == nil,
+           state.activeRefreshTask == nil,
+           state.activeRefresh == nil,
+           state.pendingRefresh == nil
+        {
+            return true
+        }
+        XCTFail("Window removal refresh did not finish within 80 samples", file: file, line: line)
+        return false
     }
 
     private enum NiriTabLocalViewportPosition {
