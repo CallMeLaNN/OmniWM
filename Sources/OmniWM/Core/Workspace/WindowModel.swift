@@ -185,7 +185,10 @@ final class WindowModel {
         managedReplacementMetadata: ManagedReplacementMetadata? = nil
     ) -> WindowState? {
         if oldToken == newToken {
-            guard entries[oldToken] != nil else { return nil }
+            guard let entry = entries[oldToken] else { return nil }
+            if !CFEqual(entry.axRef.element, newAXRef.element) {
+                observedSizeEvidenceByToken.removeValue(forKey: oldToken)
+            }
             entries[oldToken]?.axRef = newAXRef
             constraintsCacheByToken.removeValue(forKey: oldToken)
             if let managedReplacementMetadata {
@@ -207,10 +210,10 @@ final class WindowModel {
             return nil
         }
 
+        let preservesAXIncarnation = CFEqual(entry.axRef.element, newAXRef.element)
         entry.token = newToken
         entry.axRef = newAXRef
         constraintsCacheByToken.removeValue(forKey: oldToken)
-        let preservesAXIncarnation = CFEqual(entry.axRef.element, newAXRef.element)
         if let evidence = observedSizeEvidenceByToken.removeValue(forKey: oldToken), preservesAXIncarnation {
             observedSizeEvidenceByToken[newToken] = evidence
         }

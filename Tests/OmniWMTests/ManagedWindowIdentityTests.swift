@@ -743,6 +743,11 @@ final class ManagedWindowIdentityTests: XCTestCase {
             suffix: 11,
             sameTokenReplacement: true
         )
+        let observedEvidence = ObservedSizeEvidence(minSize: CGSize(width: 520, height: 620))
+        XCTAssertTrue(controller.workspaceManager.setObservedSizeEvidence(
+            observedEvidence,
+            for: pending.oldWindow.token
+        ))
         let acknowledgementGate = ManagedWindowRebindGate()
         let finalizationGate = ManagedWindowRebindGate()
         defer {
@@ -792,6 +797,7 @@ final class ManagedWindowIdentityTests: XCTestCase {
             controller.workspaceManager.entry(for: pending.oldWindow.token)
         )
         XCTAssertTrue(CFEqual(entryBeforeCommit.axRef.element, pending.oldWindow.axRef.element))
+        XCTAssertEqual(controller.workspaceManager.observedSizeEvidence(for: pending.oldWindow.token), observedEvidence)
         XCTAssertEqual(
             controller.axManager.lastAppliedFrame(for: pending.oldWindow.token.windowId),
             staleFrame
@@ -809,6 +815,7 @@ final class ManagedWindowIdentityTests: XCTestCase {
         )
         XCTAssertTrue(CFEqual(committedEntry.axRef.element, pending.newWindow.axRef.element))
         XCTAssertFalse(CFEqual(committedEntry.axRef.element, pending.oldWindow.axRef.element))
+        XCTAssertNil(controller.workspaceManager.observedSizeEvidence(for: pending.newWindow.token))
         XCTAssertNil(controller.axManager.lastAppliedFrame(for: pending.newWindow.token.windowId))
         XCTAssertNil(controller.mouseEventHandler.state.nativeTitleBarDrag)
         XCTAssertFalse(
@@ -1168,6 +1175,12 @@ final class ManagedWindowIdentityTests: XCTestCase {
             suffix: 22,
             sizeConstraints: constraints
         )
+        let observedEvidence = ObservedSizeEvidence(minSize: CGSize(width: 700, height: 600))
+        XCTAssertTrue(controller.workspaceManager.setObservedSizeEvidence(
+            observedEvidence,
+            for: pending.oldWindow.token
+        ))
+        XCTAssertFalse(CFEqual(pending.oldWindow.axRef.element, pending.newWindow.axRef.element))
         guard case let .identityRebind(_, _, _, _, capturedConstraints) = pending.state.trigger else {
             return XCTFail("Expected identity rebind retry")
         }
@@ -1184,6 +1197,8 @@ final class ManagedWindowIdentityTests: XCTestCase {
             sizeConstraints: capturedConstraints
         )
 
+        XCTAssertNil(controller.workspaceManager.observedSizeEvidence(for: pending.oldWindow.token))
+        XCTAssertNil(controller.workspaceManager.observedSizeEvidence(for: pending.newWindow.token))
         XCTAssertEqual(
             controller.workspaceManager.cachedConstraints(
                 for: pending.newWindow.token,

@@ -145,6 +145,84 @@ final class WindowModelTests: XCTestCase {
         XCTAssertTrue(model.windows(in: existingWorkspaceId).isEmpty)
     }
 
+    func testRekeyPreservesObservedSizeEvidenceOnlyForSameAXIncarnation() throws {
+        let pid: pid_t = 467_210
+        let sourceWindowId = 467_021
+        let originalElement = AXUIElementCreateApplication(pid)
+        let sameIncarnationElement = AXUIElementCreateApplication(pid)
+        let replacementElement = AXUIElementCreateApplication(pid + 1)
+        XCTAssertTrue(CFEqual(originalElement, sameIncarnationElement))
+        XCTAssertFalse(CFEqual(originalElement, replacementElement))
+        let evidence = ObservedSizeEvidence(
+            minSize: CGSize(width: 520, height: 620),
+            hints: ObservedPackingHints(
+                width: ObservedAxisHint(requested: 500, observed: 506),
+                height: ObservedAxisHint(requested: 600, observed: 606)
+            )
+        )
+        let scenarios: [(
+            name: String,
+            destinationWindowId: Int,
+            element: AXUIElement,
+            expectedEvidence: ObservedSizeEvidence?,
+            expectedSourceEvidence: ObservedSizeEvidence?
+        )] = [
+            ("same token, same AX", 467_021, sameIncarnationElement, evidence, evidence),
+            ("changed token, same AX", 467_022, sameIncarnationElement, evidence, nil),
+            ("same token, replaced AX", 467_021, replacementElement, nil, nil),
+            ("changed token, replaced AX", 467_022, replacementElement, nil, nil)
+        ]
+        for scenario in scenarios {
+            let model = WindowModel()
+            let workspaceId = WorkspaceDescriptor(name: scenario.name).id
+            let sourceToken = model.upsert(
+                window: AXWindowRef(element: originalElement, windowId: sourceWindowId),
+                pid: pid,
+                windowId: sourceWindowId,
+                workspace: workspaceId
+            )
+            let handle = try XCTUnwrap(model.handle(for: sourceToken))
+            XCTAssertTrue(model.setObservedSizeEvidence(evidence, for: sourceToken), scenario.name)
+            let constraints = WindowSizeConstraints.fixed(size: CGSize(width: 640, height: 480))
+            model.setCachedConstraints(constraints, for: sourceToken)
+            XCTAssertEqual(
+                model.cachedConstraints(for: sourceToken, maxAge: .greatestFiniteMagnitude),
+                constraints.normalized(),
+                scenario.name
+            )
+            let destinationToken = WindowToken(pid: pid, windowId: scenario.destinationWindowId)
+            let destinationRef = AXWindowRef(
+                element: scenario.element,
+                windowId: scenario.destinationWindowId
+            )
+
+            let rekeyed = try XCTUnwrap(model.rekeyWindow(
+                from: sourceToken,
+                to: destinationToken,
+                newAXRef: destinationRef
+            ))
+
+            XCTAssertEqual(model.observedSizeEvidence(for: destinationToken), scenario.expectedEvidence, scenario.name)
+            XCTAssertEqual(model.observedSizeEvidence(for: sourceToken), scenario.expectedSourceEvidence, scenario.name)
+            XCTAssertNil(model.cachedConstraints(for: sourceToken, maxAge: .greatestFiniteMagnitude), scenario.name)
+            XCTAssertNil(
+                model.cachedConstraints(for: destinationToken, maxAge: .greatestFiniteMagnitude),
+                scenario.name
+            )
+            XCTAssertEqual(rekeyed.token, destinationToken, scenario.name)
+            XCTAssertEqual(rekeyed.axRef.windowId, destinationToken.windowId, scenario.name)
+            XCTAssertTrue(CFEqual(rekeyed.axRef.element, scenario.element), scenario.name)
+            XCTAssertEqual(model.allEntries().map(\.token), [destinationToken], scenario.name)
+            XCTAssertEqual(model.windows(in: workspaceId).map(\.token), [destinationToken], scenario.name)
+            XCTAssertEqual(model.tokens(in: workspaceId, mode: .tiling), [destinationToken], scenario.name)
+            XCTAssertEqual(model.entries(forPid: pid).map(\.token), [destinationToken], scenario.name)
+            XCTAssertEqual(model.entry(forWindowId: destinationToken.windowId)?.token, destinationToken, scenario.name)
+            XCTAssertTrue(model.handle(for: destinationToken) === handle, scenario.name)
+            XCTAssertEqual(handle.id, destinationToken, scenario.name)
+            XCTAssertEqual(model.entry(for: handle)?.token, destinationToken, scenario.name)
+        }
+    }
+
     func testRekeyRejectsWindowIdOwnedByAnotherToken() throws {
         let model = WindowModel()
         let workspaceId = WorkspaceDescriptor(name: "workspace").id

@@ -138,42 +138,55 @@ final class WindowServerSubscriptionLiveTests: XCTestCase {
             XCTAssertEqual(completion, .completed, "Native fixture must exit after stdin EOF")
             XCTAssertEqual(host.terminationStatus, 0, "Native fixture must exit normally")
         }
-        let ready = await waitUntil(timeout: .seconds(5)) {
-            FileManager.default.fileExists(atPath: readyURL.path) || !host.isRunning
+        let sky = SkyLight.shared
+        var ownedFixture: (pid: Int32, ids: [UInt32])?
+        var candidates: [(UInt32, CGPoint)]?
+        let ready = try await waitUntil(timeout: .seconds(5)) {
+            guard host.isRunning else { return true }
+            if ownedFixture == nil {
+                guard FileManager.default.fileExists(atPath: readyURL.path) else { return false }
+                let fixture = try JSONDecoder().decode(NativeWindowFixture.self, from: Data(contentsOf: readyURL))
+                let fixturePID = try XCTUnwrap(
+                    fixture.pid == host.processIdentifier && fixture.pid > 0 && fixture.pid != getpid() ? fixture
+                        .pid : nil
+                )
+                let ids = try XCTUnwrap(
+                    fixture.windowIds.count == 2 && Set(fixture.windowIds).count == 2 && !fixture.windowIds.contains(0)
+                        ? fixture.windowIds : nil
+                )
+                ownedFixture = (fixturePID, ids)
+            }
+            guard let ownedFixture else { return false }
+            let visible = sky.queryAllVisibleWindows()
+            var observed: [(UInt32, CGPoint)] = []
+            for id in ownedFixture.ids {
+                guard let info = visible.first(where: {
+                    $0.id == id && $0.pid == ownedFixture.pid && $0.level == 0 && $0.parentId == 0
+                        && $0.frame.width >= 200 && $0.frame.height >= 120
+                }), let origin = sky.getWindowBounds(info.id)?.origin else { return false }
+                observed.append((info.id, origin))
+            }
+            candidates = observed
+            return true
         }
         let hostLog = try String(contentsOf: logURL, encoding: .utf8)
         _ = try XCTUnwrap(
             ready && host.isRunning ? true : nil,
             "Owned native fixture did not become ready: \(hostLog)"
         )
-        let fixture = try JSONDecoder().decode(NativeWindowFixture.self, from: Data(contentsOf: readyURL))
-        let fixturePID = try XCTUnwrap(
-            fixture.pid == host.processIdentifier && fixture.pid > 0 && fixture.pid != getpid() ? fixture.pid : nil
-        )
-        let ids = try XCTUnwrap(
-            fixture.windowIds.count == 2 && Set(fixture.windowIds).count == 2 && !fixture.windowIds.contains(0)
-                ? fixture.windowIds : nil
-        )
-        let visible = SkyLight.shared.queryAllVisibleWindows()
-        return try ids.map { id in
-            let info = try XCTUnwrap(visible.first {
-                $0.id == id && $0.pid == fixturePID && $0.level == 0 && $0.parentId == 0
-                    && $0.frame.width >= 200 && $0.frame.height >= 120
-            }, "Only the exact owned foreign fixture windows may move")
-            return (info.id, try XCTUnwrap(SkyLight.shared.getWindowBounds(info.id)?.origin))
-        }
+        return try XCTUnwrap(candidates, "Only the exact owned foreign fixture windows may move")
     }
 
     private func waitUntil(
         timeout: Duration = .milliseconds(500),
-        condition: @escaping @MainActor () -> Bool
-    ) async -> Bool {
+        condition: @escaping @MainActor () throws -> Bool
+    ) async rethrows -> Bool {
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: timeout)
         while clock.now < deadline {
-            if condition() { return true }
+            if try condition() { return true }
             try? await Task.sleep(for: .milliseconds(5))
         }
-        return condition()
+        return try condition()
     }
 }

@@ -108,6 +108,123 @@ final class ShellProviderResourcePackageTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: fixture.outputDirectory.path))
     }
 
+    func testEmptyOutputResultPreservesSuccessAndUnblocksFollowingEvent() async throws {
+        let (package, resources) = makeOutputPackage()
+        let (key, outputDirectory) = try await package.resourceProviderInstallForTest(callback: """
+        assert(result.ok and result.value==17 and #result.files==0)
+        instance.state.completed=true
+        instance.state.outcome='empty-success'
+        """, receive: """
+        assert(instance.state.completed and event.name=='after')
+        assert(omniwm.store.set('outcome',instance.state.outcome))
+        assert(omniwm.store.set('after',true))
+        """)
+        let identity = ShellProviderIdentity(owner: key.id.owner, incarnation: key.incarnation)
+        XCTAssertEqual(package.providerInbox.post(.result(
+            id: "r\(key.id.request)",
+            ok: true,
+            value: Data("17".utf8),
+            attachments: Data("{\"files\":[]}".utf8)
+        ), from: identity), .accepted)
+        XCTAssertEqual(
+            package.providerInbox.post(.event(name: "after", value: Data("null".utf8)), from: identity),
+            .accepted
+        )
+
+        await package.receive(.providers)
+        await package.resourceBarrier()
+        let before = await package.resourceProviderSnapshotForTest()
+        XCTAssertNil(before["outcome"])
+        XCTAssertNil(before["after"])
+        await package.receive(.providers)
+        await package.resourceBarrier()
+        await package.receive(.providers)
+        let after = await package.resourceProviderSnapshotForTest()
+        XCTAssertEqual(after["outcome"]?.string, "empty-success")
+        XCTAssertEqual(after["after"]?.boolean, true)
+        XCTAssertTrue(resources.catalog.metadata(owner: key.id.owner).isEmpty)
+        XCTAssertFalse(package.services.contains(key.id))
+        await package.resourceProviderFinishForTest()
+        XCTAssertEqual(package.services.activeCount, 0)
+        XCTAssertEqual(package.providerInbox.pendingActions, 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: outputDirectory.path))
+    }
+
+    func testImportFailureRollsBackEntireOutputBatchDeliversErrorAndUnblocksFollowingEvent() async throws {
+        let (package, resources) = makeOutputPackage()
+        let (key, outputDirectory) = try await package.resourceProviderInstallForTest(callback: """
+        assert(not result.ok and result.error=='received file is not a regular file' and result.files==nil)
+        instance.state.completed=true
+        instance.state.outcome='import-failure'
+        """, receive: """
+        assert(instance.state.completed and event.name=='after')
+        assert(omniwm.store.set('outcome',instance.state.outcome))
+        assert(omniwm.store.set('after',true))
+        """)
+        try Data([1, 2, 3]).write(to: outputDirectory.appendingPathComponent("valid.bin"))
+        try FileManager.default.createDirectory(
+            at: outputDirectory.appendingPathComponent("directory", isDirectory: true),
+            withIntermediateDirectories: true
+        )
+        let metadata = Data("""
+        {"files":[{"name":"valid.bin","path":"valid.bin"},{"name":"bad.bin","path":"directory"}]}
+        """.utf8)
+        let identity = ShellProviderIdentity(owner: key.id.owner, incarnation: key.incarnation)
+        XCTAssertEqual(package.providerInbox.post(.result(
+            id: "r\(key.id.request)",
+            ok: true,
+            value: Data("17".utf8),
+            attachments: metadata
+        ), from: identity), .accepted)
+        XCTAssertEqual(
+            package.providerInbox.post(.event(name: "after", value: Data("null".utf8)), from: identity),
+            .accepted
+        )
+
+        await package.receive(.providers)
+        await package.resourceBarrier()
+        let before = await package.resourceProviderSnapshotForTest()
+        XCTAssertNil(before["outcome"])
+        XCTAssertNil(before["after"])
+        await package.receive(.providers)
+        await package.resourceBarrier()
+        XCTAssertTrue(resources.catalog.metadata(owner: key.id.owner).isEmpty)
+        let temporaryBackings = try FileManager.default.contentsOfDirectory(
+            at: resources.directory.appendingPathComponent("temporary", isDirectory: true),
+            includingPropertiesForKeys: nil
+        )
+        XCTAssertTrue(temporaryBackings.isEmpty)
+        await package.receive(.providers)
+        let after = await package.resourceProviderSnapshotForTest()
+        XCTAssertEqual(after["outcome"]?.string, "import-failure")
+        XCTAssertEqual(after["after"]?.boolean, true)
+        XCTAssertTrue(resources.catalog.metadata(owner: key.id.owner).isEmpty)
+        XCTAssertFalse(package.services.contains(key.id))
+        await package.resourceProviderFinishForTest()
+        XCTAssertEqual(package.services.activeCount, 0)
+        XCTAssertEqual(package.providerInbox.pendingActions, 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: outputDirectory.path))
+    }
+
+    private func makeOutputPackage() -> (ShellWidgetPackage, ShellResourceStore) {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let resources = ShellResourceStore(directory: directory.appendingPathComponent("resources"))
+        let package = ShellWidgetPackage(
+            name: "root",
+            generation: 1,
+            outbox: ShellWidgetOutbox { _ in },
+            store: ShellStore(directoryURL: directory.appendingPathComponent("store")),
+            resourceStore: resources
+        )
+        addTeardownBlock {
+            await package.close()
+            if FileManager.default.fileExists(atPath: directory.path) {
+                try FileManager.default.removeItem(at: directory)
+            }
+        }
+        return (package, resources)
+    }
+
     @MainActor
     private final class Fixture {
         let directory: URL
