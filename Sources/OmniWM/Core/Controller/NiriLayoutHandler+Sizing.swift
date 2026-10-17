@@ -231,8 +231,10 @@ extension NiriLayoutHandler {
 
     private func beginResizePreview(in workspaceId: WorkspaceDescriptor.ID) {
         guard let controller, hasScrollAnimation(for: workspaceId) else { return }
-        let style = controller.settings.gestures.resizePreviewStyle
-        guard style != .live else { return }
-        controller.resizeOverlay.begin(workspaceId: workspaceId, style: style, followsAnimation: true)
+        controller.resizeOverlay.begin(
+            workspaceId: workspaceId,
+            style: controller.settings.gestures.resizePreviewStyle,
+            pointerDriven: false
+        )
     }
 }

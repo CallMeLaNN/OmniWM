@@ -211,24 +211,11 @@ extension MouseEventHandler {
     }
 
     func clearResizeInteractionState() {
-        settleResizeOverlay()
+        controller?.resizeOverlay.settleOnLayout()
         state.isResizing = false
         state.activeInteractionSource = nil
         state.resizeLayout = nil
         state.currentHoveredEdges = []
-    }
-
-    private func settleResizeOverlay() {
-        guard let controller,
-              let workspaceId = controller.resizeOverlay.workspaceId,
-              controller.resizeOverlay.isTracking(workspaceId)
-        else { return }
-        let overlay = controller.resizeOverlay
-        if controller.layoutRefreshController.niriHandler.hasScrollAnimation(for: workspaceId) {
-            overlay.followAnimation()
-        } else {
-            overlay.finish { controller.axManager.lastAppliedFrame(for: $0.windowId) }
-        }
     }
 
     func completeActiveMove(at location: CGPoint) {

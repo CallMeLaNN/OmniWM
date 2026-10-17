@@ -176,8 +176,10 @@ extension MouseEventHandler {
 
     private func beginResizeOverlay(in workspaceId: WorkspaceDescriptor.ID) {
         guard let controller else { return }
-        let style = controller.settings.gestures.resizePreviewStyle
-        guard style != .live else { return }
-        controller.resizeOverlay.begin(workspaceId: workspaceId, style: style, followsAnimation: false)
+        controller.resizeOverlay.begin(
+            workspaceId: workspaceId,
+            style: controller.settings.gestures.resizePreviewStyle,
+            pointerDriven: true
+        )
     }
 }

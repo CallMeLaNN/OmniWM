@@ -16,9 +16,9 @@ final class ResizeOverlayControllerTests: XCTestCase {
         let still = WindowToken(pid: 1001, windowId: 102)
         let overlay = makeOverlay(currentFrames: [moving: frame(x: 0, width: 400), still: frame(x: 420, width: 400)])
 
-        overlay.begin(workspaceId: WorkspaceDescriptor.ID(), style: .glass, followsAnimation: false)
+        overlay.begin(workspaceId: WorkspaceDescriptor.ID(), style: .glass, pointerDriven: true)
         let grown = frame(x: 0, width: 480)
-        overlay.update([moving: grown, still: frame(x: 420, width: 400)])
+        overlay.update([change(moving, grown), change(still, frame(x: 420, width: 400))])
 
         XCTAssertEqual(Set(overlay.panels.keys), [moving])
         XCTAssertEqual(overlay.panels[moving]?.frame, grown)
@@ -33,8 +33,8 @@ final class ResizeOverlayControllerTests: XCTestCase {
             return nil
         }
 
-        overlay.begin(workspaceId: WorkspaceDescriptor.ID(), style: .glass, followsAnimation: false)
-        overlay.update([token: frame(x: 0, width: 300)])
+        overlay.begin(workspaceId: WorkspaceDescriptor.ID(), style: .glass, pointerDriven: true)
+        overlay.update([change(token, frame(x: 0, width: 300))])
 
         XCTAssertNotNil(overlay.panels[token])
         XCTAssertTrue(overlay.captureTasks.isEmpty)
@@ -46,8 +46,8 @@ final class ResizeOverlayControllerTests: XCTestCase {
         let token = WindowToken(pid: 1003, windowId: 104)
         let overlay = makeOverlay(currentFrames: [token: frame(x: 0, width: 400)], captureAllowed: false)
 
-        overlay.begin(workspaceId: WorkspaceDescriptor.ID(), style: .snapshot, followsAnimation: false)
-        overlay.update([token: frame(x: 0, width: 300)])
+        overlay.begin(workspaceId: WorkspaceDescriptor.ID(), style: .snapshot, pointerDriven: true)
+        overlay.update([change(token, frame(x: 0, width: 300))])
 
         XCTAssertEqual(overlay.panels[token]?.isVisible, true)
         XCTAssertTrue(overlay.captureTasks.isEmpty)
@@ -58,8 +58,8 @@ final class ResizeOverlayControllerTests: XCTestCase {
         let token = WindowToken(pid: 1004, windowId: 105)
         let overlay = makeOverlay(currentFrames: [token: frame(x: 0, width: 400)]) { _, _ in CGImage.blank() }
 
-        overlay.begin(workspaceId: WorkspaceDescriptor.ID(), style: .snapshot, followsAnimation: false)
-        overlay.update([token: frame(x: 0, width: 300)])
+        overlay.begin(workspaceId: WorkspaceDescriptor.ID(), style: .snapshot, pointerDriven: true)
+        overlay.update([change(token, frame(x: 0, width: 300))])
         let capture = overlay.captureTasks[token]
         await capture?.value
 
@@ -69,20 +69,22 @@ final class ResizeOverlayControllerTests: XCTestCase {
 
     func testLiveStyleNeverStarts() {
         let overlay = makeOverlay(currentFrames: [:])
-        overlay.begin(workspaceId: WorkspaceDescriptor.ID(), style: .live, followsAnimation: false)
+        overlay.begin(workspaceId: WorkspaceDescriptor.ID(), style: .live, pointerDriven: true)
         XCTAssertFalse(overlay.isActive)
     }
 
     func testFinishKeepsPanelsUntilTheirWriteLands() {
         let written = WindowToken(pid: 1005, windowId: 106)
         let pending = WindowToken(pid: 1005, windowId: 107)
-        let overlay = makeOverlay(currentFrames: [written: frame(x: 0, width: 400), pending: frame(x: 420, width: 400)])
+        let currentFrames = FrameBox([written: frame(x: 0, width: 400), pending: frame(x: 420, width: 400)])
+        let overlay = ResizeOverlayController(captureImage: { _, _ in nil }, currentFrame: { currentFrames.map[$0] })
         let workspaceId = WorkspaceDescriptor.ID()
-        overlay.begin(workspaceId: workspaceId, style: .glass, followsAnimation: true)
+        overlay.begin(workspaceId: workspaceId, style: .glass, pointerDriven: false)
         let writtenTarget = frame(x: 0, width: 480)
-        overlay.update([written: writtenTarget, pending: frame(x: 500, width: 400)])
+        overlay.update([change(written, writtenTarget), change(pending, frame(x: 500, width: 400))])
 
-        overlay.finish { $0 == written ? writtenTarget : nil }
+        currentFrames.map[written] = writtenTarget
+        overlay.finish()
         XCTAssertEqual(Set(overlay.panels.keys), [pending])
         XCTAssertFalse(overlay.isTracking(workspaceId))
 
@@ -91,7 +93,7 @@ final class ResizeOverlayControllerTests: XCTestCase {
         XCTAssertFalse(overlay.isActive)
     }
 
-    func testMouseResizeMovesPanelsWithoutFrameWrites() throws {
+    func testMouseResizeMovesPanelsWithoutFrameWrites() async throws {
         let fixture = try makeLayoutFixture()
         let mouse = fixture.controller.mouseEventHandler
         let resized = try XCTUnwrap(fixture.engine.findNode(for: fixture.left, in: fixture.workspaceId))
@@ -113,31 +115,32 @@ final class ResizeOverlayControllerTests: XCTestCase {
 
         mouse.completeActiveResize()
         XCTAssertFalse(mouse.state.isResizing)
-        XCTAssertTrue(overlay.isFollowingAnimation(in: fixture.workspaceId))
-        fixture.controller.layoutRefreshController.niriHandler.tickScrollAnimation(
-            targetTime: CACurrentMediaTime() + 5,
-            displayId: fixture.monitor.displayId
-        )
+        XCTAssertTrue(overlay.settlesOnLayout)
+        XCTAssertEqual(frameApplications(fixture), 0)
+        await drainRefreshes(fixture)
         XCTAssertGreaterThan(frameApplications(fixture), 0)
         XCTAssertFalse(overlay.isTracking(fixture.workspaceId))
         overlay.reset()
     }
 
-    func testKeyboardResizeAnimatesPanelsAndWritesOnceSettled() throws {
+    func testKeyboardResizeAnimatesPanelsAndWritesOnceSettled() async throws {
         let fixture = try makeLayoutFixture()
         fixture.controller.settings.gestures.resizePreviewStyle = .glass
         let handler = fixture.controller.layoutRefreshController.niriHandler
         let handle = try XCTUnwrap(fixture.controller.workspaceManager.handle(for: fixture.left))
 
+        FrameApplyTrace.shared.beginCapture()
+        defer { FrameApplyTrace.shared.endCapture() }
         XCTAssertTrue(fixture.controller.niriLayoutHandler.setContainerPrimarySpan(
             .adjustProportion(10),
             target: .window(handle)
         ))
         let overlay = fixture.controller.resizeOverlay
-        XCTAssertTrue(overlay.isFollowingAnimation(in: fixture.workspaceId))
+        XCTAssertTrue(overlay.isTracking(fixture.workspaceId))
+        await drainRefreshes(fixture)
+        XCTAssertEqual(frameApplications(fixture), 0, "relayout during the animation must be held")
+        XCTAssertTrue(overlay.isTracking(fixture.workspaceId))
 
-        FrameApplyTrace.shared.beginCapture()
-        defer { FrameApplyTrace.shared.endCapture() }
         handler.tickScrollAnimation(targetTime: CACurrentMediaTime() + 0.03, displayId: fixture.monitor.displayId)
         XCTAssertFalse(overlay.panels.isEmpty)
         XCTAssertEqual(frameApplications(fixture), 0)
@@ -146,6 +149,14 @@ final class ResizeOverlayControllerTests: XCTestCase {
         XCTAssertGreaterThan(frameApplications(fixture), 0)
         XCTAssertFalse(overlay.isTracking(fixture.workspaceId))
         overlay.reset()
+    }
+
+    @MainActor
+    private final class FrameBox {
+        var map: [WindowToken: CGRect]
+        init(_ map: [WindowToken: CGRect]) {
+            self.map = map
+        }
     }
 
     private struct LayoutFixture {
@@ -198,9 +209,22 @@ final class ResizeOverlayControllerTests: XCTestCase {
         )
     }
 
+    private func drainRefreshes(_ fixture: LayoutFixture) async {
+        let state = fixture.controller.layoutRefreshController.layoutState
+        for _ in 0 ..< 200 where state.activeRefreshTask != nil || state.pendingRefresh != nil {
+            await state.activeRefreshTask?.value
+            await Task.yield()
+        }
+    }
+
+    private func change(_ token: WindowToken, _ frame: CGRect) -> LayoutFrameChange {
+        LayoutFrameChange(token: token, frame: frame, forceApply: false)
+    }
+
     private func frameApplications(_ fixture: LayoutFixture) -> Int {
         FrameApplyTrace.shared.dump().split(separator: "\n").count { line in
-            [fixture.left, fixture.right].contains { line.contains("win=\($0.windowId) ") }
+            !line.contains("cancelled") && [fixture.left, fixture.right]
+                .contains { line.contains("win=\($0.windowId) ") }
         }
     }
 

@@ -71,6 +71,9 @@ extension NiriLayoutHandler {
         let animationsOngoing = viewportMotionRunning
             || windowAnimationsRunning
             || columnAnimationsRunning
+        if !animationsOngoing {
+            controller.resizeOverlay.settleOnLayout(in: wsId)
+        }
 
         let didApplyFrames = applyFramesOnDemand(
             wsId: wsId,

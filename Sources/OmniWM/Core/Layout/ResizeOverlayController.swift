@@ -19,16 +19,18 @@ final class ResizeOverlayController {
     private(set) var workspaceId: WorkspaceDescriptor.ID?
     private(set) var panels: [WindowToken: ResizeOverlayWindow] = [:]
     private(set) var captureTasks: [WindowToken: Task<Void, Never>] = [:]
-    private(set) var followsAnimation = false
+    private(set) var settlesOnLayout = false
     private var phase = Phase.idle
     private var style = ResizePreviewStyle.live
-    private var expiry: Task<Void, Never>?
+    private var pointerDriven = false
+    private var watchdog: Task<Void, Never>?
     private let surfaceCoordinator: SurfaceCoordinator
     private let previews: PreviewCaptureCoordinator
     private let captureAccessAllowed: @MainActor () -> Bool
     private let captureImage: ImageCapture
     private let currentFrame: @MainActor (WindowToken) -> CGRect?
     private let icon: @MainActor (WindowToken) -> NSImage?
+    private let requestRelayout: @MainActor (WorkspaceDescriptor.ID) -> Void
 
     init(
         surfaceCoordinator: SurfaceCoordinator = .shared,
@@ -36,7 +38,8 @@ final class ResizeOverlayController {
         captureAccessAllowed: @escaping @MainActor () -> Bool = { ScreenCapturePermissionMonitor.shared.isGranted },
         captureImage: ImageCapture? = nil,
         currentFrame: @escaping @MainActor (WindowToken) -> CGRect?,
-        icon: @escaping @MainActor (WindowToken) -> NSImage? = { _ in nil }
+        icon: @escaping @MainActor (WindowToken) -> NSImage? = { _ in nil },
+        requestRelayout: @escaping @MainActor (WorkspaceDescriptor.ID) -> Void = { _ in }
     ) {
         self.surfaceCoordinator = surfaceCoordinator
         self.previews = previews
@@ -46,10 +49,7 @@ final class ResizeOverlayController {
         }
         self.currentFrame = currentFrame
         self.icon = icon
-    }
-
-    isolated deinit {
-        reset()
+        self.requestRelayout = requestRelayout
     }
 
     var isActive: Bool {
@@ -60,56 +60,69 @@ final class ResizeOverlayController {
         phase == .tracking && self.workspaceId == workspaceId
     }
 
-    func isFollowingAnimation(in workspaceId: WorkspaceDescriptor.ID) -> Bool {
-        followsAnimation && isTracking(workspaceId)
-    }
-
-    func begin(workspaceId: WorkspaceDescriptor.ID, style: ResizePreviewStyle, followsAnimation: Bool) {
+    /// Pointer-driven previews hold every plan until `settleOnLayout`; animation-driven ones
+    /// also hold, but expire into a relayout if the animation stops without a settling plan.
+    func begin(workspaceId: WorkspaceDescriptor.ID, style: ResizePreviewStyle, pointerDriven: Bool) {
         guard style != .live else { return }
         if self.workspaceId != workspaceId || self.style != style {
             reset()
         }
         self.workspaceId = workspaceId
         self.style = style
-        self.followsAnimation = followsAnimation
+        self.pointerDriven = pointerDriven
+        settlesOnLayout = false
         phase = .tracking
-        scheduleExpiry()
+        armWatchdog()
     }
 
-    func followAnimation() {
-        guard phase == .tracking else { return }
-        followsAnimation = true
-        scheduleExpiry()
+    /// The next non-tick plan for the tracked workspace writes real frames and ends the preview.
+    func settleOnLayout(in workspaceId: WorkspaceDescriptor.ID? = nil) {
+        guard phase == .tracking, workspaceId == nil || workspaceId == self.workspaceId else { return }
+        settlesOnLayout = true
+        armWatchdog()
     }
 
-    func update(_ frames: [WindowToken: CGRect]) {
+    /// Routes a plan's frame changes to the panels while a preview is tracking
+    /// the workspace. Only the settling plan keeps its writes.
+    func intercept(_ plan: WorkspaceLayoutPlan) -> WorkspaceLayoutPlan {
+        guard isTracking(plan.workspaceId) else { return plan }
+        update(plan.diff.frameChanges)
+        if settlesOnLayout, !plan.isAnimationTick {
+            finish()
+            return plan
+        }
+        var plan = plan
+        plan.diff.frameChanges.removeAll()
+        return plan
+    }
+
+    func update(_ changes: [LayoutFrameChange]) {
         guard phase == .tracking else { return }
-        for (token, frame) in frames {
-            if let panel = panels[token] {
-                panel.updateFrame(frame)
-            } else if let start = currentFrame(token),
-                      !start.approximatelyEqual(to: frame, tolerance: FrameTolerance.frameWrite),
-                      NSScreen.screens.contains(where: { $0.frame.intersects(start.union(frame)) })
+        for change in changes {
+            if let panel = panels[change.token] {
+                panel.updateFrame(change.frame)
+            } else if let start = currentFrame(change.token),
+                      !start.approximatelyEqual(to: change.frame, tolerance: FrameTolerance.frameWrite),
+                      NSScreen.screens.contains(where: { $0.frame.intersects(start.union(change.frame)) })
             {
-                addPanel(token: token, from: start, to: frame)
+                addPanel(token: change.token, from: start, to: change.frame)
             }
         }
-        scheduleExpiry()
+        armWatchdog()
     }
 
-    func finish(lastAppliedFrame: (WindowToken) -> CGRect?) {
+    func finish() {
         guard phase == .tracking else { return }
         phase = .settling
         for (token, panel) in panels
-            where lastAppliedFrame(token)?
-            .approximatelyEqual(to: panel.frame, tolerance: FrameTolerance.frameWrite) == true
+            where currentFrame(token)?.approximatelyEqual(to: panel.frame, tolerance: FrameTolerance.frameWrite) == true
         {
             retire(token)
         }
         if panels.isEmpty {
             reset()
         } else {
-            scheduleExpiry()
+            armWatchdog()
         }
     }
 
@@ -122,39 +135,43 @@ final class ResizeOverlayController {
     }
 
     func reset() {
-        expiry?.cancel()
-        expiry = nil
+        watchdog?.cancel()
+        watchdog = nil
         for token in Array(panels.keys) {
             retire(token)
         }
         workspaceId = nil
-        followsAnimation = false
+        settlesOnLayout = false
         phase = .idle
     }
 
-    private func scheduleExpiry() {
-        expiry?.cancel()
-        expiry = nil
-        guard phase == .settling || followsAnimation else { return }
-        expiry = Task { [weak self] in
+    private func armWatchdog() {
+        watchdog?.cancel()
+        watchdog = nil
+        guard phase == .settling || settlesOnLayout || !pointerDriven else { return }
+        watchdog = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(500))
-            guard !Task.isCancelled else { return }
-            self?.reset()
+            guard !Task.isCancelled, let self else { return }
+            if phase == .tracking, let workspaceId {
+                settlesOnLayout = true
+                requestRelayout(workspaceId)
+            } else {
+                reset()
+            }
         }
     }
 
     private func addPanel(token: WindowToken, from start: CGRect, to frame: CGRect) {
-        let panel = ResizeOverlayWindow(surfaceCoordinator: surfaceCoordinator)
-        panel.setup(icon: icon(token), frame: start)
+        let panel = ResizeOverlayWindow(icon: icon(token), frame: start, surfaceCoordinator: surfaceCoordinator)
         panel.updateFrame(frame)
         panels[token] = panel
         guard style == .snapshot, captureAccessAllowed() else {
-            panel.show()
+            panel.orderFront(nil)
             return
         }
         if let shared = previews.sharedPreview(for: token)?.frame {
             panel.setSnapshot(shared.surface, contentsRect: shared.contentsRect, holding: shared)
-            panel.show()
+            panel.orderFront(nil)
         }
         let scale = NSScreen.screen(containing: start)?.backingScaleFactor ?? 2
         let pixelSize = CGSize(width: (start.width * scale).rounded(), height: (start.height * scale).rounded())
@@ -164,7 +181,7 @@ final class ResizeOverlayController {
             if let image {
                 panel.setSnapshot(image)
             }
-            panel.show()
+            panel.orderFront(nil)
         }
     }
 
@@ -188,7 +205,7 @@ final class ResizeOverlayWindow: NSPanel {
         !snapshotView.isHidden
     }
 
-    init(surfaceCoordinator: SurfaceCoordinator = .shared) {
+    init(icon: NSImage?, frame: CGRect, surfaceCoordinator: SurfaceCoordinator = .shared) {
         self.surfaceCoordinator = surfaceCoordinator
 
         super.init(
@@ -212,6 +229,8 @@ final class ResizeOverlayWindow: NSPanel {
         isReleasedWhenClosed = false
 
         configureContentView()
+        iconView.image = icon
+        updateFrame(frame)
 
         let surfaceId = "resize-overlay-\(ObjectIdentifier(self).hashValue)"
         self.surfaceId = surfaceId
@@ -267,14 +286,6 @@ final class ResizeOverlayWindow: NSPanel {
         contentView = container
     }
 
-    func setup(icon: NSImage?, frame: CGRect) {
-        iconView.image = icon
-        snapshotView.layer?.contents = nil
-        snapshotView.isHidden = true
-        preview = nil
-        updateFrame(frame)
-    }
-
     func setSnapshot(
         _ contents: Any,
         contentsRect: CGRect = CGRect(x: 0, y: 0, width: 1, height: 1),
@@ -308,14 +319,6 @@ final class ResizeOverlayWindow: NSPanel {
         CATransaction.commit()
     }
 
-    func show() {
-        orderFront(nil)
-    }
-
-    func hide() {
-        orderOut(nil)
-    }
-
     func destroy() {
         guard !isDestroyed else { return }
         isDestroyed = true
@@ -325,7 +328,7 @@ final class ResizeOverlayWindow: NSPanel {
         }
         snapshotView.layer?.contents = nil
         preview = nil
-        hide()
+        orderOut(nil)
         close()
     }
 }
