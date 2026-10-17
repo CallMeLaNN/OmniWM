@@ -9,7 +9,7 @@ extension NiriLayoutEngine {
         windowId: NodeId,
         windowToken: WindowToken,
         startLocation: CGPoint,
-        isInsertMode: Bool = false,
+        allowsInsertion: Bool = false,
         context: NiriInteractionContext,
         state: inout ViewportState
     ) -> Bool {
@@ -30,11 +30,8 @@ extension NiriLayoutEngine {
             windowToken: windowToken,
             workspaceId: context.workspaceId,
             startMouseLocation: startLocation,
-            originalColumnIndex: colIdx,
-            originalFrame: windowNode.renderedFrame ?? windowNode.frame ?? .zero,
-            isInsertMode: isInsertMode,
+            allowsInsertion: allowsInsertion,
             orientation: context.orientation,
-            gaps: context.gaps,
             currentHoverTarget: nil
         )
 
@@ -61,36 +58,27 @@ extension NiriLayoutEngine {
     }
 
     func interactiveMoveUpdate(currentLocation: CGPoint) -> MoveHoverTarget? {
-        guard var move = interactiveMove else { return nil }
+        guard let move = interactiveMove else { return nil }
         guard findNode(by: move.windowId, in: move.workspaceId) != nil else {
             interactiveMoveCancel()
             return nil
         }
-
-        let dragDistance = hypot(
-            currentLocation.x - move.startMouseLocation.x,
-            currentLocation.y - move.startMouseLocation.y
-        )
-        guard dragDistance >= moveConfiguration.dragThreshold else {
-            return nil
-        }
-
-        let hoverTarget = hitTestMoveTarget(
-            point: currentLocation,
-            excludingWindowId: move.windowId,
-            isInsertMode: move.isInsertMode,
-            orientation: move.orientation,
-            in: move.workspaceId
-        )
-
-        move.currentHoverTarget = hoverTarget
-        interactiveMove = move
-
+        let hoverTarget = moveTarget(for: move, at: currentLocation)
+        interactiveMove?.currentHoverTarget = hoverTarget
         return hoverTarget
     }
 
+    func interactiveMoveTargetFrame() -> CGRect? {
+        guard let move = interactiveMove,
+              let target = move.currentHoverTarget,
+              let window = findNode(by: target.nodeId, in: move.workspaceId) as? NiriWindow,
+              let frame = window.renderedFrame ?? window.frame
+        else { return nil }
+        return WindowMoveGeometry.targetFrame(in: frame, direction: target.direction)
+    }
+
     func interactiveMoveEnd(
-        at _: CGPoint,
+        at location: CGPoint,
         motion: MotionSnapshot,
         state: inout ViewportState,
         workingFrame: CGRect,
@@ -100,7 +88,7 @@ extension NiriLayoutEngine {
         guard let move = interactiveMove else { return false }
         defer { interactiveMove = nil }
 
-        guard let target = move.currentHoverTarget else {
+        guard let target = moveTarget(for: move, at: location) else {
             return false
         }
 
@@ -111,31 +99,34 @@ extension NiriLayoutEngine {
             gaps: gaps,
             orientation: move.orientation
         )
-        switch target {
-        case let .window(targetNodeId, _, position):
-            switch position {
-            case .swap:
-                return swapWindowsByMove(
-                    sourceWindowId: move.windowId,
-                    targetWindowId: targetNodeId,
-                    context: context,
-                    state: &state
-                )
-            case .before,
-                 .after:
-                return insertWindowByMove(
-                    sourceWindowId: move.windowId,
-                    targetWindowId: targetNodeId,
-                    position: position,
-                    context: context,
-                    state: &state
-                )
-            }
-
-        case .columnGap,
-             .workspaceEdge:
-            return false
+        guard let direction = target.direction else {
+            return swapWindowsByMove(
+                sourceWindowId: move.windowId,
+                targetWindowId: target.nodeId,
+                context: context,
+                state: &state
+            )
         }
+        if let step = direction.primaryStep(for: move.orientation) {
+            return insertWindowInNewColumnByMove(
+                sourceWindowId: move.windowId,
+                targetWindowId: target.nodeId,
+                after: step > 0,
+                context: context,
+                state: &state
+            )
+        }
+        let inserted = insertWindowByMove(
+            sourceWindowId: move.windowId,
+            targetWindowId: target.nodeId,
+            position: direction.secondaryStep(for: move.orientation) == 1 ? .after : .before,
+            context: context,
+            state: &state
+        )
+        if inserted {
+            activateWindow(move.windowId, in: move.workspaceId)
+        }
+        return inserted
     }
 
     func interactiveMoveCancel() {
@@ -145,8 +136,7 @@ extension NiriLayoutEngine {
     func hitTestMoveTarget(
         point: CGPoint,
         excludingWindowId: NodeId,
-        isInsertMode: Bool = false,
-        orientation: Monitor.Orientation,
+        allowsInsertion: Bool = false,
         in workspaceId: WorkspaceDescriptor.ID
     ) -> MoveHoverTarget? {
         guard let root = root(for: workspaceId) else { return nil }
@@ -155,30 +145,56 @@ extension NiriLayoutEngine {
             for child in column.children {
                 guard let window = child as? NiriWindow,
                       window.id != excludingWindowId,
-                      !isExcludedFromProjection(window.token, in: workspaceId),
-                      let frame = window.renderedFrame ?? window.frame else { continue }
-
-                if frame.contains(point) {
-                    let position: InsertPosition = if isInsertMode {
-                        switch orientation {
-                        case .horizontal:
-                            point.y < frame.midY ? .before : .after
-                        case .vertical:
-                            point.x < frame.midX ? .before : .after
-                        }
-                    } else {
-                        .swap
-                    }
-                    return .window(
-                        nodeId: window.id,
-                        token: window.token,
-                        insertPosition: position
-                    )
-                }
+                      isProjectedFocusableWindow(window, in: workspaceId),
+                      let frame = window.renderedFrame ?? window.frame,
+                      frame.contains(point)
+                else { continue }
+                return MoveHoverTarget(
+                    nodeId: window.id,
+                    token: window.token,
+                    direction: allowsInsertion ? WindowMoveGeometry.insertionDirection(at: point, in: frame) : nil
+                )
             }
         }
 
         return nil
+    }
+
+    private func moveTarget(for move: InteractiveMove, at location: CGPoint) -> MoveHoverTarget? {
+        let dragDistance = hypot(
+            location.x - move.startMouseLocation.x,
+            location.y - move.startMouseLocation.y
+        )
+        guard dragDistance >= moveConfiguration.dragThreshold else { return nil }
+        return hitTestMoveTarget(
+            point: location,
+            excludingWindowId: move.windowId,
+            allowsInsertion: move.allowsInsertion,
+            in: move.workspaceId
+        )
+    }
+
+    private func insertWindowInNewColumnByMove(
+        sourceWindowId: NodeId,
+        targetWindowId: NodeId,
+        after: Bool,
+        context: NiriInteractionContext,
+        state: inout ViewportState
+    ) -> Bool {
+        guard let sourceWindow = findNode(by: sourceWindowId, in: context.workspaceId) as? NiriWindow,
+              let sourceColumn = findColumn(containing: sourceWindow, in: context.workspaceId),
+              let sourceIndex = columnIndex(of: sourceColumn, in: context.workspaceId),
+              let targetWindow = findNode(by: targetWindowId, in: context.workspaceId) as? NiriWindow,
+              let targetColumn = findColumn(containing: targetWindow, in: context.workspaceId),
+              let targetIndex = columnIndex(of: targetColumn, in: context.workspaceId)
+        else {
+            return false
+        }
+        let insertIndex = after ? targetIndex + 1 : targetIndex
+        if sourceColumn.windowNodes.count == 1, insertIndex == sourceIndex || insertIndex == sourceIndex + 1 {
+            return false
+        }
+        return insertWindowInNewColumn(sourceWindow, insertIndex: insertIndex, context: context, state: &state)
     }
 
     func swapWindowsByMove(
@@ -350,56 +366,6 @@ extension NiriLayoutEngine {
         }
         if targetColumn.isTabbed {
             targetColumn.clampActiveTileIdx()
-        }
-    }
-
-    func insertionDropzoneFrame(
-        targetWindowId: NodeId,
-        position: InsertPosition,
-        in workspaceId: WorkspaceDescriptor.ID,
-        gaps: CGFloat,
-        orientation: Monitor.Orientation
-    ) -> CGRect? {
-        guard let targetWindow = findNode(by: targetWindowId, in: workspaceId) as? NiriWindow,
-              let targetFrame = targetWindow.renderedFrame ?? targetWindow.frame,
-              let column = findColumn(containing: targetWindow, in: workspaceId)
-        else {
-            return nil
-        }
-
-        let windows = column.windowNodes
-        let postInsertionCount = windows.count + 1
-        let firstFrame = windows.first?.renderedFrame ?? windows.first?.frame
-        let lastFrame = windows.last?.renderedFrame ?? windows.last?.frame
-        let totalGaps = CGFloat(postInsertionCount - 1) * gaps
-
-        switch orientation {
-        case .horizontal:
-            guard let bottom = firstFrame?.minY, let top = lastFrame?.maxY else { return nil }
-            let columnHeight = top - bottom
-            let newHeight = max(0, (columnHeight - totalGaps) / CGFloat(postInsertionCount))
-            let y: CGFloat = switch position {
-            case .before:
-                max(bottom, targetFrame.minY - gaps - newHeight)
-            case .after:
-                targetFrame.maxY + gaps
-            case .swap:
-                targetFrame.minY
-            }
-            return CGRect(x: targetFrame.minX, y: y, width: targetFrame.width, height: newHeight)
-        case .vertical:
-            guard let left = firstFrame?.minX, let right = lastFrame?.maxX else { return nil }
-            let rowWidth = right - left
-            let newWidth = max(0, (rowWidth - totalGaps) / CGFloat(postInsertionCount))
-            let x: CGFloat = switch position {
-            case .before:
-                max(left, targetFrame.minX - gaps - newWidth)
-            case .after:
-                targetFrame.maxX + gaps
-            case .swap:
-                targetFrame.minX
-            }
-            return CGRect(x: x, y: targetFrame.minY, width: newWidth, height: targetFrame.height)
         }
     }
 }

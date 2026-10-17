@@ -20,51 +20,31 @@ final class MouseMoveModifierTests: NiriInteractionTestCase {
 
     func testMouseMoveModifierMappingsResolveExactly() throws {
         XCTAssertNil(MouseMoveModifierKey.off.cgEventFlags)
-        XCTAssertNil(MouseEventHandler.mouseMoveMode(modifiers: [], required: nil))
-        XCTAssertNil(MouseEventHandler.mouseMoveMode(modifiers: .maskAlternate, required: nil))
-        XCTAssertNil(MouseEventHandler.mouseMoveMode(modifiers: [], required: []))
-        XCTAssertNil(MouseEventHandler.mouseMoveMode(modifiers: .maskShift, required: []))
-        XCTAssertNil(MouseEventHandler.mouseMoveMode(modifiers: [], required: .maskAlternate))
-        XCTAssertNil(MouseEventHandler.mouseMoveMode(modifiers: .maskShift, required: .maskAlternate))
+        XCTAssertFalse(MouseEventHandler.mouseMoveModifiersMatch([], required: nil))
+        XCTAssertFalse(MouseEventHandler.mouseMoveModifiersMatch(.maskAlternate, required: nil))
+        XCTAssertFalse(MouseEventHandler.mouseMoveModifiersMatch([], required: []))
+        XCTAssertFalse(MouseEventHandler.mouseMoveModifiersMatch(.maskShift, required: []))
+        XCTAssertFalse(MouseEventHandler.mouseMoveModifiersMatch([], required: .maskAlternate))
+        XCTAssertFalse(MouseEventHandler.mouseMoveModifiersMatch(.maskShift, required: .maskAlternate))
 
         let baseModifierFlags: [CGEventFlags] = [.maskAlternate, .maskControl, .maskCommand]
         for modifier in MouseMoveModifierKey.allCases where modifier != .off {
             let required = try XCTUnwrap(modifier.cgEventFlags)
 
-            XCTAssertEqual(
-                MouseEventHandler.mouseMoveMode(modifiers: required, required: required),
-                .swap
-            )
-            XCTAssertEqual(
-                MouseEventHandler.mouseMoveMode(
-                    modifiers: required.union(.maskShift),
-                    required: required
-                ),
-                .insert
-            )
-            XCTAssertEqual(
-                MouseEventHandler.mouseMoveMode(
-                    modifiers: required.union(.maskAlphaShift),
-                    required: required
-                ),
-                .swap
-            )
+            XCTAssertTrue(MouseEventHandler.mouseMoveModifiersMatch(required, required: required))
+            XCTAssertTrue(MouseEventHandler.mouseMoveModifiersMatch(required.union(.maskShift), required: required))
+            XCTAssertTrue(MouseEventHandler.mouseMoveModifiersMatch(
+                required.union(.maskAlphaShift),
+                required: required
+            ))
 
             for extra in baseModifierFlags where !required.contains(extra) {
-                XCTAssertNil(
-                    MouseEventHandler.mouseMoveMode(
-                        modifiers: required.union(extra),
-                        required: required
-                    )
-                )
+                XCTAssertFalse(MouseEventHandler.mouseMoveModifiersMatch(required.union(extra), required: required))
             }
         }
 
-        XCTAssertNil(
-            MouseEventHandler.mouseMoveMode(
-                modifiers: [.maskAlternate, .maskCommand],
-                required: .maskAlternate
-            )
+        XCTAssertFalse(
+            MouseEventHandler.mouseMoveModifiersMatch([.maskAlternate, .maskCommand], required: .maskAlternate)
         )
     }
 
@@ -89,7 +69,7 @@ final class MouseMoveModifierTests: NiriInteractionTestCase {
     }
 
     @MainActor
-    func testConfiguredModifierReplacesOptionAndShiftSelectsInsert() throws {
+    func testConfiguredModifierReplacesOptionAndAcceptsShift() throws {
         let fixture = try makeFixture(pid: 1_102)
         fixture.controller.settings.gestures.mouseMoveModifierKey = .control
 
@@ -110,7 +90,7 @@ final class MouseMoveModifierTests: NiriInteractionTestCase {
         )
         XCTAssertTrue(fixture.handler.state.isMoving)
         XCTAssertEqual(fixture.handler.state.activeInteractionButton, .left)
-        XCTAssertTrue(try XCTUnwrap(fixture.engine.interactiveMove).isInsertMode)
+        XCTAssertTrue(try XCTUnwrap(fixture.engine.interactiveMove).allowsInsertion)
 
         fixture.handler.dispatchMouseUp(at: fixture.windowFrame.center)
 
@@ -119,7 +99,7 @@ final class MouseMoveModifierTests: NiriInteractionTestCase {
     }
 
     @MainActor
-    func testDefaultOptionStartsSwapAndSettingChangeDoesNotCancelActiveMove() throws {
+    func testDefaultOptionStartsPositionalMoveAndSettingChangeDoesNotCancelActiveMove() throws {
         let fixture = try makeFixture(pid: 1_103)
 
         XCTAssertFalse(
@@ -129,7 +109,7 @@ final class MouseMoveModifierTests: NiriInteractionTestCase {
             )
         )
         XCTAssertTrue(fixture.handler.state.isMoving)
-        XCTAssertFalse(try XCTUnwrap(fixture.engine.interactiveMove).isInsertMode)
+        XCTAssertTrue(try XCTUnwrap(fixture.engine.interactiveMove).allowsInsertion)
 
         fixture.controller.settings.gestures.mouseMoveModifierKey = .off
 
@@ -140,6 +120,100 @@ final class MouseMoveModifierTests: NiriInteractionTestCase {
 
         XCTAssertFalse(fixture.handler.state.isMoving)
         XCTAssertNil(fixture.engine.interactiveMove)
+    }
+
+    @MainActor
+    func testNiriMouseDragChoosesSwapColumnOrStackFromTheDropZone() throws {
+        let zones: [(Direction?, [[Int]])] = [
+            (nil, [[2], [1], [0]]),
+            (.left, [[1], [0], [2]]),
+            (.right, [[1], [2], [0]]),
+            (.up, [[1], [2, 0]]),
+            (.down, [[1], [0, 2]])
+        ]
+        for (zoneIndex, (direction, expected)) in zones.enumerated() {
+            for (modifierIndex, modifiers) in [CGEventFlags.maskControl, [.maskControl, .maskShift]].enumerated() {
+                let fixture = try makeNiriColumnsFixture(pid: pid_t(1_300 + zoneIndex * 2 + modifierIndex))
+                let target = fixture.frames[2]
+                let point = fixture.dropPoint(in: target, direction: direction)
+
+                XCTAssertFalse(fixture.handler.dispatchMouseDown(at: fixture.frames[0].center, modifiers: modifiers))
+                let worldSeq = fixture.controller.workspaceManager.worldSeq
+                fixture.handler.dispatchMouseDragged(at: point)
+                XCTAssertEqual(
+                    fixture.engine.interactiveMove?.currentHoverTarget,
+                    MoveHoverTarget(
+                        nodeId: fixture.windows[2].id,
+                        token: fixture.windows[2].token,
+                        direction: direction
+                    )
+                )
+                XCTAssertEqual(
+                    fixture.engine.interactiveMoveTargetFrame(),
+                    WindowMoveGeometry.targetFrame(in: target, direction: direction)
+                )
+                XCTAssertEqual(fixture.controller.workspaceManager.worldSeq, worldSeq)
+
+                fixture.handler.dispatchMouseUp(at: point)
+
+                XCTAssertFalse(fixture.handler.state.isMoving)
+                XCTAssertNil(fixture.engine.interactiveMove)
+                XCTAssertEqual(fixture.columnWindowIndices(), expected)
+            }
+        }
+    }
+
+    @MainActor
+    func testNiriStackDropsLandOnTheEdgeSideOfTheTarget() throws {
+        for direction in [Direction.up, .down] {
+            let fixture = try makeNiriColumnsFixture(pid: direction == .up ? 1_320 : 1_321)
+            let point = fixture.dropPoint(in: fixture.frames[2], direction: direction)
+            XCTAssertFalse(fixture.handler.dispatchMouseDown(at: fixture.frames[0].center, modifiers: .maskControl))
+            fixture.handler.dispatchMouseDragged(at: point)
+            fixture.handler.dispatchMouseUp(at: point)
+
+            let frames = fixture.layout()
+            let moved = try XCTUnwrap(frames[fixture.windows[0].token])
+            let target = try XCTUnwrap(frames[fixture.windows[2].token])
+            XCTAssertEqual(moved.midX, target.midX, accuracy: 0.5)
+            XCTAssertEqual(moved.midY > target.midY, direction == .up)
+        }
+    }
+
+    @MainActor
+    func testNiriEdgeBesideTheSourceColumnLeavesTheLayoutUnchanged() throws {
+        let fixture = try makeNiriColumnsFixture(pid: 1_322)
+        let point = fixture.dropPoint(in: fixture.frames[1], direction: .left)
+
+        XCTAssertFalse(fixture.handler.dispatchMouseDown(at: fixture.frames[0].center, modifiers: .maskControl))
+        fixture.handler.dispatchMouseDragged(at: point)
+        XCTAssertEqual(fixture.engine.interactiveMove?.currentHoverTarget?.direction, .left)
+        fixture.handler.dispatchMouseUp(at: point)
+
+        XCTAssertFalse(fixture.handler.state.isMoving)
+        XCTAssertEqual(fixture.columnWindowIndices(), [[0], [1], [2]])
+    }
+
+    @MainActor
+    func testNiriReleaseLocationDecidesAndReturningToTheStartCancels() throws {
+        let swapped = try makeNiriColumnsFixture(pid: 1_323)
+        let target = swapped.frames[2]
+        XCTAssertFalse(swapped.handler.dispatchMouseDown(at: swapped.frames[0].center, modifiers: .maskControl))
+        swapped.handler.dispatchMouseDragged(at: swapped.dropPoint(in: target, direction: .right))
+        XCTAssertEqual(swapped.engine.interactiveMove?.currentHoverTarget?.direction, .right)
+        swapped.handler.dispatchMouseUp(at: target.center)
+        XCTAssertEqual(swapped.columnWindowIndices(), [[2], [1], [0]])
+
+        let returned = try makeNiriColumnsFixture(pid: 1_324)
+        let start = returned.frames[0].center
+        XCTAssertFalse(returned.handler.dispatchMouseDown(at: start, modifiers: .maskControl))
+        returned.handler.dispatchMouseDragged(at: returned.frames[2].center)
+        XCTAssertNotNil(returned.engine.interactiveMove?.currentHoverTarget)
+        returned.handler.dispatchMouseDragged(at: start)
+        XCTAssertNil(returned.engine.interactiveMove?.currentHoverTarget)
+        returned.handler.dispatchMouseUp(at: start)
+        XCTAssertFalse(returned.handler.state.isMoving)
+        XCTAssertEqual(returned.columnWindowIndices(), [[0], [1], [2]])
     }
 
     @MainActor
@@ -611,12 +685,11 @@ final class MouseMoveModifierTests: NiriInteractionTestCase {
         XCTAssertNotEqual(firstFrame, secondFrame)
         XCTAssertTrue(controller.isEnabled)
         XCTAssertEqual(controller.settings.workspaces.layoutType(for: "1"), .dwindle)
-        XCTAssertEqual(
-            MouseEventHandler.mouseMoveMode(
-                modifiers: .maskControl,
+        XCTAssertTrue(
+            MouseEventHandler.mouseMoveModifiersMatch(
+                .maskControl,
                 required: controller.settings.gestures.mouseMoveModifierKey.cgEventFlags
-            ),
-            .swap
+            )
         )
         XCTAssertEqual(
             engine.hitTestFocusableWindow(
@@ -636,6 +709,92 @@ final class MouseMoveModifierTests: NiriInteractionTestCase {
             second: tokens[1],
             firstFrame: firstFrame,
             secondFrame: secondFrame
+        )
+    }
+
+    private struct NiriColumnsFixture {
+        let controller: WMController
+        let engine: NiriLayoutEngine
+        let monitor: Monitor
+        let workspaceId: WorkspaceDescriptor.ID
+        let windows: [NiriWindow]
+        let frames: [CGRect]
+
+        @MainActor var handler: MouseEventHandler {
+            controller.mouseEventHandler
+        }
+
+        func dropPoint(in frame: CGRect, direction: Direction?) -> CGPoint {
+            switch direction {
+            case .left: CGPoint(x: frame.minX + frame.width * 0.1, y: frame.midY)
+            case .right: CGPoint(x: frame.maxX - frame.width * 0.1, y: frame.midY)
+            case .up: CGPoint(x: frame.midX, y: frame.maxY - frame.height * 0.1)
+            case .down: CGPoint(x: frame.midX, y: frame.minY + frame.height * 0.1)
+            case nil: frame.center
+            }
+        }
+
+        func columnWindowIndices() -> [[Int]] {
+            engine.columns(in: workspaceId).map { column in
+                column.windowNodes.compactMap { node in windows.firstIndex { $0 === node } }
+            }
+        }
+
+        @MainActor
+        func layout() -> [WindowToken: CGRect] {
+            let gap = controller.innerGap(for: monitor)
+            return engine.calculateLayout(
+                state: controller.workspaceManager.niriViewportState(for: workspaceId),
+                workspaceId: workspaceId,
+                monitorFrame: controller.insetWorkingFrame(for: monitor),
+                gaps: (horizontal: gap, vertical: gap),
+                orientation: .horizontal
+            )
+        }
+    }
+
+    @MainActor
+    private func makeNiriColumnsFixture(pid: pid_t) throws -> NiriColumnsFixture {
+        let controller = makeController()
+        controller.settings.gestures.mouseMoveModifierKey = .control
+        let monitor = makeMonitor()
+        controller.workspaceManager.applyMonitorConfigurationChange([monitor])
+        let workspaceId = try XCTUnwrap(
+            controller.workspaceManager.workspaceId(for: "1", createIfMissing: true)
+        )
+        _ = controller.workspaceManager.focusWorkspace(named: "1")
+        controller.enableNiriLayout()
+        let engine = try XCTUnwrap(controller.niriEngine)
+        var windows: [NiriWindow] = []
+        for windowId in 1 ... 3 {
+            let window = addWindow(engine, pid: pid, windowId: windowId, to: workspaceId, after: windows.last)
+            _ = controller.workspaceManager.addWindow(
+                WindowAdmissionTestSupport.axRef(for: window.token),
+                pid: pid,
+                windowId: windowId,
+                to: workspaceId
+            )
+            windows.append(window)
+        }
+        XCTAssertTrue(
+            controller.workspaceManager.confirmManagedFocus(
+                windows[0].token,
+                in: workspaceId,
+                activateWorkspaceOnMonitor: false
+            )
+        )
+        controller.mouseEventHandler.pressedMouseButtonsProvider = { 1 }
+        let partial = NiriColumnsFixture(
+            controller: controller, engine: engine, monitor: monitor, workspaceId: workspaceId,
+            windows: windows, frames: []
+        )
+        let frames = partial.layout()
+        let windowFrames = try windows.map { try XCTUnwrap(frames[$0.token]) }
+        XCTAssertLessThan(windowFrames[0].maxX, windowFrames[1].minX)
+        XCTAssertLessThan(windowFrames[1].maxX, windowFrames[2].minX)
+        return NiriColumnsFixture(
+            controller: controller, engine: engine, monitor: monitor, workspaceId: workspaceId,
+            windows: windows, frames: windowFrames
         )
     }
 

@@ -149,7 +149,7 @@ final class InputTapThread: @unchecked Sendable {
         switch type {
         case .leftMouseDown:
             let flags = event.flags
-            let isMoveCandidate = MouseEventHandler.mouseMoveMode(modifiers: flags, required: snap.moveModifier) != nil
+            let isMoveCandidate = MouseEventHandler.mouseMoveModifiersMatch(flags, required: snap.moveModifier)
             guard isMoveCandidate else {
                 DispatchQueue.main.async {
                     MainActor.assumeIsolated {

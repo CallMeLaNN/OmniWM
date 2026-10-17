@@ -10,7 +10,6 @@ extension MouseEventHandler {
         engine: NiriLayoutEngine,
         wsId: WorkspaceDescriptor.ID,
         at location: CGPoint,
-        isInsertMode: Bool = false,
         source: MouseInputState.InteractionSource
     ) -> Bool {
         guard let controller, let monitor = controller.workspaceManager.monitor(for: wsId) else { return false }
@@ -27,7 +26,7 @@ extension MouseEventHandler {
                 windowId: tiledWindow.id,
                 windowToken: tiledWindow.token,
                 startLocation: location,
-                isInsertMode: isInsertMode,
+                allowsInsertion: source.mouseButton != nil,
                 context: .init(
                     workspaceId: wsId,
                     motion: controller.motionPolicy.snapshot(),

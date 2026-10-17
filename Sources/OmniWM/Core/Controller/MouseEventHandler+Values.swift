@@ -66,11 +66,6 @@ extension MouseEventHandler {
         }
     }
 
-    enum MouseMoveMode: Equatable {
-        case swap
-        case insert
-    }
-
     struct GestureTouchSample: Equatable, Sendable {
         let phase: NSTouch.Phase
         let normalizedPosition: CGPoint?

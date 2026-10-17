@@ -146,38 +146,16 @@ extension MouseEventHandler {
 
     private func updateNiriMove(at location: CGPoint) {
         guard let controller else { return }
-        guard let engine = controller.niriEngine,
-              let move = engine.interactiveMove
-        else {
+        guard let engine = controller.niriEngine, engine.interactiveMove != nil else {
             cancelActiveMouseInteraction()
             return
         }
-        let wsId = move.workspaceId
 
-        let hoverTarget = engine.interactiveMoveUpdate(currentLocation: location)
+        _ = engine.interactiveMoveUpdate(currentLocation: location)
         state.dragGhostController?.updatePosition(cursorLocation: location)
 
-        if let hoverTarget {
-            switch hoverTarget {
-            case let .window(nodeId, handle, insertPosition):
-                if insertPosition == .swap {
-                    if let entry = controller.workspaceManager.entry(for: handle),
-                       let frame = AXWindowService.framePreferFast(entry.axRef)
-                    {
-                        state.dragGhostController?.showSwapTarget(frame: frame)
-                    }
-                } else if let dropFrame = engine.insertionDropzoneFrame(
-                    targetWindowId: nodeId,
-                    position: insertPosition,
-                    in: wsId,
-                    gaps: move.gaps,
-                    orientation: move.orientation
-                ) {
-                    state.dragGhostController?.showSwapTarget(frame: dropFrame)
-                }
-            default:
-                state.dragGhostController?.hideSwapTarget()
-            }
+        if let frame = engine.interactiveMoveTargetFrame() {
+            state.dragGhostController?.showSwapTarget(frame: frame)
         } else {
             state.dragGhostController?.hideSwapTarget()
         }

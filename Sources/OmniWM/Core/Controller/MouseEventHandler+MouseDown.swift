@@ -36,12 +36,12 @@ extension MouseEventHandler {
         guard let engine = controller.niriEngine else { return false }
 
         if button == .left,
-           let moveMode = Self.mouseMoveMode(
-               modifiers: modifiers,
+           Self.mouseMoveModifiersMatch(
+               modifiers,
                required: controller.settings.gestures.mouseMoveModifierKey.cgEventFlags
            )
         {
-            beginNiriMouseMove(at: location, mode: moveMode, engine: engine, workspaceId: wsId, button: button)
+            beginNiriMouseMove(at: location, engine: engine, workspaceId: wsId, button: button)
             return false
         }
 
@@ -56,18 +56,11 @@ extension MouseEventHandler {
     }
 
     private func beginNiriMouseMove(
-        at location: CGPoint, mode: MouseMoveMode, engine: NiriLayoutEngine,
+        at location: CGPoint, engine: NiriLayoutEngine,
         workspaceId: WorkspaceDescriptor.ID, button: MouseButton
     ) {
         guard let window = engine.hitTestTiled(point: location, in: workspaceId) else { return }
-        _ = beginNiriMove(
-            window: window,
-            engine: engine,
-            wsId: workspaceId,
-            at: location,
-            isInsertMode: mode == .insert,
-            source: .mouse(button)
-        )
+        _ = beginNiriMove(window: window, engine: engine, wsId: workspaceId, at: location, source: .mouse(button))
     }
 
     private func beginNiriMouseResize(
@@ -118,10 +111,10 @@ extension MouseEventHandler {
     ) -> Bool {
         guard let controller, let engine = controller.dwindleEngine else { return false }
         if button == .left {
-            guard Self.mouseMoveMode(
-                modifiers: modifiers,
+            guard Self.mouseMoveModifiersMatch(
+                modifiers,
                 required: controller.settings.gestures.mouseMoveModifierKey.cgEventFlags
-            ) != nil,
+            ),
                 let token = engine.hitTestFocusableWindow(
                     point: location,
                     in: wsId,

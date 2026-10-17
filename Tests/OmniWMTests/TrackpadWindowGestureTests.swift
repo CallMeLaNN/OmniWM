@@ -147,12 +147,12 @@ final class TrackpadWindowGestureTests: XCTestCase {
         XCTAssertEqual(fixture.engine.interactiveMove?.windowToken, fixture.first.token)
         XCTAssertFalse(handler.isViewportGestureActive)
         XCTAssertTrue(handler.isInteractiveGestureActive)
-        guard case let .window(_, targetToken, insertPosition)? = fixture.engine.interactiveMove?.currentHoverTarget
-        else {
-            return XCTFail("Expected the virtual cursor to hover the second window")
-        }
-        XCTAssertEqual(targetToken, fixture.second.token)
-        XCTAssertEqual(insertPosition, .swap)
+        let hoverTarget = try XCTUnwrap(
+            fixture.engine.interactiveMove?.currentHoverTarget,
+            "Expected the virtual cursor to hover the second window"
+        )
+        XCTAssertEqual(hoverTarget.token, fixture.second.token)
+        XCTAssertNil(hoverTarget.direction)
 
         gesture.end()
 
@@ -634,10 +634,12 @@ final class TrackpadWindowGestureTests: XCTestCase {
         var gesture = fixture.driver(at: fixture.firstFrame.center)
         gesture.begin(fingers: 4, x: 0.2)
         gesture.drag(fingers: 4, fromX: 0.2, toX: 1)
-        guard case let .window(_, token, _)? = fixture.engine.interactiveMove?.currentHoverTarget else {
-            return XCTFail("Overshoot lost the edge drop target")
-        }
-        XCTAssertEqual(token, fixture.second.token)
+        let hoverTarget = try XCTUnwrap(
+            fixture.engine.interactiveMove?.currentHoverTarget,
+            "Overshoot lost the edge drop target"
+        )
+        XCTAssertEqual(hoverTarget.token, fixture.second.token)
+        XCTAssertNil(hoverTarget.direction)
         gesture.end()
         XCTAssertEqual(fixture.windowOrder(), [fixture.second.token, fixture.first.token])
     }

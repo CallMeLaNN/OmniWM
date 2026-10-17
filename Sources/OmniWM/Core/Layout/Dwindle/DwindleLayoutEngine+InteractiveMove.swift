@@ -91,11 +91,8 @@ extension DwindleLayoutEngine {
                 return candidate
             }
         var direction: Direction?
-        if move.allowsInsertion, let target,
-           let frame = presentedFrame(for: target, in: move.workspaceId, at: time),
-           frame.width > 0, frame.height > 0
-        {
-            direction = tileInsertionDirection(at: currentLocation, in: frame)
+        if move.allowsInsertion, let target, let frame = presentedFrame(for: target, in: move.workspaceId, at: time) {
+            direction = WindowMoveGeometry.insertionDirection(at: currentLocation, in: frame)
         }
         interactiveMove?.target = target.map { .tile($0, direction: direction) }
         return target
@@ -111,18 +108,7 @@ extension DwindleLayoutEngine {
         case let .workspaceEdge(_, workspaceFrame):
             frame = workspaceFrame
         }
-        switch move.targetDirection {
-        case .left:
-            return frame.divided(atDistance: frame.width / 2, from: .minXEdge).slice
-        case .right:
-            return frame.divided(atDistance: frame.width / 2, from: .maxXEdge).slice
-        case .up:
-            return frame.divided(atDistance: frame.height / 2, from: .maxYEdge).slice
-        case .down:
-            return frame.divided(atDistance: frame.height / 2, from: .minYEdge).slice
-        case nil:
-            return frame
-        }
+        return WindowMoveGeometry.targetFrame(in: frame, direction: move.targetDirection)
     }
 
     @discardableResult
@@ -163,15 +149,6 @@ extension DwindleLayoutEngine {
         case nil:
             true
         }
-    }
-
-    private func tileInsertionDirection(at point: CGPoint, in frame: CGRect) -> Direction? {
-        let horizontal = (point.x - frame.midX) / frame.width
-        let vertical = (point.y - frame.midY) / frame.height
-        guard max(abs(horizontal), abs(vertical)) > 0.2 else { return nil }
-        return abs(horizontal) > abs(vertical)
-            ? (horizontal < 0 ? .left : .right)
-            : (vertical < 0 ? .down : .up)
     }
 
     private func workspaceEdgeDirection(at point: CGPoint, in frame: CGRect, from start: CGPoint) -> Direction? {
