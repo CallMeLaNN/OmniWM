@@ -53,6 +53,9 @@ extension AXManager {
         for result in outcome.stableSizeClamps {
             onStableSizeClamp?(result)
         }
+        if !deferredParkRequests.isEmpty {
+            releaseDeferredParkFrames()
+        }
     }
 
     private func restoreParkAfterDiscardedWrite(

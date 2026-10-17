@@ -146,7 +146,14 @@ extension LayoutRefreshController {
             guard let monitor = controller.workspaceManager.monitor(for: snapshot.workspace.id) else { continue }
             targets += hideTargets(snapshot.entries, monitor: monitor, side: preferredSides[monitor.id] ?? .right)
         }
-        applyHides(targets, reason: .workspaceInactive, hiddenPlacementMonitors: hiddenPlacementMonitors)
+        let activeWindowIds = workspaceEntries.filter { activeWorkspaceIds.contains($0.workspace.id) }
+            .flatMap { $0.entries.map(\.windowId) }
+        applyHides(
+            targets,
+            reason: .workspaceInactive,
+            hiddenPlacementMonitors: hiddenPlacementMonitors,
+            afterFrameWritesOf: Set(activeWindowIds)
+        )
     }
 
     private func hideTargets(_ entries: [WindowState], monitor: Monitor, side: HideSide) -> [HideTarget] {

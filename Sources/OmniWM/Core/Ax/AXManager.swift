@@ -41,6 +41,9 @@ final class AXManager {
     let managedWindowBindings = AXManagedWindowBindings()
     let frameLedger = AXFrameApplicationLedger()
     var workspaceFrameSettlement: AXFrameSettlement?
+    var deferredParkRequests: [AXFrameApplicationRequest] = []
+    var deferredParkAwaitedWindowIds: Set<Int> = []
+    var deferredParkTimeout: Task<Void, Never>?
     private var pendingFrameRetryTasksByWindowId: [Int: Task<Void, Never>] = [:]
     private var pendingFrameRetryGenerationByWindowId: [Int: UInt64] = [:]
     private var pendingFrameRetryRequestsByWindowId: [Int: AXFrameRetryRequest] = [:]
