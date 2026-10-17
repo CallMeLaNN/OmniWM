@@ -57,7 +57,7 @@ extension AXManager {
             writable,
             currentFrame: frameLedger.lastAppliedFrame
         )
-        let awaitedWindowIds = windowIds.filter(frameLedger.hasPendingFrameWrite)
+        let awaitedWindowIds = windowIds.filter(isAwaitingFrameWrite)
         guard !awaitedWindowIds.isEmpty else {
             dispatchParkFrameApplications(requests)
             return
@@ -73,7 +73,7 @@ extension AXManager {
     }
 
     func releaseDeferredParkFrames(force: Bool = false) {
-        deferredParkAwaitedWindowIds = deferredParkAwaitedWindowIds.filter(frameLedger.hasPendingFrameWrite)
+        deferredParkAwaitedWindowIds = deferredParkAwaitedWindowIds.filter(isAwaitingFrameWrite)
         guard force || deferredParkAwaitedWindowIds.isEmpty else { return }
         let requests = deferredParkRequests.filter {
             parkLedger.pendingParkFrameRequest(for: $0.windowId)?.requestId == $0.requestId

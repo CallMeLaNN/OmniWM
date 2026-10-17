@@ -348,6 +348,10 @@ final class AXManager {
 }
 
 extension AXManager {
+    func isAwaitingFrameWrite(_ windowId: Int) -> Bool {
+        frameLedger.hasPendingFrameWrite(for: windowId) || pendingFrameRetryRequestsByWindowId[windowId] != nil
+    }
+
     func scheduleFrameRetry(_ retry: AXFrameRetryRequest) {
         let pid = retry.pid
         let windowId = retry.windowId

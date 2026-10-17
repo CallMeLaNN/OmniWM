@@ -9,6 +9,35 @@ import XCTest
 @MainActor
 final class WorkspaceSwitchParkOrderingTests: XCTestCase {
     func testOutgoingParkWaitsForIncomingFrameWrite() throws {
+        let staged = try stageWorkspaceSwitch()
+
+        staged.controller.axManager.handleFrameApplyResults([
+            WindowAdmissionTestSupport.successfulFrameResult(request: staged.incomingWrite)
+        ])
+
+        XCTAssertNil(staged.controller.axManager.pendingParkFrameRequest(for: staged.outgoing.windowId))
+    }
+
+    func testOutgoingParkKeepsWaitingWhileIncomingWriteRetries() throws {
+        let staged = try stageWorkspaceSwitch()
+
+        staged.controller.axManager.handleFrameApplyResults([
+            WindowAdmissionTestSupport.verificationMismatchFrameResult(
+                request: staged.incomingWrite,
+                observed: CGRect(x: 2559, y: 16, width: 1200, height: 900)
+            )
+        ])
+
+        XCTAssertNotNil(staged.controller.axManager.pendingParkFrameRequest(for: staged.outgoing.windowId))
+    }
+
+    private struct StagedSwitch {
+        let controller: WMController
+        let outgoing: WindowToken
+        let incomingWrite: AXFrameApplicationRequest
+    }
+
+    private func stageWorkspaceSwitch() throws -> StagedSwitch {
         let controller = WindowAdmissionTestSupport.controller(prefix: "OmniWMWorkspaceSwitchParkOrderingTests")
         let monitor = Monitor(
             id: .init(displayId: 818),
@@ -40,11 +69,6 @@ final class WorkspaceSwitchParkOrderingTests: XCTestCase {
 
         XCTAssertEqual(controller.workspaceManager.hiddenState(for: outgoing)?.workspaceInactive, true)
         XCTAssertNotNil(controller.axManager.pendingParkFrameRequest(for: outgoing.windowId))
-
-        controller.axManager.handleFrameApplyResults([
-            WindowAdmissionTestSupport.successfulFrameResult(request: incomingWrite)
-        ])
-
-        XCTAssertNil(controller.axManager.pendingParkFrameRequest(for: outgoing.windowId))
+        return StagedSwitch(controller: controller, outgoing: outgoing, incomingWrite: incomingWrite)
     }
 }

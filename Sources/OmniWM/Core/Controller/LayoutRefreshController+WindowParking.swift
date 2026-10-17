@@ -128,7 +128,8 @@ extension LayoutRefreshController {
             }
         }
 
-        if !movablePlans.isEmpty {
+        let waitsForFrameWrites = awaitedWindowIds.contains(where: controller.axManager.isAwaitingFrameWrite)
+        if !movablePlans.isEmpty, !waitsForFrameWrites {
             controller.axManager.applyPositionsViaSkyLight(
                 movablePlans.map { SkyLightPositionTarget(token: $0.entry.token, frame: $0.frame) },
                 allowInactive: true, tracingPark: true
