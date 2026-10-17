@@ -1,0 +1,52 @@
+{
+  "observation": {
+    "tokenPid": 1000,
+    "tokenWindowId": 19,
+    "appName": "Adobe Photoshop 2026",
+    "bundleId": "com.adobe.Photoshop",
+    "rulesRevision": 1,
+    "input": {
+      "appName": "Adobe Photoshop 2026",
+      "ax": {
+        "role": "AXWindow",
+        "subrole": "AXStandardWindow",
+        "title": "Adobe Photoshop 2026",
+        "hasCloseButton": true,
+        "hasFullscreenButton": false,
+        "hasZoomButton": true,
+        "hasMinimizeButton": true,
+        "appPolicy": "regular",
+        "bundleId": "com.adobe.Photoshop",
+        "attributeFetchSucceeded": true
+      },
+      "windowServer": {
+        "id": 19,
+        "pid": 1000,
+        "level": 0,
+        "frameX": 10,
+        "frameY": 35,
+        "frameWidth": 3340,
+        "frameHeight": 1372,
+        "tags": 0,
+        "attributes": 0,
+        "parentId": 0
+      },
+      "appFullscreen": false
+    },
+    "observedDecision": {
+      "disposition": "floating",
+      "source": "heuristic",
+      "heuristicReasons": [
+        "missingFullscreenButton"
+      ],
+      "layoutDecisionKind": "fallbackLayout"
+    }
+  },
+  "rules": [],
+  "expectedDecision": {
+    "disposition": "managed",
+    "source": "builtInRule(hiddenTitleBarWindow)",
+    "heuristicReasons": [],
+    "layoutDecisionKind": "fallbackLayout"
+  }
+}
