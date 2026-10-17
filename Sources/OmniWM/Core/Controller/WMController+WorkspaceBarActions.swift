@@ -130,7 +130,8 @@ extension WMController {
                 token,
                 to: index,
                 preferredMonitor: monitorOfWindow(token),
-                focusOrigin: .pointerSelection
+                focusOrigin: .pointerSelection,
+                arrivesQuietly: token != focusedManagedTokenForCommand()
             )
         case let .createAppRule(token):
             AppRulesWindowController.shared.show(
@@ -147,7 +148,15 @@ extension WMController {
             guard let handle = workspaceManager.handle(for: token) else { return }
             windowActionHandler.revealScratchpadWindowFromBar(handle: handle, index: index, monitorId: barMonitorId)
         case let .unassignScratchpadWindows(tokens):
-            unassignScratchpadWindows(tokens, on: barMonitorId)
+            let focusedToken = focusedManagedTokenForCommand()
+            let focused = tokens.filter { $0 == focusedToken }
+            let background = tokens.filter { $0 != focusedToken }
+            if !focused.isEmpty {
+                unassignScratchpadWindows(focused, on: barMonitorId, arrivesQuietly: false)
+            }
+            if !background.isEmpty {
+                unassignScratchpadWindows(background, on: barMonitorId, arrivesQuietly: true)
+            }
         }
     }
 
