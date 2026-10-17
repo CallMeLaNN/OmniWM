@@ -145,7 +145,7 @@ final class SettingsTOMLCodecTests: XCTestCase {
             XCTAssertEqual(lines[idIndex - 2], "[[hotkeys]]")
             lines.removeSubrange((idIndex - 2) ... idIndex)
         }
-        XCTAssertTrue(String(decoding: withoutToggle, as: UTF8.self).contains("schemaVersion = 4"))
+        XCTAssertTrue(String(decoding: withoutToggle, as: UTF8.self).contains("schemaVersion = 5"))
 
         let result = try SettingsTOMLCodec.decodeForLoad(withoutToggle)
 

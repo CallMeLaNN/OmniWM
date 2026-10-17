@@ -741,27 +741,27 @@ id = "resetWindowSecondarySpan"
 
 [[hotkeys]]
 binding = "Option+Minus"
-id = "resizeContainerPrimarySpan.shrink"
+id = "setContainerPrimarySpan.decrease10Percent"
 
 [[hotkeys]]
 binding = "Option+Equal"
-id = "resizeContainerPrimarySpan.grow"
+id = "setContainerPrimarySpan.increase10Percent"
 
 [[hotkeys]]
 binding = "Unassigned"
-id = "resizeWindowPrimarySpan.shrink"
+id = "setWindowPrimarySpan.decrease10Percent"
 
 [[hotkeys]]
 binding = "Unassigned"
-id = "resizeWindowPrimarySpan.grow"
+id = "setWindowPrimarySpan.increase10Percent"
 
 [[hotkeys]]
 binding = "Option+Shift+Minus"
-id = "resizeWindowSecondarySpan.shrink"
+id = "setWindowSecondarySpan.decrease10Percent"
 
 [[hotkeys]]
 binding = "Option+Shift+Equal"
-id = "resizeWindowSecondarySpan.grow"
+id = "setWindowSecondarySpan.increase10Percent"
 
 [[hotkeys]]
 binding = "Option+Shift+B"
