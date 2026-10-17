@@ -99,6 +99,8 @@ extension MouseEventHandler {
         state.capturedInteractionButton = source.mouseButton
         state.currentHoveredEdges = edges
         edges.cursor.set()
+
+        beginResizeOverlay(in: wsId)
         return true
     }
 
@@ -167,6 +169,17 @@ extension MouseEventHandler {
         state.currentHoveredEdges = edges
         state.resizeLayout = .dwindle
         edges.cursor.set()
+
+        beginResizeOverlay(in: wsId)
         return true
+    }
+
+    private func beginResizeOverlay(in workspaceId: WorkspaceDescriptor.ID) {
+        guard let controller else { return }
+        controller.resizeOverlay.begin(
+            workspaceId: workspaceId,
+            style: controller.settings.gestures.resizePreviewStyle,
+            pointerDriven: true
+        )
     }
 }

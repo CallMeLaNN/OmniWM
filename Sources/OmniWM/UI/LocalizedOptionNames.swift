@@ -74,6 +74,16 @@ extension CenterFocusedColumn {
     }
 }
 
+extension ResizePreviewStyle {
+    var localizedDisplayName: String {
+        switch self {
+        case .live: String(localized: "Live Resize")
+        case .glass: String(localized: "Glass Placeholder")
+        case .snapshot: String(localized: "Window Snapshot")
+        }
+    }
+}
+
 extension TrackpadScrollStyle {
     var localizedDisplayName: String {
         switch self {

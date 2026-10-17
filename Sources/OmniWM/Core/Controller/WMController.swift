@@ -63,6 +63,14 @@ final class WMController {
     let traceCaptureCoordinator: RuntimeTraceCaptureCoordinator
     let appInfoCache = AppInfoCache()
     @ObservationIgnored
+    private(set) lazy var resizeOverlay = ResizeOverlayController(
+        currentFrame: { [weak self] in self?.axManager.lastAppliedFrame(for: $0.windowId) },
+        icon: { [weak self] in self?.appInfoCache.info(for: $0.pid)?.icon },
+        requestRelayout: { [weak self] in
+            self?.layoutRefreshController.requestRelayout(reason: .staleLayoutPlan, affectedWorkspaceIds: [$0])
+        }
+    )
+    @ObservationIgnored
     let workspaceBarIconResolver: WorkspaceBarIconResolver
     private(set) var workspaceBarIconResolutionRevision: UInt64 = 0
     let eventIntake = EventIntake()
