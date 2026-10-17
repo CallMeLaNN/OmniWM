@@ -135,8 +135,17 @@ struct OverviewLayoutCalculator {
         edgeAutoScrollVelocity(pointer: pointerY, lower: viewportFrame.minY, upper: viewportFrame.maxY)
     }
 
-    static func dragStripAutoScrollVelocity(pointerX: CGFloat, stripFrame: CGRect) -> CGFloat {
-        edgeAutoScrollVelocity(pointer: pointerX, lower: stripFrame.minX, upper: stripFrame.maxX)
+    static func dragStripAutoScrollVelocity(
+        pointer: CGPoint,
+        stripFrame: CGRect,
+        orientation: Monitor.Orientation
+    ) -> CGFloat {
+        let axis = OverviewRibbonAxis(orientation)
+        return edgeAutoScrollVelocity(
+            pointer: orientation == .horizontal ? pointer.x : pointer.y,
+            lower: axis.minimum(stripFrame),
+            upper: axis.maximum(stripFrame)
+        )
     }
 
     private static func edgeAutoScrollVelocity(pointer: CGFloat, lower: CGFloat, upper: CGFloat) -> CGFloat {

@@ -160,4 +160,20 @@ final class OverviewStripAutoScrollTests: XCTestCase {
         let pan = updatedLayout.stripPanByWorkspace[fixture.workspaceId] ?? 0
         XCTAssertNotEqual(pan, 0)
     }
+
+    func testVerticalStripScrollsAlongItsOwnAxis() {
+        let strip = CGRect(x: 0, y: 0, width: 300, height: 800)
+        let nearBottom = CGPoint(x: 290, y: 790)
+        let velocity = OverviewLayoutCalculator.dragStripAutoScrollVelocity(
+            pointer: nearBottom, stripFrame: strip, orientation: .vertical
+        )
+        XCTAssertGreaterThan(velocity, 0)
+        let midHeightNearRightEdge = CGPoint(x: 290, y: 400)
+        XCTAssertEqual(
+            OverviewLayoutCalculator.dragStripAutoScrollVelocity(
+                pointer: midHeightNearRightEdge, stripFrame: strip, orientation: .vertical
+            ),
+            0
+        )
+    }
 }

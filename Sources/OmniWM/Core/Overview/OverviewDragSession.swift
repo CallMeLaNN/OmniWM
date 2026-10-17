@@ -212,8 +212,9 @@ final class OverviewDragSession {
               !stripSection.ribbonFrame.isEmpty
         else { return (0, nil) }
         let velocity = OverviewLayoutCalculator.dragStripAutoScrollVelocity(
-            pointerX: point.x,
-            stripFrame: stripSection.ribbonFrame
+            pointer: point,
+            stripFrame: stripSection.ribbonFrame,
+            orientation: stripSection.orientation
         )
         return (velocity, stripSection.workspaceId)
     }
