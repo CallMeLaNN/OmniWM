@@ -99,6 +99,7 @@ jobs:
           fi
           python3 Scripts/canary_release.py check --github-output "$GITHUB_OUTPUT" $FORCE_ARG
       - name: Require passing CI for the checked-out commit
+        id: verify
         if: steps.check.outputs.should_skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -169,6 +170,7 @@ jobs:
         env:
           SHOULD_SKIP: ${{ steps.check.outputs.should_skip }}
           SKIP_REASON: ${{ steps.check.outputs.skip_reason }}
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
           PUBLISHED_TAG: ${{ steps.publish.outputs.tag }}
           PUBLISHED_URL: ${{ steps.publish.outputs.url }}
         run: |
@@ -176,6 +178,9 @@ jobs:
           {
             if [[ "$SHOULD_SKIP" == "true" ]]; then
               printf '## Canary skipped\n\n%s\n' "$SKIP_REASON"
+            elif [[ "$VERIFY_OUTCOME" == "failure" ]]; then
+              printf '## Canary blocked\n\nCI verification failed for the checked-out commit. See the **Require passing CI for the checked-out commit** step in [this run](%s/%s/actions/runs/%s).\n' \
+                "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
             elif [[ -n "$PUBLISHED_TAG" ]]; then
               printf '## Canary published\n\n- Tag: `%s`\n- Release: %s\n' "$PUBLISHED_TAG" "$PUBLISHED_URL"
             fi

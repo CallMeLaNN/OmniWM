@@ -2,8 +2,10 @@ import importlib.util
 import io
 import json
 import os
+import re
 import subprocess
 import tempfile
+import textwrap
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -355,17 +357,50 @@ class CanaryCITests(unittest.TestCase):
         self.responses[self.jobs_path] = [{"jobs": [self.jobs[0]]}, {"jobs": [self.jobs[1]]}]
         self.assertEqual(canary_release.verify_ci("checkout", self.repository), self.run)
 
-    def test_forced_rebuild_still_requires_passing_ci(self):
-        self.assertEqual(canary_release.check("checkout", True)["should_skip"], "false")
-        self.run["conclusion"] = "failure"
-        with self.assertRaisesRegex(canary_release.CanaryError, "has not succeeded"):
-            canary_release.verify_ci("checkout", self.repository)
-
     def test_verify_ci_cli_reports_failure(self):
         self.run["conclusion"] = "failure"
         with patch.dict(os.environ, {"GITHUB_REPOSITORY": self.repository}), patch("sys.stderr", new_callable=io.StringIO) as errors:
             self.assertEqual(canary_release.main(["verify-ci", "--repo", "checkout"]), 2)
         self.assertIn("has not succeeded", errors.getvalue())
+
+
+class CanaryWorkflowTests(unittest.TestCase):
+    def step(self, name):
+        workflow = (SOURCE / ".github/workflows/canary.yml").read_text()
+        for step in re.split(r"^      - ", workflow, flags=re.MULTILINE):
+            if step.startswith(f"name: {name}\n"):
+                return step
+        self.fail(f"Missing canary workflow step: {name}")
+
+    def test_forced_rebuild_still_requires_passing_ci(self):
+        gate = self.step("Require passing CI for the checked-out commit")
+        self.assertEqual(re.findall(r"^        if: (.+)$", gate, re.MULTILINE), [
+            "steps.check.outputs.should_skip != 'true'",
+        ])
+        self.assertIn("        run: python3 Scripts/canary_release.py verify-ci", gate.splitlines())
+
+    def test_summary_reports_ci_gate_failure(self):
+        self.assertIn("        id: verify", self.step("Require passing CI for the checked-out commit").splitlines())
+        step = self.step("Summarize")
+        self.assertIn("        if: always()", step.splitlines())
+        self.assertIn("          VERIFY_OUTCOME: ${{ steps.verify.outcome }}", step.splitlines())
+        script = textwrap.dedent(step.split("        run: |\n", 1)[1])
+        with tempfile.TemporaryDirectory() as temporary:
+            summary = Path(temporary) / "summary.md"
+            subprocess.run(["bash", "-c", script], check=True, capture_output=True, text=True, env={
+                **os.environ,
+                "SHOULD_SKIP": "false",
+                "SKIP_REASON": "",
+                "VERIFY_OUTCOME": "failure",
+                "PUBLISHED_TAG": "",
+                "PUBLISHED_URL": "",
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "OmniNull/OmniWM",
+                "GITHUB_RUN_ID": "100",
+                "GITHUB_STEP_SUMMARY": str(summary),
+            })
+            self.assertIn("Canary blocked", summary.read_text())
+            self.assertIn("https://github.com/OmniNull/OmniWM/actions/runs/100", summary.read_text())
 
 
 class CanaryCIAPITests(unittest.TestCase):
