@@ -17,7 +17,8 @@ final class ResizeOverlayController {
     }
 
     private(set) var workspaceId: WorkspaceDescriptor.ID?
-    private(set) var panels: [WindowToken: ResizeOverlayWindow] = [:]
+    private(set) var panels: [WindowToken: ResizeOverlayTile] = [:]
+    private var hosts: [ResizeOverlayHost] = []
     private(set) var captureTasks: [WindowToken: Task<Void, Never>] = [:]
     private(set) var settlesOnLayout = false
     private var phase = Phase.idle
@@ -29,6 +30,7 @@ final class ResizeOverlayController {
     private let captureAccessAllowed: @MainActor () -> Bool
     private let captureImage: ImageCapture
     private let currentFrame: @MainActor (WindowToken) -> CGRect?
+    private let monitorFrame: @MainActor (WorkspaceDescriptor.ID) -> CGRect?
     private let icon: @MainActor (WindowToken) -> NSImage?
     private let requestRelayout: @MainActor (WorkspaceDescriptor.ID) -> Void
 
@@ -38,6 +40,7 @@ final class ResizeOverlayController {
         captureAccessAllowed: @escaping @MainActor () -> Bool = { ScreenCapturePermissionMonitor.shared.isGranted },
         captureImage: ImageCapture? = nil,
         currentFrame: @escaping @MainActor (WindowToken) -> CGRect?,
+        monitorFrame: @escaping @MainActor (WorkspaceDescriptor.ID) -> CGRect? = { _ in nil },
         icon: @escaping @MainActor (WindowToken) -> NSImage? = { _ in nil },
         requestRelayout: @escaping @MainActor (WorkspaceDescriptor.ID) -> Void = { _ in }
     ) {
@@ -48,6 +51,7 @@ final class ResizeOverlayController {
             await DragGhostController.captureWindowImage(token: token, pixelSize: pixelSize, previews: previews)
         }
         self.currentFrame = currentFrame
+        self.monitorFrame = monitorFrame
         self.icon = icon
         self.requestRelayout = requestRelayout
     }
@@ -98,16 +102,19 @@ final class ResizeOverlayController {
 
     func update(_ changes: [LayoutFrameChange]) {
         guard phase == .tracking else { return }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
         for change in changes {
             if let panel = panels[change.token] {
                 panel.updateFrame(change.frame)
             } else if let start = currentFrame(change.token),
                       !start.approximatelyEqual(to: change.frame, tolerance: FrameTolerance.frameWrite),
-                      NSScreen.screens.contains(where: { $0.frame.intersects(start.union(change.frame)) })
+                      let host = host(for: start.union(change.frame))
             {
-                addPanel(token: change.token, from: start, to: change.frame)
+                addPanel(token: change.token, from: start, to: change.frame, in: host)
             }
         }
+        CATransaction.commit()
         armWatchdog()
     }
 
@@ -115,7 +122,8 @@ final class ResizeOverlayController {
         guard phase == .tracking else { return }
         phase = .settling
         for (token, panel) in panels
-            where currentFrame(token)?.approximatelyEqual(to: panel.frame, tolerance: FrameTolerance.frameWrite) == true
+            where currentFrame(token)?
+            .approximatelyEqual(to: panel.targetFrame, tolerance: FrameTolerance.frameWrite) == true
         {
             retire(token)
         }
@@ -140,6 +148,13 @@ final class ResizeOverlayController {
         for token in Array(panels.keys) {
             retire(token)
         }
+        let screens = NSScreen.screens.map(\.frame)
+        hosts.removeAll { host in
+            host.orderOut(nil)
+            guard !screens.contains(host.frame) else { return false }
+            host.destroy()
+            return true
+        }
         workspaceId = nil
         settlesOnLayout = false
         phase = .idle
@@ -161,17 +176,32 @@ final class ResizeOverlayController {
         }
     }
 
-    private func addPanel(token: WindowToken, from start: CGRect, to frame: CGRect) {
-        let panel = ResizeOverlayWindow(icon: icon(token), frame: start, surfaceCoordinator: surfaceCoordinator)
+    private func host(for frame: CGRect) -> ResizeOverlayHost? {
+        guard let screen = workspaceId.flatMap(monitorFrame) ?? NSScreen.screen(containing: frame)?.frame,
+              screen.intersects(frame)
+        else { return nil }
+        if let host = hosts.first(where: { $0.frame == screen }) {
+            return host
+        }
+        let host = ResizeOverlayHost(frame: screen, surfaceCoordinator: surfaceCoordinator)
+        hosts.append(host)
+        return host
+    }
+
+    private func addPanel(token: WindowToken, from start: CGRect, to frame: CGRect, in host: ResizeOverlayHost) {
+        let panel = ResizeOverlayTile(icon: icon(token), frame: start, in: host)
         panel.updateFrame(frame)
         panels[token] = panel
+        if !host.isVisible {
+            host.orderFrontRegardless()
+        }
         guard style == .snapshot, captureAccessAllowed() else {
-            panel.orderFront(nil)
+            panel.isHidden = false
             return
         }
         if let shared = previews.sharedPreview(for: token)?.frame {
             panel.setSnapshot(shared.surface, contentsRect: shared.contentsRect, holding: shared)
-            panel.orderFront(nil)
+            panel.isHidden = false
         }
         let scale = NSScreen.screen(containing: start)?.backingScaleFactor ?? 2
         let pixelSize = CGSize(width: (start.width * scale).rounded(), height: (start.height * scale).rounded())
@@ -181,7 +211,7 @@ final class ResizeOverlayController {
             if let image {
                 panel.setSnapshot(image)
             }
-            panel.orderFront(nil)
+            panel.isHidden = false
         }
     }
 
@@ -192,24 +222,15 @@ final class ResizeOverlayController {
 }
 
 @MainActor
-final class ResizeOverlayWindow: NSPanel {
-    private let glassView = NSGlassEffectView()
-    private let iconView = NSImageView()
-    private let snapshotView = NSView()
+final class ResizeOverlayHost: NSPanel {
     private let surfaceCoordinator: SurfaceCoordinator
     private var surfaceId: String?
-    private var preview: OverviewPreviewFrame?
-    private var isDestroyed = false
 
-    var showsSnapshot: Bool {
-        !snapshotView.isHidden
-    }
-
-    init(icon: NSImage?, frame: CGRect, surfaceCoordinator: SurfaceCoordinator = .shared) {
+    init(frame: CGRect, surfaceCoordinator: SurfaceCoordinator = .shared) {
         self.surfaceCoordinator = surfaceCoordinator
 
         super.init(
-            contentRect: .zero,
+            contentRect: frame,
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -220,17 +241,16 @@ final class ResizeOverlayWindow: NSPanel {
         backgroundColor = .clear
         level = .floating
         ignoresMouseEvents = true
-        hasShadow = true
+        hasShadow = false
         hidesOnDeactivate = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
-        titleVisibility = .hidden
-        titlebarAppearsTransparent = true
-        isMovableByWindowBackground = false
         isReleasedWhenClosed = false
+        animationBehavior = .none
+        setFrame(frame, display: false)
 
-        configureContentView()
-        iconView.image = icon
-        updateFrame(frame)
+        let root = NSView(frame: CGRect(origin: .zero, size: frame.size))
+        root.wantsLayer = true
+        contentView = root
 
         let surfaceId = "resize-overlay-\(ObjectIdentifier(self).hashValue)"
         self.surfaceId = surfaceId
@@ -246,10 +266,6 @@ final class ResizeOverlayWindow: NSPanel {
         )
     }
 
-    isolated deinit {
-        destroy()
-    }
-
     override var canBecomeKey: Bool {
         false
     }
@@ -258,32 +274,73 @@ final class ResizeOverlayWindow: NSPanel {
         false
     }
 
-    private func configureContentView() {
-        let container = NSView(frame: .zero)
-        container.wantsLayer = true
-        container.layer?.cornerRadius = 10
-        container.layer?.masksToBounds = true
-        container.layer?.borderWidth = 1.5
-        container.layer?.borderColor = NSColor.white.withAlphaComponent(0.25).cgColor
+    override func constrainFrameRect(_ frameRect: NSRect, to _: NSScreen?) -> NSRect {
+        frameRect
+    }
 
+    func destroy() {
+        if let surfaceId {
+            surfaceCoordinator.unregister(id: surfaceId)
+            self.surfaceId = nil
+        }
+        orderOut(nil)
+        close()
+    }
+}
+
+@MainActor
+final class ResizeOverlayTile: NSView {
+    private static let cornerRadius: CGFloat = 10
+    private let content = NSView()
+    private let iconView = NSImageView()
+    private let snapshotView = NSView()
+    private var preview: OverviewPreviewFrame?
+    private(set) var targetFrame: CGRect = .zero
+
+    var showsSnapshot: Bool {
+        !snapshotView.isHidden
+    }
+
+    var isVisible: Bool {
+        !isHidden && window?.isVisible == true
+    }
+
+    init(icon: NSImage?, frame: CGRect, in host: ResizeOverlayHost) {
+        super.init(frame: .zero)
+        isHidden = true
+        wantsLayer = true
+        layer?.shadowColor = NSColor.black.cgColor
+        layer?.shadowOpacity = 0.35
+        layer?.shadowRadius = 12
+        layer?.shadowOffset = CGSize(width: 0, height: -4)
+
+        content.wantsLayer = true
+        content.layer?.cornerRadius = Self.cornerRadius
+        content.layer?.masksToBounds = true
+        content.layer?.borderWidth = 1.5
+        content.layer?.borderColor = NSColor.white.withAlphaComponent(0.25).cgColor
+        addSubview(content)
+
+        let glassView = NSGlassEffectView(frame: CGRect(origin: .zero, size: host.frame.size))
         glassView.style = .regular
-        glassView.cornerRadius = 10
-        glassView.autoresizingMask = [.width, .height]
-        container.addSubview(glassView)
+        content.addSubview(glassView)
 
+        iconView.image = icon
         iconView.imageScaling = .scaleProportionallyUpOrDown
-        iconView.autoresizingMask = [.minXMargin, .maxXMargin, .minYMargin, .maxYMargin]
-        container.addSubview(iconView)
+        content.addSubview(iconView)
 
         snapshotView.wantsLayer = true
         snapshotView.layer?.contentsGravity = .resize
-        snapshotView.layer?.cornerRadius = 10
-        snapshotView.layer?.masksToBounds = true
-        snapshotView.autoresizingMask = [.width, .height]
         snapshotView.isHidden = true
-        container.addSubview(snapshotView)
+        content.addSubview(snapshotView)
 
-        contentView = container
+        host.contentView?.addSubview(self)
+        updateFrame(frame)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
 
     func setSnapshot(
@@ -303,12 +360,20 @@ final class ResizeOverlayWindow: NSPanel {
     }
 
     func updateFrame(_ frame: CGRect) {
+        targetFrame = frame
+        let origin = window?.frame.origin ?? .zero
+        let bounds = CGRect(origin: .zero, size: frame.size)
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        setFrame(frame, display: false)
-        contentView?.frame = CGRect(origin: .zero, size: frame.size)
-        glassView.frame = CGRect(origin: .zero, size: frame.size)
-        snapshotView.frame = CGRect(origin: .zero, size: frame.size)
+        self.frame = frame.offsetBy(dx: -origin.x, dy: -origin.y)
+        layer?.shadowPath = CGPath(
+            roundedRect: bounds,
+            cornerWidth: Self.cornerRadius,
+            cornerHeight: Self.cornerRadius,
+            transform: nil
+        )
+        content.frame = bounds
+        snapshotView.frame = bounds
         let iconSize: CGFloat = min(96, min(frame.width, frame.height) * 0.4)
         iconView.frame = CGRect(
             x: (frame.width - iconSize) / 2,
@@ -320,15 +385,8 @@ final class ResizeOverlayWindow: NSPanel {
     }
 
     func destroy() {
-        guard !isDestroyed else { return }
-        isDestroyed = true
-        if let surfaceId {
-            surfaceCoordinator.unregister(id: surfaceId)
-            self.surfaceId = nil
-        }
         snapshotView.layer?.contents = nil
         preview = nil
-        orderOut(nil)
-        close()
+        removeFromSuperview()
     }
 }
