@@ -19,7 +19,12 @@ final class ShellRenderedWidget {
 
     convenience init(_ name: String) throws {
         let url = try XCTUnwrap(ShellConfig.bundledWidget(name))
-        try self.init(name: name, source: String(contentsOf: url, encoding: .utf8))
+        let defaults = try XCTUnwrap(ShellDefaults.bundled)
+        let source = try ShellWidgetSourceLoader.build(.init(
+            name: name, shellDirectory: defaults.deletingLastPathComponent(),
+            sourceURL: url, directories: [defaults], profile: "default"
+        ))
+        try self.init(name: name, source: source.main, modules: source.modules, chunk: source.chunk)
     }
 
     init(

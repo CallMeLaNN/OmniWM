@@ -98,4 +98,42 @@ final class KeyboardModeIndicatorTests: XCTestCase {
         }
         XCTAssertNil(settings.hotkeyBindings.first { $0.id == "focus.right" }?.modeKey)
     }
+
+    func testBordersAndBarsScopeSitsBetweenBorderAndFullScene() {
+        let controller = WindowAdmissionTestSupport.controller(prefix: "KeyboardModeScope")
+        let reconciler = SurfaceReconciler(controller: controller)
+        defer { reconciler.reconcileNow() }
+
+        reconciler.noteBorderChanged()
+        XCTAssertEqual(reconciler.pendingReconcileScope, .borderOnly)
+        reconciler.noteBordersAndBarsChanged()
+        reconciler.noteBorderChanged()
+        XCTAssertEqual(reconciler.pendingReconcileScope, .bordersAndBars)
+        reconciler.noteWorldChanged()
+        reconciler.noteBordersAndBarsChanged()
+        XCTAssertEqual(reconciler.pendingReconcileScope, .fullScene)
+    }
+
+    func testBarStyleCarriesTheKeyboardMode() {
+        let settings = WindowAdmissionTestSupport.controller(prefix: "KeyboardModeBarStyle").settings.workspaceBar
+        let monitor = Monitor(
+            id: .init(displayId: 1),
+            displayId: 1,
+            frame: CGRect(x: 0, y: 0, width: 1440, height: 900),
+            visibleFrame: CGRect(x: 0, y: 0, width: 1440, height: 900),
+            hasNotch: false,
+            name: "M1"
+        )
+        let resolved = settings.resolved(for: monitor)
+        for kind in [KeyboardModeKind.normal, .paused, .prefix, .window] {
+            let snapshot = WorkspaceBarSnapshot(
+                projection: .init(items: [], scratchpads: []),
+                backgroundOpacity: 1,
+                barHeight: 28,
+                keyboardMode: kind
+            )
+            XCTAssertEqual(ShellBarStyle(resolved, settings: settings, snapshot: snapshot).keyboardMode, kind.rawValue)
+            XCTAssertEqual(snapshot.replacingShellWidgets([]).keyboardMode, kind)
+        }
+    }
 }

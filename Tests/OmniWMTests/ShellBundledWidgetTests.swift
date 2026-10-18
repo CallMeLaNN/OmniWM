@@ -233,8 +233,7 @@ final class ShellBundledWidgetTests: XCTestCase {
     }
 
     private func render(_ name: String, data: [(String, [UInt8])]) throws {
-        let url = try XCTUnwrap(ShellConfig.bundledWidget(name), name)
-        try render(name, source: String(contentsOf: url, encoding: .utf8), chunk: "=\(name)", data: data)
+        try renderStyle("default", widget: name, data: data)
     }
 
     private func render(
@@ -358,6 +357,38 @@ final class ShellBundledWidgetTests: XCTestCase {
                     XCTAssertEqual(visible + hidden, 5, "\(style) \(edge)")
                 })
             }
+        }
+    }
+
+    func testOmniWMButtonsShowTheKeyboardModeChip() throws {
+        let modes = [
+            ("paused", "pause.fill", "Paused"),
+            ("prefix", "keyboard", "Prefix"),
+            ("window", "keyboard", "Window Mode")
+        ]
+        for style in ["default", "wayline", "nocturne", "celestial", "system", "sakura", "matrix"] {
+            for (mode, symbol, label) in modes {
+                for vertical in [false, true] {
+                    let data = try fullData(vertical: vertical) { bar in
+                        bar.style.keyboardMode = mode
+                    }
+                    try renderStyle(style, widget: "omniwm", data: data, inspect: { view, nodes, text in
+                        guard view == OMNI_VIEW_BAR else { return }
+                        let strings = nodes.map { text.string($0.text) }
+                        XCTAssertTrue(strings.contains(symbol), "\(style) \(mode)")
+                        XCTAssertEqual(
+                            strings.contains(ShellLocalizer.string(label, [])),
+                            !vertical,
+                            "\(style) \(mode)"
+                        )
+                    })
+                }
+            }
+            try renderStyle(style, widget: "omniwm", data: fullData(), inspect: { view, nodes, text in
+                guard view == OMNI_VIEW_BAR else { return }
+                let strings = nodes.map { text.string($0.text) }
+                XCTAssertFalse(strings.contains("pause.fill") || strings.contains("keyboard"), style)
+            })
         }
     }
 
@@ -496,25 +527,14 @@ final class ShellBundledWidgetTests: XCTestCase {
                 try [false, true].map { try fullData(island: island, vertical: $0) }
             }
         for style in ["celestial", "nocturne", "system", "wayline"] {
-            let folder = styles.appendingPathComponent(style, isDirectory: true)
-            let library = folder.appendingPathComponent("lib")
-            let modules = try ((try? FileManager.default.contentsOfDirectory(atPath: library.path)) ?? []).map {
-                try ("\(style)/lib/\($0)", String(contentsOf: library.appendingPathComponent($0), encoding: .utf8))
-            }
-            let widgets = folder.appendingPathComponent("widgets")
+            let widgets = styles.appendingPathComponent(style, isDirectory: true).appendingPathComponent("widgets")
             for name in try FileManager.default.contentsOfDirectory(atPath: widgets.path) {
                 let source = try String(
                     contentsOf: widgets.appendingPathComponent("\(name)/init.luau"),
                     encoding: .utf8
                 )
                 for data in variants {
-                    try render(
-                        "\(style)/\(name)",
-                        source: source,
-                        chunk: "@\(style)/widgets/\(name)/init.luau",
-                        modules: modules,
-                        data: data
-                    )
+                    try renderStyle(style, widget: name, data: data)
                 }
                 guard let original = ShellConfig.bundledWidget(name) else { continue }
                 XCTAssertEqual(

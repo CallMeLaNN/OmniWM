@@ -59,6 +59,7 @@ struct ShellBarStyle: Equatable, Sendable {
     var textColor: String?
     var statsButton = true
     var secureInput = false
+    var keyboardMode = KeyboardModeKind.normal.rawValue
     var previews = true
     var hideInFullscreen = true
 
@@ -88,6 +89,7 @@ struct ShellBarStyle: Equatable, Sendable {
             ("textColor", optional(textColor)),
             ("statsButton", { $0.bool(statsButton) }),
             ("secureInput", { $0.bool(secureInput) }),
+            ("keyboardMode", { $0.string(keyboardMode) }),
             ("previews", { $0.bool(previews) }),
             ("hideInFullscreen", { $0.bool(hideInFullscreen) })
         ]

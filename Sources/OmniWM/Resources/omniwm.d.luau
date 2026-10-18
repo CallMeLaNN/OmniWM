@@ -94,6 +94,7 @@ export type BarStyle = {
     textColor: string?,
     statsButton: boolean,
     secureInput: boolean,
+    keyboardMode: "normal" | "paused" | "prefix" | "window",
     previews: boolean,
     hideInFullscreen: boolean,
 }
