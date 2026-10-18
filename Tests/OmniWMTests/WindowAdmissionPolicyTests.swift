@@ -78,8 +78,7 @@ final class WindowAdmissionPolicyTests: XCTestCase {
         let axRef = WindowAdmissionTestSupport.axRef(for: token)
         let ruleEffects = ManagedWindowRuleEffects(
             minWidth: 640,
-            minHeight: 480,
-            matchedRuleId: UUID()
+            minHeight: 480
         )
         let admissionHints = ManagedWindowAdmissionHints(
             initialNiriContainerPrimarySpan: 0.4
@@ -615,6 +614,7 @@ private func explicitProxyEvaluation(
             workspaceName: nil,
             ruleEffects: .none,
             admissionHints: .none,
+            ruleProvenance: .none,
             heuristicReasons: [],
             deferredReason: nil
         ),

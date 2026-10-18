@@ -341,8 +341,7 @@ final class NiriInitialContainerPrimarySpanTests: XCTestCase {
             to: workspaceId,
             ruleEffects: ManagedWindowRuleEffects(
                 minWidth: 700,
-                minHeight: nil,
-                matchedRuleId: nil
+                minHeight: nil
             ),
             admissionHints: ManagedWindowAdmissionHints(initialNiriContainerPrimarySpan: 0.25)
         )

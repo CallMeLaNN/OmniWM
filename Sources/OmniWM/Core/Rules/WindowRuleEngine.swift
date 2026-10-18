@@ -75,6 +75,8 @@ final class WindowRuleEngine {
         guard let manualOverride, decision.tracksWindow else {
             return decision
         }
+        var provenance = decision.ruleProvenance
+        provenance.layout = nil
         return WindowDecision(
             disposition: manualOverride == .forceTile ? .managed : .floating,
             source: .manualOverride,
@@ -82,6 +84,7 @@ final class WindowRuleEngine {
             workspaceName: decision.workspaceName,
             ruleEffects: decision.ruleEffects,
             admissionHints: decision.admissionHints,
+            ruleProvenance: provenance,
             heuristicReasons: [],
             deferredReason: nil
         )
@@ -130,28 +133,28 @@ final class WindowRuleEngine {
     }
 
     private func selectRules(for facts: WindowRuleFacts, eligibility: WindowStructuralEligibility) -> Selection {
-        let userRule: CompiledWindowRule?
+        let userRules: ComposedUserRules
         let builtInRule: CompiledWindowRule?
         switch eligibility {
         case .eligible:
-            userRule = bestMatch(in: compiledUserRules, facts: facts)
+            userRules = composedUserRules(facts: facts)
             builtInRule = bestMatch(in: builtInRules, facts: facts)
         case .requiresExplicitInclusion:
-            userRule = bestExplicitInclusionMatch(in: compiledUserRules, facts: facts)
-            builtInRule = bestExplicitInclusionMatch(in: builtInRules, facts: facts)
-            if userRule == nil, builtInRule == nil {
+            userRules = composedUserRules(facts: facts, requireExplicitInclusion: true)
+            builtInRule = bestMatch(in: builtInRules, facts: facts, requireExplicitInclusion: true)
+            if userRules.isEmpty, builtInRule == nil {
                 return .rejected(externalSurfaceDecision())
             }
         case .requiresExplicitUserInclusion:
-            userRule = bestExplicitInclusionMatch(in: compiledUserRules, facts: facts)
+            userRules = composedUserRules(facts: facts, requireExplicitInclusion: true)
             builtInRule = nil
-            if userRule == nil {
+            if userRules.isEmpty {
                 return .rejected(externalSurfaceDecision())
             }
         case .requiresIndependentRootInclusion:
-            userRule = bestExplicitInclusionMatch(in: compiledUserRules, facts: facts)
-            builtInRule = bestExplicitInclusionMatch(in: builtInRules, facts: facts)
-            if userRule == nil, builtInRule == nil {
+            userRules = composedUserRules(facts: facts, requireExplicitInclusion: true)
+            builtInRule = bestMatch(in: builtInRules, facts: facts, requireExplicitInclusion: true)
+            if userRules.isEmpty, builtInRule == nil {
                 return .rejected(unprovenIndependentRootDecision())
             }
         case .external:
@@ -159,7 +162,7 @@ final class WindowRuleEngine {
         case let .deferred(reason):
             return .rejected(deferredStructuralDecision(reason: reason))
         }
-        return .matched(MatchedWindowRules(userRule: userRule, builtInRule: builtInRule))
+        return .matched(MatchedWindowRules(userRules: userRules, builtInRule: builtInRule))
     }
 
     private func externalSurfaceDecision() -> WindowDecision {
@@ -170,6 +173,7 @@ final class WindowRuleEngine {
             workspaceName: nil,
             ruleEffects: .none,
             admissionHints: .none,
+            ruleProvenance: .none,
             heuristicReasons: [],
             deferredReason: nil
         )
@@ -183,6 +187,7 @@ final class WindowRuleEngine {
             workspaceName: nil,
             ruleEffects: .none,
             admissionHints: .none,
+            ruleProvenance: .none,
             heuristicReasons: [],
             deferredReason: nil
         )
@@ -198,9 +203,21 @@ final class WindowRuleEngine {
             workspaceName: nil,
             ruleEffects: .none,
             admissionHints: .none,
+            ruleProvenance: .none,
             heuristicReasons: reason == .attributeFetchFailed ? [.attributeFetchFailed] : [],
             deferredReason: reason
         )
+    }
+
+    private func composedUserRules(
+        facts: WindowRuleFacts,
+        requireExplicitInclusion: Bool = false
+    ) -> ComposedUserRules {
+        var composed = ComposedUserRules()
+        forEachMatch(in: compiledUserRules, facts: facts, requireExplicitInclusion: requireExplicitInclusion) {
+            composed.add($0)
+        }
+        return composed
     }
 
     private func bestMatch(
@@ -209,37 +226,25 @@ final class WindowRuleEngine {
         requireExplicitInclusion: Bool = false
     ) -> CompiledWindowRule? {
         var best: CompiledWindowRule?
-
-        for candidate in rules {
-            if requireExplicitInclusion,
-               !candidate.explicitlyIncludesNonstandardSurface
-            {
-                continue
-            }
-            guard candidate.matches(facts) else { continue }
-            guard let currentBest = best else {
-                best = candidate
-                continue
-            }
-
-            if candidate.rule.specificity > currentBest.rule.specificity
-                || (candidate.rule.specificity == currentBest.rule.specificity && candidate.order < currentBest.order)
-            {
-                best = candidate
-            }
+        forEachMatch(in: rules, facts: facts, requireExplicitInclusion: requireExplicitInclusion) { candidate in
+            if let current = best, !candidate.outranks(current) { return }
+            best = candidate
         }
-
         return best
     }
 
-    private func bestExplicitInclusionMatch(
+    private func forEachMatch(
         in rules: [CompiledWindowRule],
-        facts: WindowRuleFacts
-    ) -> CompiledWindowRule? {
-        bestMatch(
-            in: rules,
-            facts: facts,
-            requireExplicitInclusion: true
-        )
+        facts: WindowRuleFacts,
+        requireExplicitInclusion: Bool,
+        _ body: (CompiledWindowRule) -> Void
+    ) {
+        for candidate in rules {
+            if requireExplicitInclusion, !candidate.explicitlyIncludesNonstandardSurface {
+                continue
+            }
+            guard candidate.matches(facts) else { continue }
+            body(candidate)
+        }
     }
 }

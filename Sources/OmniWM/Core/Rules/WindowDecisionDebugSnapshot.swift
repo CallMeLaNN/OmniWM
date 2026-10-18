@@ -22,7 +22,7 @@ struct WindowDecisionDebugSnapshot: Equatable, Sendable {
     let minWidth: Double?
     let minHeight: Double?
     let initialNiriContainerPrimarySpan: Double?
-    let matchedRuleId: UUID?
+    let ruleProvenance: WindowRuleProvenance
     let heuristicReasons: [AXWindowHeuristicReason]
     let attributeFetchSucceeded: Bool
 
@@ -37,6 +37,10 @@ struct WindowDecisionDebugSnapshot: Equatable, Sendable {
         case .heuristic:
             "heuristic"
         }
+    }
+
+    private func ruleIdDescription(_ ruleId: UUID?) -> String {
+        ruleId?.uuidString ?? "nil"
     }
 
     private func stringValue<T>(_ value: T?) -> String {
@@ -56,13 +60,17 @@ struct WindowDecisionDebugSnapshot: Equatable, Sendable {
             "disposition=\(String(describing: disposition))",
             "source=\(sourceDescription)",
             "layoutDecisionKind=\(layoutDecisionKind.rawValue)",
+            "layoutRuleId=\(ruleIdDescription(ruleProvenance.layout))",
             "deferredReason=\(deferredReason?.rawValue ?? "nil")",
             "admissionOutcome=\(admissionOutcome.rawValue)",
             "workspaceName=\(workspaceName ?? "nil")",
+            "workspaceRuleId=\(ruleIdDescription(ruleProvenance.workspace))",
             "minWidth=\(stringValue(minWidth))",
+            "minWidthRuleId=\(ruleIdDescription(ruleProvenance.minWidth))",
             "minHeight=\(stringValue(minHeight))",
+            "minHeightRuleId=\(ruleIdDescription(ruleProvenance.minHeight))",
             "initialNiriContainerPrimarySpan=\(stringValue(initialNiriContainerPrimarySpan))",
-            "matchedRuleId=\(matchedRuleId?.uuidString ?? "nil")",
+            "initialNiriContainerPrimarySpanRuleId=\(ruleIdDescription(ruleProvenance.initialContainerPrimarySpan))",
             "heuristicReasons=\(heuristicReasons.map(\.rawValue).joined(separator: ","))",
             "attributeFetchSucceeded=\(attributeFetchSucceeded)"
         ]

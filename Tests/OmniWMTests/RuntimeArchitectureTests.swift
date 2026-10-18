@@ -6131,6 +6131,7 @@ final class RuntimeArchitectureTests: XCTestCase {
                 workspaceName: nil,
                 ruleEffects: .none,
                 admissionHints: .none,
+                ruleProvenance: .none,
                 heuristicReasons: reasons,
                 deferredReason: nil
             )
@@ -6190,6 +6191,7 @@ final class RuntimeArchitectureTests: XCTestCase {
             workspaceName: nil,
             ruleEffects: .none,
             admissionHints: .none,
+            ruleProvenance: .none,
             heuristicReasons: [],
             deferredReason: nil
         )
@@ -6200,6 +6202,7 @@ final class RuntimeArchitectureTests: XCTestCase {
             workspaceName: nil,
             ruleEffects: .none,
             admissionHints: .none,
+            ruleProvenance: .none,
             heuristicReasons: [],
             deferredReason: nil
         )

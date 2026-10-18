@@ -1407,6 +1407,7 @@ final class FloatingCreatePlacementTests: XCTestCase {
                 workspaceName: nil,
                 ruleEffects: .none,
                 admissionHints: .none,
+                ruleProvenance: .none,
                 heuristicReasons: [],
                 deferredReason: nil
             ),

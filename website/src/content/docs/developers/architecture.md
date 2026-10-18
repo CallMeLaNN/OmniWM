@@ -765,8 +765,10 @@ Window create/move/front-app events originate here; AX *destroy/miniaturize/focu
 `HiddenTitleBarRegistry` and `InputMethodBundleRegistry` structural lookup tables
 
 `decision(for:token:appFullscreen:) -> WindowDecision` establishes structural ownership before it ranks rule
-matches. User and built-in rules compile into separate `CompiledRule` lists; each list ranks matches by
-specificity then declaration order, and an explicit user layout takes precedence over a built-in layout.
+matches. User and built-in rules compile into separate `CompiledRule` lists ranked by specificity then declaration order.
+Matching user rules compose per setting: layout, workspace, minimum width, minimum height, and initial span each
+come from the highest-ranked matching rule that sets them. The built-in list contributes only its best match, and
+an explicit user layout takes precedence over a built-in layout.
 Evaluation proceeds through these boundaries:
 
 1. `AXHelpTag` roles and input-method apps are hard external. `InputMethodBundleRegistry.discover()` seeds a
@@ -814,7 +816,7 @@ and the parent, help-tag, and input-method exclusions still apply. Broad app/tit
 cannot cross any precise-inclusion gate.
 
 Per-app `initialContainerPrimarySpan` is an admission hint, not an ongoing `ManagedWindowRuleEffects` constraint.
-`WindowRuleEngine` takes it only from the single winning rule, and Niri consumes it once when a resizable
+`WindowRuleEngine` takes it from the highest-ranked matching rule that sets it, and Niri consumes it once when a resizable
 window creates or claims a new container. Niri owns that initial primary-span seed before its normal fallback;
 Dwindle ignores it, restored placement takes precedence, and later resize or relayout operations do not
 reassert the rule value. Single Window Fit retains visual precedence for a lone window, while physical

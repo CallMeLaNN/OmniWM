@@ -288,8 +288,7 @@ final class FullRescanWindowAdmissionTests: XCTestCase {
         )
         let ruleEffects = ManagedWindowRuleEffects(
             minWidth: 640,
-            minHeight: 480,
-            matchedRuleId: UUID()
+            minHeight: 480
         )
         let admissionHints = ManagedWindowAdmissionHints(initialNiriContainerPrimarySpan: 0.4)
         let axRef = WindowAdmissionTestSupport.axRef(for: token)

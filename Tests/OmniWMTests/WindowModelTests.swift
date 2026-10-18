@@ -88,8 +88,7 @@ final class WindowModelTests: XCTestCase {
         )
         let existingRuleEffects = ManagedWindowRuleEffects(
             minWidth: 640,
-            minHeight: 480,
-            matchedRuleId: nil
+            minHeight: 480
         )
         let existingAdmissionHints = ManagedWindowAdmissionHints(initialNiriContainerPrimarySpan: 0.5)
         let existingToken = model.upsert(

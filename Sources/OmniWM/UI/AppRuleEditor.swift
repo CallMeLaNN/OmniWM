@@ -199,6 +199,10 @@ struct RuleWindowBehaviorSection: View {
             }
             .pickerStyle(.segmented)
 
+            SettingsCaption(
+                localized: "Settings left on Automatic or off can come from other rules that match the same window."
+            )
+
             Toggle("Assign to Workspace", isOn: $draft.assignToWorkspaceEnabled)
                 .onChange(of: draft.assignToWorkspaceEnabled) { _, enabled in
                     guard enabled else { return }

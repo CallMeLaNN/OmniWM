@@ -76641,130 +76641,6 @@
         }
       }
     },
-    "Match specificity %lld — higher specificity wins; ties break by list order" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "一致の特異性%lld — 高い特異性が勝つ; 同点はリストの順序で決まる"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Übereinstimmungsspezifität %lld — höhere Spezifität gewinnt; bei Gleichstand entscheidet die Reihenfolge der Liste"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Matchspesifisitet %lld — høyere spesifisitet vinner; ved likhet avgjør rekkefølgen i listen"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Matchningsspecificitet %lld — högre specificitet vinner; vid lika avgör ordningen i listan"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Especificidad de coincidencia %lld — mayor especificidad gana; los empates se rompen por orden de la lista"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "匹配特定性%lld——特定性越高越优先；相同时按列表顺序决定"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "मिलान विशिष्टता %lld — उच्च विशिष्टता को प्राथमिकता मिलती है; बराबरी होने पर सूची क्रम से तय होता है"
-          }
-        },
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "دقة المطابقة %lld — الدقة الأعلى تفوز؛ يتم كسر التعادل حسب ترتيب القائمة"
-          }
-        },
-        "sr-Latn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Specifičnost podudaranja %lld — veća specifičnost ima prednost; pri jednakosti odlučuje redosled na listi"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Εξειδίκευση αντιστοίχισης %lld — υπερισχύει η μεγαλύτερη εξειδίκευση· οι ισοβαθμίες λύνονται με τη σειρά της λίστας"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "מידת ההתאמה %lld — התאמה מדויקת יותר גוברת; בשוויון נקבע לפי סדר הרשימה"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Специфичность соответствия %lld — побеждает более высокая специфичность; при равенстве решает порядок в списке"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stopień szczegółowości dopasowania %lld — bardziej szczegółowe reguły mają pierwszeństwo; remisy rozstrzyga kolejność na liście"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ступінь конкретності збігу %lld — вищий ступінь має пріоритет; за однакового ступеня вирішує порядок у списку"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spécificité de correspondance %lld — la spécificité la plus élevée l'emporte ; en cas d'égalité, l'ordre de la liste départage"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Matchspecificiteit %lld — hogere specificiteit wint; bij gelijkstand beslist de volgorde in de lijst"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Specificità della corrispondenza %lld — vince la specificità più alta; a parità decide l'ordine dell'elenco"
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Täsmäyksen spesifisyys %lld — suurempi spesifisyys voittaa; tasatilanteessa ratkaisee järjestys luettelossa"
-          }
-        },
-        "da" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Matchspecificitet %lld — højere specificitet vinder; ved lighed afgør rækkefølgen på listen"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "매칭 구체성 %lld — 더 높은 구체성이 승리; 동점은 목록 순서로 결정됩니다"
-          }
-        }
-      }
-    },
     "Measure Performance" : {
       "localizations" : {
         "ja" : {
@@ -79614,130 +79490,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@에 대한 더 많은 작업"
-          }
-        }
-      }
-    },
-    "More specific rules win; ties break by order — drag to reorder." : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "より具体的なルールが優先されます。同点の場合は順序で決まります—並べ替えるにはドラッグしてください。"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spezifischere Regeln gewinnen; Unentschieden werden nach Reihenfolge aufgelöst - ziehen Sie, um neu zu ordnen."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mer spesifikke regler vinner; ved likhet avgjør rekkefølgen — dra for å endre rekkefølgen."
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mer specifika regler vinner; oavgjorda avgörs i ordning — dra för att omordna."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Las reglas más específicas ganan; los empates se rompen por orden — arrastra para reordenar."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "更具体的规则获胜；平局按顺序打破——拖动以重新排序。"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "अधिक विशिष्ट नियमों को प्राथमिकता मिलती है; बराबरी होने पर क्रम से तय होता है — क्रम बदलने के लिए खींचें।"
-          }
-        },
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "القواعد الأكثر تحديدًا تفوز؛ وتُكسر التعادلات حسب الترتيب — اسحب لإعادة الترتيب."
-          }
-        },
-        "sr-Latn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Specifičnija pravila imaju prednost; pri jednakosti odlučuje redosled — prevucite da biste promenili redosled."
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Υπερισχύουν οι πιο εξειδικευμένοι κανόνες· οι ισοβαθμίες λύνονται με τη σειρά — σύρετε για αλλαγή σειράς."
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "כללים ספציפיים יותר גוברים; בשוויון הסדר קובע — גררו כדי לשנות סדר."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Более конкретные правила имеют приоритет; при равенстве решает порядок — перетащите, чтобы изменить порядок."
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zasady bardziej szczegółowe mają pierwszeństwo; remisy rozdzielane są zgodnie z kolejnością — przesuń, aby zmienić kolejność."
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Перемагають конкретніші правила; за однакової конкретності вирішує порядок. Перетягніть, щоб змінити його."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Les règles plus spécifiques l'emportent ; en cas d'égalité, l'ordre départage — faites glisser pour réorganiser."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Specifiekere regels winnen; bij gelijkstand beslist de volgorde — sleep om te herschikken."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vincono le regole più specifiche; a parità decide l'ordine — trascina per riordinare."
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tarkemmat säännöt voittavat; tasatilanteessa ratkaisee järjestys – vedä muuttaaksesi järjestystä."
-          }
-        },
-        "da" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mere specifikke regler vinder; ved lighed afgør rækkefølgen — træk for at ændre rækkefølgen."
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "더 구체적인 규칙이 승리합니다; 동점은 순서에 따라 결정됩니다 — 다시 정렬하려면 드래그하세요."
           }
         }
       }
@@ -167015,7 +166767,379 @@
 
     },
     "Edge navigation interval" : {},
-    "Hover at a Niri screen edge to move one column after this interval, then repeat while the pointer stays on the edge or preview. Move away to stop." : {}
+    "Hover at a Niri screen edge to move one column after this interval, then repeat while the pointer stays on the edge or preview. Move away to stop." : {},
+    "Each setting comes from the most specific matching rule that sets it; ties break by order — drag to reorder." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يُؤخذ كل إعداد من القاعدة المطابقة الأكثر تحديدًا التي تضبطه؛ وتُكسر التعادلات حسب الترتيب — اسحب لإعادة الترتيب."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hver indstilling kommer fra den mest specifikke matchende regel, der angiver den; ved lighed afgør rækkefølgen — træk for at ændre rækkefølgen."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jede Einstellung stammt von der spezifischsten passenden Regel, die sie festlegt; bei Gleichstand entscheidet die Reihenfolge – ziehen Sie, um neu zu ordnen."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Κάθε ρύθμιση προέρχεται από τον πιο εξειδικευμένο κανόνα που ταιριάζει και την ορίζει· οι ισοβαθμίες λύνονται με τη σειρά — σύρετε για αλλαγή σειράς."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada ajuste proviene de la regla coincidente más específica que lo define; los empates se rompen por orden — arrastra para reordenar."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jokainen asetus tulee tarkimmasta täsmäävästä säännöstä, joka määrittää sen; tasatilanteessa ratkaisee järjestys – vedä muuttaaksesi järjestystä."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chaque réglage provient de la règle correspondante la plus spécifique qui le définit ; en cas d'égalité, l'ordre départage — faites glisser pour réorganiser."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "כל הגדרה נלקחת מהכלל התואם הספציפי ביותר שמגדיר אותה; בשוויון הסדר קובע — גררו כדי לשנות סדר."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "हर सेटिंग उसे सेट करने वाले सबसे विशिष्ट मेल खाने वाले नियम से आती है; बराबरी होने पर क्रम से तय होता है — क्रम बदलने के लिए खींचें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ogni impostazione proviene dalla regola corrispondente più specifica che la definisce; a parità decide l'ordine — trascina per riordinare."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "各設定は、その設定を指定している最も具体的な一致ルールから適用されます。同点の場合は順序で決まります—並べ替えるにはドラッグしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "각 설정은 해당 설정을 지정한 가장 구체적인 일치 규칙에서 가져옵니다; 동점은 순서에 따라 결정됩니다 — 다시 정렬하려면 드래그하세요."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hver innstilling hentes fra den mest spesifikke samsvarende regelen som angir den; ved likhet avgjør rekkefølgen — dra for å endre rekkefølgen."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elke instelling komt van de meest specifieke overeenkomende regel die haar instelt; bij gelijkstand beslist de volgorde — sleep om te herschikken."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Każde ustawienie pochodzi z najbardziej szczegółowej pasującej reguły, która je określa; remisy rozstrzyga kolejność — przesuń, aby zmienić kolejność."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Каждый параметр берётся из наиболее конкретного подходящего правила, которое его задаёт; при равенстве решает порядок — перетащите, чтобы изменить порядок."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svako podešavanje dolazi iz najspecifičnijeg odgovarajućeg pravila koje ga postavlja; pri jednakosti odlučuje redosled — prevucite da biste promenili redosled."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Varje inställning kommer från den mest specifika matchande regel som anger den; vid lika avgör ordningen — dra för att omordna."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Кожен параметр береться з найконкретнішого відповідного правила, яке його задає; за однакової конкретності вирішує порядок. Перетягніть, щоб змінити його."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每项设置取自设置了该项的最具体的匹配规则；相同时按顺序决定——拖动以重新排序。"
+          }
+        }
+      }
+    },
+    "Match specificity %lld — for each setting, the most specific matching rule wins; ties break by list order" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دقة المطابقة %lld — لكل إعداد تفوز القاعدة المطابقة الأكثر تحديدًا؛ يتم كسر التعادل حسب ترتيب القائمة"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Matchspecificitet %lld — for hver indstilling vinder den mest specifikke matchende regel; ved lighed afgør rækkefølgen på listen"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Übereinstimmungsspezifität %lld — für jede Einstellung gewinnt die spezifischste passende Regel; bei Gleichstand entscheidet die Reihenfolge der Liste"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Εξειδίκευση αντιστοίχισης %lld — για κάθε ρύθμιση υπερισχύει ο πιο εξειδικευμένος κανόνας που ταιριάζει· οι ισοβαθμίες λύνονται με τη σειρά της λίστας"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Especificidad de coincidencia %lld — para cada ajuste gana la regla coincidente más específica; los empates se rompen por orden de la lista"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Täsmäyksen spesifisyys %lld — kunkin asetuksen kohdalla tarkin täsmäävä sääntö voittaa; tasatilanteessa ratkaisee järjestys luettelossa"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spécificité de correspondance %lld — pour chaque réglage, la règle correspondante la plus spécifique l'emporte ; en cas d'égalité, l'ordre de la liste départage"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "מידת ההתאמה %lld — בכל הגדרה גובר הכלל התואם הספציפי ביותר; בשוויון נקבע לפי סדר הרשימה"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मिलान विशिष्टता %lld — हर सेटिंग के लिए सबसे विशिष्ट मेल खाने वाले नियम को प्राथमिकता मिलती है; बराबरी होने पर सूची क्रम से तय होता है"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Specificità della corrispondenza %lld — per ogni impostazione vince la regola corrispondente più specifica; a parità decide l'ordine dell'elenco"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一致の特異性%lld — 設定ごとに最も具体的な一致ルールが優先; 同点はリストの順序で決まる"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "매칭 구체성 %lld — 설정마다 가장 구체적인 일치 규칙이 승리; 동점은 목록 순서로 결정됩니다"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Matchspesifisitet %lld — for hver innstilling vinner den mest spesifikke samsvarende regelen; ved likhet avgjør rekkefølgen i listen"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Matchspecificiteit %lld — per instelling wint de meest specifieke overeenkomende regel; bij gelijkstand beslist de volgorde in de lijst"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stopień szczegółowości dopasowania %lld — dla każdego ustawienia pierwszeństwo ma najbardziej szczegółowa pasująca reguła; remisy rozstrzyga kolejność na liście"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Специфичность соответствия %lld — для каждого параметра побеждает наиболее конкретное подходящее правило; при равенстве решает порядок в списке"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Specifičnost podudaranja %lld — za svako podešavanje prednost ima najspecifičnije odgovarajuće pravilo; pri jednakosti odlučuje redosled na listi"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Matchningsspecificitet %lld — för varje inställning vinner den mest specifika matchande regeln; vid lika avgör ordningen i listan"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ступінь конкретності збігу %lld — для кожного параметра пріоритет має найконкретніше відповідне правило; за однакового ступеня вирішує порядок у списку"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "匹配特定性%lld——每项设置由最具体的匹配规则决定；相同时按列表顺序决定"
+          }
+        }
+      }
+    },
+    "Settings left on Automatic or off can come from other rules that match the same window." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يمكن أن تأتي الإعدادات المتروكة على «آلي» أو المعطّلة من قواعد أخرى تطابق النافذة نفسها."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indstillinger, der står på Automatisk eller er slået fra, kan komme fra andre regler, der matcher det samme vindue."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einstellungen, die auf „Automatisch“ stehen oder ausgeschaltet sind, können von anderen Regeln kommen, die auf dasselbe Fenster passen."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Οι ρυθμίσεις που μένουν σε «Αυτόματη» ή απενεργοποιημένες μπορούν να προέρχονται από άλλους κανόνες που ταιριάζουν στο ίδιο παράθυρο."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los ajustes en Automático o desactivados pueden venir de otras reglas que coincidan con la misma ventana."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automaattiseksi jätetyt tai pois päältä olevat asetukset voivat tulla muista säännöistä, jotka täsmäävät samaan ikkunaan."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les réglages laissés sur Automatique ou désactivés peuvent provenir d'autres règles correspondant à la même fenêtre."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "הגדרות שנשארו על „אוטומטי” או כבויות יכולות להגיע מכללים אחרים שתואמים לאותו חלון."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "स्वचालित पर छोड़ी गई या बंद सेटिंग उसी विंडो से मेल खाने वाले अन्य नियमों से आ सकती हैं।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le impostazioni lasciate su Automatico o disattivate possono provenire da altre regole che corrispondono alla stessa finestra."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「自動」のままの設定やオフの設定は、同じウィンドウに一致する他のルールから適用される場合があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "자동으로 두었거나 꺼 둔 설정은 같은 창과 일치하는 다른 규칙에서 가져올 수 있습니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Innstillinger som står på Automatisk eller er av, kan komme fra andre regler som samsvarer med det samme vinduet."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instellingen die op Automatisch of uit staan, kunnen afkomstig zijn van andere regels die bij hetzelfde venster passen."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ustawienia pozostawione na Automatycznie lub wyłączone mogą pochodzić z innych reguł pasujących do tego samego okna."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Параметры, оставленные в режиме «Автоматический» или выключенные, могут браться из других правил, подходящих к тому же окну."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Podešavanja ostavljena na Automatski ili isključena mogu doći iz drugih pravila koja odgovaraju istom prozoru."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inställningar som står på Automatiskt eller är avstängda kan komma från andra regler som matchar samma fönster."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Параметри, залишені на «Автоматично» або вимкнені, можуть братися з інших правил, що відповідають тому самому вікну."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保持“自动”或关闭的设置可以来自与同一窗口匹配的其他规则。"
+          }
+        }
+      }
+    }
   },
   "version" : "1.0"
 }

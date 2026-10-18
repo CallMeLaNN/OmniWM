@@ -95,7 +95,7 @@ Removes a rule by its UUID.
 omniwmctl rule move <rule-id> <position>
 ```
 
-Moves a rule to a new one-based position in the rule list. More-specific matching rules win; list order only breaks ties in specificity. See [App Rules](/features/app-rules/) for matching behavior.
+Moves a rule to a new one-based position in the rule list. For each setting, the most specific matching rule that sets it wins; list order only breaks ties in specificity. See [App Rules](/features/app-rules/) for matching behavior.
 
 **Apply rules:**
 
