@@ -221,6 +221,9 @@ enum CLIParser {
         if arguments.first == "mark" {
             return try parseWindowMarkRequest(id: id, arguments: Array(arguments.dropFirst()))
         }
+        if arguments.first == "gather" {
+            return try parseWindowGatherRequest(id: id, arguments: Array(arguments.dropFirst()))
+        }
 
         guard let request = IPCWindowRequest(actionWords: arguments) else {
             throw CLIParseError.usage(usageText)
@@ -270,6 +273,7 @@ enum CLIParser {
         let workspaceLines = IPCAutomationManifest.workspaceActionDescriptors.map(\.path)
         let windowLines = IPCAutomationManifest.windowActionDescriptors.map(\.path)
         let windowMarkLines = IPCAutomationManifest.windowMarkActionDescriptors.map(\.path)
+        let windowGatherLines = IPCAutomationManifest.windowGatherActionDescriptors.map(\.path)
         let shellLines = IPCAutomationManifest.shellActionDescriptors.map(\.path)
         let captureLines = IPCAutomationManifest.captureActionDescriptors.map(\.path)
 
@@ -289,6 +293,7 @@ enum CLIParser {
         lines += workspaceLines.map { "  omniwmctl \($0)" }
         lines += windowLines.map { "  omniwmctl \($0)" }
         lines += windowMarkLines.map { "  omniwmctl \($0)" }
+        lines += windowGatherLines.map { "  omniwmctl \($0)" }
         lines += shellLines.map { "  omniwmctl \($0)" }
         lines += [
             "  omniwmctl subscribe <\(subscriptionNames)> [--no-send-initial] [--reconnect] [--format json|ndjson]",

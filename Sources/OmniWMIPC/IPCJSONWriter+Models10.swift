@@ -4,6 +4,62 @@
 import Foundation
 
 extension IPCJSONWriter {
+    mutating func fields1(_ value: borrowing IPCRuleDefinition, _ first: inout Bool) throws {
+        self.key("layout", &first)
+        try self.value(value.layout)
+        if let fieldValue = value.minHeight {
+            self.key("minHeight", &first)
+            try self.value(fieldValue)
+        }
+        if let fieldValue = value.minWidth {
+            self.key("minWidth", &first)
+            try self.value(fieldValue)
+        }
+        if let fieldValue = value.titleRegex {
+            self.key("titleRegex", &first)
+            try self.value(fieldValue)
+        }
+        if let fieldValue = value.titleSubstring {
+            self.key("titleSubstring", &first)
+            try self.value(fieldValue)
+        }
+    }
+
+    mutating func value(_ value: borrowing IPCRuleDefinition) throws {
+        begin(123)
+        var first = true
+        try fields0(value, &first)
+        try fields1(value, &first)
+        end(125)
+    }
+
+    mutating func value(_ value: borrowing IPCRuleApplyTarget) throws {
+        switch value {
+        case .focused:
+            begin(123)
+            var first = true
+            self.key("kind", &first)
+            try self.value("focused")
+            end(125)
+        case let .window(id):
+            begin(123)
+            var first = true
+            self.key("kind", &first)
+            try self.value("window")
+            self.key("windowId", &first)
+            try self.value(id)
+            end(125)
+        case let .pid(pid):
+            begin(123)
+            var first = true
+            self.key("kind", &first)
+            try self.value("pid")
+            self.key("pid", &first)
+            try self.value(pid)
+            end(125)
+        }
+    }
+
     mutating func ruleRequestAdd(_ rule: borrowing IPCRuleDefinition) throws {
         begin(123)
         var first = true
@@ -184,81 +240,6 @@ extension IPCJSONWriter {
             self.key("workspaceTarget", &first)
             try self.value(fieldValue)
         }
-        end(125)
-    }
-
-    mutating func value(_ value: borrowing IPCWindowMarkRequest) throws {
-        switch value {
-        case let .set(mark):
-            begin(123)
-            var first = true
-            self.key("mark", &first)
-            try self.value(mark)
-            self.key("name", &first)
-            try self.value("set")
-            end(125)
-        case .list:
-            begin(123)
-            var first = true
-            self.key("name", &first)
-            try self.value("list")
-            end(125)
-        case let .focus(mark):
-            begin(123)
-            var first = true
-            self.key("mark", &first)
-            try self.value(mark)
-            self.key("name", &first)
-            try self.value("focus")
-            end(125)
-        case let .summon(mark):
-            begin(123)
-            var first = true
-            self.key("mark", &first)
-            try self.value(mark)
-            self.key("name", &first)
-            try self.value("summon")
-            end(125)
-        case let .remove(mark):
-            begin(123)
-            var first = true
-            self.key("mark", &first)
-            try self.value(mark)
-            self.key("name", &first)
-            try self.value("remove")
-            end(125)
-        }
-    }
-
-    mutating func shellRequestSet(_ key: borrowing String, _ text: borrowing String) throws {
-        begin(123)
-        var first = true
-        self.key("key", &first)
-        try self.value(key)
-        self.key("name", &first)
-        try self.value("set")
-        self.key("value", &first)
-        try self.value(text)
-        end(125)
-    }
-
-    mutating func shellRequestUnset(_ key: borrowing String) throws {
-        begin(123)
-        var first = true
-        self.key("key", &first)
-        try self.value(key)
-        self.key("name", &first)
-        try self.value("unset")
-        end(125)
-    }
-
-    mutating func shellRequestToggle(_ widget: borrowing String) throws {
-        begin(123)
-        var first = true
-        self.key("name", &first)
-        try self.value("toggle")
-        self.key("widget", &first)
-        try self.value(widget)
         end(125)
     }
 }

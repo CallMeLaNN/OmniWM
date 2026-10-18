@@ -40,7 +40,7 @@ final class IPCWireEncodingParityTests: XCTestCase {
 
     func testAllRequestModelsMatchReference() throws {
         let requests = try fixtures().filter { $0.kind == "request" }
-        XCTAssertEqual(requests.count, 365)
+        XCTAssertEqual(requests.count, 371)
         for fixture in requests {
             let request = try IPCWire.decodeRequest(from: fixture.data)
             XCTAssertEqual(try IPCWire.encodeRequestLine(request), try reference(request), fixture.name)
@@ -49,7 +49,7 @@ final class IPCWireEncodingParityTests: XCTestCase {
 
     func testAllResponseAndEventModelsMatchReference() throws {
         let messages = try fixtures().filter { $0.kind != "request" }
-        XCTAssertEqual(messages.count, 246)
+        XCTAssertEqual(messages.count, 256)
         for fixture in messages {
             for pretty in [false, true] {
                 if fixture.kind == "event" {

@@ -4,6 +4,69 @@
 import Foundation
 
 extension IPCJSONWriter {
+    mutating func value(_ value: borrowing IPCResult.Payload) throws {
+        switch value {
+        case let .pong(payload):
+            try self.value(payload)
+        case let .version(payload):
+            try self.value(payload)
+        case let .capture(payload):
+            try self.value(payload)
+        case let .workspaceBar(payload):
+            try self.value(payload)
+        case let .activeWorkspace(payload):
+            try self.value(payload)
+        case let .focusedMonitor(payload):
+            try self.value(payload)
+        case let .apps(payload):
+            try self.value(payload)
+        case let .focusedWindow(payload):
+            try self.value(payload)
+        case let .windows(payload):
+            try self.value(payload)
+        case let .workspaces(payload):
+            try self.value(payload)
+        case let .displays(payload):
+            try self.value(payload)
+        case let .rules(payload):
+            try self.value(payload)
+        case let .ruleActions(payload):
+            try self.value(payload)
+        case let .queries(payload):
+            try self.value(payload)
+        case let .commands(payload):
+            try self.value(payload)
+        case let .subscriptions(payload):
+            try self.value(payload)
+        case let .capabilities(payload):
+            try self.value(payload)
+        case let .subscribed(payload):
+            try self.value(payload)
+        case let .windowMarks(payload):
+            try self.value(payload)
+        case let .windowGather(payload):
+            try self.value(payload)
+        case let .metrics(payload):
+            try self.value(payload)
+        case let .shellWidgets(payload):
+            try self.value(payload)
+        }
+    }
+
+    mutating func value(_ value: borrowing IPCResult) throws {
+        begin(123)
+        var first = true
+        self.key("kind", &first)
+        try self.value(value.kind)
+        self.key("payload", &first)
+        try self.value(value.payload)
+        end(125)
+    }
+
+    mutating func value(_ value: borrowing IPCResponseStatus) throws {
+        try self.value(value.rawValue)
+    }
+
     mutating func value(_ value: borrowing IPCResponse) throws {
         begin(123)
         var first = true
@@ -198,67 +261,5 @@ extension IPCJSONWriter {
         self.key(name, &argumentFirst)
         try self.value(value)
         end(125)
-    }
-
-    mutating func arguments(_ value: borrowing IPCSizingCommand, _ first: inout Bool) throws {
-        switch value {
-        case let .setContainerPrimarySpan(change):
-            try argument("change", change, &first)
-        case let .setWindowPrimarySpan(change):
-            try argument("change", change, &first)
-        case let .setWindowSecondarySpan(change):
-            try argument("change", change, &first)
-        case .cycleSizeForward,
-             .cycleSizeBackward,
-             .cycleWindowPrimarySpanForward,
-             .cycleWindowPrimarySpanBackward,
-             .cycleWindowSecondarySpanForward,
-             .cycleWindowSecondarySpanBackward,
-             .toggleContainerFullPrimarySpan,
-             .expandContainerToAvailablePrimarySpan,
-             .resetWindowSecondarySpan:
-            break
-        }
-    }
-
-    mutating func value(_ value: borrowing IPCResizeAxis) throws {
-        try self.value(value.rawValue)
-    }
-
-    mutating func value(_ value: borrowing IPCResizeOperation) throws {
-        try self.value(value.rawValue)
-    }
-
-    mutating func argument(_ name: StaticString, _ value: borrowing IPCResizeOperation, _ first: inout Bool) throws {
-        self.key("arguments", &first)
-        begin(123)
-        var argumentFirst = true
-        self.key(name, &argumentFirst)
-        try self.value(value)
-        end(125)
-    }
-
-    mutating func arguments(_ value: borrowing IPCDwindleCommand, _ first: inout Bool) throws {
-        switch value {
-        case let .resize(axis, operation):
-            self.key("arguments", &first)
-            begin(123)
-            var argumentFirst = true
-            self.key("axis", &argumentFirst)
-            try self.value(axis)
-            self.key("operation", &argumentFirst)
-            try self.value(operation)
-            end(125)
-        case let .resizeFocused(operation):
-            try argument("operation", operation, &first)
-        case let .preselect(direction):
-            try argument("direction", direction, &first)
-        case .balanceSizes,
-             .moveToRoot,
-             .toggleSplit,
-             .swapSplit,
-             .preselectClear:
-            break
-        }
     }
 }

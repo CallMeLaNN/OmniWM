@@ -116,11 +116,12 @@ def payload_root(typ):
     body = ['        begin(123)', '        var first = true']
     for key in sorted(list(fields) + ['payload']):
         if key == 'payload':
-            body += ['        self.key("payload", &first)', '        switch value.payload {']
+            cases = ['        switch value {']
             for (case, pt) in payloads:
                 generate(pt)
-                body += [f'        case let .{case}(payload):', '            try self.value(payload)']
-            body.append('        }')
+                cases += [f'        case let .{case}(payload):', '            try self.value(payload)']
+            overload(typ + '.Payload', cases + ['        }'])
+            body += ['        self.key("payload", &first)', '        try self.value(value.payload)']
         else:
             (expression, ft) = fields[key]
             generate(ft)

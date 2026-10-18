@@ -248,7 +248,15 @@ extension IPCJSONWriter {
         end(93)
     }
 
-    mutating func value(_ value: borrowing IPCWindowMarkActionName) throws {
-        try self.value(value.rawValue)
+    mutating func value(_ value: borrowing IPCWindowGatherActionDescriptor) throws {
+        begin(123)
+        var first = true
+        self.key("arguments", &first)
+        try self.value(value.arguments)
+        self.key("path", &first)
+        try self.value(value.path)
+        self.key("summary", &first)
+        try self.value(value.summary)
+        end(125)
     }
 }

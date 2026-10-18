@@ -45,6 +45,8 @@ enum CLICompletionGenerator {
             "windowActionNames": shellWords(Catalog.windowActionNames),
             "windowMarkActionNames": shellWords(Catalog.windowMarkActionNames),
             "windowMarkListFlags": shellWords(Catalog.windowMarkListFlags),
+            "windowGatherReachFlag": Catalog.windowGatherReachFlag,
+            "windowGatherReaches": shellWords(Catalog.windowGatherReaches),
             "shellActionNames": shellWords(Catalog.shellActionNames)
         ])
     }
@@ -75,6 +77,8 @@ enum CLICompletionGenerator {
             "windowActionNames": shellWords(Catalog.windowActionNames),
             "windowMarkActionNames": shellWords(Catalog.windowMarkActionNames),
             "windowMarkListFlags": shellWords(Catalog.windowMarkListFlags),
+            "windowGatherReachFlag": Catalog.windowGatherReachFlag,
+            "windowGatherReaches": shellWords(Catalog.windowGatherReaches),
             "shellActionNames": shellWords(Catalog.shellActionNames)
         ])
     }
@@ -128,6 +132,7 @@ enum CLICompletionGenerator {
             "windowLines": fishCompletions(Catalog.windowActionNames, when: "__fish_seen_subcommand_from window"),
             "windowMarkActionLines": fishWindowMarkActionLines(),
             "windowMarkListFlagLines": fishWindowMarkListFlagLines(),
+            "windowGatherLines": fishWindowGatherLines(),
             "shellActionLines": fishChoiceCompletions(
                 Catalog.shellActionNames,
                 when: "__fish_seen_subcommand_from shell"
@@ -204,6 +209,18 @@ enum CLICompletionGenerator {
             Catalog.windowMarkListFlags,
             when: "__fish_seen_subcommand_from window; and __fish_seen_subcommand_from mark; and __fish_seen_subcommand_from list"
         )
+    }
+
+    private static func fishWindowGatherLines() -> String {
+        let gather = "__fish_seen_subcommand_from window; and __fish_seen_subcommand_from gather"
+        let flag = Catalog.windowGatherReachFlag
+        return [
+            fishCompletions(Catalog.windowGatherReaches, when: "\(gather); and __omniwmctl_prev_arg_is \(flag)"),
+            fishCompletion(
+                flag,
+                when: "\(gather); and not __omniwmctl_prev_arg_is \(flag); and not __omniwmctl_has_arg \(flag)"
+            )
+        ].joined(separator: "\n")
     }
 
     static func renderTemplate(_ bytes: [UInt8], values: [String: String]) -> String {

@@ -24,6 +24,7 @@ public struct IPCCommandsQueryResult: Codable, Equatable, Sendable {
     public let workspaceActions: [IPCWorkspaceActionDescriptor]
     public let windowActions: [IPCWindowActionDescriptor]
     public let windowMarkActions: [IPCWindowMarkActionDescriptor]
+    public let windowGatherActions: [IPCWindowGatherActionDescriptor]
     public let shellActions: [IPCShellActionDescriptor]
 
     public init(
@@ -31,12 +32,14 @@ public struct IPCCommandsQueryResult: Codable, Equatable, Sendable {
         workspaceActions: [IPCWorkspaceActionDescriptor],
         windowActions: [IPCWindowActionDescriptor],
         windowMarkActions: [IPCWindowMarkActionDescriptor],
+        windowGatherActions: [IPCWindowGatherActionDescriptor],
         shellActions: [IPCShellActionDescriptor]
     ) {
         self.commands = commands
         self.workspaceActions = workspaceActions
         self.windowActions = windowActions
         self.windowMarkActions = windowMarkActions
+        self.windowGatherActions = windowGatherActions
         self.shellActions = shellActions
     }
 }
@@ -61,6 +64,7 @@ public struct IPCCapabilitiesQueryResult: Codable, Equatable, Sendable {
     public let workspaceActions: [IPCWorkspaceActionDescriptor]
     public let windowActions: [IPCWindowActionDescriptor]
     public let windowMarkActions: [IPCWindowMarkActionDescriptor]
+    public let windowGatherActions: [IPCWindowGatherActionDescriptor]
     public let shellActions: [IPCShellActionDescriptor]
     public let subscriptions: [IPCSubscriptionDescriptor]
 
@@ -76,6 +80,7 @@ public struct IPCCapabilitiesQueryResult: Codable, Equatable, Sendable {
         workspaceActions: [IPCWorkspaceActionDescriptor],
         windowActions: [IPCWindowActionDescriptor],
         windowMarkActions: [IPCWindowMarkActionDescriptor],
+        windowGatherActions: [IPCWindowGatherActionDescriptor],
         shellActions: [IPCShellActionDescriptor],
         subscriptions: [IPCSubscriptionDescriptor]
     ) {
@@ -90,6 +95,7 @@ public struct IPCCapabilitiesQueryResult: Codable, Equatable, Sendable {
         self.workspaceActions = workspaceActions
         self.windowActions = windowActions
         self.windowMarkActions = windowMarkActions
+        self.windowGatherActions = windowGatherActions
         self.shellActions = shellActions
         self.subscriptions = subscriptions
     }

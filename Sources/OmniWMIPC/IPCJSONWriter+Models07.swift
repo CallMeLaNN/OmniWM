@@ -4,6 +4,71 @@
 import Foundation
 
 extension IPCJSONWriter {
+    mutating func value(_ value: borrowing IPCWindowMarksResult) throws {
+        begin(123)
+        var first = true
+        self.key("marks", &first)
+        try self.value(value.marks)
+        end(125)
+    }
+
+    mutating func value(_ value: borrowing IPCWindowGatherOutcome) throws {
+        try self.value(value.rawValue)
+    }
+
+    mutating func value(_ value: borrowing IPCWindowGatherReason) throws {
+        try self.value(value.rawValue)
+    }
+
+    mutating func value(_ value: borrowing IPCWindowGatherWindowStatus) throws {
+        try self.value(value.rawValue)
+    }
+
+    mutating func value(_ value: borrowing IPCWindowGatherWindowResult) throws {
+        begin(123)
+        var first = true
+        if let fieldValue = value.reason {
+            self.key("reason", &first)
+            try self.value(fieldValue)
+        }
+        self.key("status", &first)
+        try self.value(value.status)
+        self.key("windowId", &first)
+        try self.value(value.windowId)
+        end(125)
+    }
+
+    mutating func value(_ value: borrowing [IPCWindowGatherWindowResult]) throws {
+        begin(91)
+        var first = true
+        let span = value.span
+        var index = 0
+        while index < span.count {
+            item(&first)
+            try self.value(span[index])
+            index += 1
+        }
+        end(93)
+    }
+
+    mutating func value(_ value: borrowing IPCWindowGatherResult) throws {
+        begin(123)
+        var first = true
+        self.key("outcome", &first)
+        try self.value(value.outcome)
+        if let fieldValue = value.reason {
+            self.key("reason", &first)
+            try self.value(fieldValue)
+        }
+        self.key("windows", &first)
+        try self.value(value.windows)
+        if let fieldValue = value.workspace {
+            self.key("workspace", &first)
+            try self.value(fieldValue)
+        }
+        end(125)
+    }
+
     mutating func value(_ value: borrowing IPCAXWriteMetricsBucket) throws {
         begin(123)
         var first = true
@@ -182,62 +247,5 @@ extension IPCJSONWriter {
         self.key("widgets", &first)
         try self.value(value.widgets)
         end(125)
-    }
-
-    mutating func value(_ value: borrowing IPCResult) throws {
-        begin(123)
-        var first = true
-        self.key("kind", &first)
-        try self.value(value.kind)
-        self.key("payload", &first)
-        switch value.payload {
-        case let .pong(payload):
-            try self.value(payload)
-        case let .version(payload):
-            try self.value(payload)
-        case let .capture(payload):
-            try self.value(payload)
-        case let .workspaceBar(payload):
-            try self.value(payload)
-        case let .activeWorkspace(payload):
-            try self.value(payload)
-        case let .focusedMonitor(payload):
-            try self.value(payload)
-        case let .apps(payload):
-            try self.value(payload)
-        case let .focusedWindow(payload):
-            try self.value(payload)
-        case let .windows(payload):
-            try self.value(payload)
-        case let .workspaces(payload):
-            try self.value(payload)
-        case let .displays(payload):
-            try self.value(payload)
-        case let .rules(payload):
-            try self.value(payload)
-        case let .ruleActions(payload):
-            try self.value(payload)
-        case let .queries(payload):
-            try self.value(payload)
-        case let .commands(payload):
-            try self.value(payload)
-        case let .subscriptions(payload):
-            try self.value(payload)
-        case let .capabilities(payload):
-            try self.value(payload)
-        case let .subscribed(payload):
-            try self.value(payload)
-        case let .windowMarks(payload):
-            try self.value(payload)
-        case let .metrics(payload):
-            try self.value(payload)
-        case let .shellWidgets(payload):
-            try self.value(payload)
-        }
-        end(125)
-    }
-
-    mutating func value(_ value: borrowing IPCResponseStatus) throws {
-        try self.value(value.rawValue)
     }
 }

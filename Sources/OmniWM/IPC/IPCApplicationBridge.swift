@@ -55,6 +55,10 @@ actor IPCApplicationBridge {
             return mismatch
         }
 
+        return await payloadResponse(for: request, versionResult: versionResult)
+    }
+
+    private func payloadResponse(for request: IPCRequest, versionResult: IPCResult) async -> IPCResponse {
         switch request.payload {
         case .none:
             return await MainActor.run {
@@ -92,6 +96,11 @@ actor IPCApplicationBridge {
                 controller: controller,
                 sessionToken: sessionToken
             )
+        case let .windowGather(windowGather):
+            return await MainActor.run {
+                IPCWindowGatherRequestExecutor(controller: controller, sessionToken: sessionToken)
+                    .response(for: windowGather, id: request.id)
+            }
         case let .shell(shell):
             return await Self.shellResponse(for: shell, id: request.id, controller: controller)
         case let .subscribe(subscribe):
@@ -138,6 +147,7 @@ actor IPCApplicationBridge {
              .workspace,
              .window,
              .windowMark,
+             .windowGather,
              .shell,
              .subscribe:
             return IPCResponse(failing: request, code: .invalidRequest)

@@ -143,6 +143,12 @@ _omniwmctl()
         __omniwmctl_compgen "#{{windowMarkActionNames}}"
       elif [[ ${COMP_CWORD} -eq 4 && "${COMP_WORDS[2]}" == "mark" && "${COMP_WORDS[3]}" == "list" ]]; then
         __omniwmctl_compgen "#{{windowMarkListFlags}}"
+      elif [[ "${COMP_WORDS[2]}" == "gather" ]]; then
+        if [[ "$prev" == "#{{windowGatherReachFlag}}" ]]; then
+          __omniwmctl_compgen "#{{windowGatherReaches}}"
+        elif [[ " ${COMP_WORDS[*]} " != *" #{{windowGatherReachFlag}} "* ]]; then
+          __omniwmctl_compgen "#{{windowGatherReachFlag}}"
+        fi
       fi
       return 0
       ;;

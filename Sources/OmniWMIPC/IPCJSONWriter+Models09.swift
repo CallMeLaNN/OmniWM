@@ -4,6 +4,68 @@
 import Foundation
 
 extension IPCJSONWriter {
+    mutating func arguments(_ value: borrowing IPCSizingCommand, _ first: inout Bool) throws {
+        switch value {
+        case let .setContainerPrimarySpan(change):
+            try argument("change", change, &first)
+        case let .setWindowPrimarySpan(change):
+            try argument("change", change, &first)
+        case let .setWindowSecondarySpan(change):
+            try argument("change", change, &first)
+        case .cycleSizeForward,
+             .cycleSizeBackward,
+             .cycleWindowPrimarySpanForward,
+             .cycleWindowPrimarySpanBackward,
+             .cycleWindowSecondarySpanForward,
+             .cycleWindowSecondarySpanBackward,
+             .toggleContainerFullPrimarySpan,
+             .expandContainerToAvailablePrimarySpan,
+             .resetWindowSecondarySpan:
+            break
+        }
+    }
+
+    mutating func value(_ value: borrowing IPCResizeAxis) throws {
+        try self.value(value.rawValue)
+    }
+
+    mutating func value(_ value: borrowing IPCResizeOperation) throws {
+        try self.value(value.rawValue)
+    }
+
+    mutating func argument(_ name: StaticString, _ value: borrowing IPCResizeOperation, _ first: inout Bool) throws {
+        self.key("arguments", &first)
+        begin(123)
+        var argumentFirst = true
+        self.key(name, &argumentFirst)
+        try self.value(value)
+        end(125)
+    }
+
+    mutating func arguments(_ value: borrowing IPCDwindleCommand, _ first: inout Bool) throws {
+        switch value {
+        case let .resize(axis, operation):
+            self.key("arguments", &first)
+            begin(123)
+            var argumentFirst = true
+            self.key("axis", &argumentFirst)
+            try self.value(axis)
+            self.key("operation", &argumentFirst)
+            try self.value(operation)
+            end(125)
+        case let .resizeFocused(operation):
+            try argument("operation", operation, &first)
+        case let .preselect(direction):
+            try argument("direction", direction, &first)
+        case .balanceSizes,
+             .moveToRoot,
+             .toggleSplit,
+             .swapSplit,
+             .preselectClear:
+            break
+        }
+    }
+
     mutating func argument(_ name: StaticString, _ value: borrowing IPCWorkspaceLayout, _ first: inout Bool) throws {
         self.key("arguments", &first)
         begin(123)
@@ -203,62 +265,6 @@ extension IPCJSONWriter {
         if let fieldValue = value.initialContainerPrimarySpan {
             self.key("initialContainerPrimarySpan", &first)
             try self.value(fieldValue)
-        }
-    }
-
-    mutating func fields1(_ value: borrowing IPCRuleDefinition, _ first: inout Bool) throws {
-        self.key("layout", &first)
-        try self.value(value.layout)
-        if let fieldValue = value.minHeight {
-            self.key("minHeight", &first)
-            try self.value(fieldValue)
-        }
-        if let fieldValue = value.minWidth {
-            self.key("minWidth", &first)
-            try self.value(fieldValue)
-        }
-        if let fieldValue = value.titleRegex {
-            self.key("titleRegex", &first)
-            try self.value(fieldValue)
-        }
-        if let fieldValue = value.titleSubstring {
-            self.key("titleSubstring", &first)
-            try self.value(fieldValue)
-        }
-    }
-
-    mutating func value(_ value: borrowing IPCRuleDefinition) throws {
-        begin(123)
-        var first = true
-        try fields0(value, &first)
-        try fields1(value, &first)
-        end(125)
-    }
-
-    mutating func value(_ value: borrowing IPCRuleApplyTarget) throws {
-        switch value {
-        case .focused:
-            begin(123)
-            var first = true
-            self.key("kind", &first)
-            try self.value("focused")
-            end(125)
-        case let .window(id):
-            begin(123)
-            var first = true
-            self.key("kind", &first)
-            try self.value("window")
-            self.key("windowId", &first)
-            try self.value(id)
-            end(125)
-        case let .pid(pid):
-            begin(123)
-            var first = true
-            self.key("kind", &first)
-            try self.value("pid")
-            self.key("pid", &first)
-            try self.value(pid)
-            end(125)
         }
     }
 }

@@ -42,6 +42,7 @@ extension CLICompletionGenerator {
             }.joined(separator: "\n") + "\n}"
         }
         values["workspaceMoveActionName"] = nushellString(Catalog.workspaceMoveActionName)
+        values["windowGatherReachFlag"] = nushellString(Catalog.windowGatherReachFlag)
         return renderTemplate(PackageResources.completion_nu, values: values)
     }
 

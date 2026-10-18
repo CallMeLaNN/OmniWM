@@ -66,6 +66,43 @@ Marks give live managed windows unique names across workspaces. They last until 
 
 ---
 
+## Window Gather
+
+Gather windows into one Niri column, in the order you list their opaque IDs. Unreleased: available when building from `main`.
+
+```
+omniwmctl window gather [--from workspace|monitor|all] <window-id>...
+```
+
+```bash
+omniwmctl window gather --from monitor ow_... ow_...
+```
+
+The destination is the active workspace on the monitor OmniWM's commands target, the one `query workspaces --current` reports. To gather somewhere else, switch to that workspace first. `--from` only checks where the listed windows are; it never adds other windows:
+
+| `--from` | The listed windows may be on |
+|----------|------------------------------|
+| `workspace` (default) | The destination workspace |
+| `monitor` | Any workspace assigned to the destination's monitor, including inactive ones |
+| `all` | Any workspace on any monitor |
+
+The column goes where you are working, based on the destination's selected tiled window:
+
+- If that window and the rest of its column are listed, the column is reused in place, keeping its width and tabbed mode.
+- If that window is listed but its column also holds unlisted windows, the gathered column takes that position and the unlisted windows stay in their column just after it.
+- If that window is not listed, the gathered column goes right after its column.
+- With no selected tiled window, the gathered column becomes the first column.
+
+A new column uses the workspace's default width. Other columns keep their order and sizes; only the gathered windows leave them.
+
+OmniWM checks every listed window before changing anything, so one bad ID refuses the whole request and nothing moves. This covers invalid, stale, duplicated, unknown, and out-of-reach IDs, and ineligible windows: scratchpad, native or layout fullscreen, app-hidden, minimized, natively withdrawn, floating, and non-Niri windows. Windows on inactive workspaces, inactive tabs, or scrolled out of view are eligible. The request is also refused when the destination is not a Niri workspace or the windows' minimum sizes do not fit one column. A request that is already satisfied changes nothing and returns `no_change`.
+
+A gather is one model update followed by one relayout; the windows' frames then settle through the normal layout pass. It does not switch workspaces or monitors and does not move native focus. A gathered focused window stays focused and becomes the column's active tab.
+
+The output lists each ID with its status (`moved`, `unchanged`, `blocked`, `refused`, or `unresolved`) and any reason; see [window gather responses](/reference/cli/protocol/#response-format).
+
+---
+
 ## Workspace Actions
 
 ```

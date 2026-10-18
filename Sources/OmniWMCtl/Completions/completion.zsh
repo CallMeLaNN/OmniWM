@@ -118,6 +118,12 @@ _omniwmctl() {
         suggestions="#{{windowMarkActionNames}}"
       elif (( CURRENT == 5 )) && [[ "${words[3]}" == "mark" && "${words[4]}" == "list" ]]; then
         suggestions="#{{windowMarkListFlags}}"
+      elif [[ "${words[3]}" == "gather" ]]; then
+        if [[ "${words[CURRENT-1]}" == "#{{windowGatherReachFlag}}" ]]; then
+          suggestions="#{{windowGatherReaches}}"
+        elif [[ " ${words[*]} " != *" #{{windowGatherReachFlag}} "* ]]; then
+          suggestions="#{{windowGatherReachFlag}}"
+        fi
       fi
       ;;
     shell)

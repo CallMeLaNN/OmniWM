@@ -20,6 +20,14 @@ final class CLICompletionCatalogTests: XCTestCase {
         )
     }
 
+    func testWindowGatherOffersItsReachFlagAndValues() {
+        XCTAssertTrue(CLICompletionCatalog.windowActionNames.contains("gather"))
+        XCTAssertEqual(CLICompletionCatalog.windowGatherReachFlag, "--from")
+        XCTAssertEqual(CLICompletionCatalog.windowGatherReaches, ["workspace", "monitor", "all"])
+        XCTAssertTrue(CLICompletionCatalog.valueFlags.contains("--from"))
+        XCTAssertEqual(CLICompletionCatalog.flagValuesByName["--from"], ["workspace", "monitor", "all"])
+    }
+
     func testResizePreservesBothLiteralArgumentPositions() {
         XCTAssertEqual(CLICompletionCatalog.commandSlotThreeSuggestionsByFirst["resize"], ["horizontal", "vertical"])
         XCTAssertEqual(CLICompletionCatalog.commandSlotFourFallbackByFirst["resize"], ["grow", "shrink"])

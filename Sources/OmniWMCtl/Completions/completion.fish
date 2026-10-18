@@ -61,5 +61,6 @@ end
 #{{windowLines}}
 #{{windowMarkActionLines}}
 #{{windowMarkListFlagLines}}
+#{{windowGatherLines}}
 #{{shellActionLines}}
 #{{shellLines}}

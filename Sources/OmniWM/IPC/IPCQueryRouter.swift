@@ -207,6 +207,7 @@ final class IPCQueryRouter {
             workspaceActions: IPCAutomationManifest.workspaceActionDescriptors,
             windowActions: IPCAutomationManifest.windowActionDescriptors,
             windowMarkActions: IPCAutomationManifest.windowMarkActionDescriptors,
+            windowGatherActions: IPCAutomationManifest.windowGatherActionDescriptors,
             shellActions: IPCAutomationManifest.shellActionDescriptors
         )
     }
@@ -228,6 +229,7 @@ final class IPCQueryRouter {
             workspaceActions: IPCAutomationManifest.workspaceActionDescriptors,
             windowActions: IPCAutomationManifest.windowActionDescriptors,
             windowMarkActions: IPCAutomationManifest.windowMarkActionDescriptors,
+            windowGatherActions: IPCAutomationManifest.windowGatherActionDescriptors,
             shellActions: IPCAutomationManifest.shellActionDescriptors,
             subscriptions: IPCAutomationManifest.subscriptionDescriptors
         )

@@ -4,6 +4,95 @@
 import Foundation
 
 extension IPCJSONWriter {
+    mutating func value(_ value: borrowing IPCWindowMarkRequest) throws {
+        switch value {
+        case let .set(mark):
+            begin(123)
+            var first = true
+            self.key("mark", &first)
+            try self.value(mark)
+            self.key("name", &first)
+            try self.value("set")
+            end(125)
+        case .list:
+            begin(123)
+            var first = true
+            self.key("name", &first)
+            try self.value("list")
+            end(125)
+        case let .focus(mark):
+            begin(123)
+            var first = true
+            self.key("mark", &first)
+            try self.value(mark)
+            self.key("name", &first)
+            try self.value("focus")
+            end(125)
+        case let .summon(mark):
+            begin(123)
+            var first = true
+            self.key("mark", &first)
+            try self.value(mark)
+            self.key("name", &first)
+            try self.value("summon")
+            end(125)
+        case let .remove(mark):
+            begin(123)
+            var first = true
+            self.key("mark", &first)
+            try self.value(mark)
+            self.key("name", &first)
+            try self.value("remove")
+            end(125)
+        }
+    }
+
+    mutating func value(_ value: borrowing IPCWindowGatherReach) throws {
+        try self.value(value.rawValue)
+    }
+
+    mutating func value(_ value: borrowing IPCWindowGatherRequest) throws {
+        begin(123)
+        var first = true
+        self.key("from", &first)
+        try self.value(value.from)
+        self.key("windowIds", &first)
+        try self.value(value.windowIds)
+        end(125)
+    }
+
+    mutating func shellRequestSet(_ key: borrowing String, _ text: borrowing String) throws {
+        begin(123)
+        var first = true
+        self.key("key", &first)
+        try self.value(key)
+        self.key("name", &first)
+        try self.value("set")
+        self.key("value", &first)
+        try self.value(text)
+        end(125)
+    }
+
+    mutating func shellRequestUnset(_ key: borrowing String) throws {
+        begin(123)
+        var first = true
+        self.key("key", &first)
+        try self.value(key)
+        self.key("name", &first)
+        try self.value("unset")
+        end(125)
+    }
+
+    mutating func shellRequestToggle(_ widget: borrowing String) throws {
+        begin(123)
+        var first = true
+        self.key("name", &first)
+        try self.value("toggle")
+        self.key("widget", &first)
+        try self.value(widget)
+        end(125)
+    }
+
     mutating func shellRequestProfile(_ name: borrowing String) throws {
         begin(123)
         var first = true
@@ -107,19 +196,8 @@ extension IPCJSONWriter {
         end(125)
     }
 
-    mutating func value(_ value: borrowing IPCRequest) throws {
-        begin(123)
-        var first = true
-        if let fieldValue = value.authorizationToken {
-            self.key("authorizationToken", &first)
-            try self.value(fieldValue)
-        }
-        self.key("id", &first)
-        try self.value(value.id)
-        self.key("kind", &first)
-        try self.value(value.kind)
-        self.key("payload", &first)
-        switch value.payload {
+    mutating func value(_ value: borrowing IPCRequest.Payload) throws {
+        switch value {
         case let .none(payload):
             try self.value(payload)
         case let .command(payload):
@@ -136,11 +214,28 @@ extension IPCJSONWriter {
             try self.value(payload)
         case let .windowMark(payload):
             try self.value(payload)
+        case let .windowGather(payload):
+            try self.value(payload)
         case let .shell(payload):
             try self.value(payload)
         case let .subscribe(payload):
             try self.value(payload)
         }
+    }
+
+    mutating func value(_ value: borrowing IPCRequest) throws {
+        begin(123)
+        var first = true
+        if let fieldValue = value.authorizationToken {
+            self.key("authorizationToken", &first)
+            try self.value(fieldValue)
+        }
+        self.key("id", &first)
+        try self.value(value.id)
+        self.key("kind", &first)
+        try self.value(value.kind)
+        self.key("payload", &first)
+        try self.value(value.payload)
         self.key("version", &first)
         try self.value(value.version)
         end(125)

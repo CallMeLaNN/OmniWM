@@ -13,7 +13,7 @@ sidebar:
 {
   "version": 21,
   "id": "<uuid>",
-  "kind": "<ping|version|command|capture|query|rule|workspace|window|window-mark|shell|subscribe>",
+  "kind": "<ping|version|command|capture|query|rule|workspace|window|window-mark|window-gather|shell|subscribe>",
   "authorizationToken": "<token>",
   "payload": { ... }
 }
@@ -173,6 +173,17 @@ All other window actions take no argument field.
 
 `focus`, `summon`, and `remove` use the same `mark` field. `list` sends only `{"name":"list"}`; a `mark` field on `list` is rejected.
 
+**Window gather:**
+
+```json
+{
+  "windowIds": ["ow_...", "ow_..."],
+  "from": "monitor"
+}
+```
+
+Both fields are required. `from` is `workspace`, `monitor`, or `all`; `omniwmctl` sends `workspace` unless `--from` is given. Unreleased: available when building from `main`.
+
 **Shell widget values:**
 
 ```json
@@ -192,10 +203,10 @@ All other window actions take no argument field.
   "version": 21,
   "id": "<request-id>",
   "ok": true,
-  "kind": "<ping|version|command|capture|query|rule|workspace|window|window-mark|shell|subscribe>",
+  "kind": "<ping|version|command|capture|query|rule|workspace|window|window-mark|window-gather|shell|subscribe>",
   "status": "<success|executed|ignored|error|subscribed>",
   "result": {
-    "kind": "<pong|version|capture|workspace-bar|active-workspace|focused-monitor|apps|metrics|focused-window|windows|workspaces|displays|rules|rule-actions|queries|commands|subscriptions|capabilities|subscribed|window-marks|shell-widgets>",
+    "kind": "<pong|version|capture|workspace-bar|active-workspace|focused-monitor|apps|metrics|focused-window|windows|workspaces|displays|rules|rule-actions|queries|commands|subscriptions|capabilities|subscribed|window-marks|window-gather|shell-widgets>",
     "payload": { ... }
   }
 }
@@ -204,6 +215,15 @@ All other window actions take no argument field.
 Optional response fields are omitted when unavailable. For example, a successful response has no `code` key; it does not send `"code": null`.
 
 A `window mark list` response has `kind: "window-mark"` and `result.kind: "window-marks"`. Its `result.payload.marks` array contains each mark's `name`, `id` (session-scoped opaque window id), `workspace` (`id`, `rawName`, `displayName`, optional `number`), `app` (`name`, optional `bundleId`), and optional window `title`. Other mark actions return `status: "executed"` without a result payload.
+
+A `window-gather` response has `kind: "window-gather"` and, unless OmniWM is disabled or Overview is open, `result.kind: "window-gather"` with this payload:
+
+- `outcome`: `gathered`, `unchanged`, or `refused`.
+- `workspace`: the destination, in the same shape as `window mark list` workspaces; omitted when there is no destination.
+- `reason`: why the request was refused: `no_windows`, `destination_unavailable`, `unsupported_layout`, `does_not_fit`, or `window_refused` when one of the windows caused the refusal.
+- `windows`: one entry per requested ID, in request order, with `windowId`, `status`, and an optional `reason`. The status is `moved` or `unchanged` after a gather, `unchanged` when nothing changed, and otherwise `blocked` (no problem was found with it before the request was refused), `refused`, or `unresolved` (the ID does not name a managed window). The per-window reasons are `invalid_window_id`, `stale_window_id`, `duplicate_window`, `not_found`, `outside_reach`, `scratchpad`, `native_fullscreen`, `app_hidden`, `minimized`, `native_withdrawn`, `floating`, `unsupported_layout`, `layout_conflict`, and `layout_fullscreen`.
+
+A gather returns `status: "executed"` once OmniWM has published the whole change in one model update and requested one relayout; window frames settle afterwards. An already satisfied request returns `no_change` with `status: "ignored"`. A refusal changes nothing and returns `status: "error"`; its `code` comes from the request-level reason, or for `window_refused` from the first refused window in request order: `invalid_arguments` for malformed or duplicate IDs and an empty list, `stale_window_id`, `not_found` for unknown windows or no destination, `unsupported_layout`, `ineligible_window`, `does_not_fit`, or `workspace_state_conflict` for `layout_conflict`. While OmniWM is disabled or Overview is open, the request returns `ignored_disabled` or `ignored_overview` with `status: "ignored"`.
 
 Authorization, protocol, validation, and routing failures keep the originating response `kind`. For example:
 
@@ -283,9 +303,11 @@ This envelope is produced locally by the CLI, so it does not include IPC fields 
 | `no_focused_window` | Setting or summoning a mark requires a focused managed window |
 | `self_summon` | The marked window is also the summon anchor |
 | `hidden_window` | A hidden app's marked window cannot be summoned |
-| `unsupported_layout` | The source or target layout cannot summon the marked window |
+| `unsupported_layout` | The source or target layout cannot summon the marked window, or a gathered window or the gather destination is not on a Niri workspace |
 | `duplicate_mark` | The name is already assigned to another window |
 | `invalid_mark` | The mark name is empty or contains control characters |
+| `ineligible_window` | A gathered window is outside the requested reach, hidden, minimized, withdrawn, in the scratchpad, fullscreen, or floating |
+| `does_not_fit` | The gathered windows' minimum sizes do not fit one destination column |
 | `internal_error` | Unexpected server-side error |
 
 Malformed opaque window IDs return `invalid_arguments`. For window actions, a valid current-session ID whose window is no longer managed returns `not_found`.

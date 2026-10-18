@@ -93,11 +93,17 @@ final class IPCCaptureContractTests: XCTestCase {
             workspaceActions: [],
             windowActions: [],
             windowMarkActions: [],
+            windowGatherActions: [],
             shellActions: [],
             subscriptions: []
         )
         let commands = IPCCommandsQueryResult(
-            commands: [], workspaceActions: [], windowActions: [], windowMarkActions: [], shellActions: []
+            commands: [],
+            workspaceActions: [],
+            windowActions: [],
+            windowMarkActions: [],
+            windowGatherActions: [],
+            shellActions: []
         )
         let encoder = IPCWire.makeEncoder()
         let capabilitiesObject = try XCTUnwrap(

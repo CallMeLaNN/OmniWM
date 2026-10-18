@@ -81,7 +81,15 @@ enum CLICompletionCatalog {
     }
 
     static var windowActionNames: [String] {
-        sortedUnique(IPCAutomationManifest.windowActionDescriptors.map(\.name.rawValue) + ["mark"])
+        sortedUnique(IPCAutomationManifest.windowActionDescriptors.map(\.name.rawValue) + ["mark", "gather"])
+    }
+
+    static var windowGatherReachFlag: String {
+        CLIParser.windowGatherReachFlag
+    }
+
+    static var windowGatherReaches: [String] {
+        IPCWindowGatherReach.allCases.map(\.rawValue)
     }
 
     static var windowMarkActionNames: [String] {
@@ -176,11 +184,14 @@ enum CLICompletionCatalog {
         let selectors = IPCQuerySelectorName.allCases.filter(\.expectsValue).map(\.flag)
         let ruleOptions = IPCAutomationManifest.ruleActionDescriptors.flatMap(\.options)
             .filter { $0.valuePlaceholder != nil }.map(\.flag)
-        return sortedUnique(["--format", "--fields"] + selectors + ruleOptions)
+        return sortedUnique(["--format", "--fields", windowGatherReachFlag] + selectors + ruleOptions)
     }
 
     static var flagValuesByName: [String: [String]] {
-        var values = ["--format": CLIOutputFormat.allCases.map(\.rawValue)]
+        var values = [
+            "--format": CLIOutputFormat.allCases.map(\.rawValue),
+            windowGatherReachFlag: windowGatherReaches
+        ]
         for option in IPCAutomationManifest.ruleDefinitionOptionDescriptors {
             guard let placeholder = option.valuePlaceholder, placeholder.contains("|") else { continue }
             values[option.flag] = placeholder.dropFirst().dropLast().split(separator: "|").map(String.init)

@@ -16,22 +16,55 @@ final class CLICompletionTemplateTests: XCTestCase {
             ("omniwmctl window mark ''", 4, "set"),
             ("omniwmctl window mark list ''", 5, "--json")
         ] {
-            let process = Process()
-            let output = Pipe()
-            let errors = Pipe()
-            process.executableURL = URL(fileURLWithPath: "/bin/zsh")
             let setup = "words=(\(words)); CURRENT=\(position); compadd() { print -r -- \"$@\" }; "
-            process.arguments = ["-fc", setup + script]
-            process.standardOutput = output
-            process.standardError = errors
-            try process.run()
-            process.waitUntilExit()
-            let errorText = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-            let suggestions = String(decoding: output.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-                .split(whereSeparator: \.isWhitespace)
-            XCTAssertEqual(process.terminationStatus, 0, errorText)
-            XCTAssertTrue(suggestions.contains(Substring(expected)), words)
+            XCTAssertTrue(try suggestions(from: "/bin/zsh", ["-fc", setup + script]).contains(expected), words)
         }
+    }
+
+    func testZshAndBashGatherCompletionSuggestTheReachFlagAndItsValues() throws {
+        let zsh = CLICompletionGenerator.script(for: .zsh)
+        let bash = CLICompletionGenerator.script(for: .bash)
+        for (words, expected) in [
+            ("omniwmctl window ''", CLICompletionCatalog.windowActionNames),
+            ("omniwmctl window gather ''", ["--from"]),
+            ("omniwmctl window gather ow_a ''", ["--from"]),
+            ("omniwmctl window gather --from ''", ["all", "monitor", "workspace"]),
+            ("omniwmctl window gather --from all ow_a ''", [])
+        ] {
+            let count = words.split(separator: " ").count
+            let zshInput = "words=(\(words)); CURRENT=\(count); compadd() { shift; print -r -- \"$@\" }; \(zsh)\n:"
+            let bashInput = "\(bash)\nCOMP_WORDS=(\(words)); COMP_CWORD=\(count - 1); _omniwmctl\n"
+                + #"printf '%s\n' "${COMPREPLY[@]}""#
+            XCTAssertEqual(Set(try suggestions(from: "/bin/zsh", ["-fc", zshInput])), Set(expected), words)
+            XCTAssertEqual(Set(try suggestions(from: "/bin/bash", ["-c", bashInput])), Set(expected), words)
+        }
+    }
+
+    func testFishGatherCompletionsOfferTheReachFlagOnceAndItsValuesAfterIt() {
+        let script = CLICompletionGenerator.script(for: .fish)
+        let gather = "__fish_seen_subcommand_from window; and __fish_seen_subcommand_from gather"
+        for reach in CLICompletionCatalog.windowGatherReaches {
+            XCTAssertTrue(script.contains("-n '\(gather); and __omniwmctl_prev_arg_is --from' -a '\(reach)'"), reach)
+        }
+        XCTAssertTrue(script.contains(
+            "-n '\(gather); and not __omniwmctl_prev_arg_is --from; and not __omniwmctl_has_arg --from' -a '--from'"
+        ))
+    }
+
+    private func suggestions(from executable: String, _ arguments: [String]) throws -> [String] {
+        let process = Process()
+        let output = Pipe()
+        let errors = Pipe()
+        process.executableURL = URL(fileURLWithPath: executable)
+        process.arguments = arguments
+        process.standardOutput = output
+        process.standardError = errors
+        try process.run()
+        let data = output.fileHandleForReading.readDataToEndOfFile()
+        let errorText = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        process.waitUntilExit()
+        XCTAssertEqual(process.terminationStatus, 0, errorText)
+        return String(decoding: data, as: UTF8.self).split(whereSeparator: \.isWhitespace).map(String.init)
     }
 
     func testBashTemplateAndRenderedScriptHaveValidNativeSyntax() throws {
