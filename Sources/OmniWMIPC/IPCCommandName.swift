@@ -19,6 +19,7 @@ public enum IPCCommandName: RawRepresentable, Codable, CaseIterable, Hashable, S
     case fullscreen(IPCFullscreenCommand)
     case presentation(IPCPresentationCommand)
     case media(IPCMediaCommand)
+    case keyboardMode(IPCKeyboardModeCommand)
     case windowState(IPCWindowStateCommand)
     case scratchpad(IPCScratchpadCommandName)
     case openMenuAnywhere
@@ -59,6 +60,8 @@ public enum IPCCommandName: RawRepresentable, Codable, CaseIterable, Hashable, S
             name.rawValue
         case let .media(name):
             name.rawValue
+        case let .keyboardMode(name):
+            name.rawValue
         case let .windowState(name):
             name.rawValue
         case let .scratchpad(name):
@@ -96,6 +99,7 @@ public enum IPCCommandName: RawRepresentable, Codable, CaseIterable, Hashable, S
             name = name ?? IPCFullscreenCommand(rawValue: rawValue).map(Self.fullscreen)
             name = name ?? IPCPresentationCommand(rawValue: rawValue).map(Self.presentation)
             name = name ?? IPCMediaCommand(rawValue: rawValue).map(Self.media)
+            name = name ?? IPCKeyboardModeCommand(rawValue: rawValue).map(Self.keyboardMode)
             name = name ?? IPCWindowStateCommand(rawValue: rawValue).map(Self.windowState)
             name = name ?? IPCScratchpadCommandName(rawValue: rawValue).map(Self.scratchpad)
             guard let name else { return nil }
@@ -122,6 +126,7 @@ public enum IPCCommandName: RawRepresentable, Codable, CaseIterable, Hashable, S
         names.append(contentsOf: IPCFullscreenCommand.allCases.map(Self.fullscreen))
         names.append(contentsOf: IPCPresentationCommand.allCases.map(Self.presentation))
         names.append(contentsOf: IPCMediaCommand.allCases.map(Self.media))
+        names.append(contentsOf: IPCKeyboardModeCommand.allCases.map(Self.keyboardMode))
         names.append(contentsOf: IPCWindowStateCommand.allCases.map(Self.windowState))
         names.append(contentsOf: IPCScratchpadCommandName.allCases.map(Self.scratchpad))
         names.append(.openMenuAnywhere)

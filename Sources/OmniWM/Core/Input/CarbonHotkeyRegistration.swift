@@ -8,13 +8,14 @@ import IOKit.hidsystem
 
 @MainActor
 final class CarbonHotkeyRegistration {
-    private var refs: [EventHotKeyRef?] = []
+    private var refsById: [UInt32: EventHotKeyRef] = [:]
     private var handler: EventHandlerRef?
     private var idToRegistration: [UInt32: HotkeyPlannedRegistration] = [:]
     private var pressedHotKeyIds: Set<UInt32> = []
+    private var nextId: UInt32 = 1
 
     var count: Int {
-        refs.count
+        refsById.count
     }
 
     func installEventHandler(center: HotkeyCenter) {
@@ -48,13 +49,14 @@ final class CarbonHotkeyRegistration {
         _ registrations: [HotkeyPlannedRegistration],
         failures: inout [HotkeyCommand: HotkeyRegistrationFailureReason]
     ) {
-        var nextId: UInt32 = 1
         for registration in registrations {
             guard failures[registration.command] == nil else {
                 continue
             }
+            let id = nextId
+            nextId &+= 1
             var ref: EventHotKeyRef?
-            let hotKeyID = EventHotKeyID(signature: OSType(0x4F4D_4E49), id: nextId)
+            let hotKeyID = EventHotKeyID(signature: OSType(0x4F4D_4E49), id: id)
             let status = RegisterEventHotKey(
                 registration.binding.keyCode,
                 registration.binding.modifiers,
@@ -64,13 +66,12 @@ final class CarbonHotkeyRegistration {
                 &ref
             )
             if status == noErr, let ref {
-                refs.append(ref)
-                idToRegistration[nextId] = registration
+                refsById[id] = ref
+                idToRegistration[id] = registration
             } else {
                 failures[registration.command] = .systemReserved
                 FallbackFiringRecorder.shared.note(.input, "hotkeyRegistrationFailed")
             }
-            nextId += 1
         }
     }
 
@@ -83,13 +84,13 @@ final class CarbonHotkeyRegistration {
         }
     }
 
-    func unregister() {
-        for ref in refs {
-            if let ref { UnregisterEventHotKey(ref) }
+    func unregister(keeping isKept: (HotkeyPlannedRegistration) -> Bool = { _ in false }) {
+        for (id, ref) in refsById where !(idToRegistration[id].map(isKept) ?? false) {
+            UnregisterEventHotKey(ref)
+            refsById[id] = nil
+            idToRegistration[id] = nil
+            pressedHotKeyIds.remove(id)
         }
-        refs.removeAll()
-        idToRegistration.removeAll()
-        pressedHotKeyIds.removeAll()
     }
 
     func removeEventHandler() {

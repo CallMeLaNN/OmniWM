@@ -21,6 +21,7 @@ struct SettingsExport: Equatable {
 
     var overview: Overview
     var windowSwitcher = WindowSwitcher()
+    var keyboardModes = KeyboardModes()
 
     var hotkeyBindings: [HotkeyBinding]
     var systemHyperTrigger: SystemHyperTrigger

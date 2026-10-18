@@ -13,6 +13,16 @@ Optionally pick a **System Hyper Trigger** — a single key (Caps Lock, F13–F2
 
 Settings > Keyboard Shortcuts lists all actions that can be assigned a shortcut, including advanced actions.
 
+## Keyboard modes
+
+Unreleased: available when building from `main`. Keyboard modes help when OmniWM shortcuts clash with app shortcuts. Their actions — **Pause or Resume Shortcuts**, **Begin Prefix**, **Enter or Leave Window Mode**, and **Leave Keyboard Mode** — are unassigned by default; assign them in Settings > Keyboard Shortcuts.
+
+- **Pause** hands every OmniWM shortcut except Pause and Leave Keyboard Mode, when assigned, to the focused app, so `Option + 3` types `#` again. Press it again to resume, or set [`pauseTimeoutSeconds`](/config/settings-reference/#keyboardmodes) to resume automatically. Use it for Screen Sharing, remote desktops, and virtual machines.
+- **Prefix** works like tmux: press the prefix shortcut, then a *mode key*. The mode key runs its action and OmniWM returns to normal. Move and resize actions can be repeated by pressing their mode key again within half a second. Escape, or a key without an action, cancels the prefix; an OmniWM shortcut or a key with Command, Control, or Option ends it and follows normal shortcut routing.
+- **Window mode** keeps mode keys active until you press Escape. Keys without an action are ignored while it is on; OmniWM shortcuts and keys with Command, Control, or Option keep working.
+
+Mode keys are a single key, optionally with `Shift`, set per action with [`modeKey`](/config/settings-reference/#hotkeys). They act only after the prefix or inside Window mode, so a plain `H` still reaches your editor at all other times. To reach an action only through the prefix, clear its direct shortcut and keep its mode key. Prefix and Window mode need the Input Monitoring permission and stay off while Secure Input is on or the screen is locked.
+
 ## When a shortcut does not fire
 
 Confirm the binding and any registration warning in **Settings > Keyboard Shortcuts**, then check **Settings > Troubleshooting** for related diagnostics. If skhd, Raycast, or another shortcut utility is still running with the same binding, stop it or reassign the conflicting shortcut before editing `settings.toml`.

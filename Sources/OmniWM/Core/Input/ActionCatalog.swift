@@ -188,6 +188,7 @@ enum ActionCatalog {
         appendFocusedResizeBindings(&specs)
         appendPreselectionBindings(&specs)
         specs.append(contentsOf: IPCMediaCommand.allCases.map { $0.actionSpec() })
+        specs.append(contentsOf: IPCKeyboardModeCommand.allCases.map { $0.actionSpec() })
         appendPresentationBindings(&specs)
 
         return specs
@@ -239,6 +240,7 @@ enum ActionCatalog {
              .windowMark,
              .presentation,
              .media,
+             .keyboardMode,
              .shellToggle:
             .shared
         case let .focusNavigation(action):
@@ -295,6 +297,7 @@ enum ActionCatalog {
             )
         case let .presentation(command): command.actionDisplayName()
         case let .media(command): command.actionDisplayName()
+        case let .keyboardMode(command): command.actionDisplayName()
         case let .shellToggle(name): LocalizedStringResource(
                 "command.shell.toggle", defaultValue: "Toggle \(name)", table: "Commands", bundle: .omniWM
             )
@@ -334,6 +337,8 @@ enum ActionCatalog {
             .presentation(command)
         case let .media(command):
             .media(command)
+        case let .keyboardMode(command):
+            .keyboardMode(command)
         case .shellToggle:
             nil
         case let .windowState(command):

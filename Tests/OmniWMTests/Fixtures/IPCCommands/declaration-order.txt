@@ -87,6 +87,10 @@ volume-mute
 media-play-pause
 media-next
 media-previous
+toggle-shortcut-pause
+begin-prefix
+toggle-window-mode
+exit-keyboard-mode
 toggle-focused-window-floating
 close-focused-window
 scratchpad-assign

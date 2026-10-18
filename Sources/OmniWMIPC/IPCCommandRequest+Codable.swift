@@ -39,6 +39,7 @@ extension IPCCommandRequest: Codable {
              .fullscreen,
              .presentation,
              .media,
+             .keyboardMode,
              .windowState,
              .openMenuAnywhere:
             break

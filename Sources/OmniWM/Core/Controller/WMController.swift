@@ -38,6 +38,7 @@ final class WMController {
     private(set) var hotkeyRegistrationFailures: [HotkeyCommand: HotkeyRegistrationFailureReason] = [:]
     private(set) var systemHyperTriggerFailure: SystemHyperTriggerFailure?
     private(set) var windowSwitcherInputAvailable = false
+    var keyboardModeKind = KeyboardModeKind.normal
     var isHyperTriggerActive: Bool {
         hotkeys.isHyperTriggerActive
     }
@@ -52,6 +53,7 @@ final class WMController {
             publishPointerEdgeTopology()
             if isLockScreenActive {
                 windowSwitcherControllerStorage?.dismiss()
+                hotkeys.cancelArmedKeyboardMode()
                 layoutRefreshController.suspendForLockScreen()
                 resetWorkspaceBarReveal()
                 mouseEventHandler.handleInputSuppressionBegan()

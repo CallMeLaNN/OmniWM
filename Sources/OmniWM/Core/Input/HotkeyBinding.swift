@@ -312,6 +312,7 @@ struct HotkeyBinding: Codable, Equatable, Identifiable {
     let id: String
     let command: HotkeyCommand
     var binding: HotkeyTrigger
+    var modeKey: KeyBinding?
 
     var category: HotkeyCategory {
         ActionCatalog.category(for: id) ?? .focus
@@ -321,16 +322,17 @@ struct HotkeyBinding: Codable, Equatable, Identifiable {
         self.init(id: id, command: command, trigger: binding.isUnassigned ? .unassigned : .chord(binding))
     }
 
-    init(id: String, command: HotkeyCommand, trigger: HotkeyTrigger) {
+    init(id: String, command: HotkeyCommand, trigger: HotkeyTrigger, modeKey: KeyBinding? = nil) {
         self.id = id
         self.command = command
         binding = HotkeyBindingRegistry.canonicalizeTrigger(trigger)
+        self.modeKey = HotkeyBindingRegistry.canonicalizeModeKey(modeKey)
     }
 }
 
 extension HotkeyBinding {
     private enum CodingKeys: String, CodingKey {
-        case id, binding
+        case id, binding, modeKey
     }
 
     init(from decoder: Decoder) throws {
@@ -344,43 +346,51 @@ extension HotkeyBinding {
                 debugDescription: "Unknown hotkey binding id: \(id)"
             )
         }
-        self = HotkeyBinding(id: id, command: command, trigger: trigger)
+        let modeKey = try container.decodeIfPresent(KeyBinding.self, forKey: .modeKey)
+        self = HotkeyBinding(id: id, command: command, trigger: trigger, modeKey: modeKey)
     }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
         try container.encode(binding, forKey: .binding)
+        try container.encodeIfPresent(modeKey, forKey: .modeKey)
     }
 }
 
 struct PersistedHotkeyBinding: Codable, Equatable {
     let id: String
     let binding: HotkeyTrigger
+    let modeKey: KeyBinding?
 
     private enum CodingKeys: String, CodingKey {
-        case id, binding
+        case id, binding, modeKey
     }
 
     init(id: String, binding: KeyBinding) {
         self.init(id: id, trigger: binding.isUnassigned ? .unassigned : .chord(binding))
     }
 
-    init(id: String, trigger: HotkeyTrigger) {
+    init(id: String, trigger: HotkeyTrigger, modeKey: KeyBinding? = nil) {
         self.id = id
         binding = HotkeyBindingRegistry.canonicalizeTrigger(trigger)
+        self.modeKey = HotkeyBindingRegistry.canonicalizeModeKey(modeKey)
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
         binding = try container.decodeIfPresent(HotkeyTrigger.self, forKey: .binding) ?? .unassigned
+        modeKey = try HotkeyBindingRegistry.canonicalizeModeKey(
+            container.decodeIfPresent(KeyBinding.self, forKey: .modeKey)
+        )
     }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
         try container.encode(binding, forKey: .binding)
+        try container.encodeIfPresent(modeKey, forKey: .modeKey)
     }
 }
 

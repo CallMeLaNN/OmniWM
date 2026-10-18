@@ -216,6 +216,17 @@ Workspace IDs are global, so `switch-workspace 3` targets workspace `3` wherever
 
 For example, run `omniwmctl command hidden-bar panel` to show or dismiss the Hidden Bar panel.
 
+### Keyboard Modes
+
+Unreleased: available when building from `main`. See [keyboard modes](/guides/keyboard-shortcuts/#keyboard-modes).
+
+| Command | Arguments | Layout | Description |
+|---------|-----------|--------|-------------|
+| `command toggle-shortcut-pause` | — | shared | Pause OmniWM shortcuts so their keys reach the focused app, or resume them |
+| `command begin-prefix` | — | shared | Arm the prefix: the next mode key runs its command; returns `no_change` when no mode key is assigned, Secure Input is on, the screen is locked, or OmniWM cannot capture keys |
+| `command toggle-window-mode` | — | shared | Enter Window mode, where mode keys run their commands until Escape, or leave it; refused for the same reasons as `begin-prefix` |
+| `command exit-keyboard-mode` | — | shared | Leave Pause, Prefix, or Window mode |
+
 ### Volume and Media
 
 | Command | Arguments | Layout | Description |

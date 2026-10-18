@@ -234,6 +234,14 @@ The [window switcher](/features/window-switcher/). The table is optional; when a
 | `scope` | string | `"allWorkspaces"` | The remembered scope, saved when you press S or click the scope button: `allWorkspaces` or `activeWorkspace`. |
 | `showFooter` | boolean | `true` | Shows the scope button and window count. |
 
+## keyboardModes
+
+[Keyboard modes](/guides/keyboard-shortcuts/#keyboard-modes). The table is optional; when absent, every key takes its default. Unreleased: available when building from `main`.
+
+| Key | Type | Default | Description |
+| --- | --- | --- | --- |
+| `pauseTimeoutSeconds` *(optional)* | number | unset | Seconds after which a shortcut pause ends by itself. Unset or `0` keeps the pause until you toggle it again. |
+
 ## workspaceBar
 
 The per-monitor workspace bar. Per-monitor exceptions live in [`monitorBarOverrides`](#per-monitor-overrides). A [shell profile or theme](/omnishell/configuration/profiles-palettes/#profile-settings) can override most of these keys in its own `[workspaceBar]`. Unreleased: available when building from `main`.
@@ -417,6 +425,7 @@ id = "toggleScratchpad.1"
 - The array is validated strictly: each action may appear **only once**, and an action that is left out is unassigned. Workspace `10+` action IDs are optional and appear while those workspaces exist. An unknown, unassignable, or duplicate action id rejects the whole file, so rebind by editing `binding` values in place.
 - The numeric suffix is zero-based for `switchWorkspace.N`, `moveToWorkspace.N`, `focusColumn.N`, and `moveColumnToWorkspace.N` — `switchWorkspace.0` is *Switch to Workspace 1* (`Option + 1` by default) — and one-based for `switchWorkspaceSlot.N`, `moveToWorkspaceSlot.N`, `focusWindowInColumn.N`, `moveColumnToIndex.N`, `toggleScratchpad.N`, and `assignFocusedWindowToScratchpad.N`.
 - `toggleShellWidget.<name>` toggles the shell drawer or widget popout named `<name>`. Settings lists one for every drawer and every widget with a popout, and a bound one stays while its drawer or widget is missing. Unreleased: available when building from `main`.
+- `modeKey` *(optional)* is the key that runs the action inside [Prefix or Window mode](/guides/keyboard-shortcuts/#keyboard-modes): a key name, optionally with `Shift` (for example `"H"` or `"Shift+H"`), never `Escape`. It is separate from `binding`, so an action can have both, either, or neither. Two actions with the same mode key, a mode key that is also a shortcut, or a mode key with other modifiers are reported and ignored without rejecting the file. Unreleased: available when building from `main`.
 - `openCommandPalette.<mode>` opens the command palette in `windows`, `menu`, `clipboard`, `commands`, `applications`, or `files` mode, switches to that mode if the palette is open in another one, and closes it if it is already open in that mode. These actions are unassigned by default. Unreleased: available when building from `main`.
 
 The default bindings are listed in the [keyboard shortcuts guide](/guides/keyboard-shortcuts/); assignable actions appear in **Settings > Keyboard Shortcuts**.

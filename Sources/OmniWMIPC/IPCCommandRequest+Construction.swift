@@ -42,6 +42,8 @@ extension IPCCommandRequest {
             self = try .presentation(arguments.requireNoArguments(name))
         case let .media(name):
             self = try .media(arguments.requireNoArguments(name))
+        case let .keyboardMode(name):
+            self = try .keyboardMode(arguments.requireNoArguments(name))
         case let .windowState(name):
             self = try .windowState(arguments.requireNoArguments(name))
         case let .scratchpad(name):

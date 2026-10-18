@@ -23,6 +23,13 @@ extension WMController {
                 _ = commandHandler.handleHotkeyInvocation(invocation)
             }
         }
+        hotkeys.onKeyboardModeChange = { [weak self] kind in
+            self?.keyboardModeDidChange(kind)
+        }
+        hotkeys.isKeyboardModeArmingBlocked = { [weak self] in
+            guard let self else { return true }
+            return secureInputMonitor.isSecureInputActive || isLockScreenActive
+        }
         hotkeys.onWindowSwitcherAction = { [weak self] action, generation in
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }

@@ -16,6 +16,7 @@ struct CanonicalTOMLConfig: Codable, Equatable {
     var borders: SettingsExport.Borders
     var overview: SettingsExport.Overview
     var windowSwitcher: SettingsExport.WindowSwitcher
+    var keyboardModes: SettingsExport.KeyboardModes
     var workspaceBar: SettingsExport.WorkspaceBar
     var island: SettingsExport.Island
     var gestures: SettingsExport.Gestures
@@ -86,6 +87,8 @@ extension CanonicalTOMLConfig {
         overview = try container.decode(SettingsExport.Overview.self, forKey: .overview)
         windowSwitcher = try container.decodeIfPresent(SettingsExport.WindowSwitcher.self, forKey: .windowSwitcher)
             ?? SettingsExport.WindowSwitcher()
+        keyboardModes = try container.decodeIfPresent(SettingsExport.KeyboardModes.self, forKey: .keyboardModes)
+            ?? SettingsExport.KeyboardModes()
         workspaceBar = try container.decode(SettingsExport.WorkspaceBar.self, forKey: .workspaceBar)
         island = try container.decodeIfPresent(SettingsExport.Island.self, forKey: .island) ?? .defaults()
         gestures = try container.decode(SettingsExport.Gestures.self, forKey: .gestures)
@@ -142,6 +145,7 @@ extension CanonicalTOMLConfig {
         borders = export.borders
         overview = export.overview
         windowSwitcher = export.windowSwitcher
+        keyboardModes = export.keyboardModes
         workspaceBar = export.workspaceBar
         island = export.island
         gestures = export.gestures
@@ -175,6 +179,7 @@ extension CanonicalTOMLConfig {
             borders: borders,
             overview: overviewForExport(),
             windowSwitcher: windowSwitcher,
+            keyboardModes: keyboardModes,
             hotkeyBindings: hotkeys,
             systemHyperTrigger: general.systemHyperTrigger,
             hyperKeyModifiers: general.hyperKeyModifiers,

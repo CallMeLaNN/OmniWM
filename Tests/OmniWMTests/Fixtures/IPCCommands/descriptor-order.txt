@@ -92,3 +92,7 @@ volume-mute
 media-play-pause
 media-next
 media-previous
+toggle-shortcut-pause
+begin-prefix
+toggle-window-mode
+exit-keyboard-mode

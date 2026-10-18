@@ -66,6 +66,7 @@ final class SettingsStore {
 
     let overview = OverviewSettings()
     let windowSwitcher = WindowSwitcherSettings()
+    let keyboardModes = KeyboardModeSettings()
 
     var hotkeyBindings = SettingsStore.defaultExport.hotkeyBindings {
         didSet { scheduleSave() }
@@ -287,6 +288,7 @@ final class SettingsStore {
         }
         statusBar.onChange = { [weak self] in self?.scheduleSave() }
         windowSwitcher.onChange = { [weak self] in self?.scheduleSave() }
+        keyboardModes.onChange = { [weak self] in self?.scheduleSave() }
         hiddenBar.onChange = { [weak self] in self?.scheduleSave() }
         clipboard.onChange = { [weak self] in self?.scheduleSave() }
         quakeTerminal.onChange = { [weak self] in self?.scheduleSave() }
@@ -428,6 +430,7 @@ extension SettingsStore {
 
         overview.apply(export.overview, baseline: SettingsStore.defaultExport.overview)
         windowSwitcher.apply(export.windowSwitcher)
+        keyboardModes.apply(export.keyboardModes)
 
         hyperKeyModifiersStorage = export.hyperKeyModifiers
         KeySymbolMapper.setHyperKeyModifiers(export.hyperKeyModifiers)

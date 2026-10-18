@@ -482,5 +482,5 @@ extension IPCAutomationManifest {
             name: .media(.previous),
             summary: "Go back to the previous track."
         )
-    ]
+    ] + keyboardModeCommandDescriptors
 }
