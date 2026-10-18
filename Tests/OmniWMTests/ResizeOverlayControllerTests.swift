@@ -21,8 +21,53 @@ final class ResizeOverlayControllerTests: XCTestCase {
         overlay.update([change(moving, grown), change(still, frame(x: 420, width: 400))])
 
         XCTAssertEqual(Set(overlay.panels.keys), [moving])
-        XCTAssertEqual(overlay.panels[moving]?.frame, grown)
+        XCTAssertEqual(overlay.panels[moving]?.targetFrame, grown)
         overlay.reset()
+    }
+
+    func testTilesShareOneHostWindowThatOutlivesTheSession() throws {
+        let left = WindowToken(pid: 1006, windowId: 108)
+        let right = WindowToken(pid: 1006, windowId: 109)
+        let overlay = makeOverlay(currentFrames: [left: frame(x: 0, width: 400), right: frame(x: 420, width: 400)])
+        let workspaceId = WorkspaceDescriptor.ID()
+
+        overlay.begin(workspaceId: workspaceId, style: .glass, pointerDriven: true)
+        overlay.update([change(left, frame(x: 0, width: 480)), change(right, frame(x: 500, width: 400))])
+        let host = try XCTUnwrap(overlay.panels[left]?.window)
+        XCTAssertIdentical(overlay.panels[right]?.window, host)
+        XCTAssertEqual(host.frame, screenFrame)
+        XCTAssertTrue(host.isVisible)
+
+        overlay.update([change(left, frame(x: 0, width: 520)), change(right, frame(x: 540, width: 400))])
+        XCTAssertEqual(host.frame, screenFrame)
+        XCTAssertEqual(overlay.panels[right]?.targetFrame, frame(x: 540, width: 400))
+
+        overlay.reset()
+        XCTAssertFalse(host.isVisible)
+        overlay.begin(workspaceId: workspaceId, style: .glass, pointerDriven: true)
+        overlay.update([change(left, frame(x: 0, width: 300))])
+        XCTAssertIdentical(overlay.panels[left]?.window, host)
+        overlay.reset()
+    }
+
+    func testTilesSitInTheirMonitorsCoordinates() throws {
+        let token = WindowToken(pid: 1007, windowId: 110)
+        let monitor = screenFrame.offsetBy(dx: screenFrame.width, dy: 0)
+        let start = CGRect(x: monitor.minX + 420, y: monitor.minY + 20, width: 400, height: 300)
+        let overlay = ResizeOverlayController(
+            previews: PreviewCaptureCoordinator(ownedWindowRegistry: OwnedWindowRegistry()),
+            captureImage: { _, _ in nil },
+            currentFrame: { $0 == token ? start : nil },
+            monitorFrame: { _ in monitor }
+        )
+        defer { overlay.reset() }
+
+        overlay.begin(workspaceId: WorkspaceDescriptor.ID(), style: .glass, pointerDriven: true)
+        overlay.update([change(token, start.insetBy(dx: 40, dy: 0))])
+
+        let tile = try XCTUnwrap(overlay.panels[token])
+        XCTAssertEqual(tile.window?.frame, monitor)
+        XCTAssertEqual(tile.frame, CGRect(x: 460, y: 20, width: 320, height: 300))
     }
 
     func testGlassNeverCaptures() {
@@ -106,7 +151,7 @@ final class ResizeOverlayControllerTests: XCTestCase {
         defer { FrameApplyTrace.shared.endCapture() }
         mouse.updateManagedResize(at: CGPoint(x: start.x - 120, y: start.y))
 
-        XCTAssertLessThan(try XCTUnwrap(overlay.panels[fixture.left]?.frame.width), frame.width)
+        XCTAssertLessThan(try XCTUnwrap(overlay.panels[fixture.left]?.targetFrame.width), frame.width)
         XCTAssertNotNil(overlay.panels[fixture.right])
         XCTAssertEqual(frameApplicationEvents(fixture).count, 0)
 
@@ -146,9 +191,9 @@ final class ResizeOverlayControllerTests: XCTestCase {
         XCTAssertEqual(frameApplicationEvents(fixture).count, 0, "relayout during the animation must be held")
         XCTAssertTrue(overlay.isTracking(fixture.workspaceId))
 
-        let heldFrames = overlay.panels.mapValues(\.frame)
+        let heldFrames = overlay.panels.mapValues(\.targetFrame)
         handler.tickScrollAnimation(targetTime: CACurrentMediaTime() + 0.03, displayId: fixture.monitor.displayId)
-        XCTAssertNotEqual(overlay.panels.mapValues(\.frame), heldFrames)
+        XCTAssertNotEqual(overlay.panels.mapValues(\.targetFrame), heldFrames)
         XCTAssertFalse(overlay.panels.isEmpty)
         XCTAssertEqual(frameApplicationEvents(fixture).count, 0)
 
