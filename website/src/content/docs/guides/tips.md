@@ -21,6 +21,8 @@ Hold the configured mouse-move modifier and left-drag a tiled window to rearrang
 
 In Dwindle, tile and workspace-edge insertions aim for an equal split where window minimum sizes allow. Tab groups move together, within the same workspace. Away from a workspace edge, dropping over the source tile or outside another tile cancels the move. An outer-edge insertion requires another visible tile and is unavailable while a visible tile is fullscreen. The action and preview follow the pointer during the drag, and the final release position determines the result. Insertion between existing splits is not supported. Multi-finger window-move gestures keep their existing swap behavior.
 
+**Unreleased:** You can also drop on another display. The same targets apply to the workspace shown there, and dropping where no window is moves the window or group into that workspace. Moves work between Niri and Dwindle in any combination. A Dwindle tab group moves as a whole and becomes one tabbed column in Niri, in a column of its own even on a stacking edge; set **Dwindle Group Across Displays** in **Settings → Mouse & Trackpad** to move only the dragged window. A swap that would not fit the other slot is refused, and dropping on a fullscreen space cancels.
+
 ## Resize with a right-drag
 
 Hold the configured right-mouse resize modifier (`Option` by default) and right-drag a tiled window to resize it in either layout.

@@ -51,7 +51,12 @@ extension MouseEventHandler {
         }
         let resolved = manager.activeLayoutKind(for: workspaceId) == .dwindle
             ? resolveDwindleDrop(at: point, in: workspaceId, monitor: monitor)
-            : resolveNiriDrop(at: point, in: workspaceId, monitor: monitor)
+            : resolveNiriDrop(
+                at: point,
+                in: workspaceId,
+                monitor: monitor,
+                movesGroup: controller.crossDisplayDragUnit(for: source.token, in: source.workspaceId).isGroup
+            )
         guard let resolved else { return .cancel }
         return .crossDisplay(CrossDisplayDrop(
             sourceToken: source.token,
@@ -109,7 +114,8 @@ extension MouseEventHandler {
     private func resolveNiriDrop(
         at point: CGPoint,
         in workspaceId: WorkspaceDescriptor.ID,
-        monitor: Monitor
+        monitor: Monitor,
+        movesGroup: Bool
     ) -> (placement: CrossDisplayDrop.Placement, previewFrame: CGRect)? {
         guard let controller, let engine = controller.niriEngine else { return nil }
         let workingFrame = controller.niriInteractionGeometry(for: monitor).workingFrame
@@ -133,6 +139,7 @@ extension MouseEventHandler {
         if let step = direction.primaryStep(for: orientation) {
             return (.niriNewColumn(durableIndex: step > 0 ? columnIndex + 1 : columnIndex), preview)
         }
+        guard !movesGroup else { return (.workspace, workingFrame) }
         return (.niriStack(target: hit.token, after: direction.secondaryStep(for: orientation) == 1), preview)
     }
 

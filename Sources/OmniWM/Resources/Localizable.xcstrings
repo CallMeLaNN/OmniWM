@@ -170859,6 +170859,502 @@
           }
         }
       }
+    },
+    "Dwindle Group Across Displays" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مجموعة Dwindle عبر الشاشات"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dwindle-gruppe på tværs af skærme"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dwindle-Gruppe über Bildschirme hinweg"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ομάδα Dwindle σε άλλες οθόνες"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grupo de Dwindle entre pantallas"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dwindle-ryhmä näyttöjen välillä"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Groupe Dwindle entre écrans"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "קבוצת Dwindle בין מסכים"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "डिस्प्ले के बीच Dwindle समूह"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gruppo Dwindle tra schermi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ディスプレイ間のDwindleグループ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "디스플레이 간 Dwindle 그룹"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dwindle-gruppe på tvers av skjermer"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dwindle-groep tussen beeldschermen"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grupa Dwindle między ekranami"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Группа Dwindle между дисплеями"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dwindle grupa između ekrana"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dwindle-grupp mellan skärmar"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Група Dwindle між дисплеями"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "跨显示器的 Dwindle 组"
+          }
+        }
+      }
+    },
+    "Move Whole Group" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نقل المجموعة كاملة"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flyt hele gruppen"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ganze Gruppe bewegen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Μετακίνηση ολόκληρης ομάδας"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mover todo el grupo"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siirrä koko ryhmä"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Déplacer tout le groupe"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "העברת הקבוצה כולה"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पूरा समूह ले जाएँ"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sposta l’intero gruppo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "グループ全体を移動"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "그룹 전체 이동"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytt hele gruppen"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hele groep verplaatsen"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Przenieś całą grupę"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перемещать всю группу"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premesti celu grupu"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytta hela gruppen"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Переміщувати всю групу"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动整个组"
+          }
+        }
+      }
+    },
+    "Move Dragged Window" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نقل النافذة المسحوبة"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flyt det trukne vindue"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gezogenes Fenster bewegen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Μετακίνηση του συρόμενου παραθύρου"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mover la ventana arrastrada"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siirrä vedetty ikkuna"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Déplacer la fenêtre glissée"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "העברת החלון הנגרר"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "खींची गई विंडो ले जाएँ"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sposta la finestra trascinata"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ドラッグしたウインドウを移動"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "드래그한 윈도우 이동"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytt det dratte vinduet"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gesleept venster verplaatsen"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Przenieś przeciągnięte okno"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перемещать перетаскиваемое окно"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premesti prevučeni prozor"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytta det dragna fönstret"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Переміщувати перетягнуте вікно"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动拖动的窗口"
+          }
+        }
+      }
+    },
+    "Choose what a modifier drag of a Dwindle tab group moves when you drop it on another display. A whole group dropped into Niri becomes one tabbed column." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختر ما يُنقل عند سحب مجموعة علامات تبويب في Dwindle مع مفتاح التعديل وإفلاتها على شاشة أخرى. تصبح المجموعة الكاملة التي تُفلت في Niri عمودًا واحدًا بعلامات تبويب."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vælg, hvad et træk med modifikatortasten af en Dwindle-fanegruppe flytter, når du slipper den på en anden skærm. En hel gruppe, der slippes i Niri, bliver én kolonne med faner."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wählen Sie, was das Ziehen einer Dwindle-Tabgruppe mit der Sondertaste bewegt, wenn Sie sie auf einem anderen Bildschirm ablegen. Eine ganze Gruppe, die in Niri abgelegt wird, wird zu einer Spalte mit Tabs."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Επιλέξτε τι μετακινεί η μεταφορά μιας ομάδας καρτελών του Dwindle με το πλήκτρο τροποποίησης, όταν την αφήνετε σε άλλη οθόνη. Μια ολόκληρη ομάδα που αφήνεται στο Niri γίνεται μία στήλη με καρτέλες."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige qué mueve el arrastre con la tecla modificadora de un grupo de pestañas de Dwindle al soltarlo en otra pantalla. Un grupo completo soltado en Niri se convierte en una sola columna con pestañas."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valitse, mitä Dwindle-välilehtiryhmän vetäminen muokkausnäppäimellä siirtää, kun pudotat sen toiselle näytölle. Niriin pudotettu koko ryhmä muuttuu yhdeksi välilehtisarakkeeksi."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisissez ce que déplace un glisser avec la touche de modification d’un groupe d’onglets Dwindle lorsque vous le déposez sur un autre écran. Un groupe entier déposé dans Niri devient une seule colonne à onglets."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "בחרו מה מועבר בגרירה עם מקש שינוי של קבוצת כרטיסיות ב־Dwindle כשמשחררים אותה במסך אחר. קבוצה שלמה שמשוחררת ב־Niri הופכת לעמודה אחת עם כרטיסיות."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "चुनें कि मॉडिफ़ायर के साथ Dwindle टैब समूह को खींचकर किसी दूसरे डिस्प्ले पर छोड़ने पर क्या ले जाया जाए। Niri में छोड़ा गया पूरा समूह टैब वाला एक कॉलम बन जाता है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli cosa sposta il trascinamento con il tasto modificatore di un gruppo di schede Dwindle quando lo rilasci su un altro schermo. Un gruppo intero rilasciato in Niri diventa un’unica colonna a schede."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dwindleのタブグループを修飾キーを押しながらドラッグして別のディスプレイにドロップしたときに、何を移動するかを選択します。Niriにドロップしたグループ全体は、タブ付きの1つの列になります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보조 키를 누른 채 Dwindle 탭 그룹을 드래그해 다른 디스플레이에 놓을 때 무엇을 이동할지 선택합니다. Niri에 놓은 그룹 전체는 탭이 있는 하나의 열이 됩니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg hva et dra med endringstasten av en Dwindle-fanegruppe flytter når du slipper den på en annen skjerm. En hel gruppe som slippes i Niri, blir én kolonne med faner."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kies wat slepen met de speciale toets van een Dwindle-tabgroep verplaatst wanneer je deze op een ander beeldscherm loslaat. Een hele groep die in Niri wordt losgelaten, wordt één kolom met tabbladen."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wybierz, co przenosi przeciągnięcie grupy kart Dwindle z klawiszem modyfikującym po upuszczeniu jej na innym ekranie. Cała grupa upuszczona w Niri staje się jedną kolumną z kartami."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выберите, что перемещает перетаскивание группы вкладок Dwindle с клавишей-модификатором, когда вы отпускаете её на другом дисплее. Вся группа, отпущенная в Niri, становится одной колонкой с вкладками."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Izaberite šta premešta prevlačenje Dwindle grupe kartica sa modifikatorskim tasterom kada je otpustite na drugom ekranu. Cela grupa otpuštena u Niri postaje jedna kolona sa karticama."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Välj vad en dragning med kombinationstangent av en Dwindle-flikgrupp flyttar när du släpper den på en annan skärm. En hel grupp som släpps i Niri blir en kolumn med flikar."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Виберіть, що переміщує перетягування групи вкладок Dwindle з клавішею-модифікатором, коли ви відпускаєте її на іншому дисплеї. Уся група, відпущена в Niri, стає однією колонкою з вкладками."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择按住修饰键拖动 Dwindle 标签组并放到另一台显示器上时移动的内容。放入 Niri 的整个组会成为一个带标签的列。"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

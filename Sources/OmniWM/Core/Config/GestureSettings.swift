@@ -132,6 +132,10 @@ final class GestureSettings {
         didSet { notifyChange() }
     }
 
+    var dwindleGroupDragAcrossDisplays = GestureSettings.defaults.dwindleGroupDragAcrossDisplays ?? .group {
+        didSet { notifyChange() }
+    }
+
     var workspaceSwipeAxisLockedToVertical: Bool {
         scrollEnabled && workspaceSwipeFingerCount.rawValue == fingerCount.rawValue
     }
@@ -160,7 +164,8 @@ final class GestureSettings {
             windowResizeEnabled: windowResizeEnabled,
             windowResizeFingerCount: windowResizeFingerCount,
             windowGestureSensitivity: windowGestureSensitivity,
-            resizePreviewStyle: resizePreviewStyle
+            resizePreviewStyle: resizePreviewStyle,
+            dwindleGroupDragAcrossDisplays: dwindleGroupDragAcrossDisplays
         )
     }
 
@@ -191,6 +196,7 @@ final class GestureSettings {
         windowResizeFingerCount = gestures.windowResizeFingerCount ?? .three
         windowGestureSensitivity = gestures.windowGestureSensitivity ?? 1.0
         resizePreviewStyle = gestures.resizePreviewStyle ?? .live
+        dwindleGroupDragAcrossDisplays = gestures.dwindleGroupDragAcrossDisplays ?? .group
         isApplying = false
         if export() != previous {
             notifyChange()

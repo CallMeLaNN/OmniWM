@@ -3,18 +3,31 @@
 
 import Foundation
 
+struct CrossDisplayDragUnit: Equatable {
+    let tokens: [WindowToken]
+    let activeIndex: Int
+
+    var activeToken: WindowToken {
+        tokens[activeIndex]
+    }
+
+    var isGroup: Bool {
+        tokens.count > 1
+    }
+}
+
 struct CrossDisplayDropPlan {
     enum Operation: Equatable {
         case move(CrossDisplayDrop.Placement)
-        case swap(partner: WindowToken)
+        case swap(partner: CrossDisplayDragUnit)
     }
 
     let drop: CrossDisplayDrop
     let sourceLayout: ActiveLayoutKind
     let targetLayout: ActiveLayoutKind
+    let unit: CrossDisplayDragUnit
     let operation: Operation
-    let incomingConstraints: WindowSizeConstraints
-    let partnerConstraints: WindowSizeConstraints
+    let constraints: [WindowToken: WindowSizeConstraints]
 
     var niriWorkspaceIds: [WorkspaceDescriptor.ID] {
         [(drop.sourceWorkspaceId, sourceLayout), (drop.workspaceId, targetLayout)]
@@ -32,40 +45,45 @@ extension WMController {
         else {
             return nil
         }
-        let sourceLayout = manager.activeLayoutKind(for: drop.sourceWorkspaceId)
-        let targetLayout = manager.activeLayoutKind(for: drop.workspaceId)
-        let incoming = layoutRefreshController.destinationConstraints(for: drop.sourceToken, on: drop.monitor)
+        let unit = crossDisplayDragUnit(for: drop.sourceToken, in: drop.sourceWorkspaceId)
+        var constraints = niriConstraints(for: unit, entering: drop.workspaceId, on: drop.monitor)
 
         let operation: CrossDisplayDropPlan.Operation
-        var partnerConstraints = WindowSizeConstraints.unconstrained
-        if case let .swap(partner) = drop.placement {
-            guard isCrossDisplayTransferable(partner, in: drop.workspaceId) else { return nil }
-            partnerConstraints = layoutRefreshController.destinationConstraints(for: partner, on: sourceMonitor)
-            guard niriSlotAccepts(
-                drop.sourceToken, constraints: incoming, replacing: partner, in: drop.workspaceId, on: drop.monitor
-            ),
-                niriSlotAccepts(
-                    partner,
-                    constraints: partnerConstraints,
-                    replacing: drop.sourceToken,
-                    in: drop.sourceWorkspaceId,
-                    on: sourceMonitor
-                )
+        if case let .swap(target) = drop.placement {
+            guard isCrossDisplayTransferable(target, in: drop.workspaceId) else { return nil }
+            let partner = crossDisplayDragUnit(for: target, in: drop.workspaceId)
+            constraints.merge(niriConstraints(for: partner, entering: drop.sourceWorkspaceId, on: sourceMonitor)) {
+                $1
+            }
+            guard slotAccepts(unit, replacing: partner, in: drop.workspaceId, on: drop.monitor, constraints),
+                  slotAccepts(partner, replacing: unit, in: drop.sourceWorkspaceId, on: sourceMonitor, constraints)
             else {
                 return nil
             }
             operation = .swap(partner: partner)
         } else {
-            operation = .move(validatedCrossDisplayPlacement(drop, incoming: incoming))
+            operation = .move(validatedCrossDisplayPlacement(drop, unit: unit, constraints: constraints))
         }
         return CrossDisplayDropPlan(
             drop: drop,
-            sourceLayout: sourceLayout,
-            targetLayout: targetLayout,
+            sourceLayout: manager.activeLayoutKind(for: drop.sourceWorkspaceId),
+            targetLayout: manager.activeLayoutKind(for: drop.workspaceId),
+            unit: unit,
             operation: operation,
-            incomingConstraints: incoming,
-            partnerConstraints: partnerConstraints
+            constraints: constraints
         )
+    }
+
+    func crossDisplayDragUnit(for token: WindowToken, in workspaceId: WorkspaceDescriptor.ID) -> CrossDisplayDragUnit {
+        guard settings.gestures.dwindleGroupDragAcrossDisplays == .group,
+              workspaceManager.activeLayoutKind(for: workspaceId) == .dwindle,
+              let tile = dwindleEngine?.tile(containing: token, in: workspaceId),
+              tile.members.count > 1,
+              let activeIndex = tile.memberIndex(for: token)
+        else {
+            return CrossDisplayDragUnit(tokens: [token], activeIndex: 0)
+        }
+        return CrossDisplayDragUnit(tokens: tile.members.map(\.token), activeIndex: activeIndex)
     }
 
     private func isCrossDisplayTransferable(_ token: WindowToken, in workspaceId: WorkspaceDescriptor.ID) -> Bool {
@@ -88,45 +106,65 @@ extension WMController {
         }
     }
 
-    private func niriSlotAccepts(
-        _ token: WindowToken,
-        constraints: WindowSizeConstraints,
-        replacing partner: WindowToken,
-        in workspaceId: WorkspaceDescriptor.ID,
+    private func niriConstraints(
+        for unit: CrossDisplayDragUnit,
+        entering workspaceId: WorkspaceDescriptor.ID,
         on monitor: Monitor
+    ) -> [WindowToken: WindowSizeConstraints] {
+        guard workspaceManager.activeLayoutKind(for: workspaceId) == .niri else { return [:] }
+        return Dictionary(uniqueKeysWithValues: unit.tokens.map { token in
+            (token, layoutRefreshController.destinationConstraints(for: token, on: monitor))
+        })
+    }
+
+    private func slotAccepts(
+        _ incoming: CrossDisplayDragUnit,
+        replacing partner: CrossDisplayDragUnit,
+        in workspaceId: WorkspaceDescriptor.ID,
+        on monitor: Monitor,
+        _ constraints: [WindowToken: WindowSizeConstraints]
     ) -> Bool {
-        guard workspaceManager.activeLayoutKind(for: workspaceId) == .niri else { return true }
-        guard let engine = niriEngine,
-              let partnerNode = engine.findNode(for: partner, in: workspaceId),
-              let column = engine.findColumn(containing: partnerNode, in: workspaceId)
-        else {
-            return false
+        switch workspaceManager.activeLayoutKind(for: workspaceId) {
+        case .niri:
+            guard let engine = niriEngine,
+                  let partnerNode = engine.findNode(for: partner.activeToken, in: workspaceId),
+                  let column = engine.findColumn(containing: partnerNode, in: workspaceId)
+            else {
+                return false
+            }
+            guard !incoming.isGroup else { return column.windowNodes.count == 1 }
+            return engine.columnCanAcceptTransfer(
+                column,
+                adding: NiriWindow(token: incoming.activeToken),
+                addingConstraints: constraints[incoming.activeToken],
+                removing: partnerNode,
+                in: workspaceId,
+                geometry: niriSizingGeometry(for: monitor)
+            )
+        case .dwindle:
+            guard incoming.isGroup else { return true }
+            return dwindleEngine?.tile(containing: partner.activeToken, in: workspaceId)?.members.count
+                == partner.tokens.count
         }
-        return engine.columnCanAcceptTransfer(
-            column,
-            adding: NiriWindow(token: token),
-            addingConstraints: constraints,
-            removing: partnerNode,
-            in: workspaceId,
-            geometry: niriSizingGeometry(for: monitor)
-        )
     }
 
     private func validatedCrossDisplayPlacement(
         _ drop: CrossDisplayDrop,
-        incoming: WindowSizeConstraints
+        unit: CrossDisplayDragUnit,
+        constraints: [WindowToken: WindowSizeConstraints]
     ) -> CrossDisplayDrop.Placement {
         let workspaceId = drop.workspaceId
         switch drop.placement {
         case let .niriStack(target, _):
-            guard let engine = niriEngine,
+            guard !unit.isGroup,
+                  let engine = niriEngine,
                   let targetNode = engine.findNode(for: target, in: workspaceId),
                   !targetNode.isFullscreen,
                   let column = engine.findColumn(containing: targetNode, in: workspaceId),
                   engine.columnCanAcceptTransfer(
                       column,
-                      adding: NiriWindow(token: drop.sourceToken),
-                      addingConstraints: incoming,
+                      adding: NiriWindow(token: unit.activeToken),
+                      addingConstraints: constraints[unit.activeToken],
                       in: workspaceId,
                       geometry: niriSizingGeometry(for: drop.monitor)
                   )

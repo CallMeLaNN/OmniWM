@@ -87,6 +87,20 @@ struct MouseTrackpadSettingsTab: View {
                 localized: "Hold this modifier and left-drag tiled windows. Drop at another tile's center to swap, or near one of its edges to insert on that side. In Dwindle, dropping near a workspace edge inserts at the outer edge. Choose Off to leave modified drags to apps."
             )
 
+            Picker(
+                "Dwindle Group Across Displays",
+                selection: Bindable(settings.gestures).dwindleGroupDragAcrossDisplays
+            ) {
+                ForEach(DwindleGroupDrag.allCases) { mode in
+                    Text(mode.localizedDisplayName).tag(mode)
+                }
+            }
+            .id("Dwindle Group Across Displays")
+
+            SettingsCaption(
+                localized: "Choose what a modifier drag of a Dwindle tab group moves when you drop it on another display. A whole group dropped into Niri becomes one tabbed column."
+            )
+
             Picker("Right Mouse Resize Modifier", selection: Bindable(settings.gestures).mouseResizeModifierKey) {
                 ForEach(MouseResizeModifierKey.allCases, id: \.self) { key in
                     Text(key.localizedDisplayName).tag(key)

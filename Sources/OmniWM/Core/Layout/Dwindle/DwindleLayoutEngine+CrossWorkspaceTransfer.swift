@@ -40,6 +40,23 @@ extension DwindleLayoutEngine {
         existingState(for: workspaceId)?.leafByToken[token]?.tile
     }
 
+    func transferTile(
+        containing token: WindowToken,
+        wholeTile: Bool,
+        in workspaceId: WorkspaceDescriptor.ID
+    ) -> DwindleTransferredTile? {
+        guard let state = existingState(for: workspaceId), let tile = state.leafByToken[token]?.tile else {
+            return nil
+        }
+        guard wholeTile || tile.members.count == 1 else {
+            return DwindleTransferredTile(token: token, excluded: state.excludedTokens.contains(token))
+        }
+        return DwindleTransferredTile(
+            tile: tile,
+            excludedTokens: state.excludedTokens.intersection(tile.members.map(\.token))
+        )
+    }
+
     func detachForTransfer(
         token: WindowToken,
         wholeTile: Bool,

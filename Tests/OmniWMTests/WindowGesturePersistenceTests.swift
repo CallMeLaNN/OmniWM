@@ -51,6 +51,33 @@ final class WindowGesturePersistenceTests: XCTestCase {
         }
     }
 
+    func testDwindleGroupDragAcrossDisplaysDefaultsToGroupAndRoundTrips() throws {
+        XCTAssertEqual(SettingsExport.defaults().gestures.dwindleGroupDragAcrossDisplays, .group)
+        for mode in DwindleGroupDrag.allCases {
+            var export = SettingsExport.defaults()
+            export.gestures.dwindleGroupDragAcrossDisplays = mode
+            let encoded = try SettingsTOMLCodec.encode(export)
+            XCTAssertTrue(
+                String(decoding: encoded, as: UTF8.self)
+                    .contains("dwindleGroupDragAcrossDisplays = \"\(mode.rawValue)\"")
+            )
+            XCTAssertEqual(try SettingsTOMLCodec.decode(encoded), export)
+            XCTAssertTrue(SettingsTOMLCodec.unknownKeyPaths(in: encoded).isEmpty)
+        }
+
+        let canonical = String(decoding: try SettingsTOMLCodec.encode(.defaults()), as: UTF8.self)
+        let omitted = Data(canonical.components(separatedBy: "\n")
+            .filter { !$0.hasPrefix("dwindleGroupDragAcrossDisplays") }
+            .joined(separator: "\n").utf8)
+        let result = try SettingsTOMLCodec.decodeForLoad(omitted)
+        XCTAssertNil(result.migration)
+        XCTAssertEqual(result.export.gestures.dwindleGroupDragAcrossDisplays, .group)
+        XCTAssertThrowsError(try SettingsTOMLCodec.decode(replacingDefault(
+            "dwindleGroupDragAcrossDisplays",
+            with: "\"tile\""
+        )))
+    }
+
     func testMalformedWindowGestureValuesRejectDecode() throws {
         for (key, values) in [
             ("windowMoveEnabled", ["1", "\"true\""]),

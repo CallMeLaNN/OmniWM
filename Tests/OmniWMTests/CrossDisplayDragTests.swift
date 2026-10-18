@@ -305,8 +305,9 @@ final class CrossDisplayDragTests: XCTestCase {
         XCTAssertEqual(fixture.dwindleTile(partnerSibling), [partnerSibling])
     }
 
-    func testDwindleSwapIntoAGroupedMemberKeepsTheGroup() throws {
+    func testWindowModeSwapIntoAGroupedMemberKeepsTheGroup() throws {
         let fixture = try makeFixture([.dwindle, .dwindle])
+        fixture.controller.settings.gestures.dwindleGroupDragAcrossDisplays = .window
         let moved = addWindow(1, to: fixture.source, fixture)
         let member = addWindow(2, to: fixture.target, fixture)
         let partner = addWindow(3, to: fixture.target, fixture)
@@ -499,6 +500,195 @@ final class CrossDisplayDragTests: XCTestCase {
         XCTAssertEqual(fixture.columns(fixture.source), tokens.map { [$0] })
     }
 
+    func testGroupMovesKeepTheTileOrderAndActiveMember() throws {
+        for drop in ["beside", "edge", "workspace"] {
+            let fixture = try makeFixture([.dwindle, .dwindle])
+            let first = addWindow(1, to: fixture.source, fixture)
+            let second = addWindow(2, to: fixture.source, fixture)
+            let stays = addWindow(3, to: fixture.source, fixture)
+            group(second, into: first, in: fixture.source, fixture)
+            let resident = drop == "workspace" ? nil : addWindow(4, to: fixture.target, fixture)
+            fixture.layout()
+            let workingFrame = fixture.controller.insetWorkingFrame(for: fixture.monitors[1])
+            let point = switch drop {
+            case "beside": try dropPoint(in: XCTUnwrap(fixture.frame(XCTUnwrap(resident))), .right)
+            case "edge": CGPoint(x: workingFrame.midX, y: workingFrame.maxY - 2)
+            default: workingFrame.center
+            }
+
+            try fixture.drag(second, to: point)
+
+            XCTAssertEqual(fixture.dwindleTile(first), [first, second], drop)
+            XCTAssertEqual(fixture.dwindle.tile(containing: first, in: fixture.target)?.activeToken, second, drop)
+            XCTAssertEqual(fixture.manager.workspace(for: first), fixture.target, drop)
+            XCTAssertEqual(fixture.manager.workspace(for: second), fixture.target, drop)
+            XCTAssertEqual(fixture.dwindleTile(stays), [stays], drop)
+            XCTAssertEqual(fixture.dwindle.tileCount(in: fixture.source), 1, drop)
+            XCTAssertEqual(fixture.dwindle.tileCount(in: fixture.target), resident == nil ? 1 : 2, drop)
+        }
+    }
+
+    func testWindowModeMovesOnlyTheDraggedMember() throws {
+        let fixture = try makeFixture([.dwindle, .dwindle])
+        fixture.controller.settings.gestures.dwindleGroupDragAcrossDisplays = .window
+        let first = addWindow(1, to: fixture.source, fixture)
+        let second = addWindow(2, to: fixture.source, fixture)
+        group(second, into: first, in: fixture.source, fixture)
+
+        try fixture.drag(second, to: fixture.monitors[1].frame.center)
+
+        XCTAssertEqual(fixture.dwindleTile(second), [second])
+        XCTAssertEqual(fixture.dwindleTile(first), [first])
+        XCTAssertEqual(fixture.manager.workspace(for: first), fixture.source)
+        XCTAssertEqual(fixture.manager.workspace(for: second), fixture.target)
+    }
+
+    func testGroupDroppedIntoNiriBecomesOneTabbedColumn() throws {
+        let fixture = try makeFixture([.dwindle, .niri])
+        let first = addWindow(1, to: fixture.source, fixture)
+        let second = addWindow(2, to: fixture.source, fixture)
+        let third = addWindow(3, to: fixture.source, fixture)
+        group(second, into: first, in: fixture.source, fixture)
+        group(third, into: first, in: fixture.source, fixture)
+        XCTAssertEqual(fixture.dwindleTile(first), [first, second, third])
+        fixture.manager.withEngineMutationScope(in: fixture.source) {
+            _ = fixture.dwindle.tile(containing: first, in: fixture.source)?.activate(second)
+        }
+        fixture.manager.setCachedConstraints(constraints(minWidth: 3_000, minHeight: 100), for: first)
+        let resident = addWindow(4, to: fixture.target, fixture)
+        fixture.layout()
+
+        try fixture.drag(second, to: dropPoint(in: XCTUnwrap(fixture.frame(resident)), .right))
+
+        XCTAssertEqual(fixture.columns(fixture.target), [[resident], [third, second, first]])
+        let column = try XCTUnwrap(fixture.niri.columns(in: fixture.target).last)
+        XCTAssertTrue(column.isTabbed)
+        XCTAssertEqual(column.activeWindow?.token, second)
+        let workArea = fixture.controller.insetWorkingFrame(for: fixture.monitors[1])
+        XCTAssertEqual(try XCTUnwrap(fixture.niriNode(first)).constraints.minSize.width, workArea.width, accuracy: 1)
+        XCTAssertEqual(try XCTUnwrap(fixture.niriNode(first)).constraints.minSize.height, 100)
+        XCTAssertNil(fixture.dwindle.tile(containing: first, in: fixture.source))
+        for token in [first, second, third] {
+            XCTAssertEqual(fixture.manager.workspace(for: token), fixture.target)
+        }
+    }
+
+    func testGroupOnANiriStackZoneGetsItsOwnColumn() throws {
+        let fixture = try makeFixture([.dwindle, .niri])
+        let first = addWindow(1, to: fixture.source, fixture)
+        let second = addWindow(2, to: fixture.source, fixture)
+        group(second, into: first, in: fixture.source, fixture)
+        let resident = addWindow(3, to: fixture.target, fixture)
+        fixture.layout()
+        let point = try dropPoint(in: XCTUnwrap(fixture.frame(resident)), .down)
+        try fixture.beginDrag(second)
+        fixture.handler.dispatchMouseDragged(at: point)
+
+        guard case let .crossDisplay(drop) = fixture.handler.classifyMoveLocation(point) else {
+            return XCTFail("expected a cross-display drop")
+        }
+        XCTAssertEqual(drop.placement, .workspace)
+        XCTAssertEqual(
+            drop.previewFrame,
+            fixture.controller.niriInteractionGeometry(for: fixture.monitors[1]).workingFrame
+        )
+        fixture.finishDrag(at: point)
+
+        XCTAssertEqual(fixture.columns(fixture.target), [[resident], [second, first]])
+    }
+
+    func testGroupSwapsIntoWholeSlots() throws {
+        let niriFixture = try makeFixture([.dwindle, .niri])
+        let first = addWindow(1, to: niriFixture.source, niriFixture)
+        let second = addWindow(2, to: niriFixture.source, niriFixture)
+        let sibling = addWindow(3, to: niriFixture.source, niriFixture)
+        group(second, into: first, in: niriFixture.source, niriFixture)
+        let partner = addWindow(4, to: niriFixture.target, niriFixture)
+        let other = addWindow(5, to: niriFixture.target, niriFixture)
+        niriFixture.layout()
+        let groupSlot = try XCTUnwrap(niriFixture.frame(second))
+
+        try niriFixture.drag(second, to: XCTUnwrap(niriFixture.frame(partner)).center)
+        niriFixture.layout()
+
+        XCTAssertEqual(niriFixture.columns(niriFixture.target), [[second, first], [other]])
+        XCTAssertEqual(niriFixture.niri.columns(in: niriFixture.target).first?.activeWindow?.token, second)
+        XCTAssertEqual(niriFixture.dwindleTile(partner), [partner])
+        let partnerFrame = try XCTUnwrap(niriFixture.frame(partner))
+        XCTAssertTrue(partnerFrame.contains(groupSlot))
+        XCTAssertEqual(partnerFrame.maxX, groupSlot.maxX)
+        XCTAssertEqual(partnerFrame.height, groupSlot.height)
+        XCTAssertEqual(niriFixture.dwindleTile(sibling), [sibling])
+
+        let dwindleFixture = try makeFixture([.dwindle, .dwindle])
+        let movedFirst = addWindow(1, to: dwindleFixture.source, dwindleFixture)
+        let movedSecond = addWindow(2, to: dwindleFixture.source, dwindleFixture)
+        _ = addWindow(3, to: dwindleFixture.source, dwindleFixture)
+        group(movedSecond, into: movedFirst, in: dwindleFixture.source, dwindleFixture)
+        let partnerFirst = addWindow(4, to: dwindleFixture.target, dwindleFixture)
+        let partnerSecond = addWindow(5, to: dwindleFixture.target, dwindleFixture)
+        _ = addWindow(6, to: dwindleFixture.target, dwindleFixture)
+        group(partnerSecond, into: partnerFirst, in: dwindleFixture.target, dwindleFixture)
+        dwindleFixture.layout()
+        let movedSlot = try XCTUnwrap(dwindleFixture.frame(movedSecond))
+        let partnerSlot = try XCTUnwrap(dwindleFixture.frame(partnerSecond))
+
+        try dwindleFixture.drag(movedSecond, to: partnerSlot.center)
+        dwindleFixture.layout()
+
+        XCTAssertEqual(dwindleFixture.dwindleTile(movedFirst), [movedFirst, movedSecond])
+        XCTAssertEqual(dwindleFixture.dwindleTile(partnerFirst), [partnerFirst, partnerSecond])
+        XCTAssertEqual(dwindleFixture.manager.workspace(for: movedFirst), dwindleFixture.target)
+        XCTAssertEqual(dwindleFixture.manager.workspace(for: partnerFirst), dwindleFixture.source)
+        XCTAssertEqual(dwindleFixture.frame(movedSecond), partnerSlot)
+        XCTAssertEqual(dwindleFixture.frame(partnerSecond), movedSlot)
+    }
+
+    func testGroupSwapIntoAColumnWithAnExcludedSiblingIsRefused() throws {
+        let fixture = try makeFixture([.dwindle, .niri])
+        let first = addWindow(1, to: fixture.source, fixture)
+        let second = addWindow(2, to: fixture.source, fixture)
+        group(second, into: first, in: fixture.source, fixture)
+        let partner = addWindow(3, to: fixture.target, fixture)
+        let hidden = addWindow(4, to: fixture.target, pid: 8_661, fixture)
+        try stack(hidden, onto: partner, in: fixture.target, fixture)
+        fixture.manager.setAppHidden(true, pid: 8_661, source: .ax)
+        XCTAssertTrue(fixture.niri.projectionExclusions(in: fixture.target).contains(hidden))
+        fixture.layout()
+        let partnerCenter = try XCTUnwrap(fixture.frame(partner)).center
+        try fixture.beginDrag(second)
+        let worldSeq = fixture.manager.worldSeq
+
+        fixture.finishDrag(at: partnerCenter)
+
+        XCTAssertEqual(fixture.manager.worldSeq, worldSeq)
+        XCTAssertEqual(fixture.columns(fixture.target), [[partner, hidden]])
+        XCTAssertEqual(fixture.dwindleTile(first), [first, second])
+    }
+
+    func testExcludedGroupMembersTravelWithTheirExclusion() throws {
+        for targetLayout in [LayoutType.dwindle, .niri] {
+            let fixture = try makeFixture([.dwindle, targetLayout])
+            let hidden = addWindow(1, to: fixture.source, pid: 8_661, fixture)
+            let visible = addWindow(2, to: fixture.source, fixture)
+            group(visible, into: hidden, in: fixture.source, fixture)
+            fixture.manager.setAppHidden(true, pid: 8_661, source: .ax)
+            XCTAssertTrue(fixture.dwindle.excludedTokens(in: fixture.source).contains(hidden))
+
+            try fixture.drag(visible, to: fixture.monitors[1].frame.center)
+
+            XCTAssertEqual(fixture.manager.workspace(for: hidden), fixture.target, "\(targetLayout)")
+            XCTAssertFalse(fixture.dwindle.excludedTokens(in: fixture.source).contains(hidden), "\(targetLayout)")
+            if targetLayout == .niri {
+                XCTAssertEqual(fixture.columns(fixture.target), [[visible, hidden]])
+                XCTAssertTrue(fixture.niri.projectionExclusions(in: fixture.target).contains(hidden))
+            } else {
+                XCTAssertEqual(fixture.dwindleTile(visible), [hidden, visible])
+                XCTAssertTrue(fixture.dwindle.excludedTokens(in: fixture.target).contains(hidden))
+            }
+        }
+    }
+
     private func makeFixture(_ layouts: [LayoutType]) throws -> Fixture {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("CrossDisplayDragTests-\(UUID().uuidString)", isDirectory: true)
@@ -566,11 +756,16 @@ final class CrossDisplayDragTests: XCTestCase {
         )
     }
 
-    private func addWindow(_ windowId: Int, to workspaceId: WorkspaceDescriptor.ID, _ fixture: Fixture) -> WindowToken {
+    private func addWindow(
+        _ windowId: Int,
+        to workspaceId: WorkspaceDescriptor.ID,
+        pid: pid_t = 8_660,
+        _ fixture: Fixture
+    ) -> WindowToken {
         let manager = fixture.manager
         let token = manager.addWindow(
-            WindowAdmissionTestSupport.axRef(for: WindowToken(pid: 8_660, windowId: windowId)),
-            pid: 8_660,
+            WindowAdmissionTestSupport.axRef(for: WindowToken(pid: pid, windowId: windowId)),
+            pid: pid,
             windowId: windowId,
             to: workspaceId
         )
@@ -584,6 +779,17 @@ final class CrossDisplayDragTests: XCTestCase {
             }
         }
         return token
+    }
+
+    private func group(
+        _ token: WindowToken,
+        into target: WindowToken,
+        in workspaceId: WorkspaceDescriptor.ID,
+        _ fixture: Fixture
+    ) {
+        fixture.manager.withEngineMutationScope(in: workspaceId) {
+            XCTAssertTrue(fixture.dwindle.groupWindow(token, into: target, in: workspaceId))
+        }
     }
 
     private func stack(

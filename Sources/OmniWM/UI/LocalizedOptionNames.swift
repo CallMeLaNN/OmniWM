@@ -84,6 +84,15 @@ extension ResizePreviewStyle {
     }
 }
 
+extension DwindleGroupDrag {
+    var localizedDisplayName: String {
+        switch self {
+        case .group: String(localized: "Move Whole Group")
+        case .window: String(localized: "Move Dragged Window")
+        }
+    }
+}
+
 extension TrackpadScrollStyle {
     var localizedDisplayName: String {
         switch self {
