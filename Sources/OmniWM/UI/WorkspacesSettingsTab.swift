@@ -71,6 +71,16 @@ struct WorkspacesSettingsTab: View {
             }
             .id("Default Layout")
 
+            Section("Workspace Switching") {
+                Toggle(
+                    "Go Back When Switching to the Current Workspace",
+                    isOn: Bindable(settings.workspaces).autoBackAndForth
+                )
+                SettingsCaption(localized:
+                    "A workspace shortcut or command palette entry for the workspace you are on returns to the previous workspace instead. omniwmctl is not affected."
+                )
+            }
+
             Section {
                 if settings.workspaces.configurations.isEmpty {
                     Text("No workspaces configured")

@@ -170487,6 +170487,378 @@
           }
         }
       }
+    },
+    "Workspace Switching" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التبديل بين مساحات العمل"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skift af arbejdsområde"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arbeitsbereichswechsel"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Εναλλαγή χώρων εργασίας"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambio de espacio de trabajo"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Työtilan vaihto"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changement d’espace de travail"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "מעבר בין מרחבי עבודה"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "कार्यस्थल बदलना"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambio di spazio di lavoro"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ワークスペースの切り替え"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "작업 공간 전환"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bytte av arbeidsområde"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Werkruimte wisselen"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Przełączanie przestrzeni roboczych"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Переключение рабочих пространств"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prebacivanje radnih prostora"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Byte av arbetsyta"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перемикання робочих просторів"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "工作区切换"
+          }
+        }
+      }
+    },
+    "Go Back When Switching to the Current Workspace" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "العودة عند التبديل إلى مساحة العمل الحالية"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gå tilbage ved skift til det aktuelle arbejdsområde"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beim Wechsel zum aktuellen Arbeitsbereich zurückkehren"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Επιστροφή κατά την εναλλαγή στον τρέχοντα χώρο εργασίας"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volver al cambiar al espacio de trabajo actual"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Palaa takaisin, kun vaihdat nykyiseen työtilaan"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revenir en arrière lors du passage à l’espace de travail actuel"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "חזרה במעבר למרחב העבודה הנוכחי"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "वर्तमान कार्यस्थल पर स्विच करते समय वापस जाएँ"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Torna indietro quando passi allo spazio di lavoro attuale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在のワークスペースに切り替えたときに前のワークスペースへ戻る"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "현재 작업 공간으로 전환하면 이전 작업 공간으로 돌아가기"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gå tilbake ved bytte til gjeldende arbeidsområde"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teruggaan bij wisselen naar de huidige werkruimte"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wracaj przy przełączaniu na bieżącą przestrzeń roboczą"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Возвращаться при переключении на текущее рабочее пространство"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrati se pri prebacivanju na trenutni radni prostor"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gå tillbaka vid byte till aktuell arbetsyta"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Повертатися під час перемикання на поточний робочий простір"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "切换到当前工作区时返回上一个工作区"
+          }
+        }
+      }
+    },
+    "A workspace shortcut or command palette entry for the workspace you are on returns to the previous workspace instead. omniwmctl is not affected." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعيدك اختصار مساحة العمل أو عنصر لوحة الأوامر الخاص بمساحة العمل التي أنت فيها إلى مساحة العمل السابقة بدلًا من ذلك. لا يتأثر omniwmctl."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En genvej eller et punkt i kommandopaletten til det arbejdsområde, du er i, går i stedet tilbage til det forrige arbejdsområde. omniwmctl påvirkes ikke."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Tastenkürzel oder Befehlspaletteneintrag für den Arbeitsbereich, in dem Sie sich befinden, kehrt stattdessen zum vorherigen Arbeitsbereich zurück. omniwmctl ist davon nicht betroffen."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Μια συντόμευση ή καταχώριση της παλέτας εντολών για τον χώρο εργασίας στον οποίο βρίσκεστε επιστρέφει αντί γι’ αυτό στον προηγούμενο χώρο εργασίας. Το omniwmctl δεν επηρεάζεται."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un atajo o una entrada de la paleta de comandos para el espacio de trabajo en el que estás vuelve en su lugar al espacio de trabajo anterior. omniwmctl no se ve afectado."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nykyisen työtilan pikanäppäin tai komentopaletin kohde palaa sen sijaan edelliseen työtilaan. omniwmctl ei muutu."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un raccourci ou une entrée de la palette de commandes visant l’espace de travail actuel revient plutôt à l’espace de travail précédent. omniwmctl n’est pas concerné."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "קיצור מקלדת או פריט בלוח הפקודות של מרחב העבודה שבו אתם נמצאים מחזיר במקום זאת למרחב העבודה הקודם. הפקודה omniwmctl אינה מושפעת."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "आप जिस कार्यस्थल पर हैं, उसका शॉर्टकट या कमांड पैलेट प्रविष्टि इसके बजाय पिछले कार्यस्थल पर लौटाती है। omniwmctl पर कोई असर नहीं पड़ता।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una scorciatoia o una voce della palette dei comandi per lo spazio di lavoro in cui ti trovi torna invece allo spazio di lavoro precedente. omniwmctl non cambia."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在のワークスペースへのショートカットやコマンドパレットの項目を使うと、代わりに前のワークスペースに戻ります。omniwmctlには影響しません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "현재 작업 공간의 단축키나 명령 팔레트 항목을 사용하면 대신 이전 작업 공간으로 돌아갑니다. omniwmctl에는 영향을 주지 않습니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En snarvei eller et kommandopalettvalg for arbeidsområdet du er i, går i stedet tilbake til forrige arbeidsområde. omniwmctl påvirkes ikke."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Een sneltoets of opdrachtpaletitem voor de werkruimte waarin je bent, gaat in plaats daarvan terug naar de vorige werkruimte. omniwmctl verandert niet."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skrót lub pozycja palety poleceń dla bieżącej przestrzeni roboczej przełącza zamiast tego na poprzednią przestrzeń roboczą. Nie dotyczy to omniwmctl."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сочетание клавиш или пункт палитры команд для текущего рабочего пространства вместо этого возвращает к предыдущему. На omniwmctl это не влияет."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prečica ili stavka palete komandi za radni prostor u kom se nalazite umesto toga vraća na prethodni radni prostor. omniwmctl nije pogođen."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ett kortkommando eller en post i kommandopaletten för arbetsytan du är på går i stället tillbaka till föregående arbetsyta. omniwmctl påverkas inte."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сполучення клавіш або пункт палітри команд для поточного робочого простору натомість повертає до попереднього. На omniwmctl це не впливає."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "对当前所在工作区使用工作区快捷键或命令面板项时，会改为返回上一个工作区。omniwmctl 不受影响。"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

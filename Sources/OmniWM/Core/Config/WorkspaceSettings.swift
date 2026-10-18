@@ -17,6 +17,10 @@ final class WorkspaceSettings {
         didSet { onChange?() }
     }
 
+    var autoBackAndForth = WorkspaceSettings.defaults.workspaceAutoBackAndForth {
+        didSet { onChange?() }
+    }
+
     func configuredNames() -> [String] {
         configurations.map(\.name)
     }

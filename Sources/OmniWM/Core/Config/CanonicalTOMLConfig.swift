@@ -46,6 +46,7 @@ struct CanonicalTOMLConfig: Codable, Equatable {
         var animationsEnabled: Bool
         var animationSpeed: Double?
         var language: String?
+        var workspaceAutoBackAndForth: Bool?
     }
 
     struct Monitors: Codable, Equatable {
@@ -132,7 +133,8 @@ extension CanonicalTOMLConfig {
             ipcEnabled: export.ipcEnabled,
             animationsEnabled: export.animationsEnabled,
             animationSpeed: AnimationSpeed.normalized(export.animationSpeed),
-            language: export.language
+            language: export.language,
+            workspaceAutoBackAndForth: export.workspaceAutoBackAndForth
         )
         focus = export.focus
         focus.edgeNavigationInterval = FocusSettings.normalizedEdgeNavigationInterval(focus.edgeNavigationInterval)
@@ -180,6 +182,7 @@ extension CanonicalTOMLConfig {
             overview: overviewForExport(),
             windowSwitcher: windowSwitcher,
             keyboardModes: keyboardModes,
+            workspaceAutoBackAndForth: general.workspaceAutoBackAndForth ?? false,
             hotkeyBindings: hotkeys,
             systemHyperTrigger: general.systemHyperTrigger,
             hyperKeyModifiers: general.hyperKeyModifiers,

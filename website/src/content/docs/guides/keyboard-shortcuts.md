@@ -56,6 +56,8 @@ Confirm the binding and any registration warning in **Settings > Keyboard Shortc
 
 Creating workspace 10 or higher adds its Switch, Move, and Move Column actions to **Settings > Keyboard Shortcuts** as `Unassigned`. The rows disappear when the workspace is removed.
 
+Turn on **Settings > Workspaces > Go Back When Switching to the Current Workspace** ([`workspaceAutoBackAndForth`](/config/settings-reference/#general)) to make pressing the shortcut of the workspace you are on return to the previous one, as i3 and AeroSpace do. Unreleased: available when building from `main`.
+
 ## Focus
 
 | Action | Default Shortcut | Layout |
