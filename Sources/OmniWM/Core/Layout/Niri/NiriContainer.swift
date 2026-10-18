@@ -47,6 +47,7 @@ class NiriContainer: NiriNode {
     private var _cachedWindowNodes: [NiriWindow]?
 
     private(set) var axisSolveRevision: UInt64 = 0
+    var axisSolveMemo: (key: NiriAxisSolveKey, outputs: [NiriAxisSolver.Output])?
 
     override init() {
         super.init()

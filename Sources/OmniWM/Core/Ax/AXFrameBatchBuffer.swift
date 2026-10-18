@@ -23,7 +23,15 @@ final class AXFrameBatchBuffer {
         frameApplicationBufferInUse = true
         defer {
             recordPIDBufferRuntimeState()
-            framesByPidBuffer.removeAll(keepingCapacity: true)
+            if framesByPidBuffer.count > 8 {
+                framesByPidBuffer.removeAll(keepingCapacity: true)
+            } else {
+                var index = framesByPidBuffer.startIndex
+                while index != framesByPidBuffer.endIndex {
+                    framesByPidBuffer.values[index].removeAll(keepingCapacity: true)
+                    framesByPidBuffer.formIndex(after: &index)
+                }
+            }
             recordPIDBufferRuntimeState()
             frameApplicationBufferInUse = false
         }

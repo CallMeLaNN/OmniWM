@@ -76,13 +76,10 @@ extension NiriLayoutEngine {
     }
 
     func projectedColumns(in workspaceId: WorkspaceDescriptor.ID) -> [NiriProjectedColumn] {
-        let columns = columns(in: workspaceId)
         guard let excludedTokens = excludedTokensByWorkspace[workspaceId], !excludedTokens.isEmpty else {
-            return columns.enumerated().map {
-                NiriProjectedColumn(column: $0.element, windows: $0.element.windowNodes, durableIndex: $0.offset)
-            }
+            return root(for: workspaceId)?.projectedColumns ?? []
         }
-
+        let columns = columns(in: workspaceId)
         var projected: [NiriProjectedColumn] = []
         projected.reserveCapacity(columns.count)
         for (durableIndex, column) in columns.enumerated() {

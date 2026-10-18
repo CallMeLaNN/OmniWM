@@ -29,8 +29,8 @@ extension LayoutRefreshController {
         guard let controller else { return }
         var allEntries: [(workspaceId: WorkspaceDescriptor.ID, windowId: Int)] = []
         for workspace in controller.workspaceManager.workspaces {
-            for entry in controller.workspaceManager.entries(in: workspace.id) {
-                allEntries.append((workspace.id, entry.windowId))
+            controller.workspaceManager.windowQueries.forEachToken(in: workspace.id) { token in
+                allEntries.append((workspace.id, token.windowId))
             }
         }
         controller.axManager.updateInactiveWorkspaceWindows(
@@ -45,10 +45,10 @@ extension LayoutRefreshController {
         let topology = controller.workspaceManager.spaceTopology
         guard topology.isPopulated else { return [] }
         var result: Set<Int> = []
-        for entry in controller.workspaceManager.allEntries()
-            where topology.isWindowOnKnownInactiveSpace(entry.windowId)
-        {
-            result.insert(entry.windowId)
+        controller.workspaceManager.windowQueries.forEachToken { token in
+            if topology.isWindowOnKnownInactiveSpace(token.windowId) {
+                result.insert(token.windowId)
+            }
         }
         return result
     }

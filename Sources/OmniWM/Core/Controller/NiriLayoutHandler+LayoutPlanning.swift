@@ -64,12 +64,12 @@ extension NiriLayoutHandler {
         let removalSeed = options.removalSeed
         let isActiveWorkspace = options.isActiveWorkspace
 
-        let shouldResolveConstraints = viewportState == nil
+        let isRelayoutSnapshot = viewportState == nil
         let orientation = controller.settings.monitors.effectiveOrientation(for: monitor)
         guard let refreshInput = controller.layoutRefreshController.buildRefreshInput(
             workspaceId: wsId,
             monitor: monitor,
-            resolveConstraints: shouldResolveConstraints,
+            resolveConstraints: isRelayoutSnapshot,
             orientation: orientation,
             isActiveWorkspace: isActiveWorkspace
         ) else {
@@ -86,7 +86,7 @@ extension NiriLayoutHandler {
             excludedTokens: refreshInput.excludedTokens,
             plannedSeq: refreshInput.plannedSeq,
             viewportState: effectiveViewportState,
-            preferredFocusToken: controller.workspaceManager.preferredFocusToken(in: wsId),
+            preferredFocusToken: isRelayoutSnapshot ? controller.workspaceManager.preferredFocusToken(in: wsId) : nil,
             hasCompletedInitialRefresh: controller.layoutRefreshController.layoutState.hasCompletedInitialRefresh,
             useScrollAnimationPath: useScrollAnimationPath,
             removalSeed: removalSeed,
@@ -101,8 +101,9 @@ extension NiriLayoutHandler {
             displayRefreshRate: controller.layoutRefreshController.layoutState
                 .refreshRateByDisplay[monitor.displayId] ?? 60.0,
             isActiveWorkspace: refreshInput.isActiveWorkspace,
-            quietArrivalTokens: controller.workspaceManager.quietArrivalTokens
-                .intersection(refreshInput.windows.map(\.token))
+            quietArrivalTokens: isRelayoutSnapshot
+                ? controller.workspaceManager.quietArrivalTokens.intersection(refreshInput.windows.map(\.token))
+                : []
         )
     }
 
@@ -397,6 +398,12 @@ extension NiriLayoutHandler {
             scale: snapshot.monitor.scale
         )
 
+        let offsets = controller?.workspaceManager.animationDriver.renderOffsets(
+            in: snapshot.workspaceId,
+            semanticOffset: snapshot.viewportState.viewOffset,
+            at: sampledAnimationTime ?? CACurrentMediaTime()
+        )
+
         return engine.calculateCombinedLayoutUsingPools(
             in: snapshot.workspaceId,
             monitor: monitor,
@@ -404,15 +411,8 @@ extension NiriLayoutHandler {
             state: snapshot.viewportState,
             workingArea: area,
             animationTime: sampledAnimationTime,
-            viewOffsetOverride: controller?.workspaceManager.animationDriver.liveViewOffset(
-                in: snapshot.workspaceId,
-                semanticOffset: snapshot.viewportState.viewOffset,
-                at: sampledAnimationTime ?? CACurrentMediaTime()
-            ),
-            settledVisibilityOffset: controller?.workspaceManager.animationDriver.settledVisibilityOffset(
-                in: snapshot.workspaceId,
-                semanticOffset: snapshot.viewportState.viewOffset
-            ),
+            viewOffsetOverride: offsets?.liveOffset,
+            settledVisibilityOffset: offsets?.settledVisibilityOffset,
             isSettled: isSettled,
             excludedTokens: snapshot.excludedTokens
         )

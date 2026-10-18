@@ -259,4 +259,70 @@ final class WindowModelTests: XCTestCase {
         XCTAssertTrue(model.handle(for: existingToken) === existingHandle)
         XCTAssertEqual(Set(model.windows(in: workspaceId).map(\.token)), [sourceToken, existingToken])
     }
+
+    @MainActor
+    func testLayoutSnapshotVisitorPreservesSharedEntriesAndReadsIndependentFacts() {
+        let model = WindowModel()
+        let queries = WindowModel.ReadView(model: model)
+        let workspaceId = WorkspaceDescriptor(name: "layout").id
+        let otherWorkspaceId = WorkspaceDescriptor(name: "other").id
+        let pid: pid_t = 467_310
+        var tiledTokens: [WindowToken] = []
+        for index in 0 ..< 4 {
+            let token = model.upsert(
+                window: AXWindowRef(element: AXUIElementCreateApplication(pid), windowId: 467_310 + index),
+                pid: pid,
+                windowId: 467_310 + index,
+                workspace: index == 3 ? otherWorkspaceId : workspaceId,
+                mode: index == 1 ? .floating : .tiling
+            )
+            if index == 0 || index == 2 {
+                tiledTokens.append(token)
+            }
+        }
+        let constraints = WindowSizeConstraints.fixed(size: CGSize(width: 640, height: 480))
+        for token in tiledTokens {
+            model.setCachedConstraints(constraints, for: token)
+        }
+        let retainedEntries = model.entries
+        var visited: [WindowToken] = []
+
+        queries.forEachWindowForLayoutSnapshot(in: workspaceId, mode: .tiling) { entry in
+            visited.append(entry.token)
+            XCTAssertEqual(
+                queries.cachedConstraints(for: entry.token, maxAge: .greatestFiniteMagnitude),
+                constraints.normalized()
+            )
+            XCTAssertNil(queries.observedSizeEvidence(for: entry.token))
+        }
+
+        XCTAssertEqual(visited, tiledTokens)
+        XCTAssertEqual(model.entries, retainedEntries)
+        model.setMode(.floating, for: tiledTokens[0])
+        XCTAssertEqual(model.mode(for: tiledTokens[0]), .floating)
+        XCTAssertEqual(retainedEntries[tiledTokens[0]]?.mode, .tiling)
+    }
+
+    @MainActor
+    func testGeneralWindowVisitorAllowsEntryQueriesInItsCallback() {
+        let model = WindowModel()
+        let queries = WindowModel.ReadView(model: model)
+        let workspaceId = WorkspaceDescriptor(name: "floating").id
+        let token = model.upsert(
+            window: AXWindowRef(element: AXUIElementCreateApplication(467_320), windowId: 467_320),
+            pid: 467_320,
+            windowId: 467_320,
+            workspace: workspaceId,
+            mode: .floating
+        )
+        var visited: [WindowToken] = []
+
+        queries.forEachWindow(in: workspaceId, mode: .floating) { entry in
+            visited.append(entry.token)
+            XCTAssertEqual(queries.entry(for: entry.token)?.token, entry.token)
+            XCTAssertEqual(queries.isHiddenInCorner(entry.token), entry.hiddenState != nil)
+        }
+
+        XCTAssertEqual(visited, [token])
+    }
 }

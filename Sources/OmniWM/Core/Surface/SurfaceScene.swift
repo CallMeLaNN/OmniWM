@@ -226,11 +226,12 @@ final class SurfaceScene {
 
     var hasFrontmostSuppressingWindow: Bool {
         guard let app = NSApp else { return false }
-        let frontmostWindows = [app.keyWindow, app.mainWindow].compactMap { $0 }
-        return frontmostWindows.contains { window in
-            guard let node = node(for: window) else { return false }
-            return node.policy.suppressesManagedFocusRecovery && isVisible(node)
+        let frontmostWindows: InlineArray<2, NSWindow?> = [app.keyWindow, app.mainWindow]
+        for index in frontmostWindows.indices {
+            guard let window = frontmostWindows[index], let node = node(for: window) else { continue }
+            if node.policy.suppressesManagedFocusRecovery && isVisible(node) { return true }
         }
+        return false
     }
 
     var hasVisibleSuppressingWindow: Bool {

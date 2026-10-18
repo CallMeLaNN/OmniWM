@@ -48,6 +48,7 @@ final class WorldStore {
         _ event: WMEvent,
         monitors: [Monitor],
         snapshot: () -> ReconcileSnapshot,
+        completeSnapshot: (inout ReconcileSnapshot) -> Void = { _ in },
         preMutate: () -> Void = {},
         resolvePlan: (ActionPlan, WindowToken?, ReconcileSnapshot) -> ActionPlan
     ) -> ReconcileTxn {
@@ -86,9 +87,10 @@ final class WorldStore {
         let resolvedPlan = resolvePlan(plan, normalizedEvent.token, reducerSnapshot)
         applyWindowRemovalAfterPlan(event, monitors: monitors)
 
-        let committedSnapshot = resolvedPlan.mutatesRuntimeState || event.mutatesSnapshotAfterPlan
+        var committedSnapshot = resolvedPlan.mutatesRuntimeState || event.mutatesSnapshotAfterPlan
             ? snapshot()
             : reducerSnapshot
+        completeSnapshot(&committedSnapshot)
         return trace.recordTransaction(
             event: event,
             normalizedEvent: normalizedEvent,

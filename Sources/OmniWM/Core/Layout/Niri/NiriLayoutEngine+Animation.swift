@@ -183,8 +183,12 @@ extension NiriLayoutEngine {
 
     func tickAllColumnAnimations(in workspaceId: WorkspaceDescriptor.ID, at time: TimeInterval) -> Bool {
         guard let root = root(for: workspaceId) else { return false }
+        return Self.tickColumnAnimations(ContiguousArray(root.columns), at: time)
+    }
+
+    private static func tickColumnAnimations(_ columns: ContiguousArray<NiriContainer>, at time: TimeInterval) -> Bool {
         var anyRunning = false
-        for column in root.columns {
+        for column in columns {
             if column.tickMoveAnimation(at: time) { anyRunning = true }
             if column.tickWidthAnimation(at: time) { anyRunning = true }
         }
@@ -354,8 +358,12 @@ extension NiriLayoutEngine {
 
     func tickAllWindowAnimations(in workspaceId: WorkspaceDescriptor.ID, at time: TimeInterval) -> Bool {
         guard let root = root(for: workspaceId) else { return false }
+        return Self.tickWindowAnimations(ContiguousArray(root.allWindows), at: time)
+    }
+
+    private static func tickWindowAnimations(_ windows: ContiguousArray<NiriWindow>, at time: TimeInterval) -> Bool {
         var anyRunning = false
-        for window in root.allWindows where window.tickMoveAnimations(at: time) {
+        for window in windows where window.tickMoveAnimations(at: time) {
             anyRunning = true
         }
         return anyRunning

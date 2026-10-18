@@ -79,6 +79,7 @@ final class WorldStoreCommitTests: XCTestCase {
         XCTAssertNotNil(world.windows.entry(for: token))
 
         var snapshotCount = 0
+        var completionCount = 0
         let transaction = world.commit(
             .windowRemoved(
                 token: token,
@@ -90,10 +91,15 @@ final class WorldStoreCommitTests: XCTestCase {
                 snapshotCount += 1
                 return Self.snapshot(world: world)
             },
+            completeSnapshot: { snapshot in
+                completionCount += 1
+                XCTAssertFalse(snapshot.windows.contains { $0.token == token })
+            },
             resolvePlan: { plan, _, _ in plan }
         )
 
         XCTAssertEqual(snapshotCount, 2)
+        XCTAssertEqual(completionCount, 1)
         XCTAssertNil(world.windows.entry(for: token))
         XCTAssertFalse(transaction.snapshot.windows.contains { $0.token == token })
     }
@@ -140,6 +146,98 @@ final class WorldStoreCommitTests: XCTestCase {
         XCTAssertTrue(transaction.plan.isEmpty)
         XCTAssertEqual(world.windows.entry(for: token)?.lifetimeAuthority, .axTopLevelInventory)
         XCTAssertEqual(transaction.snapshot.windows.first?.lifetimeAuthority, .axTopLevelInventory)
+    }
+
+    func testCommitCompletesOnlySelectedSnapshotAfterMutation() {
+        let world = WorldStore()
+        var phases: [String] = []
+        var nextFocus = FocusSessionSnapshot()
+        nextFocus.nativeFocusOwner = .external(pid: nil, windowId: nil)
+        let workspaceId = WorkspaceDescriptor.ID()
+        let layout = LayoutTopology()
+
+        let transaction = world.commit(
+            .userCommand(workspaceId: nil, label: "completion_test", source: .command),
+            monitors: [],
+            snapshot: {
+                phases.append("snapshot")
+                return Self.snapshot(focus: world.focus)
+            },
+            completeSnapshot: { snapshot in
+                phases.append("complete")
+                XCTAssertEqual(snapshot.focusSession, nextFocus)
+                snapshot.layouts[workspaceId] = layout
+            },
+            resolvePlan: { plan, _, snapshot in
+                phases.append("resolve")
+                XCTAssertTrue(snapshot.layouts.isEmpty)
+                var plan = plan
+                plan.focusSession = nextFocus
+                world.applyFocusSession(nextFocus)
+                return plan
+            }
+        )
+
+        XCTAssertEqual(phases, ["snapshot", "resolve", "snapshot", "complete"])
+        XCTAssertEqual(transaction.snapshot.layouts, [workspaceId: layout])
+    }
+
+    func testCommitCompletesReusedSnapshotForNonmutatingPlan() {
+        let world = WorldStore()
+        var snapshotCount = 0
+        var completionCount = 0
+        let workspaceId = WorkspaceDescriptor.ID()
+        let layout = LayoutTopology()
+
+        let transaction = world.commit(
+            .userCommand(workspaceId: nil, label: "completion_test", source: .command),
+            monitors: [],
+            snapshot: {
+                snapshotCount += 1
+                return Self.snapshot(focus: world.focus)
+            },
+            completeSnapshot: { snapshot in
+                completionCount += 1
+                snapshot.layouts[workspaceId] = layout
+            },
+            resolvePlan: { plan, _, _ in plan }
+        )
+
+        XCTAssertEqual(snapshotCount, 1)
+        XCTAssertEqual(completionCount, 1)
+        XCTAssertEqual(transaction.snapshot.layouts, [workspaceId: layout])
+    }
+
+    func testNestedCommitCompletesSnapshotWithoutInvariantValidation() {
+        let world = WorldStore()
+        let workspaceId = WorkspaceDescriptor.ID()
+        let layout = LayoutTopology()
+        var completionCount = 0
+        var nestedSnapshot: ReconcileSnapshot?
+        let event = WMEvent.userCommand(workspaceId: nil, label: "completion_test", source: .command)
+
+        _ = world.commit(
+            event,
+            monitors: [],
+            snapshot: { Self.snapshot(focus: world.focus) },
+            resolvePlan: { plan, _, _ in
+                let nested = world.commit(
+                    event,
+                    monitors: [],
+                    snapshot: { Self.snapshot(focus: world.focus) },
+                    completeSnapshot: { snapshot in
+                        completionCount += 1
+                        snapshot.layouts[workspaceId] = layout
+                    },
+                    resolvePlan: { plan, _, _ in plan }
+                )
+                nestedSnapshot = nested.snapshot
+                return plan
+            }
+        )
+
+        XCTAssertEqual(completionCount, 1)
+        XCTAssertEqual(nestedSnapshot?.layouts, [workspaceId: layout])
     }
 
     private static func snapshot(world: WorldStore) -> ReconcileSnapshot {

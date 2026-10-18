@@ -224,9 +224,19 @@ final class InputTapThreadTests: XCTestCase {
         XCTAssertFalse(MouseEventHandler.processTapCallback(type: .otherMouseDown, event: event))
         XCTAssertEqual(handler.performanceSnapshot()?.cgEvents, 0)
 
-        handler.inputTapThread.updateFilterSnapshot { $0.claimedOtherButtons.insert(5) }
+        handler.inputTapThread.updateFilterSnapshot { $0.claimedOtherButtonMask = UInt32(1) << 5 }
         XCTAssertFalse(MouseEventHandler.processTapCallback(type: .otherMouseDown, event: event))
         XCTAssertEqual(handler.performanceSnapshot()?.cgEvents, 1)
+    }
+
+    func testOtherMouseButtonNumbersOutsideSupportedRangePassThrough() throws {
+        let thread = InputTapThread()
+        thread.updateFilterSnapshot { $0.claimedOtherButtonMask = .max }
+        let event = try XCTUnwrap(CGEvent(source: nil))
+        for button in [Int64.min, -1, 0, 1, 32, 33, Int64.max] {
+            event.setIntegerValueField(.mouseEventButtonNumber, value: button)
+            XCTAssertTrue(thread.evaluateTap(type: .otherMouseDown, event: event) === event)
+        }
     }
 
     @MainActor

@@ -52,6 +52,14 @@ extension WindowModel {
             model.windows(in: workspace)
         }
 
+        func forEachToken(in workspace: WorkspaceDescriptor.ID, _ body: (WindowToken) -> Void) {
+            model.forEachToken(in: workspace, body)
+        }
+
+        func forEachToken(_ body: (WindowToken) -> Void) {
+            model.forEachToken(body)
+        }
+
         func windowCount(in workspace: WorkspaceDescriptor.ID) -> Int {
             model.windowCount(in: workspace)
         }
@@ -70,6 +78,14 @@ extension WindowModel {
                     body(entry)
                 }
             }
+        }
+
+        func forEachWindowForLayoutSnapshot(
+            in workspace: WorkspaceDescriptor.ID,
+            mode: TrackedWindowMode,
+            _ body: (borrowing WindowState) -> Void
+        ) {
+            model.forEachWindowForLayoutSnapshot(in: workspace, mode: mode, body)
         }
 
         func firstWindow(

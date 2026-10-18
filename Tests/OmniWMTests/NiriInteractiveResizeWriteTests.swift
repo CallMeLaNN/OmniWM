@@ -64,6 +64,47 @@ final class NiriInteractiveResizeWriteTests: XCTestCase {
         }
     }
 
+    func testRelayoutSnapshotPreservesFocusAndQuietArrivalDuringScrollPath() throws {
+        let fixture = try makeFixture(windowCount: 2)
+        let manager = fixture.controller.workspaceManager
+        for token in fixture.tokens {
+            manager.setCachedConstraints(.unconstrained, for: token)
+        }
+        let expectedFocus = try XCTUnwrap(manager.preferredFocusToken(in: fixture.workspaceId))
+        let quietToken = fixture.tokens[0]
+        let foreignToken = WindowToken(pid: 961_999, windowId: 961_999)
+        manager.quietArrivalTokens = [quietToken, foreignToken]
+        let handler = fixture.controller.layoutRefreshController.niriHandler
+        let relayout = try XCTUnwrap(handler.makeWorkspaceSnapshot(
+            workspaceId: fixture.workspaceId,
+            monitor: fixture.monitor,
+            options: .init(
+                viewportState: nil,
+                useScrollAnimationPath: true,
+                removalSeed: nil,
+                isActiveWorkspace: true
+            )
+        ))
+
+        XCTAssertEqual(relayout.preferredFocusToken, expectedFocus)
+        XCTAssertEqual(relayout.quietArrivalTokens, [quietToken])
+
+        let onDemand = try XCTUnwrap(handler.makeWorkspaceSnapshot(
+            workspaceId: fixture.workspaceId,
+            monitor: fixture.monitor,
+            options: .init(
+                viewportState: manager.niriViewportState(for: fixture.workspaceId),
+                useScrollAnimationPath: true,
+                removalSeed: nil,
+                isActiveWorkspace: true
+            )
+        ))
+
+        XCTAssertNil(onDemand.preferredFocusToken)
+        XCTAssertTrue(onDemand.quietArrivalTokens.isEmpty)
+        XCTAssertEqual(manager.quietArrivalTokens, [quietToken, foreignToken])
+    }
+
     private func makeFixture(windowCount: Int) throws -> Fixture {
         let controller = WindowAdmissionTestSupport.controller(prefix: "OmniWMNiriInteractiveResizeWriteTests")
         let monitor = Monitor(

@@ -95,7 +95,7 @@ extension AXManager {
                 framesByPid[pid] = []
                 framesByPid[pid]?.reserveCapacity(8)
             }
-            framesByPid[pid]?.append(request)
+            framesByPid[pid, default: []].append(request)
         }
 
         dispatchFrameApplications(framesByPid)

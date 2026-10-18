@@ -24,10 +24,8 @@ final class LayoutDiffExecutor {
         return frameChange
     }
 
-    func execute(_ plan: WorkspaceLayoutPlan) {
-        guard let controller = refreshController.controller,
-              let monitor = resolveMonitor(from: plan.monitor, controller: controller)
-        else { return }
+    func execute(_ plan: WorkspaceLayoutPlan, controller: WMController) {
+        guard let monitor = resolveMonitor(from: plan.monitor, controller: controller) else { return }
         if Self.isFrameOnly(plan.diff) {
             executeFrameOnly(plan.diff, plan: plan, monitor: monitor, controller: controller)
             return

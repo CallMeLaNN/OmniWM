@@ -23,8 +23,7 @@ enum NiriAxisSolver {
     }
 }
 
-struct NiriAxisSolveKey: Hashable {
-    let containerId: NodeId
+struct NiriAxisSolveKey: Equatable {
     let containerRevision: UInt64
     let configurationRevision: UInt64
     let availableSpace: CGFloat

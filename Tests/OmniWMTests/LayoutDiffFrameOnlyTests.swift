@@ -167,7 +167,7 @@ final class LayoutDiffFrameOnlyTests: XCTestCase {
             isAnimationTick: true
         )
 
-        LayoutDiffExecutor(refreshController: controller.layoutRefreshController).execute(plan)
+        LayoutDiffExecutor(refreshController: controller.layoutRefreshController).execute(plan, controller: controller)
 
         XCTAssertEqual(controller.axManager.recentFrameWriteFailure(for: windowId), .contextUnavailable)
         XCTAssertEqual(controller.axManager.recentFrameWriteFailureComponents(for: windowId), .position)

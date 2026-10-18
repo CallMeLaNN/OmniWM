@@ -9,37 +9,6 @@ enum TrackedWindowMode: Equatable, Hashable, Sendable {
     case floating
 }
 
-struct ManagedReplacementMetadata: Equatable, Sendable {
-    var bundleId: String?
-    var workspaceId: WorkspaceDescriptor.ID
-    var mode: TrackedWindowMode
-    var role: String?
-    var subrole: String?
-    var title: String?
-    var windowLevel: Int32?
-    var parentWindowId: UInt32?
-    var frame: CGRect?
-    var transientWindowServerEvidence = false
-    var degradedWindowServerChildEvidence = false
-
-    func mergingNonNilValues(from overlay: ManagedReplacementMetadata) -> ManagedReplacementMetadata {
-        ManagedReplacementMetadata(
-            bundleId: overlay.bundleId ?? bundleId,
-            workspaceId: overlay.workspaceId,
-            mode: overlay.mode,
-            role: overlay.role ?? role,
-            subrole: overlay.subrole ?? subrole,
-            title: overlay.title ?? title,
-            windowLevel: overlay.windowLevel ?? windowLevel,
-            parentWindowId: overlay.parentWindowId ?? parentWindowId,
-            frame: overlay.frame ?? frame,
-            transientWindowServerEvidence: transientWindowServerEvidence || overlay.transientWindowServerEvidence,
-            degradedWindowServerChildEvidence: degradedWindowServerChildEvidence
-                || overlay.degradedWindowServerChildEvidence
-        )
-    }
-}
-
 final class WindowModel {
     typealias WindowKey = WindowToken
 
@@ -138,19 +107,19 @@ final class WindowModel {
             )
             return existingToken
         }
-        if entries[token] != nil {
-            entries[token]?.axRef = window
+        if entries.index(forKey: token) != nil {
+            updateEntry(token) { $0.axRef = window }
             updateWorkspace(for: token, workspace: workspace)
             setMode(mode, for: token)
             if let managedReplacementMetadata {
-                entries[token]?.managedReplacementMetadata = managedReplacementMetadata
+                updateEntry(token) { $0.managedReplacementMetadata = managedReplacementMetadata }
             }
-            if entries[token]?.ruleEffects != ruleEffects {
-                entries[token]?.ruleEffects = ruleEffects
+            if readEntry(token, { $0.ruleEffects != ruleEffects }) ?? true {
+                updateEntry(token) { $0.ruleEffects = ruleEffects }
                 constraintsCacheByToken.removeValue(forKey: token)
             }
-            entries[token]?.admissionHints = admissionHints
-            entries[token]?.lifetimeAuthority = lifetimeAuthority
+            updateEntry(token) { $0.admissionHints = admissionHints }
+            updateEntry(token) { $0.lifetimeAuthority = lifetimeAuthority }
             return token
         }
 
@@ -174,7 +143,7 @@ final class WindowModel {
         _ authority: ManagedWindowLifetimeAuthority,
         for token: WindowToken
     ) {
-        entries[token]?.lifetimeAuthority = authority
+        updateEntry(token) { $0.lifetimeAuthority = authority }
     }
 
     @discardableResult
@@ -189,10 +158,10 @@ final class WindowModel {
             if !CFEqual(entry.axRef.element, newAXRef.element) {
                 observedSizeEvidenceByToken.removeValue(forKey: oldToken)
             }
-            entries[oldToken]?.axRef = newAXRef
+            updateEntry(oldToken) { $0.axRef = newAXRef }
             constraintsCacheByToken.removeValue(forKey: oldToken)
             if let managedReplacementMetadata {
-                entries[oldToken]?.managedReplacementMetadata = managedReplacementMetadata
+                updateEntry(oldToken) { $0.managedReplacementMetadata = managedReplacementMetadata }
             }
             return entries[oldToken]
         }
@@ -204,7 +173,7 @@ final class WindowModel {
             return nil
         }
 
-        guard entries[newToken] == nil,
+        guard entries.index(forKey: newToken) == nil,
               var entry = entries.removeValue(forKey: oldToken)
         else {
             return nil
@@ -235,8 +204,7 @@ final class WindowModel {
     }
 
     func updateWorkspace(for token: WindowToken, workspace: WorkspaceDescriptor.ID) {
-        guard let entry = entries[token] else { return }
-        let oldWorkspace = entry.workspaceId
+        guard let (oldWorkspace, mode) = readEntry(token, { ($0.workspaceId, $0.mode) }) else { return }
         if oldWorkspace != workspace {
             workspaceIndex.remove(
                 token,
@@ -244,20 +212,33 @@ final class WindowModel {
             )
             workspaceModeIndex.remove(
                 token,
-                from: WorkspaceModeKey(workspaceId: oldWorkspace, mode: entry.mode)
+                from: WorkspaceModeKey(workspaceId: oldWorkspace, mode: mode)
             )
             workspaceIndex.append(token, to: workspace)
             workspaceModeIndex.append(
                 token,
-                to: WorkspaceModeKey(workspaceId: workspace, mode: entry.mode)
+                to: WorkspaceModeKey(workspaceId: workspace, mode: mode)
             )
         }
-        entries[token]?.workspaceId = workspace
+        updateEntry(token) { $0.workspaceId = workspace }
     }
 
     func windows(in workspace: WorkspaceDescriptor.ID) -> [WindowState] {
         guard let tokens = workspaceIndex.tokensByKey[workspace] else { return [] }
         return tokens.compactMap { entries[$0] }
+    }
+
+    func forEachToken(in workspace: WorkspaceDescriptor.ID, _ body: (WindowToken) -> Void) {
+        guard let tokens = workspaceIndex.tokensByKey[workspace] else { return }
+        for token in tokens where entries.index(forKey: token) != nil {
+            body(token)
+        }
+    }
+
+    func forEachToken(_ body: (WindowToken) -> Void) {
+        for token in entries.keys {
+            body(token)
+        }
     }
 
     func windowCount(in workspace: WorkspaceDescriptor.ID) -> Int {
@@ -272,8 +253,18 @@ final class WindowModel {
         workspaceModeIndex.tokensByKey[WorkspaceModeKey(workspaceId: workspace, mode: mode)] ?? []
     }
 
+    func forEachWindowForLayoutSnapshot(
+        in workspace: WorkspaceDescriptor.ID,
+        mode: TrackedWindowMode,
+        _ body: (borrowing WindowState) -> Void
+    ) {
+        for token in tokens(in: workspace, mode: mode) {
+            _ = readEntry(token) { body($0) }
+        }
+    }
+
     func workspace(for token: WindowToken) -> WorkspaceDescriptor.ID? {
-        entries[token]?.workspaceId
+        readEntry(token) { $0.workspaceId }
     }
 
     func entry(for token: WindowToken) -> WindowState? {
@@ -320,138 +311,127 @@ final class WindowModel {
 }
 
 extension WindowModel {
+    private func readEntry<Result>(_ token: WindowToken, _ read: (inout WindowState) -> Result) -> Result? {
+        guard let index = entries.index(forKey: token) else { return nil }
+        return read(&entries.values[index])
+    }
+
+    private func updateEntry(_ token: WindowToken, _ update: (inout WindowState) -> Void) {
+        guard let index = entries.index(forKey: token) else { return }
+        update(&entries.values[index])
+    }
+
     func mode(for token: WindowToken) -> TrackedWindowMode? {
-        entries[token]?.mode
+        readEntry(token) { $0.mode }
     }
 
     func setMode(_ mode: TrackedWindowMode, for token: WindowToken) {
-        guard let entry = entries[token], entry.mode != mode else { return }
+        guard let (workspaceId, currentMode) = readEntry(token, { ($0.workspaceId, $0.mode) }),
+              currentMode != mode
+        else { return }
         workspaceModeIndex.remove(
             token,
-            from: WorkspaceModeKey(workspaceId: entry.workspaceId, mode: entry.mode)
+            from: WorkspaceModeKey(workspaceId: workspaceId, mode: currentMode)
         )
-        entries[token]?.mode = mode
+        updateEntry(token) { $0.mode = mode }
         workspaceModeIndex.append(
             token,
-            to: WorkspaceModeKey(workspaceId: entry.workspaceId, mode: mode)
+            to: WorkspaceModeKey(workspaceId: workspaceId, mode: mode)
         )
     }
 
     func floatingState(for token: WindowToken) -> FloatingState? {
-        entries[token]?.floatingState
+        readEntry(token) { $0.floatingState } ?? nil
     }
 
     func setFloatingState(_ state: FloatingState?, for token: WindowToken) {
-        entries[token]?.floatingState = state
+        updateEntry(token) { $0.floatingState = state }
     }
 
     func manualLayoutOverride(for token: WindowToken) -> ManualWindowOverride? {
-        entries[token]?.manualLayoutOverride
+        readEntry(token) { $0.manualLayoutOverride } ?? nil
     }
 
     func setManualLayoutOverride(_ override: ManualWindowOverride?, for token: WindowToken) {
-        entries[token]?.manualLayoutOverride = override
+        updateEntry(token) { $0.manualLayoutOverride = override }
     }
 
     func admissionHints(for token: WindowToken) -> ManagedWindowAdmissionHints? {
-        entries[token]?.admissionHints
+        readEntry(token) { $0.admissionHints }
     }
 
     func setAdmissionHints(_ hints: ManagedWindowAdmissionHints, for token: WindowToken) {
-        entries[token]?.admissionHints = hints
+        updateEntry(token) { $0.admissionHints = hints }
     }
 
     func lifecyclePhase(for token: WindowToken) -> WindowLifecyclePhase? {
-        entries[token]?.lifecyclePhase
+        readEntry(token) { $0.lifecyclePhase }
     }
 
     func setLifecyclePhase(_ phase: WindowLifecyclePhase, for token: WindowToken) {
-        entries[token]?.lifecyclePhase = phase
+        updateEntry(token) { $0.lifecyclePhase = phase }
     }
 
     func observedState(for token: WindowToken) -> ObservedWindowState? {
-        entries[token]?.observedState
+        readEntry(token) { $0.observedState }
     }
 
     func setObservedState(_ state: ObservedWindowState, for token: WindowToken) {
-        entries[token]?.observedState = state
+        updateEntry(token) { $0.observedState = state }
     }
 
     func desiredState(for token: WindowToken) -> DesiredWindowState? {
-        entries[token]?.desiredState
+        readEntry(token) { $0.desiredState }
     }
 
     func setDesiredState(_ state: DesiredWindowState, for token: WindowToken) {
-        entries[token]?.desiredState = state
+        updateEntry(token) { $0.desiredState = state }
     }
 
     func restoreIntent(for token: WindowToken) -> RestoreIntent? {
-        entries[token]?.restoreIntent
+        readEntry(token) { $0.restoreIntent } ?? nil
     }
 
     func setRestoreIntent(_ intent: RestoreIntent?, for token: WindowToken) {
-        entries[token]?.restoreIntent = intent
-    }
-
-    func applyNiriPlacements(_ placements: [WindowToken: PersistedNiriPlacement], monitors: [Monitor]) {
-        for (token, placement) in placements {
-            guard let entry = self.entry(for: token), entry.mode == .tiling else { continue }
-            var restoreIntent = StateReducer.restoreIntent(for: entry, monitors: monitors)
-            restoreIntent.niriPlacement = placement
-            restoreIntent.detachedNiriContainerSizingState = nil
-            guard entry.restoreIntent != restoreIntent else { continue }
-            self.setRestoreIntent(restoreIntent, for: token)
-        }
-    }
-
-    func applyDwindlePlacements(_ placements: [WindowToken: PersistedDwindlePlacement], monitors: [Monitor]) {
-        for (token, placement) in placements {
-            guard let entry = self.entry(for: token), entry.mode == .tiling else { continue }
-            var restoreIntent = StateReducer.restoreIntent(for: entry, monitors: monitors)
-            restoreIntent.dwindlePlacement = placement
-            guard entry.restoreIntent != restoreIntent else { continue }
-            self.setRestoreIntent(restoreIntent, for: token)
-        }
+        updateEntry(token) { $0.restoreIntent = intent }
     }
 
     func managedReplacementMetadata(for token: WindowToken) -> ManagedReplacementMetadata? {
-        entries[token]?.managedReplacementMetadata
+        readEntry(token) { $0.managedReplacementMetadata } ?? nil
     }
 
     func setManagedReplacementMetadata(_ metadata: ManagedReplacementMetadata?, for token: WindowToken) {
-        entries[token]?.managedReplacementMetadata = metadata
+        updateEntry(token) { $0.managedReplacementMetadata = metadata }
     }
 
     func setHiddenState(_ state: HiddenState?, for token: WindowToken) {
-        entries[token]?.hiddenState = state
+        updateEntry(token) { $0.hiddenState = state }
     }
 
     func hiddenState(for token: WindowToken) -> HiddenState? {
-        entries[token]?.hiddenState
+        readEntry(token) { $0.hiddenState } ?? nil
     }
 
     func isHiddenInCorner(_ token: WindowToken) -> Bool {
-        entries[token]?.hiddenState != nil
+        readEntry(token) { $0.hiddenState != nil } ?? false
     }
 
     func layoutReason(for token: WindowToken) -> LayoutReason {
-        entries[token]?.layoutReason ?? .standard
+        readEntry(token) { $0.layoutReason } ?? .standard
     }
 
     func isNativeFullscreenSuspended(_ token: WindowToken) -> Bool {
-        entries[token]?.layoutReason == .nativeFullscreen
+        readEntry(token) { $0.layoutReason == .nativeFullscreen } ?? false
     }
 
     func setLayoutReason(_ reason: LayoutReason, for token: WindowToken) {
-        entries[token]?.layoutReason = reason
+        updateEntry(token) { $0.layoutReason = reason }
     }
 
     @discardableResult
     func restoreFromNativeState(for token: WindowToken) -> Bool {
-        guard let entry = entries[token],
-              entry.layoutReason != .standard
-        else { return false }
-        entries[token]?.layoutReason = .standard
+        guard readEntry(token, { $0.layoutReason != .standard }) == true else { return false }
+        updateEntry(token) { $0.layoutReason = .standard }
         return true
     }
 
@@ -476,7 +456,7 @@ extension WindowModel {
     }
 
     func setCachedConstraints(_ constraints: WindowSizeConstraints, for token: WindowToken) {
-        guard entries[token] != nil else { return }
+        guard entries.index(forKey: token) != nil else { return }
         constraintsCacheByToken[token] = ConstraintsCacheRecord(
             constraints: constraints.normalized(),
             cachedAt: Date()
@@ -488,7 +468,7 @@ extension WindowModel {
     }
 
     func setObservedSizeEvidence(_ evidence: ObservedSizeEvidence, for token: WindowToken) -> Bool {
-        guard entries[token] != nil else { return false }
+        guard entries.index(forKey: token) != nil else { return false }
         if evidence.isEmpty {
             return observedSizeEvidenceByToken.removeValue(forKey: token) != nil
         }

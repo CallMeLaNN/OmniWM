@@ -106,3 +106,23 @@ extension LayoutRefreshController {
         }
     }
 }
+
+extension LayoutRefreshController {
+    func discardScratchpadRevealGroupAndReconcile(_ groupId: UInt64) {
+        guard let index = revealGroups.discard(groupId) else { return }
+        reconcileRevealedScratchpadAfterGroupDiscard(index)
+    }
+
+    func reconcileRevealedScratchpadAfterGroupDiscard(_ index: ScratchpadIndex) {
+        guard let controller,
+              controller.workspaceManager.revealedScratchpadIndex() == index,
+              !controller.workspaceManager.scratchpadMembers(in: index).contains(where: {
+                  controller.isManagedWindowDisplayable($0)
+              })
+        else {
+            return
+        }
+        controller.workspaceManager.setRevealedScratchpad(nil)
+        controller.requestWorkspaceBarRefresh()
+    }
+}

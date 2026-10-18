@@ -168,12 +168,15 @@ extension LayoutRefreshController {
                 plannedSeq: controller.workspaceManager.worldSeq
             )
         }
-        applyAnimationDirectives(
-            plan.animationDirectives,
-            workspaceId: plan.workspaceId,
-            focusSeqAccepted: true,
-            suppressWindowActivation: suppressWindowActivation
-        )
+        if !plan.animationDirectives.isEmpty {
+            applyAnimationDirectives(
+                plan.animationDirectives,
+                workspaceId: plan.workspaceId,
+                focusSeqAccepted: true,
+                suppressWindowActivation: suppressWindowActivation,
+                controller: controller
+            )
+        }
         if !plan.isAnimationTick {
             controller.surfaceReconciler.noteWorldChanged()
         }

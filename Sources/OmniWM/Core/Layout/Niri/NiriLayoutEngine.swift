@@ -24,7 +24,6 @@ final class NiriLayoutEngine {
 
     var layoutPool = LayoutResult(frames: [:], hiddenHandles: [:])
 
-    var axisSolveCache: [NiriAxisSolveKey: [NiriAxisSolver.Output]] = [:]
     private(set) var axisSolveConfigurationRevision: UInt64 = 0
 
     var excludedTokensByWorkspace: [WorkspaceDescriptor.ID: Set<WindowToken>] = [:]
@@ -156,23 +155,23 @@ final class NiriLayoutEngine {
         }
 
         let effectiveExcludedTokens = excludedTokens ?? projectionExclusions(in: workspaceId)
-        let workspaceColumns = columns(in: workspaceId).compactMap { column -> (NiriContainer, [NiriWindow])? in
-            let windows = effectiveExcludedTokens.isEmpty
-                ? column.windowNodes
-                : column.windowNodes.filter { !effectiveExcludedTokens.contains($0.token) }
-            return windows.isEmpty ? nil : (column, windows)
+        var occupiedColumn: NiriContainer?
+        for column in columns(in: workspaceId)
+            where column.windowNodes.contains(where: { !effectiveExcludedTokens.contains($0.token) })
+        {
+            guard occupiedColumn == nil else { return nil }
+            occupiedColumn = column
         }
-        guard workspaceColumns.count == 1,
-              let (column, windows) = workspaceColumns.first,
-              !column.isTabbed
-        else {
+        guard let column = occupiedColumn, !column.isTabbed else {
             return nil
         }
 
-        guard windows.count == 1,
-              let window = windows.first,
-              window.sizingMode == .normal
-        else {
+        var projectedWindow: NiriWindow?
+        for candidate in column.windowNodes where !effectiveExcludedTokens.contains(candidate.token) {
+            guard projectedWindow == nil else { return nil }
+            projectedWindow = candidate
+        }
+        guard let window = projectedWindow, window.sizingMode == .normal else {
             return nil
         }
 

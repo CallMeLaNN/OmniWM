@@ -30,18 +30,26 @@ extension WorkspaceManager {
     }
 
     func reconcileSnapshot() -> ReconcileSnapshot {
-        var entries = windowQueries.allEntries()
-        entries.sort {
-            $0.workspaceId == $1.workspaceId
-                ? ($0.pid == $1.pid ? $0.windowId < $1.windowId : $0.pid < $1.pid)
-                : $0.workspaceId < $1.workspaceId
-        }
+        var snapshot = reconcileReductionSnapshot()
+        populateReconcileLayouts(&snapshot)
+        return snapshot
+    }
 
-        var workspaceIds: Set<WorkspaceDescriptor.ID> = []
-        workspaceIds.reserveCapacity(min(entries.count, workspaceCatalog.count))
-        let windowSnapshots = entries.map { entry in
-            workspaceIds.insert(entry.workspaceId)
-            return ReconcileWindowSnapshot(
+    func reconcileReductionSnapshot() -> ReconcileSnapshot {
+        let entries = windowQueries.allEntries()
+        var windowOrder: [ReconcileWindowOrder] = []
+        windowOrder.reserveCapacity(entries.count)
+        for index in entries.indices {
+            let entry = entries[index]
+            windowOrder.append(ReconcileWindowOrder(index: index, workspaceId: entry.workspaceId, token: entry.token))
+        }
+        windowOrder.sort(by: Self.reconcileWindowPrecedes)
+
+        var windowSnapshots: [ReconcileWindowSnapshot] = []
+        windowSnapshots.reserveCapacity(entries.count)
+        for item in windowOrder {
+            let entry = entries[item.index]
+            windowSnapshots.append(ReconcileWindowSnapshot(
                 token: entry.token,
                 workspaceId: entry.workspaceId,
                 mode: entry.mode,
@@ -50,9 +58,26 @@ extension WorkspaceManager {
                 desiredState: entry.desiredState,
                 restoreIntent: entry.restoreIntent,
                 lifetimeAuthority: entry.lifetimeAuthority
-            )
+            ))
         }
 
+        return ReconcileSnapshot(
+            topologyProfile: currentTopologyProfile(),
+            focusSession: focusSessionSnapshot,
+            windows: windowSnapshots,
+            viewports: recordedViewportStates
+        )
+    }
+
+    func populateReconcileLayouts(_ snapshot: inout ReconcileSnapshot) {
+        var workspaceIds: Set<WorkspaceDescriptor.ID> = []
+        do {
+            let windows = snapshot.windows.span
+            workspaceIds.reserveCapacity(min(windows.count, workspaceCatalog.count))
+            for index in 0 ..< windows.count {
+                workspaceIds.insert(windows[index].workspaceId)
+            }
+        }
         var layouts: [WorkspaceDescriptor.ID: LayoutTopology] = [:]
         for workspaceId in workspaceIds {
             let topology = layoutTopology(for: workspaceId)
@@ -60,14 +85,24 @@ extension WorkspaceManager {
                 layouts[workspaceId] = topology
             }
         }
+        snapshot.layouts = layouts
+    }
 
-        return ReconcileSnapshot(
-            topologyProfile: currentTopologyProfile(),
-            focusSession: focusSessionSnapshot,
-            windows: windowSnapshots,
-            viewports: recordedViewportStates,
-            layouts: layouts
-        )
+    private struct ReconcileWindowOrder {
+        let index: Int
+        let workspaceId: WorkspaceDescriptor.ID
+        let token: WindowToken
+    }
+
+    private nonisolated static func reconcileWindowPrecedes(
+        _ lhs: ReconcileWindowOrder,
+        _ rhs: ReconcileWindowOrder
+    ) -> Bool {
+        lhs.workspaceId == rhs.workspaceId
+            ? (lhs.token.pid == rhs.token.pid
+                ? lhs.token.windowId < rhs.token.windowId
+                : lhs.token.pid < rhs.token.pid)
+            : lhs.workspaceId < rhs.workspaceId
     }
 
     func reconcileSnapshotDump() -> String {

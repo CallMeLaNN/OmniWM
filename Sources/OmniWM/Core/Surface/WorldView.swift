@@ -67,17 +67,20 @@ struct WorldView {
     }
 
     func isWindowFullscreenInLayout(_ token: WindowToken) -> Bool {
-        guard let entry = controller.workspaceManager.entry(for: token) else { return false }
+        entry(for: token).map { isWindowFullscreenInLayout($0) } ?? false
+    }
+
+    func isWindowFullscreenInLayout(_ entry: borrowing WindowState) -> Bool {
         switch controller.workspaceManager.activeLayoutKind(for: entry.workspaceId) {
         case .dwindle:
-            return controller.dwindleEngine?.isWindowFullscreen(token, in: entry.workspaceId) == true
+            return controller.dwindleEngine?.isWindowFullscreen(entry.token, in: entry.workspaceId) == true
         case .niri:
-            return controller.niriEngine?.isWindowFullscreen(token, in: entry.workspaceId) == true
+            return controller.niriEngine?.isWindowFullscreen(entry.token, in: entry.workspaceId) == true
         }
     }
 
-    func isManagedWindowDisplayable(_ token: WindowToken) -> Bool {
-        controller.isManagedWindowDisplayable(token)
+    func isManagedWindowDisplayable(_ entry: borrowing WindowState) -> Bool {
+        controller.isManagedWindowDisplayable(entry)
     }
 
     func hasPendingWindowClose(for entry: WindowState) -> Bool {

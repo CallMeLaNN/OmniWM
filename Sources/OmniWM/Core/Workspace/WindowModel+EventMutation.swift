@@ -53,4 +53,25 @@ extension WindowModel {
             preconditionFailure("Expected a WindowModel field mutation")
         }
     }
+
+    func applyNiriPlacements(_ placements: [WindowToken: PersistedNiriPlacement], monitors: [Monitor]) {
+        for (token, placement) in placements {
+            guard let entry = self.entry(for: token), entry.mode == .tiling else { continue }
+            var restoreIntent = StateReducer.restoreIntent(for: entry, monitors: monitors)
+            restoreIntent.niriPlacement = placement
+            restoreIntent.detachedNiriContainerSizingState = nil
+            guard entry.restoreIntent != restoreIntent else { continue }
+            self.setRestoreIntent(restoreIntent, for: token)
+        }
+    }
+
+    func applyDwindlePlacements(_ placements: [WindowToken: PersistedDwindlePlacement], monitors: [Monitor]) {
+        for (token, placement) in placements {
+            guard let entry = self.entry(for: token), entry.mode == .tiling else { continue }
+            var restoreIntent = StateReducer.restoreIntent(for: entry, monitors: monitors)
+            restoreIntent.dwindlePlacement = placement
+            guard entry.restoreIntent != restoreIntent else { continue }
+            self.setRestoreIntent(restoreIntent, for: token)
+        }
+    }
 }

@@ -281,7 +281,7 @@ extension IPCAutomationManifest {
             .sorted { $0.path < $1.path }
             .filter { descriptor in
                 guard actionWords.count >= descriptor.actionWords.count else { return false }
-                return Array(actionWords.prefix(descriptor.actionWords.count)) == descriptor.actionWords
+                return actionWords.starts(with: descriptor.actionWords)
             }
     }
 }

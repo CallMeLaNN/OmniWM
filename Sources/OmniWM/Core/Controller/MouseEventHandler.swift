@@ -264,11 +264,13 @@ final class MouseEventHandler {
 
     func syncTapFilterSnapshot() {
         let capturedButton = state.capturedInteractionButton
-        var resolvedOtherButtons = claimedOtherMouseButtons()
-        if let capturedOther = state.capturedOtherMouseButton {
-            resolvedOtherButtons.insert(capturedOther)
+        var resolvedOtherButtonMask = claimedOtherMouseButtonMask()
+        if let capturedOther = state.capturedOtherMouseButton,
+           MouseButtonBinding.supportedButtons.contains(capturedOther)
+        {
+            resolvedOtherButtonMask |= UInt32(1) << capturedOther
         }
-        let otherButtons = resolvedOtherButtons
+        let otherButtonMask = resolvedOtherButtonMask
         let moveFlags = controller?.settings.gestures.mouseMoveModifierKey.cgEventFlags
         let resizeFlags = controller?.settings.gestures.mouseResizeModifierKey.cgEventFlag ?? []
         let scrollFlags = controller?.settings.gestures.scrollModifierKey.cgEventFlag ?? []
@@ -286,7 +288,7 @@ final class MouseEventHandler {
 
         inputTapThread.updateFilterSnapshot { snapshot in
             snapshot.activeCapture = capturedButton
-            snapshot.claimedOtherButtons = otherButtons
+            snapshot.claimedOtherButtonMask = otherButtonMask
             snapshot.moveModifier = moveFlags
             snapshot.resizeModifier = resizeFlags
             snapshot.scrollModifier = scrollFlags
@@ -296,20 +298,21 @@ final class MouseEventHandler {
         }
     }
 
-    private func claimedOtherMouseButtons() -> Set<Int64> {
-        guard let controller else { return [] }
-        var buttons = Set<Int64>()
+    private func claimedOtherMouseButtonMask() -> UInt32 {
+        guard let controller else { return 0 }
+        var buttonMask: UInt32 = 0
         if controller.settings.overview.enabled,
            let overviewButton = controller.settings.overview.mouseButton,
-           controller.settings.systemHyperTrigger.mouseButtonNumber != overviewButton
+           controller.settings.systemHyperTrigger.mouseButtonNumber != overviewButton,
+           MouseButtonBinding.supportedButtons.contains(overviewButton)
         {
-            buttons.insert(overviewButton)
+            buttonMask |= UInt32(1) << overviewButton
         }
         for binding in controller.settings.hotkeyBindings {
             if let button = binding.binding.mouseButtonBinding?.button {
-                buttons.insert(button)
+                buttonMask |= UInt32(1) << button
             }
         }
-        return buttons
+        return buttonMask
     }
 }

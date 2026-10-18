@@ -152,6 +152,41 @@ final class NiriAxisSolverTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(verticalFrames[fixture.first.token]).width, 500, accuracy: 0.001)
     }
 
+    func testLayoutCacheTracksAvailableSpaceAndGaps() throws {
+        let fixture = try makeStackedEngine()
+        _ = layout(fixture)
+
+        let resizedFrames = fixture.engine.calculateLayout(
+            state: fixture.state,
+            workspaceId: fixture.workspaceId,
+            monitorFrame: CGRect(x: 0, y: 0, width: 1000, height: 600),
+            gaps: (horizontal: 20, vertical: 20),
+            orientation: .horizontal
+        )
+        XCTAssertEqual(try XCTUnwrap(resizedFrames[fixture.first.token]).height, 270, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(resizedFrames[fixture.second.token]).height, 270, accuracy: 0.001)
+
+        let restoredFrames = layout(fixture)
+        XCTAssertEqual(try XCTUnwrap(restoredFrames[fixture.first.token]).height, 400, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(restoredFrames[fixture.second.token]).height, 400, accuracy: 0.001)
+    }
+
+    func testLayoutCacheInvalidatesWhenChildIsRemoved() throws {
+        let fixture = try makeStackedEngine()
+        let column = try XCTUnwrap(fixture.engine.column(of: fixture.first))
+        let third = NiriWindow(token: WindowToken(pid: 71_003, windowId: 3))
+        column.insertChild(third, at: column.children.count)
+        let initialFrames = layout(fixture)
+        XCTAssertEqual(try XCTUnwrap(initialFrames[fixture.first.token]).height, 266.5, accuracy: 0.001)
+
+        third.detach()
+
+        let remainingFrames = layout(fixture)
+        XCTAssertNil(remainingFrames[third.token])
+        XCTAssertEqual(try XCTUnwrap(remainingFrames[fixture.first.token]).height, 400, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(remainingFrames[fixture.second.token]).height, 400, accuracy: 0.001)
+    }
+
     func testInvalidSecondaryPresetsKeepWeightedFallbackInBothOrientations() throws {
         let fixture = try makeStackedEngine()
         fixture.engine.presetWindowSecondarySpans = [.fixed(600)]

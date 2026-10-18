@@ -6,18 +6,13 @@ import Foundation
 import QuartzCore
 
 extension LayoutRefreshController {
-    func applySessionPatch(_ patch: WorkspaceSessionPatch) {
-        controller?.workspaceManager.applySessionPatch(patch)
-    }
-
     func applyAnimationDirectives(
         _ directives: [AnimationDirective],
         workspaceId: WorkspaceDescriptor.ID,
         focusSeqAccepted: Bool,
-        suppressWindowActivation: Bool
+        suppressWindowActivation: Bool,
+        controller: WMController
     ) {
-        guard let controller else { return }
-
         for directive in directives {
             switch directive {
             case .none:

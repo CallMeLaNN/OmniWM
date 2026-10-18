@@ -174,7 +174,8 @@ extension WorkspaceManager {
         world.commit(
             event,
             monitors: monitors,
-            snapshot: { self.reconcileSnapshot() },
+            snapshot: { self.reconcileReductionSnapshot() },
+            completeSnapshot: { self.populateReconcileLayouts(&$0) },
             preMutate: preMutate,
             resolvePlan: resolvePlan
         )

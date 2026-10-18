@@ -7,7 +7,7 @@ import os
 
 struct TapFilterSnapshot: Sendable {
     var activeCapture: MouseEventHandler.MouseButton?
-    var claimedOtherButtons: Set<Int64> = []
+    var claimedOtherButtonMask: UInt32 = 0
     var moveModifier: CGEventFlags?
     var resizeModifier: CGEventFlags = []
     var scrollModifier: CGEventFlags = []
@@ -253,7 +253,9 @@ final class InputTapThread: @unchecked Sendable {
         snap: TapFilterSnapshot
     ) -> CGEvent? {
         let button = event.getIntegerValueField(.mouseEventButtonNumber)
-        guard snap.claimedOtherButtons.contains(button) else {
+        guard MouseButtonBinding.supportedButtons.contains(button),
+              snap.claimedOtherButtonMask & (UInt32(1) << button) != 0
+        else {
             return event
         }
         let location = ScreenCoordinateSpace.toAppKit(point: event.location)

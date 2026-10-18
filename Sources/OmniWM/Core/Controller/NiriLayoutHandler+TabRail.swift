@@ -30,7 +30,10 @@ extension NiriLayoutHandler {
         monitor: LayoutMonitorSnapshot
     ) -> [TabRailGeometryCommand] {
         var commands: [TabRailGeometryCommand] = []
-        for column in engine.columns(in: workspaceId) where column.isTabbed {
+        let columns = engine.columns(in: workspaceId)
+        let columnSpan = columns.span
+        for index in columnSpan.indices where columnSpan[index].isTabbed {
+            let column = columnSpan[index]
             let key = TabRailKey(workspaceId: workspaceId, owner: .niriColumn(column.id))
             guard let frame = column.renderedFrame,
                   !frame.isNull,

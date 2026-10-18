@@ -10,6 +10,41 @@ final class NiriHiddenAppProjectionTests: XCTestCase {
     private let workingFrame = CGRect(x: 0, y: 0, width: 1200, height: 800)
     private let gap: CGFloat = 12
 
+    func testUnexcludedProjectionTracksReorderReparentAndRemoval() throws {
+        let fixture = makeThreeColumnFixture()
+        let engine = fixture.engine
+        let workspaceId = fixture.workspaceId
+        let root = try XCTUnwrap(engine.root(for: workspaceId))
+        let first = try XCTUnwrap(fixture.a.parent as? NiriContainer)
+        let middle = try XCTUnwrap(fixture.hidden.parent as? NiriContainer)
+        let last = try XCTUnwrap(fixture.b.parent as? NiriContainer)
+        XCTAssertEqual(engine.projectedColumns(in: workspaceId).map(\.column.id), [first.id, middle.id, last.id])
+
+        last.swapWith(first)
+        XCTAssertEqual(engine.projectedColumns(in: workspaceId).map(\.column.id), [last.id, middle.id, first.id])
+        XCTAssertEqual(engine.projectedColumns(in: workspaceId).map(\.durableIndex), [0, 1, 2])
+
+        last.appendChild(fixture.hidden)
+        XCTAssertEqual(
+            engine.projectedColumns(in: workspaceId).map { $0.windows.map(\.token) },
+            [[fixture.b.token, fixture.hidden.token], [], [fixture.a.token]]
+        )
+        middle.remove()
+        XCTAssertEqual(engine.projectedColumns(in: workspaceId).map(\.column.id), [last.id, first.id])
+
+        engine.setProjectionExclusions([fixture.hidden.token], in: workspaceId)
+        XCTAssertEqual(
+            engine.projectedColumns(in: workspaceId).map { $0.windows.map(\.token) },
+            [[fixture.b.token], [fixture.a.token]]
+        )
+        engine.setProjectionExclusions([], in: workspaceId)
+        XCTAssertEqual(
+            engine.projectedColumns(in: workspaceId).map { $0.windows.map(\.token) },
+            [[fixture.b.token, fixture.hidden.token], [fixture.a.token]]
+        )
+        XCTAssertEqual(root.columns.count, 2)
+    }
+
     func testExcludedLayoutDiffProducesNoEffects() {
         let handler = NiriLayoutHandler(controller: nil)
         let engine = NiriLayoutEngine()

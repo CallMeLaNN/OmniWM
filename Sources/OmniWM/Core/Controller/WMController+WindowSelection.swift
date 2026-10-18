@@ -7,14 +7,14 @@ import OmniWMIPC
 
 extension WMController {
     func isManagedWindowDisplayable(_ token: WindowToken) -> Bool {
-        guard workspaceManager.entry(for: token) != nil else { return false }
-        if isManagedWindowSuppressedByMacOS(token) {
-            return false
-        }
-        if workspaceManager.layoutReason(for: token) != .standard {
-            return false
-        }
-        return !workspaceManager.isHiddenInCorner(token)
+        guard let entry = workspaceManager.entry(for: token) else { return false }
+        return isManagedWindowDisplayable(entry)
+    }
+
+    func isManagedWindowDisplayable(_ entry: WindowState) -> Bool {
+        !workspaceManager.isWindowSuppressedByMacOS(entry)
+            && entry.layoutReason == .standard
+            && entry.hiddenState == nil
     }
 
     func isManagedWindowSuppressedByMacOS(_ token: WindowToken) -> Bool {

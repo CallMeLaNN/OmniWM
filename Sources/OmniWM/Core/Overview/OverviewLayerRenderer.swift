@@ -215,8 +215,9 @@ final class OverviewLayerRenderer {
 
     func updateHover(from previous: WindowHandle?, layout: OverviewLayout, state: OverviewRenderState) {
         OverviewRenderer.withoutAnimation {
-            for handle in [previous, state.hoveredWindowHandle].compactMap({ $0 }) {
-                guard let window = layout.window(for: handle) else { continue }
+            let handles: InlineArray<2, WindowHandle?> = [previous, state.hoveredWindowHandle]
+            for index in handles.indices {
+                guard let handle = handles[index], let window = layout.window(for: handle) else { continue }
                 windowLayers[handle]?.updateEmphasis(window, state: state)
             }
         }

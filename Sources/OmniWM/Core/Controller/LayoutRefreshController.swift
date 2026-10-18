@@ -187,26 +187,6 @@ import QuartzCore
 }
 
 extension LayoutRefreshController {
-    func discardScratchpadRevealGroupAndReconcile(_ groupId: UInt64) {
-        guard let index = revealGroups.discard(groupId) else { return }
-        reconcileRevealedScratchpadAfterGroupDiscard(index)
-    }
-
-    func reconcileRevealedScratchpadAfterGroupDiscard(_ index: ScratchpadIndex) {
-        guard let controller,
-              controller.workspaceManager.revealedScratchpadIndex() == index,
-              !controller.workspaceManager.scratchpadMembers(in: index).contains(where: {
-                  controller.isManagedWindowDisplayable($0)
-              })
-        else {
-            return
-        }
-        controller.workspaceManager.setRevealedScratchpad(nil)
-        controller.requestWorkspaceBarRefresh()
-    }
-}
-
-extension LayoutRefreshController {
     func recordLayoutBuild(seconds: Double, route: LayoutBuildMetrics.Route, workspaceCount: Int, windowCount: Int) {
         layoutBuildMetrics.recordBuild(
             seconds: seconds,
@@ -490,8 +470,10 @@ extension LayoutRefreshController {
 extension LayoutRefreshController {
     func applyLayoutMutations(_ plan: WorkspaceLayoutPlan, controller: WMController) {
         controller.withRuntimeFrameJobCancellationSuppressed {
-            applySessionPatch(plan.sessionPatch)
-            diffExecutor.execute(plan)
+            if plan.sessionPatch.viewportState != nil || plan.sessionPatch.rememberedFocusToken != nil {
+                controller.workspaceManager.applySessionPatch(plan.sessionPatch)
+            }
+            diffExecutor.execute(plan, controller: controller)
             controller.workspaceManager.setNiriRestorePlacements(plan.niriRestorePlacements)
             controller.workspaceManager.setDwindleRestorePlacements(plan.dwindleRestorePlacements)
         }

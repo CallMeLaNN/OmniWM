@@ -10,6 +10,7 @@ class NiriRoot: NiriContainer {
     private var nodeIndex: [NodeId: NiriNode]?
     private var _cachedColumns: [NiriContainer]?
     private var _cachedAllWindows: [NiriWindow]?
+    private var _cachedProjectedColumns: [NiriProjectedColumn]?
     private var _cachedWindowIdSet: Set<WindowToken>?
 
     init(workspaceId: WorkspaceDescriptor.ID) {
@@ -20,6 +21,7 @@ class NiriRoot: NiriContainer {
     override func invalidateChildrenCache() {
         _cachedColumns = nil
         _cachedAllWindows = nil
+        _cachedProjectedColumns = nil
         _cachedWindowIdSet = nil
         super.invalidateChildrenCache()
     }
@@ -28,6 +30,15 @@ class NiriRoot: NiriContainer {
         if let cached = _cachedColumns { return cached }
         let result = children.compactMap { $0 as? NiriContainer }
         _cachedColumns = result
+        return result
+    }
+
+    var projectedColumns: [NiriProjectedColumn] {
+        if let cached = _cachedProjectedColumns { return cached }
+        let result = columns.enumerated().map {
+            NiriProjectedColumn(column: $0.element, windows: $0.element.windowNodes, durableIndex: $0.offset)
+        }
+        _cachedProjectedColumns = result
         return result
     }
 

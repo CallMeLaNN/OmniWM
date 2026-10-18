@@ -126,17 +126,18 @@ extension LayoutRefreshController {
         var excludedTokens: Set<WindowToken> = []
         var windows: [LayoutWindowSnapshot] = []
         windows.reserveCapacity(controller.workspaceManager.windowCount(in: workspaceId))
-        controller.workspaceManager.windowQueries.forEachWindow(in: workspaceId, mode: .tiling) { entry in
-            let isExcluded = controller.workspaceManager.isWindowSuppressedByMacOS(entry)
-            if isExcluded { excludedTokens.insert(entry.token) }
-            windows.append(buildWindowSnapshot(
-                for: entry,
-                isExcluded: isExcluded,
-                resolveConstraints: resolveConstraints,
-                bounds: (monitorSnapshot.workingFrame.size, neighborAxes),
-                controller: controller
-            ))
-        }
+        controller.workspaceManager.windowQueries
+            .forEachWindowForLayoutSnapshot(in: workspaceId, mode: .tiling) { entry in
+                let isExcluded = controller.workspaceManager.isWindowSuppressedByMacOS(entry)
+                if isExcluded { excludedTokens.insert(entry.token) }
+                windows.append(buildWindowSnapshot(
+                    for: entry,
+                    isExcluded: isExcluded,
+                    resolveConstraints: resolveConstraints,
+                    bounds: (monitorSnapshot.workingFrame.size, neighborAxes),
+                    controller: controller
+                ))
+            }
 
         return WorkspaceRefreshInput(
             workspaceId: workspaceId,

@@ -4,6 +4,37 @@
 import CoreGraphics
 import Foundation
 
+struct ManagedReplacementMetadata: Equatable, Sendable {
+    var bundleId: String?
+    var workspaceId: WorkspaceDescriptor.ID
+    var mode: TrackedWindowMode
+    var role: String?
+    var subrole: String?
+    var title: String?
+    var windowLevel: Int32?
+    var parentWindowId: UInt32?
+    var frame: CGRect?
+    var transientWindowServerEvidence = false
+    var degradedWindowServerChildEvidence = false
+
+    func mergingNonNilValues(from overlay: ManagedReplacementMetadata) -> ManagedReplacementMetadata {
+        ManagedReplacementMetadata(
+            bundleId: overlay.bundleId ?? bundleId,
+            workspaceId: overlay.workspaceId,
+            mode: overlay.mode,
+            role: overlay.role ?? role,
+            subrole: overlay.subrole ?? subrole,
+            title: overlay.title ?? title,
+            windowLevel: overlay.windowLevel ?? windowLevel,
+            parentWindowId: overlay.parentWindowId ?? parentWindowId,
+            frame: overlay.frame ?? frame,
+            transientWindowServerEvidence: transientWindowServerEvidence || overlay.transientWindowServerEvidence,
+            degradedWindowServerChildEvidence: degradedWindowServerChildEvidence
+                || overlay.degradedWindowServerChildEvidence
+        )
+    }
+}
+
 enum LayoutReason: Codable, Equatable {
     case standard
     case nativeFullscreen

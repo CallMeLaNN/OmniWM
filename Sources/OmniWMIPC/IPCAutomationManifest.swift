@@ -350,7 +350,7 @@ public enum IPCAutomationManifest {
             }
             .filter { descriptor in
                 guard commandWords.count >= descriptor.commandWords.count else { return false }
-                return Array(commandWords.prefix(descriptor.commandWords.count)) == descriptor.commandWords
+                return commandWords.starts(with: descriptor.commandWords)
             }
     }
 }
