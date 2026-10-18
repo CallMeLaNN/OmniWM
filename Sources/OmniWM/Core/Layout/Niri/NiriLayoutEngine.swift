@@ -386,7 +386,7 @@ extension NiriLayoutEngine {
         applyContainerSizingState(containerSizingState(for: sourceColumn), to: targetColumn)
     }
 
-    private func containerSizingState(for column: NiriContainer) -> NiriContainerSizingState {
+    func containerSizingState(for column: NiriContainer) -> NiriContainerSizingState {
         NiriContainerSizingState(
             width: column.width,
             presetWidthIndex: column.presetWidthIdx,

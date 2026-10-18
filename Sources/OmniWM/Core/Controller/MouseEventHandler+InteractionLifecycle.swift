@@ -219,10 +219,18 @@ extension MouseEventHandler {
     }
 
     func completeActiveMove(at location: CGPoint) {
-        if state.moveLayout == .dwindle {
-            finishDwindleMove(at: location)
-        } else {
-            finishNiriMove(at: location)
+        switch classifyMoveLocation(location) {
+        case .sourceDisplay:
+            if state.moveLayout == .dwindle {
+                finishDwindleMove(at: location)
+            } else {
+                finishNiriMove(at: location)
+            }
+        case let .crossDisplay(drop):
+            cancelActiveEngineMove()
+            controller?.performCrossDisplayDrop(drop)
+        case .cancel:
+            cancelActiveEngineMove()
         }
         clearMoveInteractionState()
         NSCursor.arrow.set()

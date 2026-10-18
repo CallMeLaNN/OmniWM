@@ -21,62 +21,39 @@ extension NiriLayoutEngine {
         targetState: inout ViewportState
     ) -> WorkspaceMoveResult? {
         assertSanctionedMutation()
-        guard sourceWorkspaceId != targetWorkspaceId else { return nil }
-
-        guard let sourceWorkspaceState = states[sourceWorkspaceId],
-              let sourceColumn = findColumn(containing: window, in: sourceWorkspaceId)
+        guard sourceWorkspaceId != targetWorkspaceId,
+              states[sourceWorkspaceId] != nil,
+              findColumn(containing: window, in: sourceWorkspaceId) != nil
         else {
             return nil
         }
 
-        let wasSingleWindow = singleWindowLayoutContext(in: sourceWorkspaceId) != nil
         let targetWorkspaceState = ensureState(for: targetWorkspaceId)
-        let targetRoot = targetWorkspaceState.root
-
-        let retainedSelection = sourceState.selectedNodeId.flatMap { selectedId in
-            selectedId != window.id && findNode(by: selectedId, in: sourceWorkspaceId) != nil ? selectedId : nil
-        }
-        let fallbackSelection = retainedSelection
-            ?? fallbackSelectionOnRemoval(removing: window.id, in: sourceWorkspaceId)
-
         if targetWorkspaceState.nodesByToken[window.token] != nil {
             removeWindow(token: window.token, in: targetWorkspaceId)
         }
         precondition(targetWorkspaceState.nodesByToken[window.token] == nil)
 
-        cancelInteractions(for: Set([window.id]), in: sourceWorkspaceId)
-
-        window.detach()
-        sourceWorkspaceState.unindex(window)
+        guard let sizing = detachWindowForTransfer(window, from: sourceWorkspaceId, sourceState: &sourceState) else {
+            return nil
+        }
 
         let targetColumn: NiriContainer
-        if let existingColumn = claimEmptyColumnIfWorkspaceEmpty(in: targetRoot) {
+        if let existingColumn = claimEmptyColumnIfWorkspaceEmpty(in: targetWorkspaceState.root) {
             targetColumn = existingColumn
         } else {
             let newColumn = NiriContainer()
-            targetRoot.appendChild(newColumn)
+            targetWorkspaceState.root.appendChild(newColumn)
             targetColumn = newColumn
         }
-        copyContainerSizingState(from: sourceColumn, to: targetColumn)
+        initializeNewContainerSizing(targetColumn, in: targetWorkspaceId, initialState: sizing)
         targetColumn.appendChild(window)
         targetWorkspaceState.index(window)
-
-        let sourceColumnIndex = columnIndex(of: sourceColumn, in: sourceWorkspaceId)
-        cleanupEmptyColumn(sourceColumn, in: sourceWorkspaceId, state: &sourceState)
-        if let sourceColumnIndex,
-           sourceColumn.parent == nil,
-           sourceColumnIndex < sourceState.activeColumnIndex
-        {
-            sourceState.activeColumnIndex -= 1
-        }
-        clearManualSpanOverridesOnSingleWindowEntry(in: sourceWorkspaceId, wasSingleWindow: wasSingleWindow)
-
-        sourceState.selectedNodeId = fallbackSelection
 
         targetState.selectedNodeId = window.id
 
         return WorkspaceMoveResult(
-            newFocusNodeId: fallbackSelection,
+            newFocusNodeId: sourceState.selectedNodeId,
             movedToken: window.token,
             targetWorkspaceId: targetWorkspaceId
         )

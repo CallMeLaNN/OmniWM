@@ -3,7 +3,6 @@
 
 import CoreGraphics
 import Foundation
-import QuartzCore
 
 extension DwindleLayoutEngine {
     func canInsertAtWorkspaceEdge(token: WindowToken, in workspaceId: WorkspaceDescriptor.ID) -> Bool {
@@ -35,13 +34,7 @@ extension DwindleLayoutEngine {
               let source = state.leafByToken[token]
         else { return false }
 
-        let now = animationClock?.now() ?? CACurrentMediaTime()
-        for leaf in state.root.collectAllLeaves() {
-            guard let tile = leaf.tile, let frame = leaf.presentedFrame(at: now) else { continue }
-            for member in tile.members where state.pendingMovementFrameSeeds[member.token] == nil {
-                state.pendingMovementFrameSeeds[member.token] = frame
-            }
-        }
+        seedMovementFramesFromPresentedLeaves(in: state)
         cleanupAfterRemoval(source, state: state)
 
         let root = state.root

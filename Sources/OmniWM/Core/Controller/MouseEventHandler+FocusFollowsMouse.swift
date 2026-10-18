@@ -129,7 +129,7 @@ extension MouseEventHandler {
         }
     }
 
-    private func hasPendingNativeFullscreenTransition(at location: CGPoint) -> Bool {
+    func hasPendingNativeFullscreenTransition(at location: CGPoint) -> Bool {
         guard let workspaceManager = controller?.workspaceManager else { return false }
         guard let monitor = location.monitorApproximation(in: workspaceManager.monitors),
               let workspace = workspaceManager.activeWorkspaceOrFirst(on: monitor.id)
@@ -139,7 +139,7 @@ extension MouseEventHandler {
         return workspaceManager.hasPendingNativeFullscreenTransition(in: workspace.id)
     }
 
-    private func isPointerDisplayShowingFullscreenSpace(at location: CGPoint) -> Bool {
+    func isPointerDisplayShowingFullscreenSpace(at location: CGPoint) -> Bool {
         guard let controller else { return false }
         let workspaceManager = controller.workspaceManager
         guard workspaceManager.hasNativeFullscreenLifecycleContext else { return false }

@@ -138,6 +138,10 @@ extension DwindleLayoutEngine {
         interactiveMove = nil
     }
 
+    func interactiveMoveClearTarget() {
+        interactiveMove?.target = nil
+    }
+
     private func isInteractiveMoveTargetValid(_ move: DwindleInteractiveMove) -> Bool {
         switch move.target {
         case let .tile(token, _):
@@ -151,8 +155,10 @@ extension DwindleLayoutEngine {
         }
     }
 
-    private func workspaceEdgeDirection(at point: CGPoint, in frame: CGRect, from start: CGPoint) -> Direction? {
-        guard hypot(point.x - start.x, point.y - start.y) >= 10 else { return nil }
+    func workspaceEdgeDirection(at point: CGPoint, in frame: CGRect, from start: CGPoint?) -> Direction? {
+        if let start {
+            guard hypot(point.x - start.x, point.y - start.y) >= 10 else { return nil }
+        }
         let horizontal = min(point.x - frame.minX, frame.maxX - point.x)
         let vertical = min(point.y - frame.minY, frame.maxY - point.y)
         let threshold = min(24, min(frame.width, frame.height) / 10)
