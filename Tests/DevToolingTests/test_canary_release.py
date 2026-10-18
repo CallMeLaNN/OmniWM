@@ -176,14 +176,14 @@ class CanaryReleaseTests(unittest.TestCase):
 
     def test_notes_list_commits_since_previous_tag(self):
         self.seed_release()
-        self.repo.commit("feature one")
-        self.repo.commit("feature two")
+        self.repo.commit("feature one", date="2026-10-18T11:55:08+00:00")
+        self.repo.commit("feature two", date="2026-10-18T11:55:08+00:00")
         text = canary_release.notes(str(self.repo.path))
         self.assertIn("Base tag: `v0.7.5`", text)
         self.assertIn("### Changes since v0.7.5", text)
         self.assertIn("feature one", text)
         self.assertIn("feature two", text)
-        self.assertNotIn("c1", text)
+        self.assertNotRegex(text, r"(?m)^- [0-9a-f]+ c1$")
 
     def test_notes_without_any_tag_falls_back_to_recent_commits(self):
         self.repo.commit("first")
