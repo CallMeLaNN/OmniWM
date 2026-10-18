@@ -268,6 +268,34 @@ final class DwindleSplitInsertionTests: XCTestCase {
         XCTAssertEqual(engine.windowCount(in: fixture.workspaceId), 5)
     }
 
+    func testTabRailsCountAsPartOfTheirTileInTheBoundaryBand() throws {
+        for railWidth in [CGFloat(10), 28] {
+            let fixture = makeFixture(orientation: .horizontal)
+            let engine = fixture.engine
+            let ws = fixture.workspaceId
+            engine.tabRailWidth = railWidth
+            XCTAssertTrue(engine.groupWindow(fixture.tokens[4], into: fixture.tokens[3], in: ws))
+            _ = engine.calculateLayout(for: ws, screen: screen)
+            let first = tileFrame(try XCTUnwrap(fixture.split.firstChild()))
+            let second = tileFrame(try XCTUnwrap(fixture.split.secondChild()))
+            XCTAssertTrue(engine.interactiveMoveBegin(
+                token: fixture.tokens[0], startLocation: .zero, allowsInsertion: true, in: ws
+            ))
+
+            _ = engine.interactiveMoveUpdate(
+                currentLocation: CGPoint(x: (first.maxX + second.minX) / 2, y: first.midY),
+                at: 0,
+                workspaceFrame: screen
+            )
+
+            XCTAssertEqual(
+                engine.interactiveMove?.target,
+                .splitBoundary(fixture.split.id, frame: WindowMoveGeometry.targetFrame(in: second, direction: .left))
+            )
+            engine.interactiveMoveCancel()
+        }
+    }
+
     func testMinimumSizesAndWholeTabGroupsArePreserved() throws {
         for orientation in orientations {
             let fixture = makeFixture(orientation: orientation)
@@ -400,6 +428,10 @@ final class DwindleSplitInsertionTests: XCTestCase {
 
     private func visibleFrame(_ node: DwindleNode) -> CGRect {
         node.collectAllLeaves().compactMap { $0.presentedFrame(at: 0) }.reduce(CGRect.null) { $0.union($1) }
+    }
+
+    private func tileFrame(_ node: DwindleNode) -> CGRect {
+        node.collectAllLeaves().compactMap(\.cachedFrame).reduce(CGRect.null) { $0.union($1) }
     }
 
     private func tree(_ node: DwindleNode) -> Tree {

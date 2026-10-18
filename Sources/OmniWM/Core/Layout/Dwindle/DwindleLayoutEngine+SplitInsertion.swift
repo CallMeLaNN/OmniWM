@@ -84,7 +84,9 @@ extension DwindleLayoutEngine {
         time: TimeInterval
     ) -> SplitMoveGeometry {
         if let tile = node.tile, visibleMember(in: tile, excluding: excludedTokens) != nil {
-            return SplitMoveGeometry(frame: node.presentedFrame(at: time), hasPeer: node !== source, target: nil)
+            return SplitMoveGeometry(
+                frame: presentedTileFrame(of: node, at: time), hasPeer: node !== source, target: nil
+            )
         }
         guard let orientation = node.splitOrientation,
               let first = node.firstChild(), let second = node.secondChild()
@@ -121,6 +123,17 @@ extension DwindleLayoutEngine {
             )
         }
         return result
+    }
+
+    private func presentedTileFrame(of node: DwindleNode, at time: TimeInterval) -> CGRect? {
+        guard let presented = node.presentedFrame(at: time) else { return nil }
+        guard let tileFrame = node.cachedFrame, let contentFrame = node.cachedContentFrame else { return presented }
+        return CGRect(
+            x: presented.minX - (contentFrame.minX - tileFrame.minX),
+            y: presented.minY - (contentFrame.minY - tileFrame.minY),
+            width: presented.width + tileFrame.width - contentFrame.width,
+            height: presented.height + tileFrame.height - contentFrame.height
+        )
     }
 
     private func splitBoundaryBand(between firstFrame: CGRect, and secondFrame: CGRect, horizontal: Bool) -> CGRect {
