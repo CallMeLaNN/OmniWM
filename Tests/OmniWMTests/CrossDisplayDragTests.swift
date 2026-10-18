@@ -284,6 +284,43 @@ final class CrossDisplayDragTests: XCTestCase {
         XCTAssertEqual(movedFrame.width, workingFrame.width, accuracy: 1)
     }
 
+    func testDwindleDividerInsertsBetweenTheTargetSubtrees() throws {
+        for sourceLayout in [LayoutType.dwindle, .niri] {
+            let fixture = try makeFixture([sourceLayout, .dwindle])
+            let moved = addWindow(1, to: fixture.source, fixture)
+            let left = addWindow(2, to: fixture.target, fixture)
+            let stacked = [addWindow(3, to: fixture.target, fixture), addWindow(4, to: fixture.target, fixture)]
+            fixture.layout()
+            let root = try XCTUnwrap(fixture.dwindle.root(for: fixture.target))
+            let leftFrame = try XCTUnwrap(fixture.frame(left))
+            let stackedFrames = try stacked.map { try XCTUnwrap(fixture.frame($0)) }
+            let right = stackedFrames.reduce(CGRect.null) { $0.union($1) }
+            let point = CGPoint(x: (leftFrame.maxX + right.minX) / 2, y: leftFrame.midY)
+            try fixture.beginDrag(moved)
+
+            fixture.handler.dispatchMouseDragged(at: point)
+            guard case let .crossDisplay(drop) = fixture.handler.classifyMoveLocation(point) else {
+                return XCTFail("expected a cross-display drop from \(sourceLayout)")
+            }
+            XCTAssertEqual(drop.placement, .dwindleSplitBoundary(root.id), "\(sourceLayout)")
+            XCTAssertEqual(drop.previewFrame, WindowMoveGeometry.targetFrame(in: right, direction: .left))
+            fixture.finishDrag(at: point)
+            fixture.layout()
+
+            let movedFrame = try XCTUnwrap(fixture.frame(moved))
+            XCTAssertEqual(fixture.manager.workspace(for: moved), fixture.target, "\(sourceLayout)")
+            XCTAssertEqual(fixture.frame(left), leftFrame, "\(sourceLayout)")
+            XCTAssertGreaterThan(movedFrame.minX, leftFrame.maxX, "\(sourceLayout)")
+            XCTAssertEqual(movedFrame.minY, right.minY, accuracy: 1, "\(sourceLayout)")
+            XCTAssertEqual(movedFrame.height, right.height, accuracy: 1, "\(sourceLayout)")
+            for (token, before) in zip(stacked, stackedFrames) {
+                let frame = try XCTUnwrap(fixture.frame(token))
+                XCTAssertGreaterThan(frame.minX, movedFrame.maxX, "\(sourceLayout)")
+                XCTAssertEqual(frame.height, before.height, accuracy: 1, "\(sourceLayout)")
+            }
+        }
+    }
+
     func testDwindleSwapTradesSingleTiles() throws {
         let fixture = try makeFixture([.dwindle, .dwindle])
         let moved = addWindow(1, to: fixture.source, fixture)

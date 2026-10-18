@@ -10,6 +10,7 @@ struct CrossDisplayDrop: Equatable {
         case niriStack(target: WindowToken, after: Bool)
         case dwindleBeside(target: WindowToken, direction: Direction)
         case dwindleEdge(Direction)
+        case dwindleSplitBoundary(DwindleNodeId)
         case swap(target: WindowToken)
         case workspace
     }
@@ -156,6 +157,11 @@ extension MouseEventHandler {
             return (.dwindleEdge(direction), WindowMoveGeometry.targetFrame(in: workingFrame, direction: direction))
         }
         let now = controller.animationClock.now()
+        if case let .splitBoundary(splitId, preview)? = engine.transferSplitBoundaryTarget(
+            at: point, in: workspaceId, time: now
+        ) {
+            return (.dwindleSplitBoundary(splitId), preview)
+        }
         guard let token = engine.hitTestFocusableWindow(point: point, in: workspaceId, at: now),
               let frame = engine.presentedFrame(for: token, in: workspaceId, at: now)
         else {

@@ -38,6 +38,29 @@ final class DwindleCrossWorkspaceTransferTests: XCTestCase {
         }
     }
 
+    func testSplitBoundaryAttachNeedsALiveSplitWithVisibleBranches() throws {
+        let engine = makeEngine()
+        let target = WorkspaceDescriptor.ID()
+        let residents = addTiles(count: 3, firstWindowId: 1, to: target, engine)
+        let root = try XCTUnwrap(engine.root(for: target))
+        XCTAssertTrue(engine.canAttachTransfer(atSplitBoundary: root.id, in: target))
+        XCTAssertFalse(engine.canAttachTransfer(atSplitBoundary: DwindleNodeId(), in: target))
+        engine.setExcludedTokens([residents[0]], in: target)
+        XCTAssertFalse(engine.canAttachTransfer(atSplitBoundary: root.id, in: target))
+        engine.setExcludedTokens([], in: target)
+        let incoming = WindowToken(pid: 90, windowId: 90)
+
+        engine.attachTransferredTile(
+            DwindleTransferredTile(token: incoming),
+            placement: .splitBoundary(DwindleNodeId()),
+            in: target
+        )
+
+        XCTAssertNotNil(engine.findNode(for: incoming, in: target))
+        XCTAssertEqual(engine.windowCount(in: target), 4)
+        XCTAssertEqual(engine.tileCount(in: target), 4)
+    }
+
     func testDetachAnimatesTheTilesThatCollapseIntoItsSlot() throws {
         let engine = makeEngine()
         let source = WorkspaceDescriptor.ID()

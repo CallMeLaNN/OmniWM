@@ -55,11 +55,29 @@ extension DwindleLayoutEngine {
         }
         cleanupAfterRemoval(source, state: state)
 
-        let inserted = DwindleNode(kind: .split(orientation: orientation, ratio: 1))
-        destination.replaceChildren(first: first, second: inserted)
-        inserted.replaceChildren(first: source, second: second)
+        insertLeaf(source, between: first, and: second, orientation: orientation, in: destination)
         state.selectedNodeId = source.id
         return true
+    }
+
+    func canAttachTransfer(atSplitBoundary splitId: DwindleNodeId, in workspaceId: WorkspaceDescriptor.ID) -> Bool {
+        guard let state = existingState(for: workspaceId),
+              !visibleTiles(in: workspaceId).fullscreen,
+              let split = findNodeById(splitId, in: state.root)
+        else { return false }
+        return splitHasTwoVisibleBranches(split, excluding: state.excludedTokens)
+    }
+
+    func insertLeaf(
+        _ leaf: DwindleNode,
+        between first: DwindleNode,
+        and second: DwindleNode,
+        orientation: DwindleOrientation,
+        in destination: DwindleNode
+    ) {
+        let inserted = DwindleNode(kind: .split(orientation: orientation, ratio: 1))
+        destination.replaceChildren(first: first, second: inserted)
+        inserted.replaceChildren(first: leaf, second: second)
     }
 
     func splitBoundaryMoveTarget(
@@ -76,10 +94,21 @@ extension DwindleLayoutEngine {
         ).target
     }
 
+    func transferSplitBoundaryTarget(
+        at point: CGPoint,
+        in workspaceId: WorkspaceDescriptor.ID,
+        time: TimeInterval
+    ) -> DwindleMoveTarget? {
+        guard let state = existingState(for: workspaceId) else { return nil }
+        return splitMoveGeometry(
+            at: point, in: state.root, source: nil, excludedTokens: state.excludedTokens, time: time
+        ).target
+    }
+
     private func splitMoveGeometry(
         at point: CGPoint,
         in node: DwindleNode,
-        source: DwindleNode,
+        source: DwindleNode?,
         excludedTokens: Set<WindowToken>,
         time: TimeInterval
     ) -> SplitMoveGeometry {

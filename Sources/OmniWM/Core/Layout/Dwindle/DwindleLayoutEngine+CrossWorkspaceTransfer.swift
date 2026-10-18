@@ -21,6 +21,7 @@ struct DwindleTransferredTile {
 enum DwindleTransferPlacement: Equatable {
     case beside(WindowToken, Direction)
     case workspaceEdge(Direction)
+    case splitBoundary(DwindleNodeId)
     case defaultPlacement
 }
 
@@ -122,6 +123,9 @@ extension DwindleLayoutEngine {
             } ?? attachAtDefaultPlacement(tile, state: state, in: workspaceId)
         case let .workspaceEdge(direction) where state.tileCount > 0:
             attachAtWorkspaceEdge(tile, direction: direction, state: state)
+        case let .splitBoundary(splitId):
+            attachAtSplitBoundary(tile, splitId: splitId, state: state)
+                ?? attachAtDefaultPlacement(tile, state: state, in: workspaceId)
         case .workspaceEdge,
              .defaultPlacement:
             attachAtDefaultPlacement(tile, state: state, in: workspaceId)
@@ -192,6 +196,21 @@ extension DwindleLayoutEngine {
         } else {
             root.replaceChildren(first: remainder, second: leaf)
         }
+        state.tileCount += 1
+        return leaf
+    }
+
+    private func attachAtSplitBoundary(
+        _ tile: DwindleTile,
+        splitId: DwindleNodeId,
+        state: DwindleWorkspaceState
+    ) -> DwindleNode? {
+        guard let split = findNodeById(splitId, in: state.root),
+              let orientation = split.splitOrientation,
+              let first = split.firstChild(), let second = split.secondChild()
+        else { return nil }
+        let leaf = DwindleNode(kind: .leaf(tile: tile))
+        insertLeaf(leaf, between: first, and: second, orientation: orientation, in: split)
         state.tileCount += 1
         return leaf
     }

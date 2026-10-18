@@ -182,6 +182,10 @@ extension WMController {
             return drop.placement
         case .dwindleEdge:
             return dwindleEngine?.visibleTiles(in: workspaceId).any == true ? drop.placement : .workspace
+        case let .dwindleSplitBoundary(splitId):
+            return dwindleEngine?.canAttachTransfer(atSplitBoundary: splitId, in: workspaceId) == true
+                ? drop.placement
+                : .workspace
         case .niriNewColumn,
              .swap,
              .workspace:

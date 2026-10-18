@@ -323,6 +323,8 @@ extension WMController {
             .beside(target, direction)
         case let .dwindleEdge(direction):
             .workspaceEdge(direction)
+        case let .dwindleSplitBoundary(splitId):
+            .splitBoundary(splitId)
         case .niriNewColumn,
              .niriStack,
              .swap,
