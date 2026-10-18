@@ -229,14 +229,30 @@ final class InputTapThreadTests: XCTestCase {
         XCTAssertEqual(handler.performanceSnapshot()?.cgEvents, 1)
     }
 
+    @MainActor
     func testOtherMouseButtonNumbersOutsideSupportedRangePassThrough() throws {
-        let thread = InputTapThread()
-        thread.updateFilterSnapshot { $0.claimedOtherButtonMask = .max }
-        let event = try XCTUnwrap(CGEvent(source: nil))
+        let controller = makeController()
+        let handler = controller.mouseEventHandler
+        handler.setup()
+        handler.beginPerformanceCapture()
+        defer {
+            _ = handler.endPerformanceCapture()
+            handler.cleanup()
+        }
+
+        let source = try XCTUnwrap(CGEventSource(stateID: .combinedSessionState))
+        let event = try XCTUnwrap(CGEvent(
+            mouseEventSource: source,
+            mouseType: .otherMouseDown,
+            mouseCursorPosition: CGPoint(x: 100, y: 100),
+            mouseButton: .center
+        ))
+        handler.inputTapThread.updateFilterSnapshot { $0.claimedOtherButtonMask = .max }
         for button in [Int64.min, -1, 0, 1, 32, 33, Int64.max] {
             event.setIntegerValueField(.mouseEventButtonNumber, value: button)
-            XCTAssertTrue(thread.evaluateTap(type: .otherMouseDown, event: event) === event)
+            XCTAssertFalse(MouseEventHandler.processTapCallback(type: .otherMouseDown, event: event))
         }
+        XCTAssertEqual(handler.performanceSnapshot()?.cgEvents, 0)
     }
 
     @MainActor
