@@ -223,6 +223,7 @@ final class WMController {
     let ownedWindowRegistry: OwnedWindowRegistry
     @ObservationIgnored
     let columnModeToast: ColumnModeToastController
+    let keyboardModeIndicator: KeyboardModeIndicatorController
     @ObservationIgnored
     var warpMouseCursorPosition: (CGPoint) -> Void = { CGWarpMouseCursorPosition($0) }
     @ObservationIgnored
@@ -274,6 +275,7 @@ final class WMController {
         self.windowFocusOperations = windowFocusOperations
         self.ownedWindowRegistry = ownedWindowRegistry
         columnModeToast = ColumnModeToastController(ownedWindowRegistry: ownedWindowRegistry)
+        keyboardModeIndicator = KeyboardModeIndicatorController(ownedWindowRegistry: ownedWindowRegistry)
         workspaceManager = WorkspaceManager(settings: settings)
         focusPolicyEngine = FocusPolicyEngine()
         if self.workspaceBarIconResolver.synchronize(

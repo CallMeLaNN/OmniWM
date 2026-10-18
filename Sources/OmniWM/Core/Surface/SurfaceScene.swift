@@ -14,6 +14,7 @@ enum SurfaceKind: String, CaseIterable, Hashable, Sendable {
     case nativeFullscreenPlaceholder
     case tabRail
     case columnModeToast
+    case keyboardModeIndicator
     case dragGhost
     case utility
     case quake

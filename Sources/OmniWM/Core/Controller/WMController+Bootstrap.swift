@@ -181,5 +181,6 @@ extension WMController {
         )
         refreshHotkeyFailureSnapshots()
         refreshDiagnosticsIssues()
+        refreshKeyboardModeIndicator()
     }
 }

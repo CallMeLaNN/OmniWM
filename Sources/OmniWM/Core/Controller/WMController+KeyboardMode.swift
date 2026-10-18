@@ -16,5 +16,22 @@ extension WMController {
         keyboardModeKind = kind
         surfaceReconciler.noteBorderChanged()
         refreshStatusBar()
+        refreshKeyboardModeIndicator()
+    }
+
+    func refreshKeyboardModeIndicator() {
+        guard keyboardModeKind != .normal else {
+            keyboardModeIndicator.hide()
+            return
+        }
+        let guide = keyboardModeKind == .paused ? [] : hotkeys.keyboardModeTable.entries.map {
+            KeyboardModeGuideEntry(key: $0.binding.displayString, title: $0.command.localizedDisplayName)
+        }
+        keyboardModeIndicator.show(
+            kind: keyboardModeKind,
+            guide: guide,
+            monitors: workspaceManager.monitors,
+            interactionMonitorId: monitorForInteraction()?.id
+        )
     }
 }
