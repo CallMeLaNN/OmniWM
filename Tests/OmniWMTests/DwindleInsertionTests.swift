@@ -351,10 +351,10 @@ final class DwindleInsertionTests: XCTestCase {
 
     private func point(_ direction: Direction, in frame: CGRect) -> CGPoint {
         switch direction {
-        case .left: CGPoint(x: frame.minX + 1, y: frame.midY)
-        case .right: CGPoint(x: frame.maxX - 1, y: frame.midY)
-        case .up: CGPoint(x: frame.midX, y: frame.maxY - 1)
-        case .down: CGPoint(x: frame.midX, y: frame.minY + 1)
+        case .left: CGPoint(x: frame.minX + frame.width * 0.2, y: frame.midY)
+        case .right: CGPoint(x: frame.maxX - frame.width * 0.2, y: frame.midY)
+        case .up: CGPoint(x: frame.midX, y: frame.maxY - frame.height * 0.2)
+        case .down: CGPoint(x: frame.midX, y: frame.minY + frame.height * 0.2)
         }
     }
 

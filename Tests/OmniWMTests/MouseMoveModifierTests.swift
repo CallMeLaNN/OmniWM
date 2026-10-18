@@ -464,6 +464,35 @@ final class MouseMoveModifierTests: NiriInteractionTestCase {
     }
 
     @MainActor
+    func testDwindleReleaseCanChooseInsertionBetweenSubtrees() throws {
+        let fixture = try makeDwindleFixture(pid: 1_260, count: 3)
+        let engine = fixture.engine
+        let root = try XCTUnwrap(engine.root(for: fixture.workspaceId))
+        let split = try XCTUnwrap(root.secondChild())
+        let first = try XCTUnwrap(split.firstChild())
+        let second = try XCTUnwrap(split.secondChild())
+        let firstFrame = try XCTUnwrap(first.presentedFrame(at: 0))
+        let secondFrame = try XCTUnwrap(second.presentedFrame(at: 0))
+        let horizontal = split.splitOrientation == .horizontal
+        let point = horizontal
+            ? CGPoint(x: (firstFrame.maxX + secondFrame.minX) / 2, y: firstFrame.midY)
+            : CGPoint(x: firstFrame.midX, y: (firstFrame.maxY + secondFrame.minY) / 2)
+        let worldSeq = fixture.controller.workspaceManager.worldSeq
+        XCTAssertFalse(fixture.handler.dispatchMouseDown(at: fixture.firstFrame.center, modifiers: .maskControl))
+        fixture.handler.dispatchMouseDragged(at: fixture.secondFrame.center)
+        XCTAssertEqual(engine.interactiveMove?.target, .tile(fixture.second, direction: nil))
+
+        fixture.handler.dispatchMouseUp(at: point)
+
+        XCTAssertGreaterThan(fixture.controller.workspaceManager.worldSeq, worldSeq)
+        XCTAssertNil(engine.interactiveMove)
+        XCTAssertFalse(fixture.handler.state.isMoving)
+        XCTAssertTrue(root.firstChild() === first)
+        XCTAssertEqual(root.secondChild()?.firstChild()?.windowToken, fixture.first)
+        XCTAssertTrue(root.secondChild()?.secondChild() === second)
+    }
+
+    @MainActor
     func testDwindleReleaseChoosesBetweenSwapAndInsertionAgain() throws {
         for inserts in [false, true] {
             let fixture = try makeDwindleFixture(pid: 1_253)

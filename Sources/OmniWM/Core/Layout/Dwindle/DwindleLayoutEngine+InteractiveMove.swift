@@ -7,6 +7,7 @@ import Foundation
 enum DwindleMoveTarget: Equatable {
     case tile(WindowToken, direction: Direction?)
     case workspaceEdge(Direction, frame: CGRect)
+    case splitBoundary(DwindleNodeId, frame: CGRect)
 }
 
 struct DwindleInteractiveMove {
@@ -25,12 +26,14 @@ struct DwindleInteractiveMove {
         switch target {
         case let .tile(_, direction): direction
         case let .workspaceEdge(direction, _): direction
+        case .splitBoundary: nil
         case nil: nil
         }
     }
 
     var isInsertion: Bool {
-        targetDirection != nil
+        if case .splitBoundary = target { return true }
+        return targetDirection != nil
     }
 }
 
@@ -82,6 +85,13 @@ extension DwindleLayoutEngine {
             interactiveMove?.target = .workspaceEdge(direction, frame: workspaceFrame)
             return nil
         }
+        if move.allowsInsertion,
+           hypot(currentLocation.x - move.startLocation.x, currentLocation.y - move.startLocation.y) >= 10,
+           let target = splitBoundaryMoveTarget(at: currentLocation, for: move.token, in: move.workspaceId, time: time)
+        {
+            interactiveMove?.target = target
+            return nil
+        }
         let target = hitTestFocusableWindow(point: currentLocation, in: move.workspaceId, at: time)
             .flatMap { candidate -> WindowToken? in
                 guard let node = findNode(for: candidate, in: move.workspaceId),
@@ -107,6 +117,8 @@ extension DwindleLayoutEngine {
             frame = presented
         case let .workspaceEdge(_, workspaceFrame):
             frame = workspaceFrame
+        case let .splitBoundary(_, previewFrame):
+            return previewFrame
         }
         return WindowMoveGeometry.targetFrame(in: frame, direction: move.targetDirection)
     }
@@ -117,6 +129,9 @@ extension DwindleLayoutEngine {
         interactiveMove = nil
         if case let .workspaceEdge(direction, _) = move.target {
             return insertLeafTile(of: move.token, atWorkspaceEdge: direction, in: move.workspaceId) ? move.token : nil
+        }
+        if case let .splitBoundary(splitId, _) = move.target {
+            return insertLeafTile(of: move.token, betweenChildrenOf: splitId, in: move.workspaceId) ? move.token : nil
         }
         guard let targetToken = move.targetToken,
               !excludedTokens(in: move.workspaceId).contains(move.token),
@@ -150,6 +165,8 @@ extension DwindleLayoutEngine {
                 && !isWindowFullscreen(token, in: move.workspaceId)
         case .workspaceEdge:
             canInsertAtWorkspaceEdge(token: move.token, in: move.workspaceId)
+        case let .splitBoundary(splitId, _):
+            canInsertAtSplitBoundary(token: move.token, splitId: splitId, in: move.workspaceId)
         case nil:
             true
         }

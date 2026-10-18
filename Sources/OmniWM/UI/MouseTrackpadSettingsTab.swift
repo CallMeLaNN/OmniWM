@@ -84,7 +84,7 @@ struct MouseTrackpadSettingsTab: View {
             .id("Left Mouse Move Modifier")
 
             SettingsCaption(
-                localized: "Hold this modifier and left-drag tiled windows. Drop at another tile's center to swap, or near one of its edges to insert on that side. In Dwindle, dropping near a workspace edge inserts at the outer edge. Choose Off to leave modified drags to apps."
+                localized: "Hold this modifier and left-drag tiled windows. Drop at another tile's center to swap, or near one of its edges to insert on that side. In Dwindle, you can also insert between existing splits or at a workspace edge. Choose Off to leave modified drags to apps."
             )
 
             Picker(
