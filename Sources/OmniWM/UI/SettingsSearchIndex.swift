@@ -60,7 +60,7 @@ enum SettingsSearchIndex {
         case .monitors: ["monitors", "displays", "screens", "routing"]
         case .appRules: ["app rules", "float", "tile", "bundle", "match"]
         case .windowSwitcher: ["alt-tab", "command-tab", "option-tab", "app switcher", "previews"]
-        case .hotkeys: ["hotkeys", "keyboard", "shortcuts", "hyper", "commands"]
+        case .hotkeys: ["hotkeys", "keyboard", "shortcuts", "hyper", "commands", "pause", "prefix", "mode key"]
         case .advanced: ["config", "toml", "luau", "ipc", "cli", "terminal"]
         default: [section.rawValue]
         }

@@ -184,6 +184,12 @@ final class StatusBarController: NSObject {
             button.image?.accessibilityDescription = String(localized: "OmniWM, Secure Input is on")
             button.contentTintColor = nil
             button.toolTip = String(localized: "Secure Input is on: Option shortcuts are paused")
+        } else if let kind = controller?.keyboardModeKind, kind != .normal {
+            button.layer?.removeAnimation(forKey: recordingPulseKey)
+            button.layer?.opacity = 1
+            button.image = Self.keyboardModeStatusImage(kind)
+            button.contentTintColor = nil
+            button.toolTip = Self.keyboardModeToolTip(kind)
         } else {
             button.layer?.removeAnimation(forKey: recordingPulseKey)
             button.layer?.opacity = 1
@@ -216,8 +222,9 @@ final class StatusBarController: NSObject {
         return String(appName.prefix(maxStatusBarAppNameLength)) + "\u{2026}"
     }
 
-    static func statusButtonTitle(workspaceLabel: String, focusedAppName: String?) -> String {
-        var title = " \(workspaceLabel)"
+    static func statusButtonTitle(workspaceLabel: String, focusedAppName: String?, modeTitle: String? = nil) -> String {
+        var title = modeTitle.map { " \($0) \u{00B7}" } ?? ""
+        title += " \(workspaceLabel)"
         if let focusedAppName, !focusedAppName.isEmpty {
             title += " \u{2013} \(truncatedStatusBarAppName(focusedAppName))"
         }
@@ -271,19 +278,25 @@ final class StatusBarController: NSObject {
         guard let button = statusItem?.button else { return }
 
         updateButtonAppearance()
+        let modeTitle = Self.keyboardModeTitle(controller?.keyboardModeKind ?? .normal)
 
         guard settings.statusBar.showWorkspaceName,
               let summary = controller?.activeStatusBarWorkspaceSummary()
         else {
-            button.title = ""
-            button.imagePosition = .imageOnly
+            button.title = modeTitle.map { " \($0)" } ?? ""
+            button.imagePosition = modeTitle == nil ? .imageOnly : .imageLeft
             return
         }
 
         let workspaceLabel = settings.statusBar.useWorkspaceId ? summary.workspaceRawName : summary.workspaceLabel
         let focusedAppName = settings.statusBar.showAppNames ? summary.focusedAppName : nil
-        button.title = Self.statusButtonTitle(workspaceLabel: workspaceLabel, focusedAppName: focusedAppName)
+        button.title = Self.statusButtonTitle(
+            workspaceLabel: workspaceLabel,
+            focusedAppName: focusedAppName,
+            modeTitle: modeTitle
+        )
         let hasStateIcon = controller?.traceCaptureStatus.profile != nil || controller?.isSecureInputIndicated == true
+            || modeTitle != nil
         button.imagePosition = Self.labeledImagePosition(
             showIcon: settings.statusBar.showIcon,
             hasStateIcon: hasStateIcon

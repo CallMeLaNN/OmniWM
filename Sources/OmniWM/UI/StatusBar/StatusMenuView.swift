@@ -143,6 +143,16 @@ struct StatusMenuPrimaryView: View {
                 }
                 MenuDivider()
             }
+            if let title = model.leaveKeyboardModeTitle {
+                MenuActionRow(
+                    icon: "keyboard",
+                    label: title,
+                    iconTint: Color(nsColor: StatusBarController.keyboardModeColor(model.keyboardModeKind))
+                ) {
+                    model.leaveKeyboardMode()
+                }
+                MenuDivider()
+            }
             if !model.diagnosticsIssues.isEmpty {
                 MenuActionRow(
                     icon: "exclamationmark.triangle.fill",

@@ -240,7 +240,7 @@ The [window switcher](/features/window-switcher/). The table is optional; when a
 
 | Key | Type | Default | Description |
 | --- | --- | --- | --- |
-| `pauseTimeoutSeconds` *(optional)* | number | unset | Seconds after which a shortcut pause ends by itself. Unset or `0` keeps the pause until you toggle it again. |
+| `pauseTimeoutSeconds` *(optional)* | number | unset | Seconds after which a shortcut pause ends by itself. Unset or `0` keeps the pause until you toggle it again. Settings > Keyboard Shortcuts > Keyboard Modes > Pause Timeout. |
 
 ## workspaceBar
 

@@ -23,6 +23,8 @@ Unreleased: available when building from `main`. Keyboard modes help when OmniWM
 
 Mode keys are a single key, optionally with `Shift`, set per action with [`modeKey`](/config/settings-reference/#hotkeys). They act only after the prefix or inside Window mode, so a plain `H` still reaches your editor at all other times. To reach an action only through the prefix, clear its direct shortcut and keep its mode key. Prefix and Window mode need the Input Monitoring permission and stay off while Secure Input is on or the screen is locked.
 
+While a mode is on, the focused window's border turns amber for Pause and green for Prefix and Window mode, and the menu bar shows the mode's name. The OmniWM menu then offers **Resume Shortcuts**, **Cancel Prefix** or **Leave Window Mode**. Settings > Keyboard Shortcuts > Keyboard Modes sets the Pause timeout. Once Begin Prefix or Enter or Leave Window Mode has a shortcut, every command there except the keyboard-mode actions gets a **Mode Key** button.
+
 ## When a shortcut does not fire
 
 Confirm the binding and any registration warning in **Settings > Keyboard Shortcuts**, then check **Settings > Troubleshooting** for related diagnostics. If skhd, Raycast, or another shortcut utility is still running with the same binding, stop it or reassign the conflicting shortcut before editing `settings.toml`.

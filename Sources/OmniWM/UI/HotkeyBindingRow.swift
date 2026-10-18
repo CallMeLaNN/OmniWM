@@ -6,12 +6,15 @@ import SwiftUI
 
 enum HotkeyRecordingTarget: Equatable {
     case chord(String)
+    case modeKey(String)
 }
 
 struct HotkeyBindingRow: View {
     let binding: HotkeyBinding
     @Binding var recordingTarget: HotkeyRecordingTarget?
     let failureReason: HotkeyRegistrationFailureReason?
+    let modeKeyFailure: KeyboardModeKeyFailure?
+    let showsModeKey: Bool
     let pausedDuringSecureInput: Bool
     let isHyperActive: () -> Bool
     let onStartChordRecording: (String) -> Void
@@ -20,6 +23,8 @@ struct HotkeyBindingRow: View {
     let onClearBinding: (String) -> Void
     let onResetBindings: (String) -> Void
     let onSetSide: (String, ModifierSide) -> Void
+    let onModeKeyCaptured: (String, HotkeyTrigger) -> Void
+    let onClearModeKey: (String) -> Void
 
     var body: some View {
         LabeledContent {
@@ -55,6 +60,18 @@ struct HotkeyBindingRow: View {
                     }
                 )
 
+                if showsModeKey {
+                    HotkeyModeKeyControl(
+                        modeKey: binding.modeKey,
+                        commandName: binding.command.localizedDisplayName,
+                        isRecording: recordingTarget == .modeKey(binding.id),
+                        onStart: { recordingTarget = .modeKey(binding.id) },
+                        onCaptured: { onModeKeyCaptured(binding.id, $0) },
+                        onCancel: onCancelRecording,
+                        onClear: { onClearModeKey(binding.id) }
+                    )
+                }
+
                 ResetIconButton(title: String(localized: "Reset \(binding.command.localizedDisplayName) to default")) {
                     recordingTarget = nil
                     onResetBindings(binding.id)
@@ -81,12 +98,19 @@ struct HotkeyBindingRow: View {
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+
+                    if let modeKeyFailure {
+                        Text(Self.modeKeyFailureMessage(modeKeyFailure))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
         }
         .accessibilityValue(accessibilityValue)
         .onDisappear {
-            guard recordingTarget == .chord(binding.id) else { return }
+            guard recordingTarget == .chord(binding.id) || recordingTarget == .modeKey(binding.id) else { return }
             onCancelRecording()
         }
     }
@@ -120,7 +144,21 @@ struct HotkeyBindingRow: View {
         case .systemReserved:
             return String(localized: "Failed to register: this key combination may be reserved by the system")
         case .requiresInputMonitoring:
+            if case .keyboardMode = binding.command {
+                return String(localized: "Prefix and Window mode need Input Monitoring permission to work")
+            }
             return String(localized: "Left/Right-specific shortcuts need Input Monitoring permission to work")
+        }
+    }
+
+    static func modeKeyFailureMessage(_ failure: KeyboardModeKeyFailure) -> String {
+        switch failure {
+        case .duplicateKey:
+            String(localized: "Another command has the same mode key")
+        case .overlapsShortcut:
+            String(localized: "A shortcut already uses this key")
+        case .unsupportedKey:
+            String(localized: "A mode key is a single key, optionally with Shift. Escape always leaves the mode.")
         }
     }
 }
@@ -224,5 +262,47 @@ private struct HotkeyBindingControl: View {
 
     private var humanReadableString: String {
         HotkeySettingsDisplayModel.humanReadableString(for: binding)
+    }
+}
+
+private struct HotkeyModeKeyControl: View {
+    let modeKey: KeyBinding?
+    let commandName: String
+    let isRecording: Bool
+    let onStart: () -> Void
+    let onCaptured: (HotkeyTrigger) -> Void
+    let onCancel: () -> Void
+    let onClear: () -> Void
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if isRecording {
+                KeyRecorderView(
+                    accessibilityLabel: String(localized: "Recording mode key for \(commandName)"),
+                    allowsBareKeys: true,
+                    onCapture: onCaptured,
+                    onCancel: onCancel
+                )
+                .frame(minWidth: 120, minHeight: 34)
+            } else {
+                Button(action: onStart) {
+                    Text(modeKey?.displayString ?? String(localized: "Mode Key"))
+                        .foregroundStyle(modeKey == nil ? .secondary : .primary)
+                        .lineLimit(1)
+                        .frame(minWidth: 64, alignment: .center)
+                }
+                .buttonStyle(.bordered)
+                .help(String(localized: "Change mode key for \(commandName)"))
+
+                if modeKey != nil {
+                    Button(action: onClear) {
+                        Label(String(localized: "Clear mode key for \(commandName)"), systemImage: "xmark.circle")
+                            .labelStyle(.iconOnly)
+                    }
+                    .buttonStyle(.borderless)
+                    .help(String(localized: "Clear mode key for \(commandName)"))
+                }
+            }
+        }
     }
 }

@@ -14,5 +14,7 @@ extension WMController {
 
     func keyboardModeDidChange(_ kind: KeyboardModeKind) {
         keyboardModeKind = kind
+        surfaceReconciler.noteBorderChanged()
+        refreshStatusBar()
     }
 }
