@@ -69,6 +69,8 @@ jobs:
           key: dev-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Scripts/dev-tools.env', 'Scripts/build-metadata.env') }}
       - name: Set up dependencies
         run: ./Scripts/dev-tools.sh setup
+      - name: Verify generated IPC wire files
+        run: python3 Scripts/generate_ipc_wire.py --check
       - name: Test development tooling
         run: make test-dev-tools
       - name: Verify package toolchain
