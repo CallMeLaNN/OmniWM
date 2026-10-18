@@ -36,7 +36,7 @@ An absent version identifies a legacy version 0 file, while OmniWM v0.6.4 emitte
 
 ## general
 
-Global switches: hotkeys, Hyper key, default layout, sleep, updates, IPC, animations, interface language.
+Global switches: hotkeys, Hyper key, default layout, sleep, updates, IPC, animations, interface language, workspace back-and-forth.
 
 | Key | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -50,6 +50,7 @@ Global switches: hotkeys, Hyper key, default layout, sleep, updates, IPC, animat
 | `animationsEnabled` | boolean | `true` | Animates window layout changes and other OmniWM-authored motion. macOS Reduce Motion turns them off regardless of this key. |
 | `animationSpeed` *(optional)* | float | `1.0` | Tiling animation speed multiplier: `2.0` is twice as fast, `0.5` is half as fast. Applies to Niri focus, window/column movement and resizing, Dwindle layout changes, and workspace swipe settling. Values are clamped to `0.25`–`4.0`; nonfinite values use `1.0`. Changes apply to newly started transitions. Direct gesture tracking, inertial scrolling, Overview, and Quake terminal animations keep their own behavior. |
 | `language` | string | unset | Interface language as a packaged localization code, such as `"ja"` or `"sr-Latn"`. Leave it unset to follow macOS. Takes effect the next time OmniWM starts. |
+| `workspaceAutoBackAndForth` *(optional)* | boolean | `false` | When a workspace shortcut or command palette entry targets the workspace you are already on, switch to the previously active workspace instead, like i3's `workspace_auto_back_and_forth`. `omniwmctl` workspace commands are unaffected. Settings > Workspaces > Workspace Switching. Unreleased: available when building from `main`. |
 
 ## focus
 
@@ -234,6 +235,14 @@ The [window switcher](/features/window-switcher/). The table is optional; when a
 | `scope` | string | `"allWorkspaces"` | The remembered scope, saved when you press S or click the scope button: `allWorkspaces` or `activeWorkspace`. |
 | `showFooter` | boolean | `true` | Shows the scope button and window count. |
 
+## keyboardModes
+
+[Keyboard modes](/guides/keyboard-shortcuts/#keyboard-modes). The table is optional; when absent, every key takes its default. Unreleased: available when building from `main`.
+
+| Key | Type | Default | Description |
+| --- | --- | --- | --- |
+| `pauseTimeoutSeconds` *(optional)* | number | unset | Seconds after which a shortcut pause ends by itself. Unset or `0` keeps the pause until you toggle it again. Settings > Keyboard Shortcuts > Keyboard Modes > Pause Timeout. |
+
 ## workspaceBar
 
 The per-monitor workspace bar. Per-monitor exceptions live in [`monitorBarOverrides`](#per-monitor-overrides). A [shell profile or theme](/omnishell/configuration/profiles-palettes/#profile-settings) can override most of these keys in its own `[workspaceBar]`. Unreleased: available when building from `main`.
@@ -295,7 +304,7 @@ The seven optional `overviewGesture…` and `window…` keys below configure Ove
 | `scrollEnabled` | boolean | `true` | Trackpad column scrolling (`fingerCount`) and modifier + mouse scroll wheel scrolling along the Niri primary axis; `false` turns off both. |
 | `scrollSensitivity` | float | `5.0` | Scroll gesture sensitivity. |
 | `scrollModifierKey` | string | `"optionShift"` | Modifier for wheel scrolling: `optionShift`, `controlShift`, `commandShift`, `controlOptionShift`, `optionCommandShift`, `controlCommandShift`, or `controlOptionCommandShift`. The System Hyper Trigger does not add modifiers to wheel events. |
-| `mouseMoveModifierKey` | string | `"option"` | Modifier for left-dragging tiled windows. Both layouts choose from the drop position (**unreleased**, available when building from `main`): the target tile's center swaps and its sides insert beside it. In Niri, the sides facing neighboring columns open a new column and the other sides stack into the target's column; in Dwindle, the workspace's outer edges also insert at the root. `Shift` does not change this behavior. Workspace-edge targets take precedence in a band up to 24 points wide along the working area's boundary; see [drag guidance](/guides/tips/#swap-windows-by-dragging). Values: `off`, `option`, `control`, `command`, `controlOption`, `optionCommand`, `controlCommand`, `controlOptionCommand`. |
+| `mouseMoveModifierKey` | string | `"option"` | Modifier for left-dragging tiled windows. Both layouts choose from the drop position (**unreleased**, available when building from `main`): the target tile's center swaps and its sides insert beside it. In Niri, the sides facing neighboring columns open a new column and the other sides stack into the target's column; in Dwindle, internal dividers insert between subtrees and the workspace's outer edges insert at the root. `Shift` does not change this behavior. Workspace-edge targets take precedence in a band up to 24 points wide along the working area's boundary; dropping on another display uses the same targets there; see [drag guidance](/guides/tips/#swap-windows-by-dragging). Values: `off`, `option`, `control`, `command`, `controlOption`, `optionCommand`, `controlCommand`, `controlOptionCommand`. |
 | `mouseResizeModifierKey` | string | `"option"` | Modifier for right-drag resize: `option`, `control`, `command`, `shift`, `controlOption`, `optionCommand`, `optionShift`, `controlCommand`, `controlShift`, `commandShift`, `controlOptionCommand`, `controlOptionShift`, `optionCommandShift`, `controlCommandShift`, `controlOptionCommandShift`. |
 | `fingerCount` | integer | `3` | Trackpad column-scroll finger count: `3` or `4`. |
 | `invertDirection` | boolean | `true` | Inverts trackpad gesture direction. |
@@ -311,6 +320,8 @@ The seven optional `overviewGesture…` and `window…` keys below configure Ove
 | `windowResizeFingerCount` *(optional)* | integer | `3` | Window-resize finger count: `2`, `3`, or `4`. |
 | `windowGestureSensitivity` *(optional)* | float | `1.0` | Move/resize sensitivity, clamped to `0.1…5.0`; non-finite values use `1.0`. |
 | `resizePreviewStyle` *(optional)* | string | `"live"` | What mouse resizing and Niri keyboard resizing show while the size changes: `live` writes the real window frames on every step, `glass` shows a glass panel with the app icon over each moving window, `snapshot` stretches a still capture of each moving window (needs Screen Recording, falls back to `glass` without it). `glass` and `snapshot` write the final frames once the resize ends. |
+| `dwindleGroupDragAcrossDisplays` *(optional)* | string | `"group"` | What a modifier drag of a Dwindle tab group moves when you drop it on another display (**unreleased**): `group` moves the whole group, which becomes one tabbed column in Niri; `window` moves only the dragged window. The same choice decides whether a swap onto a Dwindle group exchanges the whole group or only the window under the pointer. |
+| `adoptNativeResize` *(optional)* | boolean | `false` | Keep a native edge or corner resize of a tiled window when you let go (**unreleased**): Niri changes that column's width or the stacked windows' heights, and Dwindle moves the shared split. Neighbours refit after release. Title-bar moves still snap back. |
 
 Window move and resize gestures use all directions, so their finger counts must differ from every other enabled gesture. Configuration loading rejects overlaps with each other, column scrolling, workspace switching, or Overview. In Settings, **Set Up…** previews the conflicting assignments and lets you choose which gestures to turn off before applying the change. When editing TOML, disable or reassign conflicting gestures in the same edit. Moving stays on the starting monitor; resizing can continue beyond its bounds. Lift all fingers to finish, and turn off matching macOS gestures under System Settings → Trackpad → More Gestures. These gestures are inactive while Overview is open and do not use `invertDirection`.
 
@@ -417,6 +428,7 @@ id = "toggleScratchpad.1"
 - The array is validated strictly: each action may appear **only once**, and an action that is left out is unassigned. Workspace `10+` action IDs are optional and appear while those workspaces exist. An unknown, unassignable, or duplicate action id rejects the whole file, so rebind by editing `binding` values in place.
 - The numeric suffix is zero-based for `switchWorkspace.N`, `moveToWorkspace.N`, `focusColumn.N`, and `moveColumnToWorkspace.N` — `switchWorkspace.0` is *Switch to Workspace 1* (`Option + 1` by default) — and one-based for `switchWorkspaceSlot.N`, `moveToWorkspaceSlot.N`, `focusWindowInColumn.N`, `moveColumnToIndex.N`, `toggleScratchpad.N`, and `assignFocusedWindowToScratchpad.N`.
 - `toggleShellWidget.<name>` toggles the shell drawer or widget popout named `<name>`. Settings lists one for every drawer and every widget with a popout, and a bound one stays while its drawer or widget is missing. Unreleased: available when building from `main`.
+- `modeKey` *(optional)* is the key that runs the action inside [Prefix or Window mode](/guides/keyboard-shortcuts/#keyboard-modes): a key name, optionally with `Shift` (for example `"H"` or `"Shift+H"`), never `Escape`. It is separate from `binding`, so an action can have both, either, or neither. Two actions with the same mode key, a mode key that is also a shortcut, or a mode key with other modifiers are reported and ignored without rejecting the file. Unreleased: available when building from `main`.
 - `openCommandPalette.<mode>` opens the command palette in `windows`, `menu`, `clipboard`, `commands`, `applications`, or `files` mode, switches to that mode if the palette is open in another one, and closes it if it is already open in that mode. These actions are unassigned by default. Unreleased: available when building from `main`.
 
 The default bindings are listed in the [keyboard shortcuts guide](/guides/keyboard-shortcuts/); assignable actions appear in **Settings > Keyboard Shortcuts**.

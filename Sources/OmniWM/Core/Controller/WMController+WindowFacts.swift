@@ -163,6 +163,7 @@ extension WMController {
                 workspaceName: nil,
                 ruleEffects: .none,
                 admissionHints: .none,
+                ruleProvenance: .none,
                 heuristicReasons: [],
                 deferredReason: nil
             ),

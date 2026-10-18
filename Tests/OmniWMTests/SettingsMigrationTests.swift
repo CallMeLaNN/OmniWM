@@ -564,7 +564,8 @@ final class SettingsMigrationTests: XCTestCase {
             "toggleFloatingFocus", "volumeUp", "volumeDown", "volumeMute", "mediaPlayPause", "mediaNext",
             "mediaPrevious", "openCommandPalette.windows", "openCommandPalette.menu",
             "openCommandPalette.clipboard", "openCommandPalette.commands", "openCommandPalette.applications",
-            "openCommandPalette.files"
+            "openCommandPalette.files", "toggleShortcutPause", "beginPrefix", "toggleWindowMode",
+            "exitKeyboardMode"
         ]
         XCTAssertEqual(
             hotkeyIDs(in: migratedData),

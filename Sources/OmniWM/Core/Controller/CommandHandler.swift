@@ -104,6 +104,8 @@ final class CommandHandler {
         case let .presentation(action): return perform(action, controller: controller)
         case let .media(action):
             perform(action, controller: controller)
+        case let .keyboardMode(command):
+            return controller.performKeyboardModeCommand(command)
         case let .shellToggle(name):
             return controller.workspaceBarManager.toggleShell(name) ? .executed : .notFound
         }
@@ -111,7 +113,9 @@ final class CommandHandler {
     }
 
     static func shouldIgnoreCommand(_ command: HotkeyCommand, isOverviewOpen: Bool) -> Bool {
-        isOverviewOpen && command != .presentation(.overview)
+        guard isOverviewOpen else { return false }
+        if case .keyboardMode = command { return false }
+        return command != .presentation(.overview)
     }
 
     func layoutHandler<T>(as capability: T.Type) -> T? {

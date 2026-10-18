@@ -45,9 +45,18 @@ enum ManualWindowOverride: String, Codable, Equatable {
 struct ManagedWindowRuleEffects: Equatable, Sendable {
     var minWidth: Double?
     var minHeight: Double?
-    var matchedRuleId: UUID?
 
     static let none = ManagedWindowRuleEffects()
+}
+
+struct WindowRuleProvenance: Equatable, Sendable {
+    var layout: UUID?
+    var workspace: UUID?
+    var minWidth: UUID?
+    var minHeight: UUID?
+    var initialContainerPrimarySpan: UUID?
+
+    static let none = WindowRuleProvenance()
 }
 
 struct ManagedWindowAdmissionHints: Equatable, Sendable {
@@ -63,6 +72,7 @@ struct WindowDecision: Equatable, Sendable {
     let workspaceName: String?
     let ruleEffects: ManagedWindowRuleEffects
     let admissionHints: ManagedWindowAdmissionHints
+    let ruleProvenance: WindowRuleProvenance
     let heuristicReasons: [AXWindowHeuristicReason]
     let deferredReason: WindowDecisionDeferredReason?
 

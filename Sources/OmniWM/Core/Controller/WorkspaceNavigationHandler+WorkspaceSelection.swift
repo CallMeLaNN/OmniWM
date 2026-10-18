@@ -6,8 +6,14 @@ import Foundation
 import OmniWMIPC
 
 extension WorkspaceNavigationHandler {
-    func switchWorkspace(index: Int) {
+    func switchWorkspace(index: Int, autoBackAndForth: Bool = false) {
         guard let rawWorkspaceID = WorkspaceIDPolicy.rawID(from: max(0, index) + 1) else { return }
+        if autoBackAndForth, let current = controller?.activeWorkspace(), current.name == rawWorkspaceID,
+           canSkipSwitch(toVisibleWorkspace: current.id)
+        {
+            workspaceBackAndForth()
+            return
+        }
         switchWorkspace(rawWorkspaceID: rawWorkspaceID)
     }
 
@@ -104,13 +110,16 @@ extension WorkspaceNavigationHandler {
     }
 
     @discardableResult
-    func switchWorkspaceSlot(_ slot: Int) -> Bool {
+    func switchWorkspaceSlot(_ slot: Int, autoBackAndForth: Bool = false) -> Bool {
         guard let controller,
               let monitorId = interactionMonitorId(for: controller),
               let targetWorkspace = workspaceSlot(slot),
               let currentWorkspace = controller.workspaceManager.activeWorkspaceOrFirst(on: monitorId)
         else { return false }
         if currentWorkspace.id == targetWorkspace.id, canSkipSwitch(toVisibleWorkspace: targetWorkspace.id) {
+            if autoBackAndForth {
+                workspaceBackAndForth()
+            }
             return false
         }
         return activateWorkspaceInOrder(targetWorkspace, from: currentWorkspace.id, on: monitorId)

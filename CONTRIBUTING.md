@@ -151,6 +151,8 @@ Use focused regression tests for changed behavior. Runtime changes require the f
 
 For changes to setup, packaging, development installation, or related tooling, also run `make test-dev-tools`. This runs the Python development-tooling tests and is included in CI's **Verify** job.
 
+CI also checks that the generated IPC wire encoders match their models. After changing IPC models or the generator, run `python3 Scripts/generate_ipc_wire.py --check`. If it reports stale files, run `python3 Scripts/generate_ipc_wire.py`, review the generated diff, and rerun the check.
+
 ### Translating the App
 
 Translations live in the [string catalogs](Sources/OmniWM/Resources). `Localizable.xcstrings` contains interface text, `Commands.xcstrings` contains command names, categories, and scopes, and `InfoPlist.xcstrings` contains the macOS permission descriptions. Add or edit your language's `localizations` entries in those files. Keep the English keys and source values intact, and translate the meaning in context. English is the fallback for strings without a translation.
@@ -205,6 +207,8 @@ The `release-publish` environment contains no Apple secrets. Two optional reposi
 The prepare summary prints the `gh workflow run` command for publication because the web form cannot take multi-line notes. Download and launch the prepared app on a desktop before approving publication. Pass `skip_app_launch` only when the runner cannot launch the GUI; signature, notarization, and quarantine checks still run. Prepared artifacts expire after 30 days. If `main` moves before publication, prepare again. Retry an interrupted publish with the same prepare run and identical notes. Publication creates the tag and release before pushing `main`; a competing push or remote failure can still require manual recovery.
 
 Local releases via `Scripts/omniwm_release.py` use your own keychain and notarization profile.
+
+The daily **OmniWM canary** workflow requires the latest **OmniWM CI** push run on `main` for the checked-out commit to pass, including both **Verify** and **Tests**. It checks the actual checkout rather than the scheduled event's commit, before dependency setup or importing Apple credentials. Missing, unfinished, or unsuccessful CI stops the canary; wait for CI to pass and rerun the workflow. The manual `force` option only bypasses the existing-tag check and cannot bypass CI.
 
 ### Maintainer CI Rollout
 

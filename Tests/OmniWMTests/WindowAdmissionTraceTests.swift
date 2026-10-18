@@ -810,6 +810,7 @@ final class WindowAdmissionTraceTests: XCTestCase {
                     workspaceName: nil,
                     ruleEffects: .none,
                     admissionHints: .none,
+                    ruleProvenance: .none,
                     heuristicReasons: [],
                     deferredReason: nil
                 )

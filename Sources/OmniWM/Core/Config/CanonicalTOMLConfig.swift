@@ -16,6 +16,7 @@ struct CanonicalTOMLConfig: Codable, Equatable {
     var borders: SettingsExport.Borders
     var overview: SettingsExport.Overview
     var windowSwitcher: SettingsExport.WindowSwitcher
+    var keyboardModes: SettingsExport.KeyboardModes
     var workspaceBar: SettingsExport.WorkspaceBar
     var island: SettingsExport.Island
     var gestures: SettingsExport.Gestures
@@ -45,6 +46,7 @@ struct CanonicalTOMLConfig: Codable, Equatable {
         var animationsEnabled: Bool
         var animationSpeed: Double?
         var language: String?
+        var workspaceAutoBackAndForth: Bool?
     }
 
     struct Monitors: Codable, Equatable {
@@ -86,6 +88,8 @@ extension CanonicalTOMLConfig {
         overview = try container.decode(SettingsExport.Overview.self, forKey: .overview)
         windowSwitcher = try container.decodeIfPresent(SettingsExport.WindowSwitcher.self, forKey: .windowSwitcher)
             ?? SettingsExport.WindowSwitcher()
+        keyboardModes = try container.decodeIfPresent(SettingsExport.KeyboardModes.self, forKey: .keyboardModes)
+            ?? SettingsExport.KeyboardModes()
         workspaceBar = try container.decode(SettingsExport.WorkspaceBar.self, forKey: .workspaceBar)
         island = try container.decodeIfPresent(SettingsExport.Island.self, forKey: .island) ?? .defaults()
         gestures = try container.decode(SettingsExport.Gestures.self, forKey: .gestures)
@@ -129,7 +133,8 @@ extension CanonicalTOMLConfig {
             ipcEnabled: export.ipcEnabled,
             animationsEnabled: export.animationsEnabled,
             animationSpeed: AnimationSpeed.normalized(export.animationSpeed),
-            language: export.language
+            language: export.language,
+            workspaceAutoBackAndForth: export.workspaceAutoBackAndForth
         )
         focus = export.focus
         focus.edgeNavigationInterval = FocusSettings.normalizedEdgeNavigationInterval(focus.edgeNavigationInterval)
@@ -142,6 +147,7 @@ extension CanonicalTOMLConfig {
         borders = export.borders
         overview = export.overview
         windowSwitcher = export.windowSwitcher
+        keyboardModes = export.keyboardModes
         workspaceBar = export.workspaceBar
         island = export.island
         gestures = export.gestures
@@ -175,6 +181,8 @@ extension CanonicalTOMLConfig {
             borders: borders,
             overview: overviewForExport(),
             windowSwitcher: windowSwitcher,
+            keyboardModes: keyboardModes,
+            workspaceAutoBackAndForth: general.workspaceAutoBackAndForth ?? false,
             hotkeyBindings: hotkeys,
             systemHyperTrigger: general.systemHyperTrigger,
             hyperKeyModifiers: general.hyperKeyModifiers,
@@ -229,6 +237,8 @@ extension CanonicalTOMLConfig {
         gestures.windowResizeFingerCount = gestures.windowResizeFingerCount ?? .three
         gestures.windowGestureSensitivity = gestures.windowGestureSensitivity ?? 1.0
         gestures.resizePreviewStyle = gestures.resizePreviewStyle ?? .live
+        gestures.dwindleGroupDragAcrossDisplays = gestures.dwindleGroupDragAcrossDisplays ?? .group
+        gestures.adoptNativeResize = gestures.adoptNativeResize ?? false
         return gestures
     }
 }

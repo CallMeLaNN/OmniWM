@@ -140,6 +140,7 @@ struct WorkspaceBarSnapshot: Equatable {
     let barHeight: CGFloat
     let orientation: WorkspaceBarOrientation
     let secureInputActive: Bool
+    let keyboardMode: KeyboardModeKind
     let barFill: ShellThemeColor?
     let barBorder: ShellThemeColor?
     var barShader: ShellBarShader?
@@ -154,6 +155,7 @@ struct WorkspaceBarSnapshot: Equatable {
         barHeight: CGFloat,
         orientation: WorkspaceBarOrientation = .horizontal,
         secureInputActive: Bool = false,
+        keyboardMode: KeyboardModeKind = .normal,
         barFill: ShellThemeColor? = nil,
         barBorder: ShellThemeColor? = nil,
         barShader: ShellBarShader? = nil,
@@ -167,6 +169,7 @@ struct WorkspaceBarSnapshot: Equatable {
         self.barHeight = barHeight
         self.orientation = orientation
         self.secureInputActive = secureInputActive
+        self.keyboardMode = keyboardMode
         self.barFill = barFill
         self.barBorder = barBorder
         self.barShader = barShader
@@ -205,6 +208,7 @@ struct WorkspaceBarSnapshot: Equatable {
             barHeight: barHeight,
             orientation: orientation,
             secureInputActive: secureInputActive,
+            keyboardMode: keyboardMode,
             barFill: barFill,
             barBorder: barBorder,
             barShader: barShader,

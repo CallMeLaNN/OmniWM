@@ -22,6 +22,8 @@ struct HotkeySettingsView: View {
         let groups = HotkeySettingsDisplayModel.search(searchText, bindings: settings.hotkeyBindings)
         let shiftedCharacters = SecureInputShortcutRisk.currentLayoutShiftedCharacters()
         let hotkeyMouseButtons = OverviewInputSettingsValidation.hotkeyMouseButtons(settings.hotkeyBindings)
+        let modeKeyFailures = KeyboardModeTable(bindings: settings.hotkeyBindings).failures
+        let modeLeaderAssigned = settings.hotkeyBindings.contains(where: Self.isAssignedModeLeader)
         HotkeySettingsPage(
             subtitle: String(
                 localized: "Search commands, edit shortcuts, and review registration problems without leaving the settings window."
@@ -96,6 +98,8 @@ struct HotkeySettingsView: View {
             }
             .id("Controls")
 
+            keyboardModesSection
+
             Section("Shortcuts") {
                 LabeledContent("Search") {
                     HStack(spacing: 8) {
@@ -137,6 +141,9 @@ struct HotkeySettingsView: View {
                             binding: binding,
                             recordingTarget: $recordingTarget,
                             failureReason: controller.hotkeyRegistrationFailures[binding.command],
+                            modeKeyFailure: modeKeyFailures[binding.command],
+                            showsModeKey: Self
+                                .acceptsModeKey(binding) && (modeLeaderAssigned || binding.modeKey != nil),
                             pausedDuringSecureInput: SecureInputShortcutRisk.isPaused(
                                 binding.binding,
                                 hyperTriggerConfigured: settings.systemHyperTrigger != .none,
@@ -151,7 +158,9 @@ struct HotkeySettingsView: View {
                             onCancelRecording: cancelRecording,
                             onClearBinding: clearBinding,
                             onResetBindings: resetBindings,
-                            onSetSide: setSide
+                            onSetSide: setSide,
+                            onModeKeyCaptured: handleModeKeyCaptured,
+                            onClearModeKey: clearModeKey
                         )
                     }
                 }
@@ -331,6 +340,87 @@ extension HotkeySettingsView {
                 } catch {
                     hyperTriggerError = error.localizedDescription
                 }
+            }
+        )
+    }
+}
+
+extension HotkeySettingsView {
+    private static let defaultPauseTimeoutChoices: [Double] = [60, 300, 900, 1800, 3600]
+
+    static func pauseTimeoutSelection(_ seconds: Double?) -> Double? {
+        SettingsExport.KeyboardModes(pauseTimeoutSeconds: seconds).pauseTimeout == nil ? nil : seconds
+    }
+
+    static func pauseTimeoutChoices(including seconds: Double?) -> [Double] {
+        guard let current = pauseTimeoutSelection(seconds), !defaultPauseTimeoutChoices.contains(current) else {
+            return defaultPauseTimeoutChoices
+        }
+        return (defaultPauseTimeoutChoices + [current]).sorted()
+    }
+
+    private static func isAssignedModeLeader(_ binding: HotkeyBinding) -> Bool {
+        (binding.command == .keyboardMode(.beginPrefix) || binding.command == .keyboardMode(.toggleWindowMode))
+            && !binding.binding.isUnassigned
+    }
+
+    private static func acceptsModeKey(_ binding: HotkeyBinding) -> Bool {
+        if case .keyboardMode = binding.command { return false }
+        return true
+    }
+
+    private var keyboardModesSection: some View {
+        Section("Keyboard Modes") {
+            LabeledContent("Pause Timeout") {
+                Picker("Pause Timeout", selection: pauseTimeoutBinding) {
+                    Text("Until Resumed").tag(Double?.none)
+                    ForEach(
+                        Self.pauseTimeoutChoices(including: settings.keyboardModes.pauseTimeoutSeconds),
+                        id: \.self
+                    ) { seconds in
+                        Text(Duration.seconds(seconds).formatted(.units(
+                            allowed: [.hours, .minutes, .seconds],
+                            width: .wide
+                        )))
+                        .tag(Double?.some(seconds))
+                    }
+                }
+                .labelsHidden()
+                .frame(minWidth: 160)
+            }
+            SettingsCaption(
+                localized: "While paused, only Pause or Resume Shortcuts and Leave Keyboard Mode keep working."
+            )
+            SettingsCaption(localized:
+                "In Prefix and Window mode, single keys run commands. After you give Begin Prefix or Enter or Leave Window Mode a shortcut, set mode keys beside the commands below. Needs Input Monitoring permission."
+            )
+        }
+    }
+
+    private func handleModeKeyCaptured(actionId: String, trigger: HotkeyTrigger) {
+        switch HotkeyBindingEditor.captureModeKey(trigger, for: actionId, settings: settings) {
+        case .applied:
+            controller.updateHotkeyBindings(settings.hotkeyBindings)
+        case let .rejected(message):
+            captureRejection = message
+        case .conflict:
+            break
+        }
+        cancelRecording()
+    }
+
+    private func clearModeKey(actionId: String) {
+        settings.updateModeKey(for: actionId, newModeKey: nil)
+        controller.updateHotkeyBindings(settings.hotkeyBindings)
+        cancelRecording()
+    }
+
+    private var pauseTimeoutBinding: Binding<Double?> {
+        Binding(
+            get: { Self.pauseTimeoutSelection(settings.keyboardModes.pauseTimeoutSeconds) },
+            set: { seconds in
+                settings.keyboardModes.pauseTimeoutSeconds = seconds
+                controller.updateKeyboardModeSettings()
             }
         )
     }

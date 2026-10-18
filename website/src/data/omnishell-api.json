@@ -225,7 +225,7 @@
       "kind": "type",
       "topic": "context-data",
       "anchor": "api-barstyle",
-      "declaration": "export type BarStyle = {\n    height: number,\n    labels: boolean,\n    backgrounds: boolean,\n    accents: boolean,\n    inactive: number,\n    position: \"overlappingMenuBar\" | \"belowMenuBar\" | \"bottom\" | \"left\" | \"right\" | \"top\",\n    vertical: boolean,\n    notch: string,\n    notchWidth: number,\n    level: string,\n    offsetX: number,\n    offsetY: number,\n    autoHide: boolean,\n    reveal: string,\n    opacity: number,\n    transparent: boolean,\n    solidBlack: boolean,\n    accentColor: string?,\n    textColor: string?,\n    statsButton: boolean,\n    secureInput: boolean,\n    previews: boolean,\n    hideInFullscreen: boolean,\n}",
+      "declaration": "export type BarStyle = {\n    height: number,\n    labels: boolean,\n    backgrounds: boolean,\n    accents: boolean,\n    inactive: number,\n    position: \"overlappingMenuBar\" | \"belowMenuBar\" | \"bottom\" | \"left\" | \"right\" | \"top\",\n    vertical: boolean,\n    notch: string,\n    notchWidth: number,\n    level: string,\n    offsetX: number,\n    offsetY: number,\n    autoHide: boolean,\n    reveal: string,\n    opacity: number,\n    transparent: boolean,\n    solidBlack: boolean,\n    accentColor: string?,\n    textColor: string?,\n    statsButton: boolean,\n    secureInput: boolean,\n    keyboardMode: \"normal\" | \"paused\" | \"prefix\" | \"window\",\n    previews: boolean,\n    hideInFullscreen: boolean,\n}",
       "fields": [
         "height",
         "labels",
@@ -248,6 +248,7 @@
         "textColor",
         "statsButton",
         "secureInput",
+        "keyboardMode",
         "previews",
         "hideInFullscreen"
       ],

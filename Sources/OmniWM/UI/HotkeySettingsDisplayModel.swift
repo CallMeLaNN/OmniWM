@@ -44,6 +44,28 @@ enum HotkeyCaptureResult {
         return .applied
     }
 
+    static func captureModeKey(
+        _ trigger: HotkeyTrigger,
+        for actionId: String,
+        settings: SettingsStore
+    ) -> HotkeyCaptureResult {
+        guard let key = trigger.chordBinding, KeyboardModeTable.isSupported(key) else {
+            return .rejected(
+                String(localized: "A mode key is a single key, optionally with Shift. Escape always leaves the mode.")
+            )
+        }
+        if let other = settings.hotkeyBindings.first(where: { $0.id != actionId && $0.modeKey == key }) {
+            return .rejected(
+                String(localized: "This key is already the mode key for \(other.command.localizedDisplayName).")
+            )
+        }
+        if settings.hotkeyBindings.contains(where: { $0.binding.chordBinding?.conflicts(with: key) == true }) {
+            return .rejected(String(localized: "A shortcut already uses this key"))
+        }
+        settings.updateModeKey(for: actionId, newModeKey: key)
+        return .applied
+    }
+
     static func applyConflictResolution(_ alert: ConflictAlert, settings: SettingsStore) {
         let conflicts = settings.findConflicts(for: alert.newTrigger, excluding: alert.targetActionId)
         for conflict in conflicts {

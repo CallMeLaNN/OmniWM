@@ -139,6 +139,7 @@ extension IPCJSONWriter {
              .fullscreen,
              .presentation,
              .media,
+             .keyboardMode,
              .windowState,
              .openMenuAnywhere:
             break

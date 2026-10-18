@@ -109,6 +109,10 @@ extension MouseEventHandler {
             controller?.axManager.invalidateAppliedFrame(for: entry.windowId)
             return true
         }
+        if adoptNativeResizeIfEligible(&drag, entry: entry, observedFrame: observedFrame) {
+            state.nativeTitleBarDrag = drag
+            return true
+        }
         drag.issuedUnreadableCorrection = observedFrame == nil
         drag.phase = .awaitingCorrection
         drag.receivedFrameChange = false
@@ -207,6 +211,7 @@ extension MouseEventHandler {
         }
         drag.phase = .awaitingFrameChange
         drag.receivedFrameChange = retainUnreadableFrameChange
+        drag.adoptionStartFrame = nil
         state.nativeTitleBarDrag = drag
     }
 

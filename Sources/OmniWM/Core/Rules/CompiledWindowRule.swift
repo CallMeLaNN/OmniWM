@@ -50,6 +50,11 @@ struct CompiledWindowRule {
         }
     }
 
+    func outranks(_ other: CompiledWindowRule) -> Bool {
+        rule.specificity > other.rule.specificity
+            || (rule.specificity == other.rule.specificity && order < other.order)
+    }
+
     var explicitlyIncludesNonstandardSurface: Bool {
         rule.effectiveLayoutAction != .auto
             && nonEmpty(rule.axRole) != nil

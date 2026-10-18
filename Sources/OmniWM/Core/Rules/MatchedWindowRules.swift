@@ -5,12 +5,51 @@ import AppKit
 import Foundation
 
 @MainActor
+struct ComposedUserRules {
+    private(set) var primary: CompiledWindowRule?
+    private(set) var layout: CompiledWindowRule?
+    private(set) var workspace: CompiledWindowRule?
+    private(set) var minWidth: CompiledWindowRule?
+    private(set) var minHeight: CompiledWindowRule?
+    private(set) var initialContainerPrimarySpan: CompiledWindowRule?
+
+    var isEmpty: Bool {
+        primary == nil
+    }
+
+    mutating func add(_ candidate: CompiledWindowRule) {
+        let rule = candidate.rule
+        Self.keepHigherRanked(&primary, candidate)
+        if rule.effectiveLayoutAction != .auto {
+            Self.keepHigherRanked(&layout, candidate)
+        }
+        if rule.assignToWorkspace?.isEmpty == false {
+            Self.keepHigherRanked(&workspace, candidate)
+        }
+        if rule.minWidth != nil {
+            Self.keepHigherRanked(&minWidth, candidate)
+        }
+        if rule.minHeight != nil {
+            Self.keepHigherRanked(&minHeight, candidate)
+        }
+        if rule.validInitialContainerPrimarySpan != nil {
+            Self.keepHigherRanked(&initialContainerPrimarySpan, candidate)
+        }
+    }
+
+    private static func keepHigherRanked(_ winner: inout CompiledWindowRule?, _ candidate: CompiledWindowRule) {
+        if let current = winner, !candidate.outranks(current) { return }
+        winner = candidate
+    }
+}
+
+@MainActor
 struct MatchedWindowRules {
-    let userRule: CompiledWindowRule?
+    let userRules: ComposedUserRules
     let builtInRule: CompiledWindowRule?
 
     func explicitDecision(for facts: WindowRuleFacts) -> WindowDecision? {
-        if let userRule, let decision = explicitDecision(userRule) {
+        if let layoutRule = userRules.layout, let decision = explicitDecision(layoutRule) {
             return decision
         }
         if let builtInRule,
@@ -39,7 +78,7 @@ struct MatchedWindowRules {
         let heuristic = AXWindowService.heuristicDisposition(for: facts.ax)
         return makeDecision(
             disposition: heuristic.disposition,
-            source: userRule.map { .userRule($0.rule.id) } ?? .heuristic,
+            source: userRules.primary.map { .userRule($0.rule.id) } ?? .heuristic,
             layoutDecisionKind: .fallbackLayout,
             heuristicReasons: heuristic.reasons,
             deferredReason: heuristic.disposition == .undecided ? .attributeFetchFailed : nil
@@ -47,11 +86,15 @@ struct MatchedWindowRules {
     }
 
     private func explicitDecision(_ compiled: CompiledWindowRule) -> WindowDecision? {
-        let source: WindowDecisionSource = switch compiled.source {
+        let source: WindowDecisionSource
+        let layoutRuleId: UUID?
+        switch compiled.source {
         case .user:
-            .userRule(compiled.rule.id)
+            source = .userRule(compiled.rule.id)
+            layoutRuleId = compiled.rule.id
         case let .builtIn(name):
-            .builtInRule(name)
+            source = .builtInRule(name)
+            layoutRuleId = nil
         }
         let disposition: WindowDecisionDisposition
         switch compiled.rule.effectiveLayoutAction {
@@ -62,12 +105,17 @@ struct MatchedWindowRules {
         case .auto:
             return nil
         }
-        return makeDecision(disposition: disposition, source: source, layoutDecisionKind: .explicitLayout)
+        return makeDecision(
+            disposition: disposition,
+            source: source,
+            layoutDecisionKind: .explicitLayout,
+            layoutRuleId: layoutRuleId
+        )
     }
 
     private func fallbackSource() -> WindowDecisionSource {
-        if let userRule {
-            return .userRule(userRule.rule.id)
+        if let primary = userRules.primary {
+            return .userRule(primary.rule.id)
         }
         if let builtInRule, case let .builtIn(name) = builtInRule.source {
             return .builtInRule(name)
@@ -79,6 +127,7 @@ struct MatchedWindowRules {
         disposition: WindowDecisionDisposition,
         source: WindowDecisionSource,
         layoutDecisionKind: WindowDecisionLayoutKind,
+        layoutRuleId: UUID? = nil,
         heuristicReasons: [AXWindowHeuristicReason] = [],
         deferredReason: WindowDecisionDeferredReason? = nil
     ) -> WindowDecision {
@@ -86,14 +135,21 @@ struct MatchedWindowRules {
             disposition: disposition,
             source: source,
             layoutDecisionKind: layoutDecisionKind,
-            workspaceName: userRule?.rule.assignToWorkspace,
+            workspaceName: userRules.workspace?.rule.assignToWorkspace,
             ruleEffects: ManagedWindowRuleEffects(
-                minWidth: userRule?.rule.minWidth,
-                minHeight: userRule?.rule.minHeight,
-                matchedRuleId: userRule?.rule.id
+                minWidth: userRules.minWidth?.rule.minWidth,
+                minHeight: userRules.minHeight?.rule.minHeight
             ),
             admissionHints: ManagedWindowAdmissionHints(
-                initialNiriContainerPrimarySpan: userRule?.rule.validInitialContainerPrimarySpan
+                initialNiriContainerPrimarySpan: userRules.initialContainerPrimarySpan?.rule
+                    .validInitialContainerPrimarySpan
+            ),
+            ruleProvenance: WindowRuleProvenance(
+                layout: layoutRuleId,
+                workspace: userRules.workspace?.rule.id,
+                minWidth: userRules.minWidth?.rule.id,
+                minHeight: userRules.minHeight?.rule.id,
+                initialContainerPrimarySpan: userRules.initialContainerPrimarySpan?.rule.id
             ),
             heuristicReasons: heuristicReasons,
             deferredReason: deferredReason

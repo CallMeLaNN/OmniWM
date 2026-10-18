@@ -19,8 +19,14 @@ extension SettingsStore {
         hotkeyBindings[index] = HotkeyBinding(
             id: hotkeyBindings[index].id,
             command: hotkeyBindings[index].command,
-            trigger: newTrigger
+            trigger: newTrigger,
+            modeKey: hotkeyBindings[index].modeKey
         )
+    }
+
+    func updateModeKey(for commandId: String, newModeKey: KeyBinding?) {
+        guard let index = hotkeyBindings.firstIndex(where: { $0.id == commandId }) else { return }
+        hotkeyBindings[index].modeKey = HotkeyBindingRegistry.canonicalizeModeKey(newModeKey)
     }
 
     func clearBinding(for commandId: String) {

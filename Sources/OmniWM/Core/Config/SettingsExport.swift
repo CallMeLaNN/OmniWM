@@ -21,6 +21,8 @@ struct SettingsExport: Equatable {
 
     var overview: Overview
     var windowSwitcher = WindowSwitcher()
+    var keyboardModes = KeyboardModes()
+    var workspaceAutoBackAndForth = false
 
     var hotkeyBindings: [HotkeyBinding]
     var systemHyperTrigger: SystemHyperTrigger
@@ -181,6 +183,8 @@ struct SettingsExport: Equatable {
         var windowResizeFingerCount: GestureFingerCount? = .three
         var windowGestureSensitivity: Double? = 1.0
         var resizePreviewStyle: ResizePreviewStyle? = .live
+        var dwindleGroupDragAcrossDisplays: DwindleGroupDrag? = .group
+        var adoptNativeResize: Bool? = false
     }
 
     struct StatusBar: Codable, Equatable {
@@ -452,7 +456,9 @@ extension SettingsExport.Gestures {
             workspaceSwipeEnabled: false,
             workspaceSwipeFingerCount: .three,
             workspaceSwipeAxis: .vertical,
-            resizePreviewStyle: .live
+            resizePreviewStyle: .live,
+            dwindleGroupDragAcrossDisplays: .group,
+            adoptNativeResize: false
         )
     }
 }

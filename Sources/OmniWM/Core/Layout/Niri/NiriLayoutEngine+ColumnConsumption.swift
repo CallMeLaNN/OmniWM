@@ -72,6 +72,7 @@ extension NiriLayoutEngine {
     func columnCanAcceptTransfer(
         _ column: NiriContainer,
         adding window: NiriWindow,
+        addingConstraints: WindowSizeConstraints? = nil,
         removing removedWindow: NiriWindow? = nil,
         in workspaceId: WorkspaceDescriptor.ID,
         geometry: NiriSizingGeometry
@@ -81,12 +82,14 @@ extension NiriLayoutEngine {
         let orientation = geometry.orientation
         guard !column.isTabbed else { return true }
         let axisSpace = orientation == .horizontal ? workingFrame.height : workingFrame.width
-        func axisMinimum(_ tile: NiriWindow) -> CGFloat {
-            let minSize = tile.constraints.normalized().minSize
+        func axisMinimum(_ constraints: WindowSizeConstraints) -> CGFloat {
+            let minSize = constraints.normalized().minSize
             return orientation == .horizontal ? minSize.height : minSize.width
         }
         let remaining = projectedWindows(in: column, workspaceId: workspaceId).filter { $0 !== removedWindow }
-        let minSum = remaining.reduce(axisMinimum(window)) { $0 + axisMinimum($1) }
+        let minSum = remaining.reduce(axisMinimum(addingConstraints ?? window.constraints)) {
+            $0 + axisMinimum($1.constraints)
+        }
         let gapSum = gaps * CGFloat(remaining.count + 2)
         return minSum + gapSum <= axisSpace + 0.5
     }

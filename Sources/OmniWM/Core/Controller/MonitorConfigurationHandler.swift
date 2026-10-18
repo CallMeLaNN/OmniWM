@@ -88,5 +88,6 @@ struct MonitorConfigurationHandler {
 
         inventory.schedule(reason: .monitorConfigurationChanged)
         controller.reapplyQuakeTerminalGeometryForMonitorChange()
+        controller.refreshKeyboardModeIndicator()
     }
 }

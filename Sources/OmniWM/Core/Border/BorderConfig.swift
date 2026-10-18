@@ -55,6 +55,24 @@ struct BorderConfig: Equatable {
         )
     }
 
+    static func keyboardModeColor(_ kind: KeyboardModeKind) -> SettingsColor? {
+        switch kind {
+        case .normal: nil
+        case .paused: SettingsColor(red: 1, green: 0.584, blue: 0, alpha: 1)
+        case .prefix,
+             .window: SettingsColor(red: 0.204, green: 0.78, blue: 0.349, alpha: 1)
+        }
+    }
+
+    func indicating(_ kind: KeyboardModeKind) -> BorderConfig {
+        guard let color = Self.keyboardModeColor(kind) else { return self }
+        var config = self
+        config.color = color
+        config.gradient = nil
+        config.glow?.color = color
+        return config
+    }
+
     static func resolvedColor(
         _ base: SettingsColor,
         dark: SettingsColor?,

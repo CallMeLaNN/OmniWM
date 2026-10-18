@@ -13,6 +13,18 @@ Optionally pick a **System Hyper Trigger** — a single key (Caps Lock, F13–F2
 
 Settings > Keyboard Shortcuts lists all actions that can be assigned a shortcut, including advanced actions.
 
+## Keyboard modes
+
+Unreleased: available when building from `main`. Keyboard modes help when OmniWM shortcuts clash with app shortcuts. Their actions — **Pause or Resume Shortcuts**, **Begin Prefix**, **Enter or Leave Window Mode**, and **Leave Keyboard Mode** — are unassigned by default; assign them in Settings > Keyboard Shortcuts.
+
+- **Pause** hands every OmniWM shortcut except Pause and Leave Keyboard Mode, when assigned, to the focused app, so `Option + 3` types `#` again. Press it again to resume, or set [`pauseTimeoutSeconds`](/config/settings-reference/#keyboardmodes) to resume automatically. Use it for Screen Sharing, remote desktops, and virtual machines.
+- **Prefix** works like tmux: press the prefix shortcut, then a *mode key*. The mode key runs its action and OmniWM returns to normal. Move and resize actions can be repeated by pressing their mode key again within half a second. Escape, or a key without an action, cancels the prefix; an OmniWM shortcut or a key with Command, Control, or Option ends it and follows normal shortcut routing.
+- **Window mode** keeps mode keys active until you press Escape. Keys without an action are ignored while it is on; OmniWM shortcuts and keys with Command, Control, or Option keep working.
+
+Mode keys are a single key, optionally with `Shift`, set per action with [`modeKey`](/config/settings-reference/#hotkeys). They act only after the prefix or inside Window mode, so a plain `H` still reaches your editor at all other times. To reach an action only through the prefix, clear its direct shortcut and keep its mode key. Prefix and Window mode need the Input Monitoring permission and stay off while Secure Input is on or the screen is locked.
+
+While a mode is on, a pill at the bottom of every display names it. In Prefix and Window mode, the display you were working on also lists the mode keys above the pill. The focused window's border turns amber for Pause and green for Prefix and Window mode, and the menu bar shows the mode's name. On the workspace bar, the OmniWM button gains a matching chip; custom Luau widgets can read `ctx.data.bar.style.keyboardMode`. The OmniWM menu then offers **Resume Shortcuts**, **Cancel Prefix** or **Leave Window Mode**. Settings > Keyboard Shortcuts > Keyboard Modes sets the Pause timeout. Once Begin Prefix or Enter or Leave Window Mode has a shortcut, every command there except the keyboard-mode actions gets a **Mode Key** button.
+
 ## When a shortcut does not fire
 
 Confirm the binding and any registration warning in **Settings > Keyboard Shortcuts**, then check **Settings > Troubleshooting** for related diagnostics. If skhd, Raycast, or another shortcut utility is still running with the same binding, stop it or reassign the conflicting shortcut before editing `settings.toml`.
@@ -43,6 +55,8 @@ Confirm the binding and any registration warning in **Settings > Keyboard Shortc
 | Move Focused Column to Workspace Down | `Control + Option + Shift + Page Down` | `Niri` |
 
 Creating workspace 10 or higher adds its Switch, Move, and Move Column actions to **Settings > Keyboard Shortcuts** as `Unassigned`. The rows disappear when the workspace is removed.
+
+Turn on **Settings > Workspaces > Go Back When Switching to the Current Workspace** ([`workspaceAutoBackAndForth`](/config/settings-reference/#general)) to make pressing the shortcut of the workspace you are on return to the previous one, as i3 and AeroSpace do. Unreleased: available when building from `main`.
 
 ## Focus
 

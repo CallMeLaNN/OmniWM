@@ -14,8 +14,9 @@ final class SurfaceReconciler {
         Bool
     ) -> Void
 
-    enum ReconcileScope: Equatable {
+    enum ReconcileScope: Int {
         case borderOnly
+        case bordersAndBars
         case fullScene
     }
 
@@ -76,15 +77,8 @@ final class SurfaceReconciler {
         scheduleReconcile(.borderOnly)
     }
 
-    private func scheduleReconcile(_ scope: ReconcileScope) {
-        switch (pendingReconcileScope, scope) {
-        case (.fullScene, _),
-             (_, .fullScene):
-            pendingReconcileScope = .fullScene
-        case (.borderOnly, .borderOnly),
-             (nil, .borderOnly):
-            pendingReconcileScope = .borderOnly
-        }
+    fileprivate func scheduleReconcile(_ scope: ReconcileScope) {
+        pendingReconcileScope = max(pendingReconcileScope ?? scope, scope)
         guard !reconcileScheduled else { return }
         reconcileScheduled = true
         let mainRunLoop = CFRunLoopGetMain()
@@ -110,6 +104,9 @@ final class SurfaceReconciler {
         switch scope {
         case .borderOnly:
             runBorderReconcile(forceOrdering: forceOrdering)
+        case .bordersAndBars:
+            runBorderReconcile(forceOrdering: forceOrdering)
+            runBarsReconcile()
         case .fullScene:
             runFullReconcile(forceOrdering: forceOrdering)
         }
@@ -331,5 +328,27 @@ final class SurfaceReconciler {
             appliedScene.border = nil
         }
         return borderOutcome
+    }
+}
+
+extension SurfaceReconciler.ReconcileScope: Comparable {
+    static func < (lhs: Self, rhs: Self) -> Bool {
+        lhs.rawValue < rhs.rawValue
+    }
+}
+
+extension SurfaceReconciler {
+    func noteBordersAndBarsChanged() {
+        scheduleReconcile(.bordersAndBars)
+    }
+
+    fileprivate func runBarsReconcile() {
+        guard let controller else { return }
+        let world = WorldView(controller: controller)
+        var desired = appliedScene
+        desired.bars = world.hasStartedServices ? world.barSurfaces() : []
+        controller.workspaceBarManager.apply(desired.bars)
+        controller.publishWorkspaceDataChanges(from: appliedScene, to: desired)
+        appliedScene.bars = desired.bars
     }
 }

@@ -24,6 +24,7 @@ struct HotkeyHealthFacts: Sendable, Equatable {
     let sideSpecificCount: Int
     let bindingCount: Int
     let bindings: [HotkeyBindingFact]
+    var keyboardMode = KeyboardModeKind.normal.rawValue
 }
 
 struct InputHealthSnapshot: Sendable, Equatable {
@@ -39,7 +40,8 @@ struct InputHealthSnapshot: Sendable, Equatable {
         var lines = [
             "hotkeyCenterRunning=\(hotkey.isRunning) hyperActive=\(hotkey.isHyperTriggerActive) "
                 +
-                "hyperTapInstalled=\(hotkey.hyperTriggerTapInstalled) capsLockRemap=\(hotkey.capsLockHyperRemapActive)",
+                "hyperTapInstalled=\(hotkey.hyperTriggerTapInstalled) capsLockRemap=\(hotkey.capsLockHyperRemapActive) "
+                + "keyboardMode=\(hotkey.keyboardMode)",
             "systemHyperTrigger=\(hotkey.systemHyperTriggerName) enabled=\(hotkey.systemHyperTriggerEnabled) "
                 + "failure=\(hotkey.systemHyperTriggerFailure ?? "none")",
             "bindings=\(hotkey.bindingCount) sideSpecific=\(hotkey.sideSpecificCount) "

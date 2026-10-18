@@ -29,6 +29,7 @@ struct InnerGapCacheEntry {
 struct BorderConfigCacheEntry {
     let revision: UInt64
     let isDark: Bool
+    let keyboardMode: KeyboardModeKind
     let value: BorderConfig
 }
 
@@ -37,13 +38,15 @@ extension WMController {
         let revision = settings.layoutConfigurationRevision
         if let cachedBorderConfig,
            cachedBorderConfig.revision == revision,
-           cachedBorderConfig.isDark == borderUsesDarkAppearance
+           cachedBorderConfig.isDark == borderUsesDarkAppearance,
+           cachedBorderConfig.keyboardMode == keyboardModeKind
         {
             return cachedBorderConfig.value
         }
         let value = BorderConfig.from(settings: settings, isDark: borderUsesDarkAppearance)
+            .indicating(keyboardModeKind)
         cachedBorderConfig = BorderConfigCacheEntry(
-            revision: revision, isDark: borderUsesDarkAppearance, value: value
+            revision: revision, isDark: borderUsesDarkAppearance, keyboardMode: keyboardModeKind, value: value
         )
         return value
     }

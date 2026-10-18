@@ -16,6 +16,8 @@ extension SettingsStore {
             borders: borders.export(),
             overview: overview.export(),
             windowSwitcher: windowSwitcher.export(),
+            keyboardModes: keyboardModes.export(),
+            workspaceAutoBackAndForth: workspaces.autoBackAndForth,
             hotkeyBindings: hotkeyBindings,
             systemHyperTrigger: systemHyperTrigger,
             hyperKeyModifiers: hyperKeyModifiers,

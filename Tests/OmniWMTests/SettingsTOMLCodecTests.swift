@@ -55,6 +55,25 @@ final class SettingsTOMLCodecTests: XCTestCase {
         }
     }
 
+    func testWorkspaceAutoBackAndForthDefaultsOffAndRoundTrips() throws {
+        var export = SettingsExport.defaults()
+        XCTAssertFalse(export.workspaceAutoBackAndForth)
+        for enabled in [false, true] {
+            export.workspaceAutoBackAndForth = enabled
+            let data = try SettingsTOMLCodec.encode(export)
+            XCTAssertEqual(try SettingsTOMLCodec.decode(data), export)
+            XCTAssertFalse(SettingsTOMLCodec.unknownKeyPaths(in: data).contains("general.workspaceAutoBackAndForth"))
+        }
+
+        let omitted = try canonicalDefaultLines { lines in
+            let index = try XCTUnwrap(lines.firstIndex { $0.hasPrefix("workspaceAutoBackAndForth = ") })
+            lines.remove(at: index)
+        }
+        let result = try SettingsTOMLCodec.decodeForLoad(omitted)
+        XCTAssertFalse(result.export.workspaceAutoBackAndForth)
+        XCTAssertNil(result.migration)
+    }
+
     func testTabRailAppIconsDefaultsAndRoundTrips() throws {
         var export = SettingsExport.defaults()
         XCTAssertFalse(export.tabRailAppIcons)

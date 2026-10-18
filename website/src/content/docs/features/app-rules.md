@@ -5,7 +5,7 @@ sidebar:
   order: 7
 ---
 
-Open **App Rules** from OmniWM's status-bar menu to configure window-matching behavior. Rules can match by bundle ID, app-name substring, title substring or regex, and AX role/subrole. More-specific matches win; ties follow list order.
+Open **App Rules** from OmniWM's status-bar menu to configure window-matching behavior. Rules can match by bundle ID, app-name substring, title substring or regex, and AX role/subrole. When several rules match a window, each setting (layout, workspace, minimum width, minimum height, and initial container span) comes from the most specific matching rule that sets it; ties follow list order. A setting left on Automatic or turned off adds nothing, so it never erases another rule's value.
 
 ## Create a rule from a window
 
@@ -61,4 +61,4 @@ initialContainerPrimarySpan = 0.5
 
 ## Default rules
 
-OmniWM ships 13 default rules — minimum-size rules for apps whose windows misbehave when squeezed too small — covering browsers (Chrome, Safari, Zen, Firefox, Dia), Ghostty, Spotify, Discord, Outlook, Messages, and more. Edit or remove them freely in the App Rules window.
+OmniWM ships 13 default rules — minimum-size rules for apps whose windows misbehave when squeezed too small — covering browsers (Chrome, Safari, Zen, Firefox, Dia), Ghostty, Spotify, Discord, Outlook, Messages, and more. A new rule inherits each default minimum-size value it leaves unset. To change or remove a default minimum, edit or remove the default rule.

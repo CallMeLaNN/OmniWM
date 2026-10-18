@@ -122,6 +122,7 @@ struct WorldView {
                         barHeight: geometry.barHeight,
                         orientation: resolved.position.isVertical ? .vertical : .horizontal,
                         secureInputActive: controller.isSecureInputIndicated,
+                        keyboardMode: controller.keyboardModeKind,
                         barFill: resolved.barFill,
                         barBorder: resolved.barBorder
                     ),

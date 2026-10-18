@@ -63729,7 +63729,7 @@
         }
       }
     },
-    "Hold this modifier and left-drag tiled windows. Drop at another tile's center to swap, or near one of its edges to insert on that side. In Dwindle, dropping near a workspace edge inserts at the outer edge. Choose Off to leave modified drags to apps." : {
+    "Hold this modifier and left-drag tiled windows. Drop at another tile's center to swap, or near one of its edges to insert on that side. In Dwindle, you can also insert between existing splits or at a workspace edge. Choose Off to leave modified drags to apps." : {
 
     },
     "Hold this modifier and scroll the mouse wheel to scroll columns. Turning off Scroll columns disables both trackpad and modified mouse-wheel column scrolling." : {
@@ -76641,130 +76641,6 @@
         }
       }
     },
-    "Match specificity %lld — higher specificity wins; ties break by list order" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "一致の特異性%lld — 高い特異性が勝つ; 同点はリストの順序で決まる"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Übereinstimmungsspezifität %lld — höhere Spezifität gewinnt; bei Gleichstand entscheidet die Reihenfolge der Liste"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Matchspesifisitet %lld — høyere spesifisitet vinner; ved likhet avgjør rekkefølgen i listen"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Matchningsspecificitet %lld — högre specificitet vinner; vid lika avgör ordningen i listan"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Especificidad de coincidencia %lld — mayor especificidad gana; los empates se rompen por orden de la lista"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "匹配特定性%lld——特定性越高越优先；相同时按列表顺序决定"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "मिलान विशिष्टता %lld — उच्च विशिष्टता को प्राथमिकता मिलती है; बराबरी होने पर सूची क्रम से तय होता है"
-          }
-        },
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "دقة المطابقة %lld — الدقة الأعلى تفوز؛ يتم كسر التعادل حسب ترتيب القائمة"
-          }
-        },
-        "sr-Latn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Specifičnost podudaranja %lld — veća specifičnost ima prednost; pri jednakosti odlučuje redosled na listi"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Εξειδίκευση αντιστοίχισης %lld — υπερισχύει η μεγαλύτερη εξειδίκευση· οι ισοβαθμίες λύνονται με τη σειρά της λίστας"
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "מידת ההתאמה %lld — התאמה מדויקת יותר גוברת; בשוויון נקבע לפי סדר הרשימה"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Специфичность соответствия %lld — побеждает более высокая специфичность; при равенстве решает порядок в списке"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stopień szczegółowości dopasowania %lld — bardziej szczegółowe reguły mają pierwszeństwo; remisy rozstrzyga kolejność na liście"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ступінь конкретності збігу %lld — вищий ступінь має пріоритет; за однакового ступеня вирішує порядок у списку"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spécificité de correspondance %lld — la spécificité la plus élevée l'emporte ; en cas d'égalité, l'ordre de la liste départage"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Matchspecificiteit %lld — hogere specificiteit wint; bij gelijkstand beslist de volgorde in de lijst"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Specificità della corrispondenza %lld — vince la specificità più alta; a parità decide l'ordine dell'elenco"
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Täsmäyksen spesifisyys %lld — suurempi spesifisyys voittaa; tasatilanteessa ratkaisee järjestys luettelossa"
-          }
-        },
-        "da" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Matchspecificitet %lld — højere specificitet vinder; ved lighed afgør rækkefølgen på listen"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "매칭 구체성 %lld — 더 높은 구체성이 승리; 동점은 목록 순서로 결정됩니다"
-          }
-        }
-      }
-    },
     "Measure Performance" : {
       "localizations" : {
         "ja" : {
@@ -79614,130 +79490,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@에 대한 더 많은 작업"
-          }
-        }
-      }
-    },
-    "More specific rules win; ties break by order — drag to reorder." : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "より具体的なルールが優先されます。同点の場合は順序で決まります—並べ替えるにはドラッグしてください。"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spezifischere Regeln gewinnen; Unentschieden werden nach Reihenfolge aufgelöst - ziehen Sie, um neu zu ordnen."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mer spesifikke regler vinner; ved likhet avgjør rekkefølgen — dra for å endre rekkefølgen."
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mer specifika regler vinner; oavgjorda avgörs i ordning — dra för att omordna."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Las reglas más específicas ganan; los empates se rompen por orden — arrastra para reordenar."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "更具体的规则获胜；平局按顺序打破——拖动以重新排序。"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "अधिक विशिष्ट नियमों को प्राथमिकता मिलती है; बराबरी होने पर क्रम से तय होता है — क्रम बदलने के लिए खींचें।"
-          }
-        },
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "القواعد الأكثر تحديدًا تفوز؛ وتُكسر التعادلات حسب الترتيب — اسحب لإعادة الترتيب."
-          }
-        },
-        "sr-Latn" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Specifičnija pravila imaju prednost; pri jednakosti odlučuje redosled — prevucite da biste promenili redosled."
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Υπερισχύουν οι πιο εξειδικευμένοι κανόνες· οι ισοβαθμίες λύνονται με τη σειρά — σύρετε για αλλαγή σειράς."
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "כללים ספציפיים יותר גוברים; בשוויון הסדר קובע — גררו כדי לשנות סדר."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Более конкретные правила имеют приоритет; при равенстве решает порядок — перетащите, чтобы изменить порядок."
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zasady bardziej szczegółowe mają pierwszeństwo; remisy rozdzielane są zgodnie z kolejnością — przesuń, aby zmienić kolejność."
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Перемагають конкретніші правила; за однакової конкретності вирішує порядок. Перетягніть, щоб змінити його."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Les règles plus spécifiques l'emportent ; en cas d'égalité, l'ordre départage — faites glisser pour réorganiser."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Specifiekere regels winnen; bij gelijkstand beslist de volgorde — sleep om te herschikken."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vincono le regole più specifiche; a parità decide l'ordine — trascina per riordinare."
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tarkemmat säännöt voittavat; tasatilanteessa ratkaisee järjestys – vedä muuttaaksesi järjestystä."
-          }
-        },
-        "da" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mere specifikke regler vinder; ved lighed afgør rækkefølgen — træk for at ændre rækkefølgen."
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "더 구체적인 규칙이 승리합니다; 동점은 순서에 따라 결정됩니다 — 다시 정렬하려면 드래그하세요."
           }
         }
       }
@@ -167015,7 +166767,4843 @@
 
     },
     "Edge navigation interval" : {},
-    "Hover at a Niri screen edge to move one column after this interval, then repeat while the pointer stays on the edge or preview. Move away to stop." : {}
+    "Hover at a Niri screen edge to move one column after this interval, then repeat while the pointer stays on the edge or preview. Move away to stop." : {},
+    "Each setting comes from the most specific matching rule that sets it; ties break by order — drag to reorder." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يُؤخذ كل إعداد من القاعدة المطابقة الأكثر تحديدًا التي تضبطه؛ وتُكسر التعادلات حسب الترتيب — اسحب لإعادة الترتيب."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hver indstilling kommer fra den mest specifikke matchende regel, der angiver den; ved lighed afgør rækkefølgen — træk for at ændre rækkefølgen."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jede Einstellung stammt von der spezifischsten passenden Regel, die sie festlegt; bei Gleichstand entscheidet die Reihenfolge – ziehen Sie, um neu zu ordnen."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Κάθε ρύθμιση προέρχεται από τον πιο εξειδικευμένο κανόνα που ταιριάζει και την ορίζει· οι ισοβαθμίες λύνονται με τη σειρά — σύρετε για αλλαγή σειράς."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada ajuste proviene de la regla coincidente más específica que lo define; los empates se rompen por orden — arrastra para reordenar."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jokainen asetus tulee tarkimmasta täsmäävästä säännöstä, joka määrittää sen; tasatilanteessa ratkaisee järjestys – vedä muuttaaksesi järjestystä."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chaque réglage provient de la règle correspondante la plus spécifique qui le définit ; en cas d'égalité, l'ordre départage — faites glisser pour réorganiser."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "כל הגדרה נלקחת מהכלל התואם הספציפי ביותר שמגדיר אותה; בשוויון הסדר קובע — גררו כדי לשנות סדר."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "हर सेटिंग उसे सेट करने वाले सबसे विशिष्ट मेल खाने वाले नियम से आती है; बराबरी होने पर क्रम से तय होता है — क्रम बदलने के लिए खींचें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ogni impostazione proviene dalla regola corrispondente più specifica che la definisce; a parità decide l'ordine — trascina per riordinare."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "各設定は、その設定を指定している最も具体的な一致ルールから適用されます。同点の場合は順序で決まります—並べ替えるにはドラッグしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "각 설정은 해당 설정을 지정한 가장 구체적인 일치 규칙에서 가져옵니다; 동점은 순서에 따라 결정됩니다 — 다시 정렬하려면 드래그하세요."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hver innstilling hentes fra den mest spesifikke samsvarende regelen som angir den; ved likhet avgjør rekkefølgen — dra for å endre rekkefølgen."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elke instelling komt van de meest specifieke overeenkomende regel die haar instelt; bij gelijkstand beslist de volgorde — sleep om te herschikken."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Każde ustawienie pochodzi z najbardziej szczegółowej pasującej reguły, która je określa; remisy rozstrzyga kolejność — przesuń, aby zmienić kolejność."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Каждый параметр берётся из наиболее конкретного подходящего правила, которое его задаёт; при равенстве решает порядок — перетащите, чтобы изменить порядок."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svako podešavanje dolazi iz najspecifičnijeg odgovarajućeg pravila koje ga postavlja; pri jednakosti odlučuje redosled — prevucite da biste promenili redosled."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Varje inställning kommer från den mest specifika matchande regel som anger den; vid lika avgör ordningen — dra för att omordna."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Кожен параметр береться з найконкретнішого відповідного правила, яке його задає; за однакової конкретності вирішує порядок. Перетягніть, щоб змінити його."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每项设置取自设置了该项的最具体的匹配规则；相同时按顺序决定——拖动以重新排序。"
+          }
+        }
+      }
+    },
+    "Match specificity %lld — for each setting, the most specific matching rule wins; ties break by list order" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دقة المطابقة %lld — لكل إعداد تفوز القاعدة المطابقة الأكثر تحديدًا؛ يتم كسر التعادل حسب ترتيب القائمة"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Matchspecificitet %lld — for hver indstilling vinder den mest specifikke matchende regel; ved lighed afgør rækkefølgen på listen"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Übereinstimmungsspezifität %lld — für jede Einstellung gewinnt die spezifischste passende Regel; bei Gleichstand entscheidet die Reihenfolge der Liste"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Εξειδίκευση αντιστοίχισης %lld — για κάθε ρύθμιση υπερισχύει ο πιο εξειδικευμένος κανόνας που ταιριάζει· οι ισοβαθμίες λύνονται με τη σειρά της λίστας"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Especificidad de coincidencia %lld — para cada ajuste gana la regla coincidente más específica; los empates se rompen por orden de la lista"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Täsmäyksen spesifisyys %lld — kunkin asetuksen kohdalla tarkin täsmäävä sääntö voittaa; tasatilanteessa ratkaisee järjestys luettelossa"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spécificité de correspondance %lld — pour chaque réglage, la règle correspondante la plus spécifique l'emporte ; en cas d'égalité, l'ordre de la liste départage"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "מידת ההתאמה %lld — בכל הגדרה גובר הכלל התואם הספציפי ביותר; בשוויון נקבע לפי סדר הרשימה"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मिलान विशिष्टता %lld — हर सेटिंग के लिए सबसे विशिष्ट मेल खाने वाले नियम को प्राथमिकता मिलती है; बराबरी होने पर सूची क्रम से तय होता है"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Specificità della corrispondenza %lld — per ogni impostazione vince la regola corrispondente più specifica; a parità decide l'ordine dell'elenco"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一致の特異性%lld — 設定ごとに最も具体的な一致ルールが優先; 同点はリストの順序で決まる"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "매칭 구체성 %lld — 설정마다 가장 구체적인 일치 규칙이 승리; 동점은 목록 순서로 결정됩니다"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Matchspesifisitet %lld — for hver innstilling vinner den mest spesifikke samsvarende regelen; ved likhet avgjør rekkefølgen i listen"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Matchspecificiteit %lld — per instelling wint de meest specifieke overeenkomende regel; bij gelijkstand beslist de volgorde in de lijst"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stopień szczegółowości dopasowania %lld — dla każdego ustawienia pierwszeństwo ma najbardziej szczegółowa pasująca reguła; remisy rozstrzyga kolejność na liście"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Специфичность соответствия %lld — для каждого параметра побеждает наиболее конкретное подходящее правило; при равенстве решает порядок в списке"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Specifičnost podudaranja %lld — za svako podešavanje prednost ima najspecifičnije odgovarajuće pravilo; pri jednakosti odlučuje redosled na listi"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Matchningsspecificitet %lld — för varje inställning vinner den mest specifika matchande regeln; vid lika avgör ordningen i listan"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ступінь конкретності збігу %lld — для кожного параметра пріоритет має найконкретніше відповідне правило; за однакового ступеня вирішує порядок у списку"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "匹配特定性%lld——每项设置由最具体的匹配规则决定；相同时按列表顺序决定"
+          }
+        }
+      }
+    },
+    "Settings left on Automatic or off can come from other rules that match the same window." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يمكن أن تأتي الإعدادات المتروكة على «آلي» أو المعطّلة من قواعد أخرى تطابق النافذة نفسها."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indstillinger, der står på Automatisk eller er slået fra, kan komme fra andre regler, der matcher det samme vindue."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einstellungen, die auf „Automatisch“ stehen oder ausgeschaltet sind, können von anderen Regeln kommen, die auf dasselbe Fenster passen."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Οι ρυθμίσεις που μένουν σε «Αυτόματη» ή απενεργοποιημένες μπορούν να προέρχονται από άλλους κανόνες που ταιριάζουν στο ίδιο παράθυρο."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los ajustes en Automático o desactivados pueden venir de otras reglas que coincidan con la misma ventana."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automaattiseksi jätetyt tai pois päältä olevat asetukset voivat tulla muista säännöistä, jotka täsmäävät samaan ikkunaan."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les réglages laissés sur Automatique ou désactivés peuvent provenir d'autres règles correspondant à la même fenêtre."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "הגדרות שנשארו על „אוטומטי” או כבויות יכולות להגיע מכללים אחרים שתואמים לאותו חלון."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "स्वचालित पर छोड़ी गई या बंद सेटिंग उसी विंडो से मेल खाने वाले अन्य नियमों से आ सकती हैं।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le impostazioni lasciate su Automatico o disattivate possono provenire da altre regole che corrispondono alla stessa finestra."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「自動」のままの設定やオフの設定は、同じウィンドウに一致する他のルールから適用される場合があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "자동으로 두었거나 꺼 둔 설정은 같은 창과 일치하는 다른 규칙에서 가져올 수 있습니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Innstillinger som står på Automatisk eller er av, kan komme fra andre regler som samsvarer med det samme vinduet."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instellingen die op Automatisch of uit staan, kunnen afkomstig zijn van andere regels die bij hetzelfde venster passen."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ustawienia pozostawione na Automatycznie lub wyłączone mogą pochodzić z innych reguł pasujących do tego samego okna."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Параметры, оставленные в режиме «Автоматический» или выключенные, могут браться из других правил, подходящих к тому же окну."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Podešavanja ostavljena na Automatski ili isključena mogu doći iz drugih pravila koja odgovaraju istom prozoru."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inställningar som står på Automatiskt eller är avstängda kan komma från andra regler som matchar samma fönster."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Параметри, залишені на «Автоматично» або вимкнені, можуть братися з інших правил, що відповідають тому самому вікну."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保持“自动”或关闭的设置可以来自与同一窗口匹配的其他规则。"
+          }
+        }
+      }
+    },
+    "Paused" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متوقف مؤقتًا"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "På pause"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausiert"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Σε παύση"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En pausa"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keskeytetty"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En pause"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "מושהה"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "रुका हुआ"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In pausa"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一時停止中"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "일시 정지됨"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "På pause"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gepauzeerd"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wstrzymano"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Приостановлено"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pauzirano"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausad"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Призупинено"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已暂停"
+          }
+        }
+      }
+    },
+    "Prefix" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "البادئة"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Præfiks"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Präfix"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Πρόθεμα"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefijo"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etuliite"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Préfixe"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "קידומת"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "प्रीफ़िक्स"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefisso"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プレフィックス"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "접두 키"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefiks"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefix"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefiks"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Префикс"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefiks"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefix"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Префікс"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前缀"
+          }
+        }
+      }
+    },
+    "Window Mode" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وضع النوافذ"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vinduestilstand"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fenstermodus"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Λειτουργία παραθύρων"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo ventana"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikkunatila"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mode fenêtre"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "מצב חלונות"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "विंडो मोड"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modalità finestra"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ウィンドウモード"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "창 모드"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vindusmodus"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venstermodus"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tryb okien"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Режим окон"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Režim prozora"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fönsterläge"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Режим вікон"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "窗口模式"
+          }
+        }
+      }
+    },
+    "Prefix: the next key runs an OmniWM command. Escape cancels." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "البادئة: يشغّل المفتاح التالي أمرًا من OmniWM. اضغط على Escape للإلغاء."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Præfiks: Den næste tast kører en OmniWM-kommando. Esc annullerer."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Präfix: Die nächste Taste führt einen OmniWM-Befehl aus. Escape bricht ab."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Πρόθεμα: το επόμενο πλήκτρο εκτελεί μια εντολή του OmniWM. Το Escape ακυρώνει."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefijo: la siguiente tecla ejecuta un comando de OmniWM. Escape cancela."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etuliite: seuraava näppäin suorittaa OmniWM-komennon. Escape peruuttaa."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Préfixe : la touche suivante exécute une commande OmniWM. Échap annule."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "קידומת: המקש הבא מפעיל פקודה של OmniWM. לחצו על Escape לביטול."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "प्रीफ़िक्स: अगली कुंजी OmniWM कमांड चलाती है। रद्द करने के लिए एस्केप दबाएं।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefisso: il tasto successivo esegue un comando di OmniWM. Escape annulla."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プレフィックス：次のキーでOmniWMのコマンドを実行します。Escapeでキャンセルします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "접두 키: 다음 키가 OmniWM 명령을 실행합니다. Escape 키를 누르면 취소됩니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefiks: Neste tast kjører en OmniWM-kommando. Escape avbryter."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefix: de volgende toets voert een OmniWM-opdracht uit. Escape annuleert."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefiks: następny klawisz uruchamia polecenie OmniWM. Escape anuluje."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Префикс: следующая клавиша выполняет команду OmniWM. Escape отменяет."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefiks: sledeći taster pokreće OmniWM komandu. Escape otkazuje."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefix: nästa tangent kör ett OmniWM-kommando. Escape avbryter."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Префікс: наступна клавіша виконує команду OmniWM. Escape скасовує."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前缀：下一个按键将运行 OmniWM 命令。按 Escape 键取消。"
+          }
+        }
+      }
+    },
+    "Window mode: keys run OmniWM commands until you press Escape." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وضع النوافذ: تشغّل المفاتيح أوامر OmniWM حتى تضغط على Escape."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vinduestilstand: Taster kører OmniWM-kommandoer, indtil du trykker på Esc."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fenstermodus: Tasten führen OmniWM-Befehle aus, bis Sie Escape drücken."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Λειτουργία παραθύρων: τα πλήκτρα εκτελούν εντολές του OmniWM μέχρι να πατήσετε Escape."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo ventana: las teclas ejecutan comandos de OmniWM hasta que pulses Escape."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikkunatila: näppäimet suorittavat OmniWM-komentoja, kunnes painat Escapea."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mode fenêtre : les touches exécutent des commandes OmniWM jusqu'à ce que vous appuyiez sur Échap."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "מצב חלונות: המקשים מפעילים פקודות של OmniWM עד שתלחצו על Escape."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "विंडो मोड: एस्केप दबाने तक कुंजियाँ OmniWM कमांड चलाती हैं।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modalità finestra: i tasti eseguono comandi di OmniWM finché non premi Escape."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ウィンドウモード：Escapeを押すまで、キーでOmniWMのコマンドを実行します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "창 모드: Escape 키를 누를 때까지 키가 OmniWM 명령을 실행합니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vindusmodus: Taster kjører OmniWM-kommandoer til du trykker Escape."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venstermodus: toetsen voeren OmniWM-opdrachten uit totdat je op Escape drukt."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tryb okien: klawisze uruchamiają polecenia OmniWM, dopóki nie naciśniesz Escape."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Режим окон: клавиши выполняют команды OmniWM, пока вы не нажмёте Escape."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Režim prozora: tasteri pokreću OmniWM komande dok ne pritisnete Escape."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fönsterläge: tangenter kör OmniWM-kommandon tills du trycker på Escape."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Режим вікон: клавіші виконують команди OmniWM, доки ви не натиснете Escape."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "窗口模式：按键会运行 OmniWM 命令，直到按下 Escape 键。"
+          }
+        }
+      }
+    },
+    "Resume Shortcuts" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استئناف الاختصارات"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Genoptag genveje"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tastenkürzel fortsetzen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Συνέχιση συντομεύσεων"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reanudar atajos"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jatka pikanäppäimiä"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reprendre les raccourcis"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "חידוש קיצורי מקלדת"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "शॉर्टकट फिर से शुरू करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riprendi le scorciatoie"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ショートカットを再開"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "단축키 재개"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjenoppta snarveier"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sneltoetsen hervatten"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wznów skróty"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Возобновить сочетания клавиш"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nastavi prečice"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Återuppta kortkommandon"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Відновити сполучення клавіш"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "恢复快捷键"
+          }
+        }
+      }
+    },
+    "Cancel Prefix" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إلغاء البادئة"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annuller præfiks"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Präfix abbrechen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ακύρωση προθέματος"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancelar prefijo"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Peruuta etuliite"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annuler le préfixe"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ביטול קידומת"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "प्रीफ़िक्स रद्द करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annulla prefisso"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プレフィックスをキャンセル"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "접두 키 취소"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avbryt prefiks"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefix annuleren"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anuluj prefiks"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Отменить префикс"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otkaži prefiks"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avbryt prefix"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скасувати префікс"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消前缀"
+          }
+        }
+      }
+    },
+    "Leave Window Mode" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الخروج من وضع النوافذ"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forlad vinduestilstand"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fenstermodus beenden"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Έξοδος από τη λειτουργία παραθύρων"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salir del modo ventana"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Poistu ikkunatilasta"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quitter le mode fenêtre"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "יציאה ממצב חלונות"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "विंडो मोड से बाहर निकलें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esci dalla modalità finestra"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ウィンドウモードを終了"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "창 모드 종료"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gå ut av vindusmodus"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venstermodus verlaten"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opuść tryb okien"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выйти из режима окон"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Izađi iz režima prozora"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lämna fönsterläge"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вийти з режиму вікон"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退出窗口模式"
+          }
+        }
+      }
+    },
+    "Keyboard Modes" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أوضاع لوحة المفاتيح"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tastaturtilstande"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tastaturmodi"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Λειτουργίες πληκτρολογίου"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modos de teclado"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Näppäimistötilat"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modes clavier"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "מצבי מקלדת"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "कीबोर्ड मोड"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modalità tastiera"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キーボードモード"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "키보드 모드"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tastaturmoduser"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toetsenbordmodi"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tryby klawiatury"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Режимы клавиатуры"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Režimi tastature"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tangentbordslägen"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Режими клавіатури"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "键盘模式"
+          }
+        }
+      }
+    },
+    "Pause Timeout" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مهلة الإيقاف المؤقت"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausens varighed"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausendauer"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Χρονικό όριο παύσης"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo límite de pausa"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keskeytyksen aikaraja"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Délai de la pause"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "זמן קצוב להשהיה"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "रोकने की समय-सीमा"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Durata della pausa"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一時停止のタイムアウト"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "일시 정지 시간 제한"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tidsavbrudd for pause"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pauzetime-out"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Limit czasu wstrzymania"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Время паузы"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vremensko ograničenje pauze"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paustidsgräns"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Тривалість паузи"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂停超时"
+          }
+        }
+      }
+    },
+    "Until Resumed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حتى الاستئناف"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indtil genoptagelse"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bis zur Fortsetzung"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Μέχρι τη συνέχιση"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hasta reanudar"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunnes jatketaan"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jusqu'à la reprise"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "עד לחידוש"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "फिर से शुरू करने तक"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fino alla ripresa"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再開するまで"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "재개할 때까지"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Til gjenopptakelse"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tot hervatten"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Do wznowienia"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "До возобновления"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Do nastavka"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tills återupptagen"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "До відновлення"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "直到恢复"
+          }
+        }
+      }
+    },
+    "While paused, only Pause or Resume Shortcuts and Leave Keyboard Mode keep working." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أثناء الإيقاف المؤقت، لا يعمل إلا «إيقاف الاختصارات مؤقتًا أو استئنافها» و«الخروج من وضع لوحة المفاتيح»."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Under pause virker kun “Sæt genveje på pause eller genoptag dem” og “Forlad tastaturtilstand”."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Während der Pause funktionieren nur „Tastenkürzel pausieren oder fortsetzen“ und „Tastaturmodus beenden“."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Κατά την παύση λειτουργούν μόνο οι εντολές «Παύση ή συνέχιση συντομεύσεων» και «Έξοδος από τη λειτουργία πληκτρολογίου»."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Durante la pausa, solo siguen funcionando «Pausar o reanudar atajos» y «Salir del modo de teclado»."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keskeytyksen aikana toimivat vain ”Keskeytä tai jatka pikanäppäimiä” ja ”Poistu näppäimistötilasta”."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pendant la pause, seuls « Suspendre ou reprendre les raccourcis » et « Quitter le mode clavier » restent actifs."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "בזמן ההשהיה פועלים רק „השהיה או חידוש של קיצורי מקלדת” ו„יציאה ממצב מקלדת”."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "रुके रहने के दौरान केवल “शॉर्टकट रोकें या फिर से शुरू करें” और “कीबोर्ड मोड से बाहर निकलें” काम करते हैं।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Durante la pausa funzionano solo “Sospendi o riprendi le scorciatoie” ed “Esci dalla modalità tastiera”."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一時停止中は「ショートカットを一時停止または再開」と「キーボードモードを終了」だけが動作します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "일시 정지 중에는 ‘단축키 일시 정지 또는 재개’와 ‘키보드 모드 종료’만 작동합니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Under pause virker bare «Sett snarveier på pause eller gjenoppta dem» og «Gå ut av tastaturmodus»."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tijdens de pauze werken alleen ‘Sneltoetsen pauzeren of hervatten’ en ‘Toetsenbordmodus verlaten’."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Podczas wstrzymania działają tylko „Wstrzymaj lub wznów skróty” i „Opuść tryb klawiatury”."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Во время паузы работают только «Приостановить или возобновить сочетания клавиш» и «Выйти из режима клавиатуры»."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tokom pauze rade samo „Pauziraj ili nastavi prečice” i „Izađi iz režima tastature”."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Under pausen fungerar bara ”Pausa eller återuppta kortkommandon” och ”Lämna tangentbordsläge”."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Під час паузи працюють лише «Призупинити або відновити сполучення клавіш» і «Вийти з режиму клавіатури»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂停期间，只有“暂停或恢复快捷键”和“退出键盘模式”仍然有效。"
+          }
+        }
+      }
+    },
+    "In Prefix and Window mode, single keys run commands. After you give Begin Prefix or Enter or Leave Window Mode a shortcut, set mode keys beside the commands below. Needs Input Monitoring permission." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "في وضعي البادئة والنوافذ، تشغّل المفاتيح المفردة الأوامر. بعد تعيين اختصار لـ«بدء البادئة» أو «الدخول إلى وضع النوافذ أو الخروج منه»، عيّن مفاتيح الوضع بجانب الأوامر أدناه. يحتاج إلى إذن مراقبة الإدخال."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I præfiks- og vinduestilstand kører enkelte taster kommandoer. Når du har givet “Start præfiks” eller “Gå ind i eller forlad vinduestilstand” en genvej, kan du angive tilstandstaster ud for kommandoerne nedenfor. Kræver tilladelse til Overvågning af input."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Im Präfix- und Fenstermodus führen einzelne Tasten Befehle aus. Sobald „Präfix starten“ oder „Fenstermodus starten oder beenden“ ein Tastenkürzel hat, legen Sie Modustasten neben den Befehlen unten fest. Erfordert die Berechtigung „Eingabeüberwachung“."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Στη λειτουργία προθέματος και στη λειτουργία παραθύρων, μεμονωμένα πλήκτρα εκτελούν εντολές. Αφού δώσετε συντόμευση στην «Έναρξη προθέματος» ή στην «Είσοδος ή έξοδος από τη λειτουργία παραθύρων», ορίστε πλήκτρα λειτουργίας δίπλα στις παρακάτω εντολές. Απαιτείται άδεια Παρακολούθησης εισόδου."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En los modos prefijo y ventana, una sola tecla ejecuta comandos. Cuando «Iniciar prefijo» o «Entrar o salir del modo ventana» tenga un atajo, asigna teclas de modo junto a los comandos de abajo. Se necesita permiso de Monitoreo de entrada."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etuliite- ja ikkunatilassa yksittäiset näppäimet suorittavat komentoja. Kun olet antanut komennolle ”Aloita etuliite” tai ”Siirry ikkunatilaan tai poistu siitä” pikanäppäimen, aseta tilanäppäimet alla olevien komentojen viereen. Tämä vaatii Syötteen valvonta -käyttöoikeuden."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En mode préfixe et en mode fenêtre, une seule touche exécute une commande. Une fois que « Démarrer le préfixe » ou « Entrer dans le mode fenêtre ou en sortir » a un raccourci, définissez des touches de mode à côté des commandes ci-dessous. L’autorisation Surveillance de l’entrée est requise."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "במצב קידומת ובמצב חלונות, מקשים בודדים מפעילים פקודות. לאחר שתקצו קיצור ל„התחלת קידומת” או ל„כניסה למצב חלונות או יציאה ממנו”, הגדירו מקשי מצב ליד הפקודות שלמטה. נדרשת הרשאת ניטור קלט."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "प्रीफ़िक्स और विंडो मोड में अकेली कुंजियाँ कमांड चलाती हैं। “प्रीफ़िक्स शुरू करें” या “विंडो मोड में जाएँ या उससे बाहर निकलें” को शॉर्टकट देने के बाद, नीचे दी गई कमांड के बगल में मोड कुंजियाँ सेट करें। इसके लिए इनपुट मॉनिटरिंग अनुमति की आवश्यकता है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In modalità prefisso e finestra, un singolo tasto esegue un comando. Dopo aver assegnato una scorciatoia ad “Avvia prefisso” o “Entra o esci dalla modalità finestra”, imposta i tasti modalità accanto ai comandi qui sotto. È necessaria l’autorizzazione Monitoraggio input."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プレフィックスとウィンドウモードでは、単独のキーでコマンドを実行します。「プレフィックスを開始」または「ウィンドウモードを開始または終了」にショートカットを割り当てたら、下のコマンドの横でモードキーを設定してください。入力監視の許可が必要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "접두 키와 창 모드에서는 단일 키로 명령을 실행합니다. ‘접두 키 시작’ 또는 ‘창 모드 시작 또는 종료’에 단축키를 지정한 후 아래 명령 옆에서 모드 키를 설정하세요. 입력 모니터링 권한이 필요합니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I prefiks- og vindusmodus kjører enkelttaster kommandoer. Når «Start prefiks» eller «Gå inn i eller ut av vindusmodus» har en snarvei, angir du modustaster ved siden av kommandoene nedenfor. Dette krever tillatelse til inndataovervåking."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In prefix- en venstermodus voeren losse toetsen opdrachten uit. Zodra ‘Prefix starten’ of ‘Venstermodus starten of verlaten’ een sneltoets heeft, stel je modustoetsen in naast de opdrachten hieronder. Hiervoor is toegang tot Invoermonitoring nodig."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "W trybie prefiksu i trybie okien pojedyncze klawisze uruchamiają polecenia. Gdy „Rozpocznij prefiks” lub „Wejdź w tryb okien lub go opuść” ma skrót, ustaw klawisze trybu obok poleceń poniżej. Wymaga uprawnienia Monitorowanie wprowadzania."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "В режиме префикса и режиме окон одиночные клавиши выполняют команды. Когда у «Начать префикс» или «Войти в режим окон или выйти из него» появится сочетание клавиш, задайте клавиши режима рядом с командами ниже. Требуется разрешение на мониторинг ввода."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "U režimu prefiksa i režimu prozora pojedinačni tasteri pokreću komande. Kada „Započni prefiks” ili „Uđi u režim prozora ili izađi iz njega” dobije prečicu, podesite tastere režima pored komandi ispod. Potrebna je dozvola za Praćenje unosa."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I prefix- och fönsterläge kör enskilda tangenter kommandon. När ”Starta prefix” eller ”Gå in i eller lämna fönsterläge” har ett kortkommando kan du ange lägestangenter bredvid kommandona nedan. Kräver behörighet för inmatningsövervakning."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "У режимі префікса та режимі вікон окремі клавіші виконують команди. Коли «Почати префікс» або «Увійти в режим вікон або вийти з нього» матиме сполучення клавіш, задайте клавіші режиму поруч із командами нижче. Потрібен дозвіл на Моніторинг введення."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在前缀和窗口模式中，单个按键即可运行命令。为“开始前缀”或“进入或退出窗口模式”设置快捷键后，请在下方命令旁设置模式键。需要输入监控权限。"
+          }
+        }
+      }
+    },
+    "Mode Key" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مفتاح الوضع"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilstandstast"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modustaste"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Πλήκτρο λειτουργίας"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tecla de modo"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilanäppäin"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Touche de mode"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "מקש מצב"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मोड कुंजी"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tasto modalità"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "モードキー"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모드 키"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modustast"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modustoets"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klawisz trybu"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Клавиша режима"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Taster režima"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lägestangent"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Клавіша режиму"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "模式键"
+          }
+        }
+      }
+    },
+    "Change mode key for %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غيّر مفتاح الوضع لـ %@"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ændr tilstandstast for %@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modustaste für %@ ändern"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αλλαγή πλήκτρου λειτουργίας για %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambiar la tecla de modo para %@"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vaihda komennon %@ tilanäppäin"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifier la touche de mode de %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "שינוי מקש המצב עבור %@"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ के लिए मोड कुंजी बदलें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambia tasto modalità per %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@のモードキーを変更する"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 모드 키 변경"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre modustast for %@"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modustoets wijzigen voor %@"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zmień klawisz trybu dla %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Изменить клавишу режима для %@"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Promeni taster režima za %@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändra lägestangent för %@"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Змінити клавішу режиму для %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更改%@的模式键"
+          }
+        }
+      }
+    },
+    "Clear mode key for %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مسح مفتاح الوضع لـ %@"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ryd tilstandstast for %@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modustaste für %@ löschen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Εκκαθάριση πλήκτρου λειτουργίας για %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Borrar la tecla de modo de %@"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tyhjennä komennon %@ tilanäppäin"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effacer la touche de mode de %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "נקה את מקש המצב עבור %@"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ के लिए मोड कुंजी साफ़ करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pulisci tasto modalità per %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@のモードキーをクリアする"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@의 모드 키 지우기"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern modustast for %@"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modustoets wissen voor %@"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wyczyść klawisz trybu dla %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Очистить клавишу режима для %@"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obriši taster režima za %@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rensa lägestangenten för %@"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Видалити клавішу режиму для %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清除 %@ 的模式键"
+          }
+        }
+      }
+    },
+    "Recording mode key for %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جارٍ تسجيل مفتاح الوضع لـ %@"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optagelse af tilstandstast for %@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modustaste für %@ wird aufgenommen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Καταγραφή πλήκτρου λειτουργίας για %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grabando tecla de modo para %@"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nauhoitetaan tilanäppäintä %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enregistrement d’une touche de mode pour %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "מקליט מקש מצב עבור %@"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ के लिए मोड कुंजी रिकॉर्डिंग"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrazione tasto modalità per %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@のモードキーを記録中"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@의 모드 키 입력 기록 중"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tar opp modustast for %@"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modustoets voor %@ opnemen"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rejestrowanie klawisza trybu dla %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Запись клавиши режима для %@"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snimanje tastera režima za %@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spelar in lägestangent för %@"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Запис клавіші режиму для %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在录制%@的模式键"
+          }
+        }
+      }
+    },
+    "A mode key is a single key, optionally with Shift. Escape always leaves the mode." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مفتاح الوضع هو مفتاح واحد، مع Shift اختياريًا. يؤدي Escape دائمًا إلى الخروج من الوضع."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En tilstandstast er en enkelt tast, eventuelt med Skift. Esc forlader altid tilstanden."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine Modustaste ist eine einzelne Taste, optional mit der Umschalttaste. Escape beendet den Modus immer."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ένα πλήκτρο λειτουργίας είναι ένα μεμονωμένο πλήκτρο, προαιρετικά με Shift. Το Escape τερματίζει πάντα τη λειτουργία."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una tecla de modo es una sola tecla, opcionalmente con Mayúsculas. Escape siempre sale del modo."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilanäppäin on yksittäinen näppäin, valinnaisesti Vaihdon kanssa. Escape poistuu tilasta aina."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une touche de mode est une seule touche, éventuellement avec Maj. Échap quitte toujours le mode."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "מקש מצב הוא מקש יחיד, אפשר עם Shift. מקש Escape תמיד יוצא מהמצב."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मोड कुंजी एक अकेली कुंजी होती है, चाहें तो Shift के साथ। एस्केप हमेशा मोड से बाहर निकालता है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un tasto modalità è un singolo tasto, eventualmente con Maiuscole. Escape esce sempre dalla modalità."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "モードキーは単独のキーで、Shiftと組み合わせることもできます。Escapeを押すと常にモードを終了します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모드 키는 단일 키이며 Shift와 함께 쓸 수도 있습니다. Escape 키는 항상 모드를 종료합니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En modustast er én enkelt tast, eventuelt med Skift. Escape går alltid ut av modusen."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Een modustoets is één toets, eventueel met Shift. Escape verlaat de modus altijd."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klawisz trybu to pojedynczy klawisz, opcjonalnie z Shift. Escape zawsze opuszcza tryb."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Клавиша режима — это одна клавиша, при желании с Shift. Escape всегда выходит из режима."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Taster režima je jedan taster, po želji sa tasterom Shift. Escape uvek izlazi iz režima."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En lägestangent är en enda tangent, eventuellt med Skift. Escape lämnar alltid läget."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Клавіша режиму — це одна клавіша, за бажанням із Shift. Escape завжди виходить із режиму."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "模式键是单个按键，可以搭配 Shift。Escape 键始终用于退出模式。"
+          }
+        }
+      }
+    },
+    "This key is already the mode key for %@." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا المفتاح هو بالفعل مفتاح الوضع لـ %@."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne tast er allerede tilstandstast for %@."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Taste ist bereits die Modustaste für %@."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αυτό το πλήκτρο είναι ήδη το πλήκτρο λειτουργίας για %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta tecla ya es la tecla de modo de %@."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tämä näppäin on jo komennon %@ tilanäppäin."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette touche est déjà la touche de mode de %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "המקש הזה כבר משמש כמקש המצב עבור %@."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "यह कुंजी पहले से %@ की मोड कुंजी है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo tasto è già il tasto modalità per %@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このキーはすでに%@のモードキーです。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 키는 이미 %@의 모드 키입니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne tasten er allerede modustast for %@."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deze toets is al de modustoets voor %@."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ten klawisz jest już klawiszem trybu dla %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Эта клавиша уже назначена клавишей режима для %@."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ovaj taster je već taster režima za %@."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den här tangenten är redan lägestangent för %@."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ця клавіша вже є клавішею режиму для %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此键已是%@的模式键。"
+          }
+        }
+      }
+    },
+    "Another command has the same mode key" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أمر آخر له مفتاح الوضع نفسه"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En anden kommando har samme tilstandstast"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein anderer Befehl hat dieselbe Modustaste"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Μια άλλη εντολή έχει το ίδιο πλήκτρο λειτουργίας"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otro comando tiene la misma tecla de modo"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toisella komennolla on sama tilanäppäin"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une autre commande a la même touche de mode"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "לפקודה אחרת יש אותו מקש מצב"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "किसी दूसरी कमांड की भी यही मोड कुंजी है"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un altro comando ha lo stesso tasto modalità"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "別のコマンドに同じモードキーが設定されています"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다른 명령에 같은 모드 키가 지정되어 있습니다"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En annen kommando har samme modustast"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Een andere opdracht heeft dezelfde modustoets"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inne polecenie ma ten sam klawisz trybu"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "У другой команды та же клавиша режима"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Druga komanda ima isti taster režima"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ett annat kommando har samma lägestangent"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Інша команда має ту саму клавішу режиму"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "另一个命令使用了相同的模式键"
+          }
+        }
+      }
+    },
+    "A shortcut already uses this key" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يستخدم اختصار هذا المفتاح بالفعل"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En genvej bruger allerede denne tast"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Tastenkürzel verwendet diese Taste bereits"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Μια συντόμευση χρησιμοποιεί ήδη αυτό το πλήκτρο"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un atajo ya usa esta tecla"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikanäppäin käyttää jo tätä näppäintä"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un raccourci utilise déjà cette touche"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "קיצור מקלדת כבר משתמש במקש הזה"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "कोई शॉर्टकट पहले से इस कुंजी का उपयोग करता है"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una scorciatoia usa già questo tasto"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このキーはすでにショートカットで使われています"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이미 단축키에서 이 키를 사용하고 있습니다"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En snarvei bruker allerede denne tasten"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Een sneltoets gebruikt deze toets al"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ten klawisz jest już używany przez skrót"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Эта клавиша уже используется в сочетании клавиш"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prečica već koristi ovaj taster"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ett kortkommando använder redan den här tangenten"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Цю клавішу вже використовує сполучення клавіш"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已有快捷键使用此键"
+          }
+        }
+      }
+    },
+    "Prefix and Window mode need Input Monitoring permission to work" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يحتاج وضعا البادئة والنوافذ إلى إذن مراقبة الإدخال للعمل"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Præfiks og vinduestilstand kræver tilladelse til Overvågning af input for at fungere"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Präfix und Fenstermodus benötigen die Berechtigung „Eingabeüberwachung“, um zu funktionieren"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Το πρόθεμα και η λειτουργία παραθύρων χρειάζονται άδεια Παρακολούθησης εισόδου για να λειτουργήσουν"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El prefijo y el modo ventana necesitan permiso de Monitoreo de entrada para funcionar"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etuliite ja ikkunatila vaativat Syötteen valvonta -käyttöoikeuden toimiakseen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le préfixe et le mode fenêtre ont besoin de l'autorisation Surveillance de l’entrée pour fonctionner"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "קידומת ומצב חלונות זקוקים להרשאת ניטור קלט כדי לעבוד"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "प्रीफ़िक्स और विंडो मोड को काम करने के लिए इनपुट मॉनिटरिंग अनुमति की आवश्यकता होती है"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il prefisso e la modalità finestra richiedono l’autorizzazione Monitoraggio input per funzionare"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プレフィックスとウィンドウモードには、入力監視の許可が必要です"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "접두 키와 창 모드가 작동하려면 입력 모니터링 권한이 필요합니다"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefiks og vindusmodus trenger tillatelse til inndataovervåking for å fungere"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefix en venstermodus hebben toegang tot Invoermonitoring nodig om te kunnen werken"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefiks i tryb okien wymagają uprawnienia Monitorowanie wprowadzania"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для работы префикса и режима окон требуется разрешение «Мониторинг ввода»"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefiks i režim prozora zahtevaju dozvolu za Praćenje unosa da bi radili"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefix och fönsterläge behöver tillstånd för inmatningsövervakning för att fungera"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для роботи префікса та режиму вікон потрібен дозвіл на Моніторинг введення"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前缀和窗口模式需要输入监控权限才能工作"
+          }
+        }
+      }
+    },
+    "OmniWM shortcuts are paused." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختصارات OmniWM متوقفة مؤقتًا."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OmniWM-genveje er sat på pause."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OmniWM-Tastenkürzel sind pausiert."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Οι συντομεύσεις του OmniWM είναι σε παύση."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los atajos de OmniWM están en pausa."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OmniWM:n pikanäppäimet ovat keskeytettyinä."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les raccourcis d'OmniWM sont en pause."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "קיצורי המקלדת של OmniWM מושהים."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OmniWM शॉर्टकट रुके हुए हैं।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le scorciatoie di OmniWM sono in pausa."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OmniWMのショートカットは一時停止しています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OmniWM 단축키가 일시 정지되었습니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OmniWM-snarveier er satt på pause."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OmniWM-sneltoetsen zijn gepauzeerd."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skróty OmniWM są wstrzymane."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сочетания клавиш OmniWM приостановлены."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OmniWM prečice su pauzirane."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OmniWM-kortkommandon är pausade."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сполучення клавіш OmniWM призупинено."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OmniWM 快捷键已暂停。"
+          }
+        }
+      }
+    },
+    "Shortcuts paused" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الاختصارات متوقفة مؤقتًا"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Genveje sat på pause"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tastenkürzel pausiert"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Οι συντομεύσεις είναι σε παύση"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atajos en pausa"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pikanäppäimet keskeytetty"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Raccourcis en pause"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "קיצורי המקלדת מושהים"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "शॉर्टकट रुके हुए हैं"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scorciatoie in pausa"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ショートカット一時停止中"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "단축키 일시 정지됨"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snarveier satt på pause"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sneltoetsen gepauzeerd"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skróty wstrzymane"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сочетания клавиш приостановлены"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prečice su pauzirane"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kortkommandon pausade"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сполучення клавіш призупинено"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "快捷键已暂停"
+          }
+        }
+      }
+    },
+    "Prefix · Escape cancels" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "البادئة · Escape للإلغاء"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Præfiks · Esc annullerer"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Präfix · Escape bricht ab"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Πρόθεμα · Το Escape ακυρώνει"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefijo · Escape cancela"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etuliite · Escape peruuttaa"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Préfixe · Échap annule"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "קידומת · Escape לביטול"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "प्रीफ़िक्स · रद्द करने के लिए एस्केप"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefisso · Escape annulla"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プレフィックス · Escapeでキャンセル"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "접두 키 · Escape 키로 취소"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefiks · Escape avbryter"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefix · Escape annuleert"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefiks · Escape anuluje"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Префикс · Escape отменяет"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefiks · Escape otkazuje"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefix · Escape avbryter"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Префікс · Escape скасовує"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前缀 · 按 Escape 键取消"
+          }
+        }
+      }
+    },
+    "Window mode · Escape exits" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وضع النوافذ · Escape للخروج"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vinduestilstand · Esc afslutter"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fenstermodus · Escape beendet"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Λειτουργία παραθύρων · Το Escape τερματίζει"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo ventana · Escape sale"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikkunatila · Escape poistuu"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mode fenêtre · Échap quitte"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "מצב חלונות · Escape ליציאה"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "विंडो मोड · बाहर निकलने के लिए एस्केप"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modalità finestra · Escape esce"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ウィンドウモード · Escapeで終了"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "창 모드 · Escape 키로 종료"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vindusmodus · Escape avslutter"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venstermodus · Escape verlaat"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tryb okien · Escape kończy"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Режим окон · Escape — выход"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Režim prozora · Escape izlazi"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fönsterläge · Escape avslutar"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Режим вікон · Escape — вихід"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "窗口模式 · 按 Escape 键退出"
+          }
+        }
+      }
+    },
+    "More: %lld" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المزيد: %lld"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flere: %lld"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weitere: %lld"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Περισσότερα: %lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Más: %lld"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lisää: %lld"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autres : %lld"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "עוד: %lld"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "और: %lld"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Altri: %lld"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "その他: %lld"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "더 보기: %lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flere: %lld"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meer: %lld"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Więcej: %lld"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ещё: %lld"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Još: %lld"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fler: %lld"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ще: %lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更多：%lld"
+          }
+        }
+      }
+    },
+    "Workspace Switching" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التبديل بين مساحات العمل"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skift af arbejdsområde"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arbeitsbereichswechsel"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Εναλλαγή χώρων εργασίας"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambio de espacio de trabajo"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Työtilan vaihto"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changement d’espace de travail"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "מעבר בין מרחבי עבודה"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "कार्यस्थल बदलना"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambio di spazio di lavoro"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ワークスペースの切り替え"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "작업 공간 전환"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bytte av arbeidsområde"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Werkruimte wisselen"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Przełączanie przestrzeni roboczych"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Переключение рабочих пространств"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prebacivanje radnih prostora"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Byte av arbetsyta"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перемикання робочих просторів"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "工作区切换"
+          }
+        }
+      }
+    },
+    "Go Back When Switching to the Current Workspace" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "العودة عند التبديل إلى مساحة العمل الحالية"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gå tilbage ved skift til det aktuelle arbejdsområde"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beim Wechsel zum aktuellen Arbeitsbereich zurückkehren"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Επιστροφή κατά την εναλλαγή στον τρέχοντα χώρο εργασίας"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volver al cambiar al espacio de trabajo actual"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Palaa takaisin, kun vaihdat nykyiseen työtilaan"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revenir en arrière lors du passage à l’espace de travail actuel"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "חזרה במעבר למרחב העבודה הנוכחי"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "वर्तमान कार्यस्थल पर स्विच करते समय वापस जाएँ"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Torna indietro quando passi allo spazio di lavoro attuale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在のワークスペースに切り替えたときに前のワークスペースへ戻る"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "현재 작업 공간으로 전환하면 이전 작업 공간으로 돌아가기"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gå tilbake ved bytte til gjeldende arbeidsområde"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teruggaan bij wisselen naar de huidige werkruimte"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wracaj przy przełączaniu na bieżącą przestrzeń roboczą"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Возвращаться при переключении на текущее рабочее пространство"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrati se pri prebacivanju na trenutni radni prostor"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gå tillbaka vid byte till aktuell arbetsyta"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Повертатися під час перемикання на поточний робочий простір"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "切换到当前工作区时返回上一个工作区"
+          }
+        }
+      }
+    },
+    "A workspace shortcut or command palette entry for the workspace you are on returns to the previous workspace instead. omniwmctl is not affected." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعيدك اختصار مساحة العمل أو عنصر لوحة الأوامر الخاص بمساحة العمل التي أنت فيها إلى مساحة العمل السابقة بدلًا من ذلك. لا يتأثر omniwmctl."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En genvej eller et punkt i kommandopaletten til det arbejdsområde, du er i, går i stedet tilbage til det forrige arbejdsområde. omniwmctl påvirkes ikke."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Tastenkürzel oder Befehlspaletteneintrag für den Arbeitsbereich, in dem Sie sich befinden, kehrt stattdessen zum vorherigen Arbeitsbereich zurück. omniwmctl ist davon nicht betroffen."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Μια συντόμευση ή καταχώριση της παλέτας εντολών για τον χώρο εργασίας στον οποίο βρίσκεστε επιστρέφει αντί γι’ αυτό στον προηγούμενο χώρο εργασίας. Το omniwmctl δεν επηρεάζεται."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un atajo o una entrada de la paleta de comandos para el espacio de trabajo en el que estás vuelve en su lugar al espacio de trabajo anterior. omniwmctl no se ve afectado."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nykyisen työtilan pikanäppäin tai komentopaletin kohde palaa sen sijaan edelliseen työtilaan. omniwmctl ei muutu."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un raccourci ou une entrée de la palette de commandes visant l’espace de travail actuel revient plutôt à l’espace de travail précédent. omniwmctl n’est pas concerné."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "קיצור מקלדת או פריט בלוח הפקודות של מרחב העבודה שבו אתם נמצאים מחזיר במקום זאת למרחב העבודה הקודם. הפקודה omniwmctl אינה מושפעת."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "आप जिस कार्यस्थल पर हैं, उसका शॉर्टकट या कमांड पैलेट प्रविष्टि इसके बजाय पिछले कार्यस्थल पर लौटाती है। omniwmctl पर कोई असर नहीं पड़ता।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una scorciatoia o una voce della palette dei comandi per lo spazio di lavoro in cui ti trovi torna invece allo spazio di lavoro precedente. omniwmctl non cambia."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在のワークスペースへのショートカットやコマンドパレットの項目を使うと、代わりに前のワークスペースに戻ります。omniwmctlには影響しません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "현재 작업 공간의 단축키나 명령 팔레트 항목을 사용하면 대신 이전 작업 공간으로 돌아갑니다. omniwmctl에는 영향을 주지 않습니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En snarvei eller et kommandopalettvalg for arbeidsområdet du er i, går i stedet tilbake til forrige arbeidsområde. omniwmctl påvirkes ikke."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Een sneltoets of opdrachtpaletitem voor de werkruimte waarin je bent, gaat in plaats daarvan terug naar de vorige werkruimte. omniwmctl verandert niet."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skrót lub pozycja palety poleceń dla bieżącej przestrzeni roboczej przełącza zamiast tego na poprzednią przestrzeń roboczą. Nie dotyczy to omniwmctl."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сочетание клавиш или пункт палитры команд для текущего рабочего пространства вместо этого возвращает к предыдущему. На omniwmctl это не влияет."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prečica ili stavka palete komandi za radni prostor u kom se nalazite umesto toga vraća na prethodni radni prostor. omniwmctl nije pogođen."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ett kortkommando eller en post i kommandopaletten för arbetsytan du är på går i stället tillbaka till föregående arbetsyta. omniwmctl påverkas inte."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сполучення клавіш або пункт палітри команд для поточного робочого простору натомість повертає до попереднього. На omniwmctl це не впливає."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "对当前所在工作区使用工作区快捷键或命令面板项时，会改为返回上一个工作区。omniwmctl 不受影响。"
+          }
+        }
+      }
+    },
+    "Dwindle Group Across Displays" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مجموعة Dwindle عبر الشاشات"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dwindle-gruppe på tværs af skærme"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dwindle-Gruppe über Bildschirme hinweg"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ομάδα Dwindle σε άλλες οθόνες"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grupo de Dwindle entre pantallas"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dwindle-ryhmä näyttöjen välillä"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Groupe Dwindle entre écrans"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "קבוצת Dwindle בין מסכים"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "डिस्प्ले के बीच Dwindle समूह"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gruppo Dwindle tra schermi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ディスプレイ間のDwindleグループ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "디스플레이 간 Dwindle 그룹"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dwindle-gruppe på tvers av skjermer"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dwindle-groep tussen beeldschermen"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grupa Dwindle między ekranami"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Группа Dwindle между дисплеями"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dwindle grupa između ekrana"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dwindle-grupp mellan skärmar"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Група Dwindle між дисплеями"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "跨显示器的 Dwindle 组"
+          }
+        }
+      }
+    },
+    "Move Whole Group" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نقل المجموعة كاملة"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flyt hele gruppen"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ganze Gruppe bewegen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Μετακίνηση ολόκληρης ομάδας"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mover todo el grupo"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siirrä koko ryhmä"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Déplacer tout le groupe"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "העברת הקבוצה כולה"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पूरा समूह ले जाएँ"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sposta l’intero gruppo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "グループ全体を移動"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "그룹 전체 이동"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytt hele gruppen"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hele groep verplaatsen"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Przenieś całą grupę"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перемещать всю группу"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premesti celu grupu"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytta hela gruppen"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Переміщувати всю групу"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动整个组"
+          }
+        }
+      }
+    },
+    "Move Dragged Window" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نقل النافذة المسحوبة"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flyt det trukne vindue"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gezogenes Fenster bewegen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Μετακίνηση του συρόμενου παραθύρου"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mover la ventana arrastrada"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siirrä vedetty ikkuna"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Déplacer la fenêtre glissée"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "העברת החלון הנגרר"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "खींची गई विंडो ले जाएँ"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sposta la finestra trascinata"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ドラッグしたウインドウを移動"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "드래그한 윈도우 이동"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytt det dratte vinduet"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gesleept venster verplaatsen"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Przenieś przeciągnięte okno"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перемещать перетаскиваемое окно"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premesti prevučeni prozor"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytta det dragna fönstret"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Переміщувати перетягнуте вікно"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动拖动的窗口"
+          }
+        }
+      }
+    },
+    "Choose what a modifier drag of a Dwindle tab group moves when you drop it on another display. A whole group dropped into Niri becomes one tabbed column." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختر ما يُنقل عند سحب مجموعة علامات تبويب في Dwindle مع مفتاح التعديل وإفلاتها على شاشة أخرى. تصبح المجموعة الكاملة التي تُفلت في Niri عمودًا واحدًا بعلامات تبويب."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vælg, hvad et træk med modifikatortasten af en Dwindle-fanegruppe flytter, når du slipper den på en anden skærm. En hel gruppe, der slippes i Niri, bliver én kolonne med faner."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wählen Sie, was das Ziehen einer Dwindle-Tabgruppe mit der Sondertaste bewegt, wenn Sie sie auf einem anderen Bildschirm ablegen. Eine ganze Gruppe, die in Niri abgelegt wird, wird zu einer Spalte mit Tabs."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Επιλέξτε τι μετακινεί η μεταφορά μιας ομάδας καρτελών του Dwindle με το πλήκτρο τροποποίησης, όταν την αφήνετε σε άλλη οθόνη. Μια ολόκληρη ομάδα που αφήνεται στο Niri γίνεται μία στήλη με καρτέλες."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige qué mueve el arrastre con la tecla modificadora de un grupo de pestañas de Dwindle al soltarlo en otra pantalla. Un grupo completo soltado en Niri se convierte en una sola columna con pestañas."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valitse, mitä Dwindle-välilehtiryhmän vetäminen muokkausnäppäimellä siirtää, kun pudotat sen toiselle näytölle. Niriin pudotettu koko ryhmä muuttuu yhdeksi välilehtisarakkeeksi."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisissez ce que déplace un glisser avec la touche de modification d’un groupe d’onglets Dwindle lorsque vous le déposez sur un autre écran. Un groupe entier déposé dans Niri devient une seule colonne à onglets."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "בחרו מה מועבר בגרירה עם מקש שינוי של קבוצת כרטיסיות ב־Dwindle כשמשחררים אותה במסך אחר. קבוצה שלמה שמשוחררת ב־Niri הופכת לעמודה אחת עם כרטיסיות."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "चुनें कि मॉडिफ़ायर के साथ Dwindle टैब समूह को खींचकर किसी दूसरे डिस्प्ले पर छोड़ने पर क्या ले जाया जाए। Niri में छोड़ा गया पूरा समूह टैब वाला एक कॉलम बन जाता है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli cosa sposta il trascinamento con il tasto modificatore di un gruppo di schede Dwindle quando lo rilasci su un altro schermo. Un gruppo intero rilasciato in Niri diventa un’unica colonna a schede."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dwindleのタブグループを修飾キーを押しながらドラッグして別のディスプレイにドロップしたときに、何を移動するかを選択します。Niriにドロップしたグループ全体は、タブ付きの1つの列になります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보조 키를 누른 채 Dwindle 탭 그룹을 드래그해 다른 디스플레이에 놓을 때 무엇을 이동할지 선택합니다. Niri에 놓은 그룹 전체는 탭이 있는 하나의 열이 됩니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg hva et dra med endringstasten av en Dwindle-fanegruppe flytter når du slipper den på en annen skjerm. En hel gruppe som slippes i Niri, blir én kolonne med faner."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kies wat slepen met de speciale toets van een Dwindle-tabgroep verplaatst wanneer je deze op een ander beeldscherm loslaat. Een hele groep die in Niri wordt losgelaten, wordt één kolom met tabbladen."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wybierz, co przenosi przeciągnięcie grupy kart Dwindle z klawiszem modyfikującym po upuszczeniu jej na innym ekranie. Cała grupa upuszczona w Niri staje się jedną kolumną z kartami."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выберите, что перемещает перетаскивание группы вкладок Dwindle с клавишей-модификатором, когда вы отпускаете её на другом дисплее. Вся группа, отпущенная в Niri, становится одной колонкой с вкладками."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Izaberite šta premešta prevlačenje Dwindle grupe kartica sa modifikatorskim tasterom kada je otpustite na drugom ekranu. Cela grupa otpuštena u Niri postaje jedna kolona sa karticama."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Välj vad en dragning med kombinationstangent av en Dwindle-flikgrupp flyttar när du släpper den på en annan skärm. En hel grupp som släpps i Niri blir en kolumn med flikar."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Виберіть, що переміщує перетягування групи вкладок Dwindle з клавішею-модифікатором, коли ви відпускаєте її на іншому дисплеї. Уся група, відпущена в Niri, стає однією колонкою з вкладками."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择按住修饰键拖动 Dwindle 标签组并放到另一台显示器上时移动的内容。放入 Niri 的整个组会成为一个带标签的列。"
+          }
+        }
+      }
+    },
+    "Keep Native Edge Resizes" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الاحتفاظ بتغييرات الحجم من الحواف الأصلية"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Behold indbyggede kantstørrelser"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Native Größenänderungen an Rändern übernehmen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Διατήρηση εγγενών αλλαγών μεγέθους από τις άκρες"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conservar cambios de tamaño nativos por los bordes"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Säilytä alkuperäiset reunakoon muutokset"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conserver les redimensionnements natifs par les bords"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "שמירת שינויי גודל מקוריים מהקצוות"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मूल किनारे से आकार बदलना बनाए रखें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantieni i ridimensionamenti nativi dai bordi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ネイティブの端からのサイズ変更を保持"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "기본 가장자리 크기 조정 유지"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Behold innebygde kantstørrelser"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Systeemformaatwijzigingen via randen behouden"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zachowuj natywne zmiany rozmiaru krawędziami"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сохранять системное изменение размера за края"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zadrži izvornu promenu veličine preko ivica"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Behåll inbyggda storleksändringar via kanter"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Зберігати системну зміну розміру за краї"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保留原生边缘调整大小"
+          }
+        }
+      }
+    },
+    "Drag a tiled window's edge or corner without a modifier. When you let go, the layout keeps the new size and fits the other windows around it. Moving a window by its title bar still snaps it back." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اسحب حافة نافذة مُبلّطة أو زاويتها دون مفتاح تعديل. عند الإفلات، يحتفظ التخطيط بالحجم الجديد ويُلائم النوافذ الأخرى حولها. يظل نقل النافذة من شريط العنوان يعيدها إلى مكانها."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Træk i kanten eller hjørnet af et fliselagt vindue uden en modifikatortast. Når du slipper, beholder layoutet den nye størrelse og tilpasser de andre vinduer omkring det. Flytter du et vindue i titellinjen, springer det stadig tilbage."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ziehen Sie ohne Sondertaste am Rand oder an der Ecke eines gekachelten Fensters. Beim Loslassen behält das Layout die neue Größe bei und passt die anderen Fenster daran an. Wird ein Fenster an der Titelleiste bewegt, springt es weiterhin zurück."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Σύρετε την άκρη ή τη γωνία ενός παραθύρου σε παράθεση χωρίς πλήκτρο τροποποίησης. Όταν το αφήσετε, η διάταξη κρατά το νέο μέγεθος και προσαρμόζει τα άλλα παράθυρα γύρω του. Η μετακίνηση ενός παραθύρου από τη γραμμή τίτλου εξακολουθεί να το επαναφέρει."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrastra el borde o la esquina de una ventana en mosaico sin tecla modificadora. Al soltarla, el diseño conserva el nuevo tamaño y ajusta las demás ventanas a su alrededor. Mover una ventana por su barra de título sigue devolviéndola a su sitio."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vedä ruudutetun ikkunan reunaa tai kulmaa ilman muokkausnäppäintä. Kun päästät irti, asettelu säilyttää uuden koon ja sovittaa muut ikkunat sen ympärille. Ikkunan siirtäminen otsikkopalkista palauttaa sen edelleen paikalleen."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Faites glisser le bord ou le coin d’une fenêtre en mosaïque sans touche de modification. Quand vous relâchez, la disposition conserve la nouvelle taille et ajuste les autres fenêtres autour. Déplacer une fenêtre par sa barre de titre la remet toujours en place."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "גררו את הקצה או את הפינה של חלון בפריסת אריחים בלי מקש שינוי. כשמשחררים, הפריסה שומרת על הגודל החדש ומתאימה סביבו את שאר החלונות. הזזת חלון בשורת הכותרת עדיין מחזירה אותו למקומו."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "किसी टाइल्ड विंडो के किनारे या कोने को मॉडिफ़ायर के बिना खींचें। छोड़ने पर लेआउट नया आकार बनाए रखता है और बाकी विंडो को उसके आसपास फ़िट करता है। टाइटल बार से विंडो को खिसकाने पर वह अब भी वापस अपनी जगह पर आ जाती है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trascina il bordo o l’angolo di una finestra affiancata senza tasti modificatori. Quando rilasci, il layout mantiene la nuova dimensione e adatta le altre finestre intorno. Spostare una finestra dalla barra del titolo la riporta comunque al suo posto."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "修飾キーを押さずにタイル表示のウインドウの端または角をドラッグします。離すと、レイアウトは新しいサイズを保持し、ほかのウインドウをその周りに合わせます。タイトルバーでウインドウを移動した場合は、引き続き元の位置に戻ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보조 키 없이 타일 윈도우의 가장자리나 모서리를 드래그합니다. 놓으면 레이아웃이 새 크기를 유지하고 다른 윈도우를 그 주변에 맞춥니다. 제목 막대로 윈도우를 이동하면 여전히 원래 자리로 돌아갑니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dra i kanten eller hjørnet av et flislagt vindu uten endringstast. Når du slipper, beholder oppsettet den nye størrelsen og tilpasser de andre vinduene rundt det. Flytter du et vindu etter tittellinjen, går det fortsatt tilbake."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep zonder speciale toets aan de rand of hoek van een getegeld venster. Als je loslaat, behoudt de indeling het nieuwe formaat en past de andere vensters eromheen aan. Een venster verplaatsen via de titelbalk zet het nog steeds terug."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Przeciągnij krawędź lub róg okna w układzie kafelkowym bez klawisza modyfikującego. Po puszczeniu układ zachowuje nowy rozmiar i dopasowuje do niego pozostałe okna. Przeniesienie okna za pasek tytułu nadal przywraca je na miejsce."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перетащите край или угол окна в мозаике без клавиши-модификатора. Когда вы отпустите, раскладка сохранит новый размер и подстроит под него остальные окна. Перемещённое за заголовок окно по-прежнему возвращается на место."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prevucite ivicu ili ugao prozora u mozaiku bez modifikatorskog tastera. Kada otpustite, raspored zadržava novu veličinu i prilagođava ostale prozore oko njega. Prozor pomeren preko naslovne trake i dalje se vraća na mesto."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dra i kanten eller hörnet på ett fönster sida vid sida utan kombinationstangent. När du släpper behåller layouten den nya storleken och anpassar de andra fönstren runt den. Ett fönster som flyttas via namnlisten återgår fortfarande."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перетягніть край або кут вікна в мозаїці без клавіші-модифікатора. Коли ви відпустите, розкладка збереже новий розмір і підлаштує під нього інші вікна. Переміщене за заголовок вікно, як і раніше, повертається на місце."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无需按修饰键，直接拖动平铺窗口的边缘或角落。松开后，布局会保留新的大小，并调整周围的其他窗口。通过标题栏移动窗口时，窗口仍会弹回原位。"
+          }
+        }
+      }
+    }
   },
   "version" : "1.0"
 }

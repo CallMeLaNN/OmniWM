@@ -13,6 +13,7 @@ extension MouseEventHandler {
             cancelActiveMouseInteraction()
             return
         }
+        guard !updateCrossDisplayHover(at: location) else { return }
         let now = controller.animationClock.now()
         state.dragGhostController?.updatePosition(cursorLocation: location)
         _ = engine.interactiveMoveUpdate(
@@ -150,6 +151,7 @@ extension MouseEventHandler {
             cancelActiveMouseInteraction()
             return
         }
+        guard !updateCrossDisplayHover(at: location) else { return }
 
         _ = engine.interactiveMoveUpdate(currentLocation: location)
         state.dragGhostController?.updatePosition(cursorLocation: location)

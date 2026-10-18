@@ -56,9 +56,15 @@ extension CommandHandler {
         case .moveDown:
             controller.workspaceNavigationHandler.moveWindowToAdjacentWorkspace(direction: .down)
         case let .switchTo(index):
-            controller.workspaceNavigationHandler.switchWorkspace(index: index)
+            controller.workspaceNavigationHandler.switchWorkspace(
+                index: index,
+                autoBackAndForth: controller.settings.workspaces.autoBackAndForth
+            )
         case let .switchSlot(slot):
-            controller.workspaceNavigationHandler.switchWorkspaceSlot(slot)
+            controller.workspaceNavigationHandler.switchWorkspaceSlot(
+                slot,
+                autoBackAndForth: controller.settings.workspaces.autoBackAndForth
+            )
         case let .moveToSlot(slot):
             controller.workspaceNavigationHandler.moveFocusedWindow(toWorkspaceSlot: slot)
         case .next:

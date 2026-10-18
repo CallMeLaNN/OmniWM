@@ -38,6 +38,7 @@ final class WMController {
     private(set) var hotkeyRegistrationFailures: [HotkeyCommand: HotkeyRegistrationFailureReason] = [:]
     private(set) var systemHyperTriggerFailure: SystemHyperTriggerFailure?
     private(set) var windowSwitcherInputAvailable = false
+    var keyboardModeKind = KeyboardModeKind.normal
     var isHyperTriggerActive: Bool {
         hotkeys.isHyperTriggerActive
     }
@@ -52,6 +53,7 @@ final class WMController {
             publishPointerEdgeTopology()
             if isLockScreenActive {
                 windowSwitcherControllerStorage?.dismiss()
+                hotkeys.cancelArmedKeyboardMode()
                 layoutRefreshController.suspendForLockScreen()
                 resetWorkspaceBarReveal()
                 mouseEventHandler.handleInputSuppressionBegan()
@@ -222,6 +224,7 @@ final class WMController {
     let ownedWindowRegistry: OwnedWindowRegistry
     @ObservationIgnored
     let columnModeToast: ColumnModeToastController
+    let keyboardModeIndicator: KeyboardModeIndicatorController
     @ObservationIgnored
     var warpMouseCursorPosition: (CGPoint) -> Void = { CGWarpMouseCursorPosition($0) }
     @ObservationIgnored
@@ -273,6 +276,7 @@ final class WMController {
         self.windowFocusOperations = windowFocusOperations
         self.ownedWindowRegistry = ownedWindowRegistry
         columnModeToast = ColumnModeToastController(ownedWindowRegistry: ownedWindowRegistry)
+        keyboardModeIndicator = KeyboardModeIndicatorController(ownedWindowRegistry: ownedWindowRegistry)
         workspaceManager = WorkspaceManager(settings: settings)
         focusPolicyEngine = FocusPolicyEngine()
         if self.workspaceBarIconResolver.synchronize(

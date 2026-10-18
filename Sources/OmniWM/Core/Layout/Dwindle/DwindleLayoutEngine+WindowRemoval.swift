@@ -17,8 +17,15 @@ extension DwindleLayoutEngine {
         if let move = interactiveMove, move.workspaceId == workspaceId {
             if move.token == token || move.targetToken == token {
                 interactiveMoveCancel()
-            } else if case .workspaceEdge = move.target {
-                interactiveMoveCancel()
+            } else {
+                switch move.target {
+                case .workspaceEdge,
+                     .splitBoundary:
+                    interactiveMoveCancel()
+                case .tile,
+                     nil:
+                    break
+                }
             }
         }
 

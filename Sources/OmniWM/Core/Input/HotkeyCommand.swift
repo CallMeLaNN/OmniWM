@@ -67,6 +67,7 @@ enum HotkeyCommand: Equatable, Hashable {
 
     case presentation(IPCPresentationCommand)
     case media(IPCMediaCommand)
+    case keyboardMode(IPCKeyboardModeCommand)
     case shellToggle(String)
     case focusNavigation(FocusNavigationAction)
     case windowMovement(WindowMovementAction)
@@ -89,5 +90,24 @@ enum HotkeyCommand: Equatable, Hashable {
             return action.compatibility
         }
         return ActionCatalog.layoutCompatibility(for: self) ?? .shared
+    }
+
+    var repeatsInPrefix: Bool {
+        switch self {
+        case .move,
+             .moveColumn,
+             .windowMovement(.down),
+             .windowMovement(.up),
+             .windowMovement(.downOrToWorkspaceDown),
+             .windowMovement(.upOrToWorkspaceUp),
+             .sizing(.resizeContainerPrimarySpan),
+             .sizing(.resizeWindowPrimarySpan),
+             .sizing(.resizeWindowSecondarySpan),
+             .dwindle(.resizeAlongAxis),
+             .dwindle(.resizeFocusedWindow):
+            true
+        default:
+            false
+        }
     }
 }

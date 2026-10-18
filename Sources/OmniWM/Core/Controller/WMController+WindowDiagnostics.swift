@@ -62,7 +62,7 @@ extension WMController {
             minWidth: evaluation.decision.ruleEffects.minWidth,
             minHeight: evaluation.decision.ruleEffects.minHeight,
             initialNiriContainerPrimarySpan: evaluation.decision.admissionHints.initialNiriContainerPrimarySpan,
-            matchedRuleId: evaluation.decision.ruleEffects.matchedRuleId,
+            ruleProvenance: evaluation.decision.ruleProvenance,
             heuristicReasons: evaluation.decision.heuristicReasons,
             attributeFetchSucceeded: evaluation.facts.ax.attributeFetchSucceeded
         )

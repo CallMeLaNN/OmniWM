@@ -133,6 +133,10 @@ extension NiriLayoutEngine {
         interactiveMove = nil
     }
 
+    func interactiveMoveClearTarget() {
+        interactiveMove?.currentHoverTarget = nil
+    }
+
     func hitTestMoveTarget(
         point: CGPoint,
         excludingWindowId: NodeId,

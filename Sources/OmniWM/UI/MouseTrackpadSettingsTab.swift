@@ -84,7 +84,21 @@ struct MouseTrackpadSettingsTab: View {
             .id("Left Mouse Move Modifier")
 
             SettingsCaption(
-                localized: "Hold this modifier and left-drag tiled windows. Drop at another tile's center to swap, or near one of its edges to insert on that side. In Dwindle, dropping near a workspace edge inserts at the outer edge. Choose Off to leave modified drags to apps."
+                localized: "Hold this modifier and left-drag tiled windows. Drop at another tile's center to swap, or near one of its edges to insert on that side. In Dwindle, you can also insert between existing splits or at a workspace edge. Choose Off to leave modified drags to apps."
+            )
+
+            Picker(
+                "Dwindle Group Across Displays",
+                selection: Bindable(settings.gestures).dwindleGroupDragAcrossDisplays
+            ) {
+                ForEach(DwindleGroupDrag.allCases) { mode in
+                    Text(mode.localizedDisplayName).tag(mode)
+                }
+            }
+            .id("Dwindle Group Across Displays")
+
+            SettingsCaption(
+                localized: "Choose what a modifier drag of a Dwindle tab group moves when you drop it on another display. A whole group dropped into Niri becomes one tabbed column."
             )
 
             Picker("Right Mouse Resize Modifier", selection: Bindable(settings.gestures).mouseResizeModifierKey) {
@@ -95,6 +109,13 @@ struct MouseTrackpadSettingsTab: View {
             .id("Right Mouse Resize Modifier")
 
             SettingsCaption(localized: "Hold this modifier combo + right mouse drag to resize tiled windows")
+
+            Toggle("Keep Native Edge Resizes", isOn: Bindable(settings.gestures).adoptNativeResize)
+                .id("Keep Native Edge Resizes")
+
+            SettingsCaption(
+                localized: "Drag a tiled window's edge or corner without a modifier. When you let go, the layout keeps the new size and fits the other windows around it. Moving a window by its title bar still snaps it back."
+            )
 
             Picker("Resize Preview", selection: Bindable(settings.gestures).resizePreviewStyle) {
                 ForEach(ResizePreviewStyle.allCases) { style in

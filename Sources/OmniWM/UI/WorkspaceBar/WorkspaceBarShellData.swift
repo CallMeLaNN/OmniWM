@@ -66,6 +66,7 @@ extension ShellBarStyle {
             textColor: hex(resolved.textColor),
             statsButton: resolved.systemStatsButton,
             secureInput: snapshot.secureInputActive,
+            keyboardMode: snapshot.keyboardMode.rawValue,
             previews: settings.resolvedHoverPreviewsEnabled,
             hideInFullscreen: settings.resolvedHideInNativeFullscreen
         )
