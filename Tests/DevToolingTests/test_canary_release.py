@@ -1,9 +1,12 @@
 import importlib.util
+import io
+import json
 import os
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 SOURCE = Path(__file__).resolve().parents[2]
 SPEC = importlib.util.spec_from_file_location("canary_release", SOURCE / "Scripts/canary_release.py")
@@ -244,6 +247,144 @@ class CanaryReleaseTests(unittest.TestCase):
             content = output.read_text()
         self.assertIn("should_skip=true", content)
         self.assertIn("skip_reason=HEAD ", content)
+
+
+class CanaryCITests(unittest.TestCase):
+    def setUp(self):
+        self.head = "a" * 40
+        self.repository = "OmniNull/OmniWM"
+        self.run = {
+            "id": 100,
+            "run_number": 10,
+            "head_sha": self.head,
+            "head_branch": "main",
+            "event": "push",
+            "path": ".github/workflows/ci.yml",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/OmniNull/OmniWM/actions/runs/100",
+        }
+        self.jobs = [
+            {"name": name, "status": "completed", "conclusion": "success"}
+            for name in ("Verify", "Tests")
+        ]
+        self.runs_path = (
+            f"repos/{self.repository}/actions/workflows/ci.yml/runs"
+            f"?branch=main&event=push&head_sha={self.head}&per_page=100"
+        )
+        self.jobs_path = f"repos/{self.repository}/actions/runs/100/jobs?filter=latest&per_page=100"
+        self.responses = {
+            self.runs_path: [{"workflow_runs": [self.run]}],
+            self.jobs_path: [{"jobs": self.jobs}],
+        }
+        self.addCleanup(patch.stopall)
+        self.git = patch.object(canary_release, "git", return_value=self.head).start()
+        self.api = patch.object(canary_release, "github_api", side_effect=lambda path: self.responses[path]).start()
+
+    def test_uses_checked_out_head_instead_of_event_sha(self):
+        with patch.dict(os.environ, {"GITHUB_SHA": "b" * 40}):
+            self.assertEqual(canary_release.verify_ci("checkout", self.repository), self.run)
+        self.git.assert_called_once_with("checkout", "rev-parse", "HEAD")
+        self.api.assert_any_call(self.runs_path)
+
+    def test_missing_ci_is_rejected(self):
+        self.responses[self.runs_path] = [{"workflow_runs": []}]
+        with self.assertRaisesRegex(canary_release.CanaryError, "No OmniWM CI push run"):
+            canary_release.verify_ci("checkout", self.repository)
+
+    def test_success_for_another_commit_or_trigger_is_rejected(self):
+        for field, value in (
+            ("head_sha", "b" * 40),
+            ("head_branch", "feature"),
+            ("event", "pull_request"),
+            ("path", ".github/workflows/website.yml"),
+        ):
+            with self.subTest(field=field):
+                original = self.run[field]
+                self.run[field] = value
+                with self.assertRaisesRegex(canary_release.CanaryError, "does not match"):
+                    canary_release.verify_ci("checkout", self.repository)
+                self.run[field] = original
+
+    def test_latest_failed_or_unfinished_run_blocks_an_older_success(self):
+        older = {**self.run, "id": 99, "run_number": 9}
+        self.responses[self.runs_path] = [{"workflow_runs": [older]}, {"workflow_runs": [self.run]}]
+        for status, conclusion in (
+            ("queued", None),
+            ("in_progress", None),
+            ("completed", "failure"),
+            ("completed", "cancelled"),
+            ("completed", "skipped"),
+        ):
+            with self.subTest(status=status, conclusion=conclusion):
+                self.run.update(status=status, conclusion=conclusion)
+                with self.assertRaisesRegex(canary_release.CanaryError, "has not succeeded"):
+                    canary_release.verify_ci("checkout", self.repository)
+
+    def test_latest_success_is_selected_across_run_pages(self):
+        older = {**self.run, "id": 99, "run_number": 9, "conclusion": "failure"}
+        self.responses[self.runs_path] = [{"workflow_runs": [self.run]}, {"workflow_runs": [older]}]
+        self.assertEqual(canary_release.verify_ci("checkout", self.repository), self.run)
+
+    def test_required_jobs_must_complete_successfully(self):
+        for name in ("Verify", "Tests"):
+            for status, conclusion in (("in_progress", None), ("completed", "failure"), ("completed", "skipped")):
+                with self.subTest(name=name, status=status, conclusion=conclusion):
+                    self.responses[self.jobs_path] = [{"jobs": [
+                        {**job, "status": status, "conclusion": conclusion} if job["name"] == name else job
+                        for job in self.jobs
+                    ]}]
+                    with self.assertRaisesRegex(canary_release.CanaryError, name):
+                        canary_release.verify_ci("checkout", self.repository)
+
+    def test_failing_duplicate_required_job_is_rejected(self):
+        self.responses[self.jobs_path] = [{"jobs": self.jobs + [
+            {"name": "Tests", "status": "completed", "conclusion": "failure"},
+        ]}]
+        with self.assertRaisesRegex(canary_release.CanaryError, "Tests"):
+            canary_release.verify_ci("checkout", self.repository)
+
+    def test_missing_required_job_is_rejected(self):
+        for name in ("Verify", "Tests"):
+            with self.subTest(name=name):
+                self.responses[self.jobs_path] = [{"jobs": [job for job in self.jobs if job["name"] != name]}]
+                with self.assertRaisesRegex(canary_release.CanaryError, name):
+                    canary_release.verify_ci("checkout", self.repository)
+
+    def test_required_jobs_on_later_pages_are_checked(self):
+        self.responses[self.jobs_path] = [{"jobs": [self.jobs[0]]}, {"jobs": [self.jobs[1]]}]
+        self.assertEqual(canary_release.verify_ci("checkout", self.repository), self.run)
+
+    def test_forced_rebuild_still_requires_passing_ci(self):
+        self.assertEqual(canary_release.check("checkout", True)["should_skip"], "false")
+        self.run["conclusion"] = "failure"
+        with self.assertRaisesRegex(canary_release.CanaryError, "has not succeeded"):
+            canary_release.verify_ci("checkout", self.repository)
+
+    def test_verify_ci_cli_reports_failure(self):
+        self.run["conclusion"] = "failure"
+        with patch.dict(os.environ, {"GITHUB_REPOSITORY": self.repository}), patch("sys.stderr", new_callable=io.StringIO) as errors:
+            self.assertEqual(canary_release.main(["verify-ci", "--repo", "checkout"]), 2)
+        self.assertIn("has not succeeded", errors.getvalue())
+
+
+class CanaryCIAPITests(unittest.TestCase):
+    def test_reads_all_api_pages(self):
+        pages = [{"workflow_runs": []}, {"workflow_runs": [{"id": 100}]}]
+        result = subprocess.CompletedProcess([], 0, json.dumps(pages), "")
+        with patch.object(canary_release.subprocess, "run", return_value=result) as command:
+            self.assertEqual(canary_release.github_api("repos/owner/repo/actions/runs"), pages)
+        self.assertEqual(command.call_args.args[0], [
+            "gh", "api", "--method", "GET", "--paginate", "--slurp", "repos/owner/repo/actions/runs",
+        ])
+
+    def test_api_failure_and_invalid_json_are_rejected(self):
+        for code, output, errors in ((1, "", "HTTP 403"), (0, "not json", "")):
+            with self.subTest(code=code), patch.object(
+                canary_release.subprocess, "run", return_value=subprocess.CompletedProcess([], code, output, errors)
+            ):
+                with self.assertRaises(canary_release.CanaryError):
+                    canary_release.github_api("repos/owner/repo/actions/runs")
 
 
 if __name__ == "__main__":

@@ -72,6 +72,7 @@ jobs:
     environment: canary-signing
     permissions:
       contents: write
+      actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -97,6 +98,11 @@ jobs:
             FORCE_ARG="--force"
           fi
           python3 Scripts/canary_release.py check --github-output "$GITHUB_OUTPUT" $FORCE_ARG
+      - name: Require passing CI for the checked-out commit
+        if: steps.check.outputs.should_skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 Scripts/canary_release.py verify-ci
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: |
