@@ -140,7 +140,7 @@ extension MouseEventHandler {
         }
     }
 
-    private func finishDwindleResize() {
+    func finishDwindleResize() {
         guard let controller, let engine = controller.dwindleEngine else { return }
         let workspaceId = engine.interactiveResize?.workspaceId
         guard engine.interactiveResizeEnd(), let workspaceId else { return }
@@ -167,8 +167,13 @@ extension MouseEventHandler {
                 gaps: geometry.innerGap
             )
         }
+        settleNiriResize(resizedToken, in: workspaceId)
+    }
+
+    func settleNiriResize(_ token: WindowToken, in workspaceId: WorkspaceDescriptor.ID) {
+        guard let controller else { return }
         controller.workspaceManager.recordLayoutOperation(
-            .interactiveResizeEnded(token: resizedToken),
+            .interactiveResizeEnded(token: token),
             in: workspaceId,
             source: .mouse
         )

@@ -238,6 +238,7 @@ extension CanonicalTOMLConfig {
         gestures.windowGestureSensitivity = gestures.windowGestureSensitivity ?? 1.0
         gestures.resizePreviewStyle = gestures.resizePreviewStyle ?? .live
         gestures.dwindleGroupDragAcrossDisplays = gestures.dwindleGroupDragAcrossDisplays ?? .group
+        gestures.adoptNativeResize = gestures.adoptNativeResize ?? false
         return gestures
     }
 }

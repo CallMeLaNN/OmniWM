@@ -110,6 +110,13 @@ struct MouseTrackpadSettingsTab: View {
 
             SettingsCaption(localized: "Hold this modifier combo + right mouse drag to resize tiled windows")
 
+            Toggle("Keep Native Edge Resizes", isOn: Bindable(settings.gestures).adoptNativeResize)
+                .id("Keep Native Edge Resizes")
+
+            SettingsCaption(
+                localized: "Drag a tiled window's edge or corner without a modifier. When you let go, the layout keeps the new size and fits the other windows around it. Moving a window by its title bar still snaps it back."
+            )
+
             Picker("Resize Preview", selection: Bindable(settings.gestures).resizePreviewStyle) {
                 ForEach(ResizePreviewStyle.allCases) { style in
                     Text(style.localizedDisplayName).tag(style)

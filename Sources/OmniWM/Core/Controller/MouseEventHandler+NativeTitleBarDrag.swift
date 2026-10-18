@@ -49,6 +49,9 @@ extension MouseEventHandler {
               controller.workspaceManager.entry(for: drag.token)?.mode == .tiling
         else { return }
         drag.phase = .dragging
+        drag.adoptionStartFrame = controller.axManager.isAwaitingFrameWrite(drag.token.windowId)
+            ? nil
+            : controller.axManager.lastAppliedFrame(for: drag.token.windowId)
         state.nativeTitleBarDrag = drag
         controller.axManager.beginNativeTitleBarDrag(for: drag.token)
     }
@@ -97,12 +100,16 @@ extension MouseEventHandler {
         settleReleasedNativeTitleBarDrag(
             drag,
             entry: entry,
+            observedFrame: observedFrame,
             needsCorrection: excludedFrameWrite || observedDisplacement
         )
     }
 
     private func settleReleasedNativeTitleBarDrag(
-        _ drag: MouseInputState.NativeTitleBarDrag, entry: WindowState, needsCorrection: Bool
+        _ drag: MouseInputState.NativeTitleBarDrag,
+        entry: WindowState,
+        observedFrame: CGRect?,
+        needsCorrection: Bool
     ) {
         var drag = drag
         guard needsCorrection else {
@@ -115,6 +122,10 @@ extension MouseEventHandler {
             return
         }
 
+        if adoptNativeResizeIfEligible(&drag, entry: entry, observedFrame: observedFrame) {
+            state.nativeTitleBarDrag = drag
+            return
+        }
         drag.phase = .awaitingCorrection
         state.nativeTitleBarDrag = drag
         requestNativeTitleBarDragCorrection(for: entry)

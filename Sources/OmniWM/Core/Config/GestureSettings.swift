@@ -136,6 +136,13 @@ final class GestureSettings {
         didSet { notifyChange() }
     }
 
+    var adoptNativeResize = GestureSettings.defaults.adoptNativeResize ?? false {
+        didSet {
+            guard oldValue != adoptNativeResize else { return }
+            notifyChange()
+        }
+    }
+
     var workspaceSwipeAxisLockedToVertical: Bool {
         scrollEnabled && workspaceSwipeFingerCount.rawValue == fingerCount.rawValue
     }
@@ -165,7 +172,8 @@ final class GestureSettings {
             windowResizeFingerCount: windowResizeFingerCount,
             windowGestureSensitivity: windowGestureSensitivity,
             resizePreviewStyle: resizePreviewStyle,
-            dwindleGroupDragAcrossDisplays: dwindleGroupDragAcrossDisplays
+            dwindleGroupDragAcrossDisplays: dwindleGroupDragAcrossDisplays,
+            adoptNativeResize: adoptNativeResize
         )
     }
 
@@ -197,6 +205,7 @@ final class GestureSettings {
         windowGestureSensitivity = gestures.windowGestureSensitivity ?? 1.0
         resizePreviewStyle = gestures.resizePreviewStyle ?? .live
         dwindleGroupDragAcrossDisplays = gestures.dwindleGroupDragAcrossDisplays ?? .group
+        adoptNativeResize = gestures.adoptNativeResize ?? false
         isApplying = false
         if export() != previous {
             notifyChange()

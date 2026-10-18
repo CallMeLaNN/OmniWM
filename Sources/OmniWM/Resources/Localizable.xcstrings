@@ -171355,6 +171355,254 @@
           }
         }
       }
+    },
+    "Keep Native Edge Resizes" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الاحتفاظ بتغييرات الحجم من الحواف الأصلية"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Behold indbyggede kantstørrelser"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Native Größenänderungen an Rändern übernehmen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Διατήρηση εγγενών αλλαγών μεγέθους από τις άκρες"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conservar cambios de tamaño nativos por los bordes"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Säilytä alkuperäiset reunakoon muutokset"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conserver les redimensionnements natifs par les bords"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "שמירת שינויי גודל מקוריים מהקצוות"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मूल किनारे से आकार बदलना बनाए रखें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantieni i ridimensionamenti nativi dai bordi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ネイティブの端からのサイズ変更を保持"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "기본 가장자리 크기 조정 유지"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Behold innebygde kantstørrelser"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Systeemformaatwijzigingen via randen behouden"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zachowuj natywne zmiany rozmiaru krawędziami"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сохранять системное изменение размера за края"
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zadrži izvornu promenu veličine preko ivica"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Behåll inbyggda storleksändringar via kanter"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Зберігати системну зміну розміру за краї"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保留原生边缘调整大小"
+          }
+        }
+      }
+    },
+    "Drag a tiled window's edge or corner without a modifier. When you let go, the layout keeps the new size and fits the other windows around it. Moving a window by its title bar still snaps it back." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اسحب حافة نافذة مُبلّطة أو زاويتها دون مفتاح تعديل. عند الإفلات، يحتفظ التخطيط بالحجم الجديد ويُلائم النوافذ الأخرى حولها. يظل نقل النافذة من شريط العنوان يعيدها إلى مكانها."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Træk i kanten eller hjørnet af et fliselagt vindue uden en modifikatortast. Når du slipper, beholder layoutet den nye størrelse og tilpasser de andre vinduer omkring det. Flytter du et vindue i titellinjen, springer det stadig tilbage."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ziehen Sie ohne Sondertaste am Rand oder an der Ecke eines gekachelten Fensters. Beim Loslassen behält das Layout die neue Größe bei und passt die anderen Fenster daran an. Wird ein Fenster an der Titelleiste bewegt, springt es weiterhin zurück."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Σύρετε την άκρη ή τη γωνία ενός παραθύρου σε παράθεση χωρίς πλήκτρο τροποποίησης. Όταν το αφήσετε, η διάταξη κρατά το νέο μέγεθος και προσαρμόζει τα άλλα παράθυρα γύρω του. Η μετακίνηση ενός παραθύρου από τη γραμμή τίτλου εξακολουθεί να το επαναφέρει."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrastra el borde o la esquina de una ventana en mosaico sin tecla modificadora. Al soltarla, el diseño conserva el nuevo tamaño y ajusta las demás ventanas a su alrededor. Mover una ventana por su barra de título sigue devolviéndola a su sitio."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vedä ruudutetun ikkunan reunaa tai kulmaa ilman muokkausnäppäintä. Kun päästät irti, asettelu säilyttää uuden koon ja sovittaa muut ikkunat sen ympärille. Ikkunan siirtäminen otsikkopalkista palauttaa sen edelleen paikalleen."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Faites glisser le bord ou le coin d’une fenêtre en mosaïque sans touche de modification. Quand vous relâchez, la disposition conserve la nouvelle taille et ajuste les autres fenêtres autour. Déplacer une fenêtre par sa barre de titre la remet toujours en place."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "גררו את הקצה או את הפינה של חלון בפריסת אריחים בלי מקש שינוי. כשמשחררים, הפריסה שומרת על הגודל החדש ומתאימה סביבו את שאר החלונות. הזזת חלון בשורת הכותרת עדיין מחזירה אותו למקומו."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "किसी टाइल्ड विंडो के किनारे या कोने को मॉडिफ़ायर के बिना खींचें। छोड़ने पर लेआउट नया आकार बनाए रखता है और बाकी विंडो को उसके आसपास फ़िट करता है। टाइटल बार से विंडो को खिसकाने पर वह अब भी वापस अपनी जगह पर आ जाती है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trascina il bordo o l’angolo di una finestra affiancata senza tasti modificatori. Quando rilasci, il layout mantiene la nuova dimensione e adatta le altre finestre intorno. Spostare una finestra dalla barra del titolo la riporta comunque al suo posto."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "修飾キーを押さずにタイル表示のウインドウの端または角をドラッグします。離すと、レイアウトは新しいサイズを保持し、ほかのウインドウをその周りに合わせます。タイトルバーでウインドウを移動した場合は、引き続き元の位置に戻ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보조 키 없이 타일 윈도우의 가장자리나 모서리를 드래그합니다. 놓으면 레이아웃이 새 크기를 유지하고 다른 윈도우를 그 주변에 맞춥니다. 제목 막대로 윈도우를 이동하면 여전히 원래 자리로 돌아갑니다."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dra i kanten eller hjørnet av et flislagt vindu uten endringstast. Når du slipper, beholder oppsettet den nye størrelsen og tilpasser de andre vinduene rundt det. Flytter du et vindu etter tittellinjen, går det fortsatt tilbake."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep zonder speciale toets aan de rand of hoek van een getegeld venster. Als je loslaat, behoudt de indeling het nieuwe formaat en past de andere vensters eromheen aan. Een venster verplaatsen via de titelbalk zet het nog steeds terug."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Przeciągnij krawędź lub róg okna w układzie kafelkowym bez klawisza modyfikującego. Po puszczeniu układ zachowuje nowy rozmiar i dopasowuje do niego pozostałe okna. Przeniesienie okna za pasek tytułu nadal przywraca je na miejsce."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перетащите край или угол окна в мозаике без клавиши-модификатора. Когда вы отпустите, раскладка сохранит новый размер и подстроит под него остальные окна. Перемещённое за заголовок окно по-прежнему возвращается на место."
+          }
+        },
+        "sr-Latn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prevucite ivicu ili ugao prozora u mozaiku bez modifikatorskog tastera. Kada otpustite, raspored zadržava novu veličinu i prilagođava ostale prozore oko njega. Prozor pomeren preko naslovne trake i dalje se vraća na mesto."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dra i kanten eller hörnet på ett fönster sida vid sida utan kombinationstangent. När du släpper behåller layouten den nya storleken och anpassar de andra fönstren runt den. Ett fönster som flyttas via namnlisten återgår fortfarande."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перетягніть край або кут вікна в мозаїці без клавіші-модифікатора. Коли ви відпустите, розкладка збереже новий розмір і підлаштує під нього інші вікна. Переміщене за заголовок вікно, як і раніше, повертається на місце."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无需按修饰键，直接拖动平铺窗口的边缘或角落。松开后，布局会保留新的大小，并调整周围的其他窗口。通过标题栏移动窗口时，窗口仍会弹回原位。"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

@@ -208,6 +208,7 @@ enum SettingsSearchIndex {
             anchor: "Right Mouse Resize Modifier"
         ),
         setting("Resize Preview", section: .mouseTrackpad, tab: "mouse", anchor: "Resize Preview"),
+        setting("Keep Native Edge Resizes", section: .mouseTrackpad, tab: "mouse", anchor: "Keep Native Edge Resizes"),
         setting("Focus Follows Mouse", section: .mouseTrackpad, tab: "mouse", anchor: "Focus Follows Mouse"),
         setting(
             "Enable Focus Follows Mouse",
