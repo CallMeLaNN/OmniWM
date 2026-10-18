@@ -206,6 +206,8 @@ The prepare summary prints the `gh workflow run` command for publication because
 
 Local releases via `Scripts/omniwm_release.py` use your own keychain and notarization profile.
 
+The daily **OmniWM canary** workflow requires the latest **OmniWM CI** push run on `main` for the checked-out commit to pass, including both **Verify** and **Tests**. It checks the actual checkout rather than the scheduled event's commit, before dependency setup or importing Apple credentials. Missing, unfinished, or unsuccessful CI stops the canary; wait for CI to pass and rerun the workflow. The manual `force` option only bypasses the existing-tag check and cannot bypass CI.
+
 ### Maintainer CI Rollout
 
 The **Main branch protection** ruleset blocks branch deletion and force-pushes. Keep those protections and do not grant GitHub Actions an **Always** bypass. The release workflow uses a normal fast-forward push and rejects additional blocking rules before publication, even when its token could bypass them. Required checks or pull-request-only updates need a release flow that publishes an already-reviewed version commit; do not bypass those rules to keep the current flow working.
