@@ -139,4 +139,8 @@ _omniwmctl() {
   [[ -n "$suggestions" ]] && compadd -- ${=suggestions}
 }
 
-_omniwmctl "$@"
+if [ "$funcstack[1]" = "_omniwmctl" ]; then
+    _omniwmctl "$@"
+else
+    compdef _omniwmctl omniwmctl
+fi
