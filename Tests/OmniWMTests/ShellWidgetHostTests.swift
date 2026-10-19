@@ -374,6 +374,7 @@ final class ShellWidgetBarLifecycleTests: XCTestCase {
             CGRect(x: display.frame.minX + 100, y: display.frame.maxY - 24, width: 200, height: 24),
             display: false
         )
+        panel.contentView?.layoutSubtreeIfNeeded()
         manager.rebuildAutoHideTargets()
         pointer = CGPoint(x: panel.frame.midX, y: display.frame.maxY - 0.5)
         manager.handleAutoHideMouseMoved(at: pointer)
