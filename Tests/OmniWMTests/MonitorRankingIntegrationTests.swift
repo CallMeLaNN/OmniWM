@@ -94,6 +94,45 @@ final class MonitorRankingIntegrationTests: XCTestCase {
         XCTAssertEqual(manager.effectiveMonitor(for: workspace)?.id, monitors[0].id)
     }
 
+    func testRoleHomesFollowMainDisplayChanges() throws {
+        let settings = makeSettings()
+        settings.workspaces.configurations = [
+            WorkspaceConfiguration(name: "1", monitorAssignment: .main, layoutType: .niri),
+            WorkspaceConfiguration(name: "2", monitorAssignment: .secondary, layoutType: .niri)
+        ]
+        let manager = WorkspaceManager(settings: settings)
+        let left = makeMonitor(index: 0, x: 0, isMain: true)
+        let right = makeMonitor(index: 1, x: 600, isMain: false)
+        manager.applyMonitorConfigurationChange([left, right])
+        manager.applySettings()
+        let workspaces = try ["1", "2"].map { try XCTUnwrap(manager.workspaceId(named: $0)) }
+
+        func assertHomes(_ monitors: [Monitor], main: Monitor.ID, secondary: Monitor.ID?, line: UInt = #line) {
+            manager.applyMonitorConfigurationChange(monitors)
+            XCTAssertEqual(workspaces.map { manager.homeMonitorId(for: $0) }, [main, secondary], line: line)
+            let grouping = secondary.map { [main: [workspaces[0]], $0: [workspaces[1]]] } ?? [main: workspaces]
+            XCTAssertEqual(manager.workspaceIdsByMonitor(), grouping, line: line)
+        }
+
+        assertHomes([left, right], main: left.id, secondary: right.id)
+        assertHomes(
+            [makeMonitor(index: 0, x: -600, isMain: false), makeMonitor(index: 1, x: 0, isMain: true)],
+            main: right.id,
+            secondary: left.id
+        )
+        assertHomes([makeMonitor(index: 0, x: 0, isMain: true)], main: left.id, secondary: nil)
+        assertHomes(
+            [makeMonitor(index: 0, x: -600, isMain: false), makeMonitor(index: 1, x: 0, isMain: true)],
+            main: right.id,
+            secondary: left.id
+        )
+        assertHomes(
+            [makeMonitor(index: 0, x: -600, isMain: true), makeMonitor(index: 1, x: 0, isMain: false)],
+            main: left.id,
+            secondary: right.id
+        )
+    }
+
     func testMonitorSetupCoverageUsesRankedRoles() {
         let monitors = makeMonitors()
         var draft = MonitorSetupDraft(
@@ -117,18 +156,21 @@ final class MonitorRankingIntegrationTests: XCTestCase {
     }
 
     private func makeMonitors() -> [Monitor] {
-        (0 ..< 3).map { index in
-            let displayId = CGDirectDisplayID(960_001 + index)
-            let frame = CGRect(x: index * 600, y: 0, width: 600, height: 400)
-            return Monitor(
-                id: .init(displayId: displayId),
-                displayId: displayId,
-                frame: frame,
-                visibleFrame: frame,
-                hasNotch: false,
-                name: "Display \(index)"
-            )
-        }
+        (0 ..< 3).map { makeMonitor(index: $0, x: CGFloat($0 * 600)) }
+    }
+
+    private func makeMonitor(index: Int, x: CGFloat, isMain: Bool? = nil) -> Monitor {
+        let displayId = CGDirectDisplayID(960_001 + index)
+        let frame = CGRect(x: x, y: 0, width: 600, height: 400)
+        return Monitor(
+            id: .init(displayId: displayId),
+            displayId: displayId,
+            frame: frame,
+            visibleFrame: frame,
+            hasNotch: false,
+            name: "Display \(index)",
+            isMain: isMain
+        )
     }
 
     private func makeSettings() -> SettingsStore {

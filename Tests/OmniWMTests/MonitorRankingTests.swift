@@ -230,6 +230,58 @@ final class MonitorRankingTests: XCTestCase {
         XCTAssertTrue(MonitorRanking.addable(connected: monitors, ranking: ranking).isEmpty)
     }
 
+    func testMainDisplayIdPrefersNativeIdWithoutReadingScreens() {
+        let mainDisplayId = Monitor.mainDisplayId(native: 7) {
+            XCTFail("The origin screen was read although the native main display id is available")
+            return 9
+        }
+
+        XCTAssertEqual(mainDisplayId, 7)
+        XCTAssertTrue(Monitor.isMain(displayId: 7, frame: Self.frame(x: 1440), mainDisplayId: mainDisplayId))
+        XCTAssertFalse(Monitor.isMain(displayId: 8, frame: Self.frame(x: 0), mainDisplayId: mainDisplayId))
+    }
+
+    func testMainDisplayIdFallsBackToOriginScreenWhenNativeIdIsZero() {
+        let mainDisplayId = Monitor.mainDisplayId(native: 0) { 9 }
+
+        XCTAssertEqual(mainDisplayId, 9)
+        XCTAssertTrue(Monitor.isMain(displayId: 9, frame: Self.frame(x: 1440), mainDisplayId: mainDisplayId))
+        XCTAssertFalse(Monitor.isMain(displayId: 8, frame: Self.frame(x: 0), mainDisplayId: mainDisplayId))
+    }
+
+    func testIsMainFallsBackToFrameOriginWithoutAnyMainDisplayId() {
+        let mainDisplayId = Monitor.mainDisplayId(native: 0) { nil }
+
+        XCTAssertNil(mainDisplayId)
+        XCTAssertTrue(Monitor.isMain(displayId: 8, frame: Self.frame(x: 0), mainDisplayId: mainDisplayId))
+        XCTAssertFalse(Monitor.isMain(displayId: 9, frame: Self.frame(x: 1440), mainDisplayId: mainDisplayId))
+    }
+
+    func testDefaultOrderUsesSampledMainStatus() {
+        let monitors = [builtIn, dell, lg].map { monitor in
+            Self.makeMonitor(
+                id: monitor.displayId,
+                x: monitor.frame.minX,
+                name: monitor.name,
+                uuid: monitor.displayUUID,
+                isMain: monitor.id == dell.id
+            )
+        }
+
+        XCTAssertEqual(MonitorRanking.defaultOrder(monitors).map(\.displayId), [2, 1, 3])
+        XCTAssertEqual(MonitorRanking.roleOrder(ranking: [], sortedMonitors: monitors).map(\.displayId), [2, 1, 3])
+    }
+
+    func testAmbiguousUUIDDiscardKeepsMainStatus() {
+        let display = Self.makeMonitor(id: 2, x: 1440, name: dell.name, uuid: dell.displayUUID, isMain: false)
+        let twin = Self.makeMonitor(id: 4, x: 7440, name: dell.name, uuid: dell.displayUUID, isMain: true)
+
+        let monitors = Monitor.discardingAmbiguousDisplayUUIDs(in: [display, twin])
+
+        XCTAssertEqual(monitors.map(\.displayUUID), [nil, nil])
+        XCTAssertEqual(monitors.map(\.isMain), [false, true])
+    }
+
     func testRoleNames() {
         XCTAssertEqual(MonitorRanking.roleName(forRank: 0), "Main")
         XCTAssertEqual(MonitorRanking.roleName(forRank: 1), "Secondary")
@@ -249,16 +301,26 @@ final class MonitorRankingTests: XCTestCase {
         XCTAssertEqual(MonitorRanking.removing(names, at: 3), names)
     }
 
-    private static func makeMonitor(id: CGDirectDisplayID, x: CGFloat, name: String, uuid: String?) -> Monitor {
-        let frame = CGRect(x: x, y: 0, width: 1440, height: 900)
-        return Monitor(
+    private static func makeMonitor(
+        id: CGDirectDisplayID,
+        x: CGFloat,
+        name: String,
+        uuid: String?,
+        isMain: Bool? = nil
+    ) -> Monitor {
+        Monitor(
             id: Monitor.ID(displayId: id),
             displayId: id,
-            frame: frame,
-            visibleFrame: frame,
+            frame: frame(x: x),
+            visibleFrame: frame(x: x),
             hasNotch: false,
             name: name,
-            displayUUID: uuid
+            displayUUID: uuid,
+            isMain: isMain
         )
+    }
+
+    private static func frame(x: CGFloat) -> CGRect {
+        CGRect(x: x, y: 0, width: 1440, height: 900)
     }
 }

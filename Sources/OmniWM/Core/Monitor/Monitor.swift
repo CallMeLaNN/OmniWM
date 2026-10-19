@@ -66,6 +66,7 @@ struct Monitor: Identifiable, Hashable {
     let frame: CGRect
     let visibleFrame: CGRect
     let hasNotch: Bool
+    let isMain: Bool
     var notchRange: ClosedRange<CGFloat>?
     let notchHeight: CGFloat
     let backingScale: CGFloat
@@ -83,7 +84,8 @@ struct Monitor: Identifiable, Hashable {
         notchHeight: CGFloat = 0,
         backingScale: CGFloat = 1,
         name: String,
-        displayUUID: String? = nil
+        displayUUID: String? = nil,
+        isMain: Bool? = nil
     ) {
         self.id = id
         self.displayId = displayId
@@ -95,10 +97,13 @@ struct Monitor: Identifiable, Hashable {
         self.backingScale = backingScale
         self.name = name
         self.displayUUID = DisplayUUID.canonical(displayUUID)
+        self.isMain = isMain ?? Self.isMain(displayId: displayId, frame: frame, mainDisplayId: Self.mainDisplayId())
     }
 
     static func current() -> [Monitor] {
-        let monitors = NSScreen.screens.compactMap { screen -> Monitor? in
+        let screens = NSScreen.screens
+        let mainDisplayId = Self.mainDisplayId { screens.first { $0.frame.origin == .zero }?.displayId }
+        let monitors = screens.compactMap { screen -> Monitor? in
             guard let displayId = screen.displayId else {
                 FallbackFiringRecorder.shared.note(.monitor, "nsScreenDisplayIdNil")
                 return nil
@@ -114,10 +119,25 @@ struct Monitor: Identifiable, Hashable {
                 notchHeight: screen.safeAreaInsets.top,
                 backingScale: screen.backingScaleFactor,
                 name: screen.localizedName,
-                displayUUID: SkyLight.displayUUID(for: displayId)
+                displayUUID: SkyLight.displayUUID(for: displayId),
+                isMain: isMain(displayId: displayId, frame: screen.frame, mainDisplayId: mainDisplayId)
             )
         }
         return discardingAmbiguousDisplayUUIDs(in: monitors)
+    }
+
+    static func mainDisplayId(
+        native: CGDirectDisplayID = CGMainDisplayID(),
+        originScreenDisplayId: () -> CGDirectDisplayID? = {
+            NSScreen.screens.first { $0.frame.origin == .zero }?.displayId
+        }
+    ) -> CGDirectDisplayID? {
+        native != 0 ? native : originScreenDisplayId()
+    }
+
+    static func isMain(displayId: CGDirectDisplayID, frame: CGRect, mainDisplayId: CGDirectDisplayID?) -> Bool {
+        guard let mainDisplayId else { return frame.minX == 0 && frame.minY == 0 }
+        return displayId == mainDisplayId
     }
 
     static func namesMatch(_ lhs: String, _ rhs: String) -> Bool {
@@ -147,7 +167,8 @@ struct Monitor: Identifiable, Hashable {
                 notchRange: monitor.notchRange,
                 notchHeight: monitor.notchHeight,
                 backingScale: monitor.backingScale,
-                name: monitor.name
+                name: monitor.name,
+                isMain: monitor.isMain
             )
         }
     }
@@ -220,19 +241,6 @@ extension Monitor {
 
     var autoOrientation: Orientation {
         frame.width >= frame.height ? .horizontal : .vertical
-    }
-
-    var isMain: Bool {
-        let mainDisplayId = CGMainDisplayID()
-        if mainDisplayId != 0 {
-            return displayId == mainDisplayId
-        }
-        if let screen = NSScreen.screens.first(where: { $0.frame.origin == .zero }),
-           let displayId = screen.displayId
-        {
-            return self.displayId == displayId
-        }
-        return frame.minX == 0 && frame.minY == 0
     }
 
     var workspaceAnchorPoint: CGPoint {
