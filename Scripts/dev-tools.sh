@@ -29,14 +29,14 @@ cleanup() {
 check_prerequisites() {
   local version major minor xcode_version
   if [ "$(uname -s)" != Darwin ]; then
-    problem "macOS 26 or newer is required."
+    problem "Building OmniWM requires macOS 27 or newer."
     return
   fi
   [ "$(uname -m)" = arm64 ] || problem "Use a native Apple Silicon terminal, without Rosetta."
   version="$(sw_vers -productVersion)"
   major="${version%%.*}"
-  if [ "$major" -lt 26 ]; then
-    problem "macOS 26 or newer is required; found $version."
+  if [ "$major" -lt 27 ]; then
+    problem "Building OmniWM requires macOS 27 or newer; found $version."
   else
     echo "macOS: $version ($(uname -m))"
   fi
@@ -45,26 +45,26 @@ check_prerequisites() {
     echo "$xcode_version"
     version="$(printf '%s\n' "$xcode_version" | awk '/^Xcode / { print $2 }')"
     major="${version%%.*}"
-    [ "$major" -ge 27 ] || problem "Select Xcode 27 or newer; Xcode 26 does not include Swift 6.4."
+    [ "$major" -ge 27 ] || problem "Select Xcode 27 or newer for the macOS 27 SDK."
   else
-    problem "Install and select Xcode 27 with Swift 6.4; Command Line Tools alone are insufficient."
+    problem "Install and select Xcode 27 for the macOS 27 SDK; Command Line Tools alone are insufficient."
   fi
 
   if version="$(swift --version 2>/dev/null)"; then
     echo "$version"
     version="$(printf '%s\n' "$version" | sed -n 's/.*Swift version \([0-9.]*\).*/\1/p' | head -n 1)"
     IFS=. read -r major minor _ <<< "$version"
-    if [ "${major:-0}" -lt 6 ] || { [ "${major:-0}" -eq 6 ] && [ "${minor:-0}" -lt 4 ]; }; then
-      problem "Swift 6.4 or newer is required; select the Xcode 27 toolchain."
+    if [ "${major:-0}" -lt 6 ] || { [ "${major:-0}" -eq 6 ] && [ "${minor:-0}" -lt 5 ]; }; then
+      problem "Swift 6.5 or newer is required; install the toolchain pinned in .swift-version with swiftly."
     fi
   else
-    problem "Swift is unavailable; install and select Xcode 27."
+    problem "Swift is unavailable; install the toolchain pinned in .swift-version with swiftly."
   fi
 
   if version="$(xcrun --sdk macosx --show-sdk-version 2>/dev/null)"; then
     echo "macOS SDK: $version"
     major="${version%%.*}"
-    [ "$major" -ge 26 ] || problem "The selected macOS SDK must be version 26 or newer."
+    [ "$major" -ge 27 ] || problem "The selected macOS SDK must be version 27 or newer."
   else
     problem "The selected Xcode has no usable macOS SDK."
   fi

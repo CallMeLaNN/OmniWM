@@ -8,15 +8,18 @@ Documentation-only contributions do not require building the app. For website ch
 
 ### 1. Install Xcode
 
-Building OmniWM requires an **Apple Silicon Mac and Xcode 27 with Swift 6.4**. Xcode 26.6 includes Swift 6.3 and cannot build this checkout. Xcode 27 requires **macOS 26.6 or later**, even though the released OmniWM app supports macOS 26.0 or later. Check [Apple's Xcode requirements](https://developer.apple.com/xcode/system-requirements) before downloading Xcode.
+Building OmniWM requires an **Apple Silicon Mac running macOS 27**, **Xcode 27** for the macOS SDK and signing tools, and the **Swift toolchain pinned in `.swift-version`**. The released OmniWM app still supports macOS 26.0 or later.
 
-Install Xcode from [Apple Developer Downloads](https://developer.apple.com/download/all/), open it, and finish its first-launch setup. In **Xcode → Settings → Locations → Command Line Tools**, select Xcode 27. Confirm the compiler in Terminal:
+Install Xcode from [Apple Developer Downloads](https://developer.apple.com/download/all/), open it, and finish its first-launch setup. In **Xcode → Settings → Locations → Command Line Tools**, select Xcode 27. The standalone Command Line Tools package is not a substitute for this Xcode installation.
+
+Install [swiftly](https://www.swift.org/install/macos/), then install the pinned toolchain from the checkout and confirm it:
 
 ```bash
-xcrun swift --version
+swiftly install
+swift --version
 ```
 
-The result must report Swift 6.4. The standalone Command Line Tools package is not a substitute for this Xcode installation.
+The result must report the Swift 6.5 development snapshot named in `.swift-version`.
 
 ### 2. Fork, Clone, and Create a Branch
 

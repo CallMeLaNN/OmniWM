@@ -199,7 +199,11 @@ jobs:
           path: |
             .cache/dev-tools/bin
             .cache/dev-tools/downloads
-          key: dev-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Scripts/dev-tools.env', 'Scripts/build-metadata.env') }}
+            ~/.swiftly
+            ~/Library/Developer/Toolchains
+          key: dev-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Scripts/dev-tools.env', 'Scripts/build-metadata.env', '.swift-version') }}
+      - name: Install the pinned Swift toolchain
+        run: ./Scripts/swift-toolchain.sh
       - name: Set up dependencies
         run: ./Scripts/dev-tools.sh setup-tools
       - name: Download the source-built GhosttyKit
@@ -378,12 +382,16 @@ jobs:
           path: |
             .cache/dev-tools/bin
             .cache/dev-tools/downloads
-          key: dev-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Scripts/dev-tools.env', 'Scripts/build-metadata.env') }}
+            ~/.swiftly
+            ~/Library/Developer/Toolchains
+          key: dev-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Scripts/dev-tools.env', 'Scripts/build-metadata.env', '.swift-version') }}
       - name: Restore the frozen GhosttyKit dependency
         run: |
           mkdir -p Frameworks
           ditto -x -k "dist/GhosttyKit.xcframework-v$VERSION.zip" Frameworks
           ./Scripts/ghostty-preflight.sh verify
+      - name: Install the pinned Swift toolchain
+        run: ./Scripts/swift-toolchain.sh
       - name: Set up dependencies
         run: ./Scripts/dev-tools.sh setup
       - name: Check frozen worktree is clean

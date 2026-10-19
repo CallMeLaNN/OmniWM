@@ -39,8 +39,12 @@ jobs:
           path: |
             .cache/dev-tools/bin
             .cache/dev-tools/downloads
+            ~/.swiftly
+            ~/Library/Developer/Toolchains
             Frameworks/GhosttyKit.xcframework
-          key: dev-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Scripts/dev-tools.env', 'Scripts/build-metadata.env') }}
+          key: dev-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Scripts/dev-tools.env', 'Scripts/build-metadata.env', '.swift-version') }}
+      - name: Install the pinned Swift toolchain
+        run: ./Scripts/swift-toolchain.sh
       - name: Set up dependencies
         run: ./Scripts/dev-tools.sh setup
   verify:
@@ -65,8 +69,12 @@ jobs:
           path: |
             .cache/dev-tools/bin
             .cache/dev-tools/downloads
+            ~/.swiftly
+            ~/Library/Developer/Toolchains
             Frameworks/GhosttyKit.xcframework
-          key: dev-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Scripts/dev-tools.env', 'Scripts/build-metadata.env') }}
+          key: dev-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Scripts/dev-tools.env', 'Scripts/build-metadata.env', '.swift-version') }}
+      - name: Install the pinned Swift toolchain
+        run: ./Scripts/swift-toolchain.sh
       - name: Set up dependencies
         run: ./Scripts/dev-tools.sh setup
       - name: Verify generated IPC wire files
@@ -99,8 +107,12 @@ jobs:
           path: |
             .cache/dev-tools/bin
             .cache/dev-tools/downloads
+            ~/.swiftly
+            ~/Library/Developer/Toolchains
             Frameworks/GhosttyKit.xcframework
-          key: dev-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Scripts/dev-tools.env', 'Scripts/build-metadata.env') }}
+          key: dev-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Scripts/dev-tools.env', 'Scripts/build-metadata.env', '.swift-version') }}
+      - name: Install the pinned Swift toolchain
+        run: ./Scripts/swift-toolchain.sh
       - name: Set up dependencies
         run: ./Scripts/dev-tools.sh setup
       - name: Verify package toolchain
