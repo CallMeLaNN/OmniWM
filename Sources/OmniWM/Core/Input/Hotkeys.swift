@@ -66,10 +66,7 @@ final class HotkeyCenter {
     private(set) var systemHyperTriggerFailure: SystemHyperTriggerFailure?
 
     private static var hyperFlagMask: UInt64 {
-        let hyper = KeySymbolMapper.hyperModifiers
-        return ModifierFlagMask.all.reduce(UInt64(0)) { mask, flag in
-            hyper & flag.carbon != 0 ? mask | flag.independent : mask
-        }
+        ModifierFlagMask.independentFlags(carbon: KeySymbolMapper.hyperModifiers)
     }
 
     var isHyperTriggerActive: Bool {
@@ -440,9 +437,7 @@ extension HotkeyCenter {
 
     func dispatchMouseButton(_ button: Int64, flags: CGEventFlags) -> Bool {
         guard isRunning, !mouseButtonDispatch.isEmpty else { return false }
-        var modifiers = ModifierFlagMask.all.reduce(UInt32(0)) { mask, flag in
-            flags.rawValue & flag.independent != 0 ? mask | flag.carbon : mask
-        }
+        var modifiers = ModifierFlagMask.carbonModifiers(independent: flags.rawValue)
         if hyperTrigger.isActive {
             modifiers |= KeySymbolMapper.hyperModifiers
         }
@@ -460,9 +455,11 @@ extension HotkeyCenter {
     private func dispatchSideSpecificHotkey(keyCode: UInt32, event: CGEvent) -> Bool {
         guard event.getIntegerValueField(.keyboardEventAutorepeat) == 0 else { return false }
         let rawFlags = event.flags.rawValue
-        if let entry = sideSpecificDispatch.first(where: {
-            CommandHotkeyTapMatcher.matches($0.binding, keyCode: keyCode, rawFlags: rawFlags)
-        }) {
+        if let entry = CommandHotkeyTapMatcher.firstMatch(
+            keyCode: keyCode,
+            rawFlags: rawFlags,
+            entries: sideSpecificDispatch
+        ) {
             suppressedHotkeyKeyCodes.insert(keyCode)
             InputTrace.record("hotkey.sided cmd=\(entry.command.displayName)")
             routeHotkeyInvocation(

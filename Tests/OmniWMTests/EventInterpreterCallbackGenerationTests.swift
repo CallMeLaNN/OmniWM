@@ -91,6 +91,41 @@ final class EventInterpreterCallbackGenerationTests: XCTestCase {
     }
 
     @MainActor
+    func testTitleCallbackForTrackedWindowSkipsWindowServerQuery() throws {
+        let pid: pid_t = 701_005
+        let windowId = 801_005
+        let currentGeneration: UInt64 = 42
+        let controller = WindowAdmissionTestSupport.controller()
+        defer { stop(controller) }
+        let workspaceId = try XCTUnwrap(
+            controller.workspaceManager.workspaceId(for: "1", createIfMissing: true)
+        )
+        let token = WindowToken(pid: pid, windowId: windowId)
+        _ = WindowAdmissionTestSupport.track(token, in: workspaceId, controller: controller)
+        var windowServerQueries = 0
+        controller.axEventHandler.windowInfoProvider = { id in
+            windowServerQueries += 1
+            return WindowServerInfo(id: id, pid: pid, level: 0, frame: .zero, title: nil)
+        }
+        let interpreter = EventInterpreter(
+            controller: controller,
+            callbackGenerationProvider: { candidatePID in
+                candidatePID == pid ? currentGeneration : nil
+            }
+        )
+
+        interpreter.handleIntakeEvent(stamped(.axWindow(.titleChanged(
+            pid: pid,
+            windowId: UInt32(windowId),
+            callbackGeneration: currentGeneration
+        ))))
+        XCTAssertEqual(windowServerQueries, 0)
+
+        controller.axEventHandler.handleWindowTitleChanged(windowId: UInt32(windowId))
+        XCTAssertEqual(windowServerQueries, 1)
+    }
+
+    @MainActor
     func testDestroyedWindowCallbackRequiresCurrentGeneration() throws {
         let pid: pid_t = 701_002
         let windowId = 801_002

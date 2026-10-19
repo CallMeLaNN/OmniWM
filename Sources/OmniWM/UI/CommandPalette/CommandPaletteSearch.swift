@@ -217,23 +217,13 @@ enum CommandPaletteSearch {
     }
 
     private static func commandSearchRank(_ item: CommandPaletteCommandItem, query: String) -> Int? {
-        let title = ActionCatalog.normalizedSearchTerm(item.spec.localizedTitle)
-        if title.hasPrefix(query) { return 0 }
-        if title.contains(query) { return 1 }
-
-        let layout = ActionCatalog.normalizedSearchTerm(item.spec.layoutCompatibility.rawValue)
-        let localizedLayout = ActionCatalog.normalizedSearchTerm(item.spec.layoutCompatibility.localizedDisplayName)
-        let category = ActionCatalog.normalizedSearchTerm(item.spec.category.rawValue)
-        let localizedCategory = ActionCatalog.normalizedSearchTerm(item.spec.category.localizedDisplayName)
-        let terms = ActionCatalog.normalizedSearchTerms(for: item.id)
-            ?? item.spec.searchTerms.map(ActionCatalog.normalizedSearchTerm)
-        if terms.contains(where: {
-            $0 != title && $0 != layout && $0 != localizedLayout && $0 != category && $0 != localizedCategory
-                && $0.contains(query)
-        }) { return 2 }
-        if category.contains(query) || localizedCategory.contains(query) { return 3 }
-        if layout.contains(query) || localizedLayout.contains(query) { return 4 }
-        if item.shortcutSearchTerms.contains(where: { $0.contains(query) }) { return 5 }
+        let keys = ActionCatalog.searchKeys(for: item.spec)
+        if keys.title.hasPrefix(query) { return 0 }
+        if keys.title.contains(query) { return 1 }
+        for term in keys.terms where term.contains(query) { return 2 }
+        for term in keys.categoryTerms where term.contains(query) { return 3 }
+        for term in keys.layoutTerms where term.contains(query) { return 4 }
+        for term in item.shortcutSearchTerms where term.contains(query) { return 5 }
         return nil
     }
 

@@ -277,11 +277,15 @@ extension IPCAutomationManifest {
     }
 
     public static func workspaceActionDescriptors(matching actionWords: [String]) -> [IPCWorkspaceActionDescriptor] {
-        workspaceActionDescriptors
-            .sorted { $0.path < $1.path }
-            .filter { descriptor in
-                guard actionWords.count >= descriptor.actionWords.count else { return false }
-                return actionWords.starts(with: descriptor.actionWords)
-            }
+        let catalog = workspaceActionDescriptors
+        var matches: [IPCWorkspaceActionDescriptor] = []
+        for index in catalog.indices
+            where actionWords.count >= catalog[index].actionWords.count
+            && actionWords.starts(with: catalog[index].actionWords)
+        {
+            matches.append(catalog[index])
+        }
+        matches.sort { $0.path < $1.path }
+        return matches
     }
 }

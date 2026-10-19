@@ -26,7 +26,10 @@ final class IPCQueryRouter {
         IPCPingResult()
     }
 
-    func versionResult(executableSHA256: String?) -> IPCVersionResult {
+    nonisolated static func versionResult(
+        appVersion: String?,
+        executableSHA256: String?
+    ) -> IPCVersionResult {
         IPCVersionResult(
             protocolVersion: OmniWMIPCProtocol.version,
             appVersion: appVersion,

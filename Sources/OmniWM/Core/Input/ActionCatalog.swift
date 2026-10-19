@@ -365,6 +365,52 @@ enum ActionCatalog {
     }
 }
 
+struct ActionSearchKeys {
+    let localizedTitle: String
+    let category: HotkeyCategory
+    let layoutCompatibility: LayoutCompatibility
+    let title: String
+    let terms: [String]
+    let categoryTerms: [String]
+    let layoutTerms: [String]
+
+    init(spec: ActionSpec, normalizedTerms: [String]) {
+        localizedTitle = spec.localizedTitle
+        category = spec.category
+        layoutCompatibility = spec.layoutCompatibility
+        title = ActionCatalog.normalizedSearchTerm(spec.localizedTitle)
+        categoryTerms = [spec.category.rawValue, spec.category.localizedDisplayName]
+            .map(ActionCatalog.normalizedSearchTerm)
+        layoutTerms = [spec.layoutCompatibility.rawValue, spec.layoutCompatibility.localizedDisplayName]
+            .map(ActionCatalog.normalizedSearchTerm)
+        let excludedTerms = [title] + categoryTerms + layoutTerms
+        terms = normalizedTerms.filter { !excludedTerms.contains($0) }
+    }
+
+    func matches(_ spec: ActionSpec) -> Bool {
+        spec.localizedTitle == localizedTitle && spec.category == category
+            && spec.layoutCompatibility == layoutCompatibility
+    }
+}
+
+extension ActionCatalog {
+    private static let searchKeysByID = Dictionary(
+        uniqueKeysWithValues: specs.map { spec in
+            (spec.id, ActionSearchKeys(spec: spec, normalizedTerms: normalizedSearchTermsByID[spec.id] ?? []))
+        }
+    )
+
+    static func searchKeys(for spec: ActionSpec) -> ActionSearchKeys {
+        if let keys = searchKeysByID[spec.id], keys.matches(spec) {
+            return keys
+        }
+        return ActionSearchKeys(
+            spec: spec,
+            normalizedTerms: normalizedSearchTerms(for: spec.id) ?? spec.searchTerms.map(normalizedSearchTerm)
+        )
+    }
+}
+
 extension ActionCatalog {
     private static func focusTitle(_ direction: Direction) -> LocalizedStringResource {
         switch direction {

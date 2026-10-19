@@ -203,7 +203,7 @@ final class EventInterpreter: EventIntakeSink {
 
         case let .titleChanged(pid, windowId, callbackGeneration):
             guard acceptsCallbackGeneration(callbackGeneration, pid: pid) else { return }
-            controller.axEventHandler.handleWindowTitleChanged(windowId: windowId)
+            controller.axEventHandler.handleWindowTitleChanged(windowId: windowId, pid: pid)
         }
     }
 }

@@ -36,6 +36,22 @@ struct ModifierFlagMask {
             right: UInt64(NX_DEVICERCMDKEYMASK)
         )
     ]
+
+    static func independentFlags(carbon modifiers: UInt32) -> UInt64 {
+        var flags: UInt64 = 0
+        for mask in all where modifiers & mask.carbon != 0 {
+            flags |= mask.independent
+        }
+        return flags
+    }
+
+    static func carbonModifiers(independent flags: UInt64) -> UInt32 {
+        var modifiers: UInt32 = 0
+        for mask in all where flags & mask.independent != 0 {
+            modifiers |= mask.carbon
+        }
+        return modifiers
+    }
 }
 
 enum CommandHotkeyTapMatcher {
@@ -45,7 +61,14 @@ enum CommandHotkeyTapMatcher {
     }
 
     static func match(keyCode: UInt32, rawFlags: UInt64, entries: [Entry]) -> HotkeyCommand? {
-        entries.first { matches($0.binding, keyCode: keyCode, rawFlags: rawFlags) }?.command
+        firstMatch(keyCode: keyCode, rawFlags: rawFlags, entries: entries)?.command
+    }
+
+    static func firstMatch(keyCode: UInt32, rawFlags: UInt64, entries: [Entry]) -> Entry? {
+        for entry in entries where matches(entry.binding, keyCode: keyCode, rawFlags: rawFlags) {
+            return entry
+        }
+        return nil
     }
 
     static func nearMiss(keyCode: UInt32, rawFlags: UInt64, entries: [Entry]) -> (entry: Entry, reason: String)? {

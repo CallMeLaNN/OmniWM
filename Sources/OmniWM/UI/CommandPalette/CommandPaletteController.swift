@@ -22,7 +22,7 @@ final class CommandPaletteController: NSObject, NSWindowDelegate {
                 if selectedMode == .windows, searchText != oldValue {
                     selectedItemID = nil
                 }
-                updateSelectionAfterFilterChange()
+                filterInputDidChange()
             }
             if !searchText.isEmpty {
                 expandResults()
@@ -44,21 +44,23 @@ final class CommandPaletteController: NSObject, NSWindowDelegate {
     }
 
     var windows: [CommandPaletteWindowItem] = [] {
-        didSet { updateSelectionAfterFilterChange() }
+        didSet { filterInputDidChange() }
     }
 
     private(set) var menuItems: [MenuItemModel] = [] {
-        didSet { updateSelectionAfterFilterChange() }
+        didSet { filterInputDidChange() }
     }
 
     private(set) var isMenuLoading = false
     private(set) var clipboardItems: [ClipboardPaletteItem] = [] {
-        didSet { updateSelectionAfterFilterChange() }
+        didSet { filterInputDidChange() }
     }
 
     private(set) var commandItems: [CommandPaletteCommandItem] = [] {
-        didSet { updateSelectionAfterFilterChange() }
+        didSet { filterInputDidChange() }
     }
+
+    private(set) var filteredItems = CommandPaletteFilteredItems.windows([])
 
     private(set) var isClipboardHistoryEnabled = false
     private(set) var clipboardPreview: ClipboardPalettePreview?
@@ -212,6 +214,7 @@ final class CommandPaletteController: NSObject, NSWindowDelegate {
             selectedMode = .windows
             return
         }
+        refreshFilteredItems()
         invalidateLauncherSearch()
         launcherResultsFocused = false
         selectedItemID = nil
@@ -225,6 +228,27 @@ final class CommandPaletteController: NSObject, NSWindowDelegate {
             startLauncherSearch()
         }
         updateSelectionAfterFilterChange()
+    }
+
+    private func filterInputDidChange() {
+        refreshFilteredItems()
+        updateSelectionAfterFilterChange()
+    }
+
+    private func refreshFilteredItems() {
+        filteredItems = switch selectedMode {
+        case .windows:
+            .windows(CommandPaletteSearch.filterWindowItems(windows, query: searchText))
+        case .menu:
+            .menu(CommandPaletteSearch.filterMenuItems(menuItems, query: searchText))
+        case .clipboard:
+            .clipboard(CommandPaletteSearch.filterClipboardItems(clipboardItems, query: searchText))
+        case .commands:
+            .commands(CommandPaletteSearch.filterCommandItems(commandItems, query: searchText))
+        case .applications,
+             .files:
+            .launcher
+        }
     }
 
     private func loadMenuItemsIfNeeded() {

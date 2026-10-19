@@ -304,14 +304,4 @@ extension AXEventHandler {
         }
         return controller.isManagedWindowDisplayable(entry.token)
     }
-
-    func updateManagedReplacementTitle(windowInfo: WindowServerInfo, token: WindowToken) {
-        guard let controller,
-              let entry = controller.workspaceManager.entry(for: token),
-              let title = windowInfo.title ?? AXWindowService.titlePreferFast(windowId: windowInfo.id)
-        else {
-            return
-        }
-        _ = controller.workspaceManager.updateManagedReplacementTitle(title, for: entry.token)
-    }
 }

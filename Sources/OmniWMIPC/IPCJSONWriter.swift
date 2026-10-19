@@ -8,7 +8,7 @@ struct IPCJSONWriter: ~Copyable {
         case nonFiniteNumber
     }
 
-    private var data = Data()
+    private var data = IPCByteBuffer(capacity: 512)
     private let prettyPrinted: Bool
     private var depth = 0
 
@@ -18,15 +18,15 @@ struct IPCJSONWriter: ~Copyable {
 
     consuming func finishLine() -> Data {
         data.append(0x0A)
-        return data
+        return data.makeData()
     }
 
     mutating func raw(_ value: StaticString) {
-        value.withUTF8Buffer { data.append(contentsOf: $0) }
+        value.withUTF8Buffer { data.append($0) }
     }
 
     mutating func text(_ value: borrowing String) {
-        data.append(contentsOf: value.utf8)
+        data.append(value.utf8)
     }
 
     mutating func begin(_ byte: UInt8) {
@@ -70,7 +70,7 @@ struct IPCJSONWriter: ~Copyable {
         for index in bytes.indices {
             let byte = bytes[index]
             guard byte < 32 || byte == 34 || byte == 47 || byte == 92 else { continue }
-            if index > start { data.append(contentsOf: bytes[start ..< index]) }
+            if index > start { data.append(UnsafeBufferPointer(rebasing: bytes[start ..< index])) }
             switch byte {
             case 34: raw("\\\"")
             case 47: raw("\\/")
@@ -89,7 +89,7 @@ struct IPCJSONWriter: ~Copyable {
             }
             start = index + 1
         }
-        if start < bytes.count { data.append(contentsOf: bytes[start...]) }
+        if start < bytes.count { data.append(UnsafeBufferPointer(rebasing: bytes[start...])) }
         data.append(34)
     }
 

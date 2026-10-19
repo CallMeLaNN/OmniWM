@@ -7,10 +7,8 @@ public enum IPCSocketPath {
     public static let environmentKey = "OMNIWM_SOCKET"
     public static let secretSuffix = ".secret"
 
-    public static func resolvedPath(
-        environment: [String: String] = ProcessInfo.processInfo.environment
-    ) -> String {
-        if let override = environment[environmentKey], !override.isEmpty {
+    public static func resolvedPath() -> String {
+        if let override = getenv(environmentKey).map({ String(cString: $0) }), !override.isEmpty {
             return override
         }
 
