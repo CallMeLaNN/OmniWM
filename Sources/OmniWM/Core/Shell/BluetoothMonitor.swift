@@ -144,14 +144,21 @@ final class BluetoothMonitor: NSObject, ShellDeviceSource, CBCentralManagerDeleg
         }
     }
 
-    @objc private func connected(_ notification: IOBluetoothUserNotification, device: IOBluetoothDevice) {
-        refresh()
+    @objc private nonisolated func connected(_ notification: IOBluetoothUserNotification?, device: IOBluetoothDevice?) {
+        DispatchQueue.main.async { [weak self] in
+            self?.refresh()
+        }
     }
 
-    @objc private func disconnected(_ notification: IOBluetoothUserNotification, device: IOBluetoothDevice) {
-        notification.unregister()
-        disconnections[device.addressString ?? ""] = nil
-        refresh()
+    @objc private nonisolated func disconnected(
+        _ notification: IOBluetoothUserNotification?,
+        device: IOBluetoothDevice?
+    ) {
+        let address = device?.addressString ?? ""
+        DispatchQueue.main.async { [weak self] in
+            self?.disconnections.removeValue(forKey: address)?.unregister()
+            self?.refresh()
+        }
     }
 
     private func watchIfAllowed() {
