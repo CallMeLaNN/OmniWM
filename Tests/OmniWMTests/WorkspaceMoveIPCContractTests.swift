@@ -356,9 +356,11 @@ final class WorkspaceMoveIPCContractTests: XCTestCase {
               fi
               print -rl -- "$@"
             }
+            function compdef { :; }
             words=(\(words))
             CURRENT=\(argumentCount + 2)
             \(generatedScript)
+            _omniwmctl
             true
             """
         case .bash:
