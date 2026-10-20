@@ -17,7 +17,8 @@ final class CLICompletionTemplateTests: XCTestCase {
             ("omniwmctl window mark list ''", 5, "--json")
         ] {
             let setup = "words=(\(words)); CURRENT=\(position); compadd() { print -r -- \"$@\" }; compdef() { :; }; "
-            XCTAssertTrue(try suggestions(from: "/bin/zsh", ["-fc", setup + script + "\n_omniwmctl; :"]).contains(expected), words)
+            let input = setup + script + "\n_omniwmctl; :"
+            XCTAssertTrue(try suggestions(from: "/bin/zsh", ["-fc", input]).contains(expected), words)
         }
     }
 
@@ -32,7 +33,8 @@ final class CLICompletionTemplateTests: XCTestCase {
             ("omniwmctl window gather --from all ow_a ''", [])
         ] {
             let count = words.split(separator: " ").count
-            let zshInput = "words=(\(words)); CURRENT=\(count); compadd() { shift; print -r -- \"$@\" }; compdef() { :; }; \(zsh)\n_omniwmctl; :"
+            let zshInput = "words=(\(words)); CURRENT=\(count); compadd() { shift; print -r -- \"$@\" }; "
+                + "compdef() { :; }; \(zsh)\n_omniwmctl; :"
             let bashInput = "\(bash)\nCOMP_WORDS=(\(words)); COMP_CWORD=\(count - 1); _omniwmctl\n"
                 + #"printf '%s\n' "${COMPREPLY[@]}""#
             XCTAssertEqual(Set(try suggestions(from: "/bin/zsh", ["-fc", zshInput])), Set(expected), words)
