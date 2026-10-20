@@ -42,6 +42,22 @@ final class CLICompletionTemplateTests: XCTestCase {
         }
     }
 
+    func testZshScriptRegistersWhenEvaluatedAndCompletesWhenAutoloaded() throws {
+        let script = CLICompletionGenerator.script(for: .zsh)
+        let stubs = "compadd() { shift; print -r -- \"$@\" }; compdef() { print -r -- \"compdef $*\" }; "
+
+        let evaluated = try suggestions(from: "/bin/zsh", ["-fc", stubs + script])
+        XCTAssertEqual(evaluated, ["compdef", "_omniwmctl", "omniwmctl"])
+
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try script.write(to: directory.appendingPathComponent("_omniwmctl"), atomically: true, encoding: .utf8)
+        let autoload = stubs + "fpath=(\(directory.path) $fpath); autoload -Uz _omniwmctl; "
+            + "words=(omniwmctl window gather ''); CURRENT=4; _omniwmctl; :"
+        XCTAssertEqual(try suggestions(from: "/bin/zsh", ["-fc", autoload]), ["--from"])
+    }
+
     func testFishGatherCompletionsOfferTheReachFlagOnceAndItsValuesAfterIt() {
         let script = CLICompletionGenerator.script(for: .fish)
         let gather = "__fish_seen_subcommand_from window; and __fish_seen_subcommand_from gather"
