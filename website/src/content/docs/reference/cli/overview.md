@@ -175,7 +175,8 @@ omniwmctl completion <zsh|bash|fish|nu>
 **Setup:**
 
 ```bash
-# Zsh — add to ~/.zshrc
+# Zsh — add to ~/.zshrc (skip the compinit line if your framework already runs it)
+autoload -Uz compinit && compinit
 eval "$(omniwmctl completion zsh)"
 
 # Bash — add to ~/.bashrc
